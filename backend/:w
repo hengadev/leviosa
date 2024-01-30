@@ -6,36 +6,19 @@ import (
 )
 
 func NewServer(store Store) *Server {
-	server := new(Server)
-	server.Store = store
-
-	router := http.NewServeMux()
-	router.Handle("/users", http.HandlerFunc(server.usersHandler))
-	router.Handle("/event", http.HandlerFunc(server.eventHandler))
-	server.Handler = router
-
-	return server
+	return &Server{Store: store}
 }
 
 type Server struct {
 	Store Store
-	http.Handler
 }
 
 type Store interface {
 	GetEventNameByID(id string) string
 	PostEvent(name string)
-
-	// TODO: Model that using the Event type implemented
-	// GetEventNameByID(id string) Event
-	// PostEvent(event Event)
 }
 
-func (s *Server) usersHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.showEventBydID(w, r)
