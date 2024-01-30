@@ -15,6 +15,13 @@ func TestGETEventByID(t *testing.T) {
 	createEventTable := "CREATE TABLE IF NOT EXISTS events (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL);"
 	insertValues := "INSERT INTO events (name) VALUES ('event1'), ('event2');"
 
+	store, err := sqlite.NewStore("")
+	if err != nil {
+		log.Fatal("Something went wrong when creating the database")
+	}
+	store.Init(createEventTable, insertValues)
+	server := api.NewServer(store)
+
 	eventTest := []struct {
 		caseName    string
 		id          int
@@ -28,12 +35,6 @@ func TestGETEventByID(t *testing.T) {
 
 	for _, tt := range eventTest {
 		t.Run(tt.caseName, func(t *testing.T) {
-			store, err := sqlite.NewStubStore("")
-			if err != nil {
-				log.Fatal("Something went wrong when creating the database")
-			}
-			store.Init(createEventTable, insertValues)
-			server := api.NewServer(store)
 
 			request := newGetRequest(tt.id)
 			response := httptest.NewRecorder()
