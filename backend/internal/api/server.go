@@ -23,7 +23,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		s.showEventBydID(w, r)
 	case http.MethodPost:
-		s.makeEvent(w, r)
+		s.makeEvent(r)
 	}
 }
 
@@ -36,7 +36,7 @@ func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, name)
 }
 
-func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
+func (s *Server) makeEvent(r *http.Request) {
 	name := r.URL.Query().Get("name")
 	s.Store.PostEvent(name)
 }
