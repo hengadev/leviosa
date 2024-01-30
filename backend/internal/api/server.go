@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 func NewServer(store Store) *Server {
@@ -29,7 +28,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
-	id := strings.TrimPrefix(r.URL.Path, "/event/")
+	id := r.URL.Query().Get("id")
 	name := s.Store.GetEventNameByID(id)
 	if name == "" {
 		w.WriteHeader(http.StatusNotFound)
@@ -38,7 +37,6 @@ func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimPrefix(r.URL.Path, "/event/")
-	fmt.Println("the name used is :", name)
+	name := r.URL.Query().Get("name")
 	s.Store.PostEvent(name)
 }

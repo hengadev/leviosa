@@ -21,12 +21,12 @@ func assertStatus(t testing.TB, got, want int) {
 }
 
 func newGetRequest(id int) *http.Request {
-	request, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/event/%d", id), nil)
+	request, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/event?id=%d", id), nil)
 	return request
 }
 
 // TODO: Change that when the type Event is implemented
 func newPostRequest(name string) *http.Request {
-	request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/event/%s", name), nil)
+	request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/event?name=%s", name), nil)
 	return request
 }
