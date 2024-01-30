@@ -24,3 +24,9 @@ func newGetRequest(id int) *http.Request {
 	request, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/event/%d", id), nil)
 	return request
 }
+
+// TODO: Change that when the type Event is implemented
+func newPostRequest(name string) *http.Request {
+	request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/event/%s", name), nil)
+	return request
+}

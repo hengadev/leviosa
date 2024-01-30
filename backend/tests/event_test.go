@@ -45,3 +45,36 @@ func TestGETEventByID(t *testing.T) {
 		})
 	}
 }
+
+func TestPostEvent(t *testing.T) {
+
+	createEventTable := "CREATE TABLE IF NOT EXISTS events (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL);"
+
+	store, err := sqlite.NewStore("")
+	if err != nil {
+		log.Fatal("Something went wrong when creating the database")
+	}
+	store.Init(createEventTable)
+	server := api.NewServer(store)
+	eventName := "event1"
+
+	request := newPostRequest(eventName)
+	response := httptest.NewRecorder()
+
+	server.ServeHTTP(response, request)
+	assertStatus(t, response.Code, http.StatusOK)
+
+	var count int
+	var name string
+	countQuery := "SELECT COUNT(name) FROM events;"
+	store.DB.QueryRow(countQuery).Scan(&count)
+	if count != 1 {
+		t.Errorf("got the count of %d, expected %d", count, 1)
+	}
+
+	nameQuery := "SELECT name FROM events;"
+	store.DB.QueryRow(nameQuery).Scan(&name)
+	if name != eventName {
+		t.Errorf("got the name of %s, expected %s", name, eventName)
+	}
+}

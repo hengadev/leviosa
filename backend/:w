@@ -23,8 +23,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		s.showEventBydID(w, r)
-	case http.MethodPost:
-		s.makeEvent(w, r)
+	case http.MethodPut:
 	}
 }
 
@@ -35,10 +34,4 @@ func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 	fmt.Fprint(w, name)
-}
-
-func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
-	name := strings.TrimPrefix(r.URL.Path, "/event/")
-	fmt.Println("the name used is :", name)
-	s.Store.PostEvent(name)
 }
