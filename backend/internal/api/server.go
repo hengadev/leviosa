@@ -1,7 +1,9 @@
 package api
 
 import (
-	"fmt"
+	"encoding/json"
+	// "fmt"
+	"github.com/GaryHY/event-reservation-app/internal/types"
 	"net/http"
 )
 
@@ -23,7 +25,7 @@ type Server struct {
 }
 
 type Store interface {
-	GetEventNameByID(id string) string
+	GetEventNameByID(id string) types.Event
 	PostEvent(name string)
 
 	// TODO: Model that using the Event type implemented
@@ -46,11 +48,11 @@ func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
-	name := s.Store.GetEventNameByID(id)
-	if name == "" {
+	event := s.Store.GetEventNameByID(id)
+	if event.Name == "" {
 		w.WriteHeader(http.StatusNotFound)
 	}
-	fmt.Fprint(w, name)
+	json.NewEncoder(w).Encode(&event)
 }
 
 func (s *Server) makeEvent(r *http.Request) {

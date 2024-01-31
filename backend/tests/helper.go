@@ -20,8 +20,8 @@ func assertStatus(t testing.TB, got, want int) {
 	}
 }
 
-func newGetRequest(id int) *http.Request {
-	request, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/event?id=%d", id), nil)
+func newGetRequest(id string) *http.Request {
+	request, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/event?id=%s", id), nil)
 	return request
 }
 

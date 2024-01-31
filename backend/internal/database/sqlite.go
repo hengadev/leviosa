@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"github.com/GaryHY/event-reservation-app/internal/types"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 )
@@ -31,10 +32,10 @@ func (s *Store) Init(queries ...string) {
 	}
 }
 
-func (s *Store) GetEventNameByID(id string) (name string) {
-	query := fmt.Sprintf("SELECT name FROM events WHERE id=%s;", id)
-	s.DB.QueryRow(query).Scan(&name)
-	return name
+func (s *Store) GetEventNameByID(id string) (event types.Event) {
+	query := fmt.Sprintf("SELECT * FROM events WHERE id=%s;", id)
+	s.DB.QueryRow(query).Scan(&event.Id, &event.Name)
+	return
 }
 
 func (s *Store) PostEvent(name string) {

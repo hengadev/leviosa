@@ -1,13 +1,17 @@
 package tests
 
 import (
-	// "fmt"
-	"github.com/GaryHY/event-reservation-app/internal/api"
-	"github.com/GaryHY/event-reservation-app/internal/database"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
+
+	"github.com/GaryHY/event-reservation-app/internal/api"
+	"github.com/GaryHY/event-reservation-app/internal/database"
+	"github.com/GaryHY/event-reservation-app/internal/types"
 )
 
 func TestGETEventByID(t *testing.T) {
@@ -24,24 +28,34 @@ func TestGETEventByID(t *testing.T) {
 
 	eventTest := []struct {
 		caseName    string
-		id          int
-		eventName   string
 		eventStatus int
+		event       types.Event
 	}{
-		{"Get name of event with ID 123", 1, "event1", http.StatusOK},
-		{"Get name of event with ID 456", 2, "event2", http.StatusOK},
-		{"Return 404 when event missing", 3, "", http.StatusNotFound},
+		{"Get name of event with ID 123", http.StatusOK, types.Event{Id: "1", Name: "event1"}},
+		{"Get name of event with ID 456", http.StatusOK, types.Event{Id: "2", Name: "event2"}},
+		{"Return 404 when event missing", http.StatusNotFound, types.Event{Id: "3", Name: ""}},
 	}
 
 	for _, tt := range eventTest {
 		t.Run(tt.caseName, func(t *testing.T) {
-
-			request := newGetRequest(tt.id)
+			request := newGetRequest(tt.event.Id)
 			response := httptest.NewRecorder()
 
 			server.ServeHTTP(response, request)
+
+			var got types.Event
+			err := json.NewDecoder(response.Body).Decode(&got)
+			fmt.Printf("event from the store : [id: %s, name: %s]\n", got.Id, got.Name)
+			if err != nil {
+				t.Errorf("Unable to parse response from server %q into slice of Event, '%v'", response.Body, err)
+			}
+
 			assertStatus(t, response.Code, tt.eventStatus)
-			assertResponseBody(t, response.Body.String(), tt.eventName)
+			if response.Code == http.StatusOK {
+				if !reflect.DeepEqual(got, tt.event) {
+					t.Errorf("got %v want %v", got, tt.event)
+				}
+			}
 		})
 	}
 }
