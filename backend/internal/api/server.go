@@ -14,6 +14,8 @@ func NewServer(store Store) *Server {
 	router := http.NewServeMux()
 	router.Handle("/users", http.HandlerFunc(server.usersHandler))
 	router.Handle("/event", http.HandlerFunc(server.eventHandler))
+	// NOTE: Maybe change the auth name to signin or signup:
+	router.Handle("/auth", http.HandlerFunc(server.authenticationHandler))
 	server.Handler = router
 
 	return server
@@ -27,13 +29,13 @@ type Server struct {
 type Store interface {
 	GetEventNameByID(id string) types.Event
 	PostEvent(name string)
-
-	// TODO: Model that using the Event type implemented
-	// GetEventNameByID(id string) Event
-	// PostEvent(event Event)
 }
 
 func (s *Server) usersHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) authenticationHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
