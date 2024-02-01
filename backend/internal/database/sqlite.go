@@ -42,6 +42,30 @@ func (s *Store) PostEvent(name string) {
 	query := fmt.Sprintf("INSERT INTO events (name) VALUES ('%s');", name)
 	_, err := s.DB.Exec(query)
 	if err != nil {
-		log.Fatal("Could not insert into the database - ", err)
+		log.Fatal("Could not insert new event into the database - ", err)
 	}
+}
+
+// Function that returns true if user in database already
+func (s *Store) CheckUser(user types.User) bool {
+	var count int
+	query := fmt.Sprintf("SELECT COUNT(email) from users where email=%s;", user.Email)
+	s.DB.QueryRow(query).Scan(&count)
+	return count == 1
+}
+
+func (s *Store) CreateUser(newUser types.User) error {
+	// TODO:
+	query := fmt.Sprintf("INSERT INTO users (email, hashpassword) VALUES ('%s', '%s');", newUser.Email, newUser.Password)
+	_, err := s.DB.Exec(query)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: Add  the level of auth I want to verify
+func (s *Store) VerifyUser(user types.User) bool {
+	// TODO: Something that has to do with verifying if user if authorized to do some actions
+	return true
 }
