@@ -26,7 +26,7 @@ func TestGETEventByID(t *testing.T) {
 	store.Init(createEventTable, insertValues)
 	server := api.NewServer(store)
 
-	eventTest := []struct {
+	eventTests := []struct {
 		caseName    string
 		eventStatus int
 		event       types.Event
@@ -36,7 +36,7 @@ func TestGETEventByID(t *testing.T) {
 		{"Return 404 when event missing", http.StatusNotFound, types.Event{Id: "3", Name: ""}},
 	}
 
-	for _, tt := range eventTest {
+	for _, tt := range eventTests {
 		t.Run(tt.caseName, func(t *testing.T) {
 			request := newGetRequest(tt.event.Id)
 			response := httptest.NewRecorder()
@@ -61,7 +61,7 @@ func TestGETEventByID(t *testing.T) {
 }
 
 func TestPostEvent(t *testing.T) {
-
+	// TODO: Add a test for when an event for a day is already planned, do that when the Event is fully implemented
 	createEventTable := "CREATE TABLE IF NOT EXISTS events (id INTEGER NOT NULL PRIMARY KEY, name TEXT NOT NULL);"
 
 	store, err := sqlite.NewStore("")

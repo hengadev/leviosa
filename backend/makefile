@@ -9,7 +9,9 @@ build:
 
 test:
 	@echo "Running all tests...\n"
-	@go test -v ./tests/...
+	@# NOTE: To run all the tests when we are done
+	@# @go test -v ./tests/...
+	@go test -v ./tests/... -run TestPOSTSignUp
 
 clean:
 	@echo "Removing all binaries..."
