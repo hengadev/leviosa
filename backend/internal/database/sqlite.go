@@ -2,10 +2,13 @@ package sqlite
 
 import (
 	"database/sql"
-	"fmt"
+	// "time"
+	// "fmt"
+	"log"
+
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Store struct {
@@ -33,14 +36,14 @@ func (s *Store) Init(queries ...string) {
 }
 
 func (s *Store) GetEventNameByID(id string) (event types.Event) {
-	query := fmt.Sprintf("SELECT * FROM events WHERE id=%s;", id)
-	s.DB.QueryRow(query).Scan(&event.Id, &event.Name)
+	s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event.Id, &event.Name)
 	return
 }
 
 func (s *Store) PostEvent(name string) {
-	query := fmt.Sprintf("INSERT INTO events (name) VALUES ('%s');", name)
-	_, err := s.DB.Exec(query)
+	// query := fmt.Sprintf("INSERT INTO events (name) VALUES ('%s');", name)
+	// _, err := s.DB.Exec(query)
+	_, err := s.DB.Exec("INSERT INTO events (name) VALUES (?);", name)
 	if err != nil {
 		log.Fatal("Could not insert new event into the database - ", err)
 	}
@@ -49,19 +52,30 @@ func (s *Store) PostEvent(name string) {
 // Function that returns true if user in database already
 func (s *Store) CheckUser(user types.User) bool {
 	var count int
-	query := fmt.Sprintf("SELECT COUNT(email) from users where email=%s;", user.Email)
-	s.DB.QueryRow(query).Scan(&count)
+	s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", user.Email).Scan(&count)
 	return count == 1
 }
 
+func (s *Store) GetHashPassword(user types.User) (hashpassword string) {
+	s.DB.QueryRow("SELECT hashpassword from users where email = ?;", user.Email).Scan(&hashpassword)
+	return
+}
+
 func (s *Store) CreateUser(newUser types.User) error {
-	// TODO:
-	query := fmt.Sprintf("INSERT INTO users (email, hashpassword) VALUES ('%s', '%s');", newUser.Email, newUser.Password)
-	_, err := s.DB.Exec(query)
+	hashpassword := hashPassword(newUser.Password)
+	_, err := s.DB.Exec("INSERT INTO users (email, hashpassword) VALUES (?, ?);", newUser.Email, hashpassword)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func hashPassword(password string) string {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	if err != nil {
+		log.Fatal("Failed hashing the password - ", err)
+	}
+	return string(bytes)
 }
 
 // TODO: Add  the level of auth I want to verify
