@@ -24,7 +24,6 @@ type AuthUser struct {
 }
 
 func NewSession(user User) *Session {
-	// TODO: Use the time.After function for auto deletion of the session
 	return &Session{
 		Email:      user.Email,
 		Created_at: time.Now().Format(time.RFC822),
