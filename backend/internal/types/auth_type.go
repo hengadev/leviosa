@@ -2,6 +2,14 @@ package types
 
 import (
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"net/mail"
+	"time"
+)
+
+const (
+	SessionDuration   = time.Duration(30 * time.Minute)
+	SessionCookieName = "session_token"
 )
 
 type User struct {
@@ -15,8 +23,33 @@ type AuthUser struct {
 	HashPassword string `json:"hashpassword"`
 }
 
+func NewSession(user User) *Session {
+	// TODO: Use the time.After function for auto deletion of the session
+	return &Session{
+		Email:      user.Email,
+		Created_at: time.Now().Format(time.RFC822),
+		Expiry:     SessionDuration,
+	}
+}
+
+type Session struct {
+	Email      string
+	Created_at string
+	Expiry     time.Duration
+}
+
+func (s *Session) IsExpired() bool {
+	createdTime, err := time.Parse(time.RFC822Z, s.Created_at)
+	if err != nil {
+		log.Fatal("Cannot parse the time - ", err)
+	}
+	return createdTime.Add(s.Expiry).Before(time.Now())
+}
+
+// NOTE: Is using the standard library enough ?
 func (u User) ValidateEmail() bool {
-	return true
+	_, err := mail.ParseAddress(u.Email)
+	return err == nil
 }
 
 // Password should be X long with

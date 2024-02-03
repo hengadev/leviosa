@@ -37,12 +37,13 @@ func assertPasswordHash(t testing.TB, got, want string) {
 	t.Helper()
 	if err := bcrypt.CompareHashAndPassword([]byte(got), []byte(want)); err != nil {
 		t.Errorf("got the password %q from the database, expected %q", got, want)
+		fmt.Println(err)
 	}
 }
 
 // Une fonction pour check que j'ai bien qu'une seule fois le meme email dans la base de donnee
-func assertEmailCount(t testing.TB, countEmail int) {
+func assertEqualOne(t testing.TB, countEmail int, objectName string) {
 	if countEmail != 1 {
-		t.Errorf("got the count of %d, expected 1", countEmail)
+		t.Errorf("got the count of %d, expected 1 %s", countEmail, objectName)
 	}
 }

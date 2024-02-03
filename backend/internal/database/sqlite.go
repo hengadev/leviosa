@@ -78,8 +78,20 @@ func hashPassword(password string) string {
 	return string(bytes)
 }
 
+func (s *Store) CreateSession(id string, newSession *types.Session) error {
+	_, err := s.DB.Exec("INSERT INTO sessions (id, email, created_at, expired_at) VALUES (?, ?, ?, ?);", id, newSession.Email, newSession.Created_at, newSession.Expiry)
+	if err != nil {
+		return err
+	}
+
+	// TODO: Use the time.After function for auto deletion of the session
+	// time.After(newSession.Expiry)
+
+	return nil
+}
+
 // TODO: Add  the level of auth I want to verify
-func (s *Store) VerifyUser(user types.User) bool {
+func (s *Store) AuthorizeUser(user types.User) bool {
 	// TODO: Something that has to do with verifying if user if authorized to do some actions
 	return true
 }
