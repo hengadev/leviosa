@@ -2,13 +2,11 @@ package sqlite
 
 import (
 	"database/sql"
-	// "time"
-	// "fmt"
-	"log"
-
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
+	"log"
+	"time"
 )
 
 type Store struct {
@@ -88,6 +86,24 @@ func (s *Store) CreateSession(id string, newSession *types.Session) error {
 	// time.After(newSession.Expiry)
 
 	return nil
+}
+
+func (s *Store) DeleteSession(session *types.Session) error {
+	_, err := s.DB.Exec("DELETE FROM sessions WHERE email =  ?;", session.Email)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) HasSession(user types.User) bool {
+	var count int
+	var created_at string
+	s.DB.QueryRow("SELECT COUNT(email) from sessions where email=? ;", user.Email).Scan(&count)
+	s.DB.QueryRow("SELECT created_at from session where email=? ;", user.Email).Scan(&created_at)
+	timeParsedFromSession, _ := time.Parse(time.RFC822, created_at)
+	timePlusExpirationDuration := timeParsedFromSession.Add(types.SessionDuration)
+	return count == 1 && timePlusExpirationDuration.After(time.Now())
 }
 
 // TODO: Add  the level of auth I want to verify

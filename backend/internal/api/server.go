@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -39,6 +38,8 @@ type Store interface {
 	CheckUser(user types.User) bool
 	GetHashPassword(user types.User) (hashpassword string)
 	CreateSession(session_id string, newSession *types.Session) error
+	HasSession(user types.User) bool
+	DeleteSession(session *types.Session) error
 	// NOTE: The next one is for auth
 	// VerifyUser(user types.User) bool
 }
@@ -64,12 +65,15 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromRequest(w, r)
 	if !s.Store.CheckUser(user) {
-		// TODO: Find the right status for that situation
-		// w.WriteHeader(http.StatusNotFound)
-		// w.WriteHeader(http.StatusUnauthorized)
-		fmt.Println("There is no user")
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	// TODO: Add the check is the user already has a session
+	if s.Store.HasSession(user) {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	hashpassword := s.Store.GetHashPassword(user)
 	if err := bcrypt.CompareHashAndPassword([]byte(hashpassword), []byte(user.Password)); err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -77,7 +81,6 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	session := types.NewSession(user)
 	session_id := uuid.NewString()
-
 	if err := s.Store.CreateSession(session_id, session); err != nil {
 		log.Fatal("Failed to create session in the database for the user")
 	}
@@ -96,11 +99,11 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusOK)
-	// TODO:
-	// 5. CORS
 }
 
 func (s *Server) signOutHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromRequest(w, r)
+	_ = user
 	// 1. get the cookie from the request to find the session id
 	// 2. remove the line in the sessions table
 }
