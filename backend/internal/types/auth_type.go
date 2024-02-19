@@ -1,8 +1,8 @@
 package types
 
 import (
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"net/mail"
 	"time"
 )
@@ -12,47 +12,62 @@ const (
 	SessionCookieName = "session_token"
 )
 
+// Use to parse the information from the request
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	// Role     string `json:"role"`
+	// Telephone string `json:"telephone"`
+	// Address   string `json:"address"`
+	// Gender   string `json:"gender"`
+	// BirthDate      string `json:"birthdate"`
+	// LastName      string `json:"lastname"`
+	// FirstName      string `json:"firstname"`
 }
 
-// NOTE: Dans le tuto tout cela est private (struct + fields)
-type AuthUser struct {
-	Email        string `json:"email"`
-	HashPassword string `json:"hashpassword"`
+// Use to store user information in the database
+type UserSignUp struct {
+	Id        string `json:"id"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	Role      string `json:"role"`
+	Telephone string `json:"telephone"`
+	Address   string `json:"address"`
+	Gender    string `json:"gender"`
+	BirthDate string `json:"birthdate"`
+	LastName  string `json:"lastname"`
+	FirstName string `json:"firstname"`
 }
 
-func NewSession(user User) *Session {
+// NOTE: Les roles cela va etre admin, helper, basic
+
+// Create a new session, used in tests
+func NewSession(user *User) *Session {
 	return &Session{
+		Id:         uuid.NewString(),
 		Email:      user.Email,
-		Created_at: time.Now().Format(time.RFC822),
-		Expiry:     SessionDuration,
+		Created_at: time.Now(),
 	}
 }
 
 type Session struct {
-	Email      string
-	Created_at string
-	Expiry     time.Duration
+	Id         string    `json:"id"`
+	Email      string    `json:"email"`
+	Created_at time.Time `json:"created_at"`
 }
 
-func (s *Session) IsExpired() bool {
-	createdTime, err := time.Parse(time.RFC822Z, s.Created_at)
-	if err != nil {
-		log.Fatal("Cannot parse the time - ", err)
-	}
-	return createdTime.Add(s.Expiry).Before(time.Now())
+// A function to check whether a session is expired.
+func (s *Session) isExpired() bool {
+	return s.Created_at.Before(time.Now())
 }
 
-// NOTE: Is using the standard library enough ?
-func (u User) ValidateEmail() bool {
+func (u *User) ValidateEmail() bool {
 	_, err := mail.ParseAddress(u.Email)
 	return err == nil
 }
 
-// Password should be X long with
-func (u User) ValidatePassword() bool {
+// TODO: Add the logic to verify if the password are good enough
+func (u *User) ValidatePassword() bool {
 	return true
 }
 
