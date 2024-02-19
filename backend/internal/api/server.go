@@ -34,34 +34,16 @@ type Server struct {
 type Store interface {
 	GetEventNameByID(id string) types.Event
 	PostEvent(name string)
-	CreateUser(newUser types.User) error
-	CheckUser(user types.User) bool
-	GetHashPassword(user types.User) (hashpassword string)
 	CreateSession(session_id string, newSession *types.Session) error
 	HasSession(user types.User) bool
 	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
+	CreateUser(newUser *types.User) error
+	CheckUser(email string) bool
+	GetHashPassword(user *types.User) (hashpassword string)
 	DeleteSession(session *types.Session) error
 	// NOTE: The next one is for auth
 	// VerifyUser(user types.User) bool
-}
-
-func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromRequest(w, r)
-	if !user.ValidateEmail() || !user.ValidatePassword() {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	if s.Store.CheckUser(user) {
-		w.WriteHeader(http.StatusConflict)
-		// TODO: Send in response body some message about the user already registered
-		return
-	}
-	if err := s.Store.CreateUser(user); err == nil {
-		w.WriteHeader(http.StatusCreated)
-		return
-	}
-	return
 }
 
 func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {

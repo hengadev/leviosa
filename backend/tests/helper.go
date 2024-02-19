@@ -16,7 +16,7 @@ import (
 
 const (
 	createUsersTable    = "CREATE TABLE IF NOT EXISTS users (email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL);"
-	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, email TEXT NOT NULL, created_at TEXT NOT NULL, expired_at TEXT NOT NULL);"
+	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, email TEXT NOT NULL, created_at TEXT NOT NULL);"
 )
 
 func assertResponseBody(t testing.TB, got, want string) {
@@ -38,12 +38,6 @@ func newGetRequest(id string) *http.Request {
 	return request
 }
 
-// TODO: Change that when the type Event is implemented
-func newPostRequest(name string) *http.Request {
-	request, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("/event?name=%s", name), nil)
-	return request
-}
-
 // Une fonction pour voir si les deux passwords correspondent
 func assertPasswordHash(t testing.TB, got, want string) {
 	t.Helper()
@@ -54,10 +48,10 @@ func assertPasswordHash(t testing.TB, got, want string) {
 }
 
 // Une fonction pour check que j'ai bien qu'une seule fois le meme email dans la base de donnee
-func assertEqualOne(t testing.TB, countEmail int, objectName string) {
+func assertEqualOne(t testing.TB, object int, objectName string) {
 	t.Helper()
-	if countEmail != 1 {
-		t.Errorf("got the count of %d, expected 1 %s", countEmail, objectName)
+	if object != 1 {
+		t.Errorf("got the count of %d, expected 1 %s", object, objectName)
 	}
 }
 
@@ -82,15 +76,15 @@ func assertIsUUID(t testing.TB, uuidString string) {
 	}
 }
 
-func assertSameExpirationDate(t testing.TB, got time.Time, want string) {
+// TODO: Remove that function since it will be stored using the time.Time function
+func assertSameExpirationDate(t testing.TB, got, want time.Time) {
 	t.Helper()
-	timeParsedFromSession, _ := time.Parse(time.RFC822, want)
-	timePlusExpirationDuration := timeParsedFromSession.Add(types.SessionDuration)
-	expectedExpiration := timePlusExpirationDuration.Format(time.RFC822)
+	gotParsed := got.Local().Format(time.RFC822)
+	wantParsed := want.Add(types.SessionDuration).Format(time.RFC822)
 
-	gotExpiration := got.Local().Format(time.RFC822)
-	if gotExpiration != expectedExpiration {
-		t.Errorf("Expected cookie's %q, got expiration of %q", gotExpiration, expectedExpiration)
+	if gotParsed != wantParsed {
+		// t.Errorf("Expected cookie's %q, got expiration of %q", gotExpiration, expectedExpiration)
+		t.Errorf("Expected cookie's %q, got expiration of %q", wantParsed, gotParsed)
 	}
 }
 
@@ -104,8 +98,8 @@ func makeServerAndStoreWithUsersTable() (*api.Server, *sqlite.Store) {
 	return server, store
 }
 
-func initUserTable(store *sqlite.Store) types.User {
-	user := types.User{
+func initUserTable(store *sqlite.Store) *types.User {
+	user := &types.User{
 		Email:    "test@example.fr",
 		Password: "ThisisA_s@fe-pa22w0rd!",
 	}
@@ -113,4 +107,11 @@ func initUserTable(store *sqlite.Store) types.User {
 		log.Fatal("cannot create user in the test file - ", err)
 	}
 	return user
+}
+
+func cleanSessionTable(store *sqlite.Store) {
+	_, err := store.DB.Exec("DELETE FROM sessions;")
+	if err != nil {
+		log.Fatal("Cannot delete everything from the user table", err)
+	}
 }

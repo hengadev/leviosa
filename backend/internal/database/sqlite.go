@@ -66,18 +66,19 @@ func (s *Store) PostEvent(event *types.Event) {
 }
 
 // Function that returns true if user in database already
-func (s *Store) CheckUser(user types.User) bool {
+func (s *Store) CheckUser(email string) bool {
 	var count int
-	s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", user.Email).Scan(&count)
+	s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", email).Scan(&count)
 	return count == 1
 }
 
-func (s *Store) GetHashPassword(user types.User) (hashpassword string) {
+func (s *Store) GetHashPassword(user *types.User) (hashpassword string) {
 	s.DB.QueryRow("SELECT hashpassword from users where email = ?;", user.Email).Scan(&hashpassword)
 	return
 }
 
-func (s *Store) CreateUser(newUser types.User) error {
+// TODO: Change that function once all the field are fine !
+func (s *Store) CreateUser(newUser *types.User) error {
 	hashpassword := hashPassword(newUser.Password)
 	_, err := s.DB.Exec("INSERT INTO users (email, hashpassword) VALUES (?, ?);", newUser.Email, hashpassword)
 	if err != nil {
