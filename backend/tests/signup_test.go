@@ -41,6 +41,7 @@ func TestPOSTSignUp(t *testing.T) {
 		})
 	}
 	t.Run("Incorred method used", func(t *testing.T) {
+		print("yes\n")
 		request, err := http.NewRequest(http.MethodGet, "/signup", nil)
 		if err != nil {
 			log.Fatal("Fail to create new GET request")

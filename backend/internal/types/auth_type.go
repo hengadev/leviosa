@@ -16,28 +16,41 @@ const (
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	// Role     string `json:"role"`
-	// Telephone string `json:"telephone"`
-	// Address   string `json:"address"`
-	// Gender   string `json:"gender"`
-	// BirthDate      string `json:"birthdate"`
-	// LastName      string `json:"lastname"`
-	// FirstName      string `json:"firstname"`
 }
 
 // Use to store user information in the database
-type UserSignUp struct {
-	Id        string `json:"id"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
-	Role      string `json:"role"`
-	Telephone string `json:"telephone"`
-	Address   string `json:"address"`
-	Gender    string `json:"gender"`
-	BirthDate string `json:"birthdate"`
-	LastName  string `json:"lastname"`
-	FirstName string `json:"firstname"`
+type UserStored struct {
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Role       string `json:"role"`
+	LastName   string `json:"lastname"`
+	FirstName  string `json:"firstname"`
+	Gender     string `json:"gender"`
+	BirthDate  string `json:"birthdate"`
+	Telephone  string `json:"telephone"`
+	Address    string `json:"address"`
+	City       string `json:"city"`
+	PostalCard string `json:"postalcard"`
 }
+
+type Role string
+
+func ConvertToRole(str string) Role {
+	switch str {
+	case "admin":
+		return ADMIN
+	case "helper":
+		return HELPER
+	default:
+		return BASIC
+	}
+}
+
+const (
+	ADMIN  = Role("admin")
+	BASIC  = Role("basic")
+	HELPER = Role("helper")
+)
 
 // NOTE: Les roles cela va etre admin, helper, basic
 
@@ -68,6 +81,16 @@ func (u *User) ValidateEmail() bool {
 
 // TODO: Add the logic to verify if the password are good enough
 func (u *User) ValidatePassword() bool {
+	return true
+}
+
+func (u *UserStored) ValidateEmail() bool {
+	_, err := mail.ParseAddress(u.Email)
+	return err == nil
+}
+
+// TODO: Add the logic to verify if the password are good enough
+func (u *UserStored) ValidatePassword() bool {
 	return true
 }
 

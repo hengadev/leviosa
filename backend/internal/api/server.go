@@ -22,6 +22,9 @@ func NewServer(store Store) *Server {
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
 	router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
 
+	// TODO: Implement for the admin to be able to modify data about users
+	// router.Handle("/user", http.HandlerFunc(server.userHandler))
+
 	// router.Handle("/votes", http.HandlerFunc(server.votesHandler))
 
 	server.Handler = router
@@ -39,8 +42,9 @@ type Store interface {
 	GetEventByID(id string) types.Event
 	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
-	CreateUser(newUser *types.User) error
+	CreateUser(newUser *types.UserStored, isAdmin bool) error
 	CheckUser(email string) bool
+	IsAdmin(session_id string) bool
 	GetHashPassword(user *types.User) (hashpassword string)
 	CreateSession(newSession *types.Session) error
 	HasSession(email string) bool

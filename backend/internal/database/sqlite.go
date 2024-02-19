@@ -34,6 +34,18 @@ func (s *Store) Init(queries ...string) {
 	}
 }
 
+func (s *Store) IsAdmin(session_id string) bool {
+	// TODO: use the session id to find the user email associated and if that user in the user table is an admin
+	var role string
+	// TODO: Finish that query
+	_, err := s.DB.Exec("SELECT role FROM users WHERE email = (SELECT email FROM sessions WHERE id = ?);", session_id)
+	if err != nil {
+
+	}
+
+	return types.ConvertToRole(role) == types.ADMIN
+}
+
 func (s *Store) GetEventByID(id string) (event types.Event) {
 	if err := s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event.Id); err != nil {
 		log.Fatalf("Error getting event with id '%s' : - %s", id, err)
@@ -93,9 +105,15 @@ func (s *Store) GetHashPassword(user *types.User) (hashpassword string) {
 }
 
 // TODO: Change that function once all the field are fine !
-func (s *Store) CreateUser(newUser *types.User) error {
+func (s *Store) CreateUser(newUser *types.UserStored, isAdmin bool) error {
 	hashpassword := hashPassword(newUser.Password)
-	_, err := s.DB.Exec("INSERT INTO users (email, hashpassword) VALUES (?, ?);", newUser.Email, hashpassword)
+	var role types.Role
+	if isAdmin {
+		role = types.ConvertToRole(newUser.Role)
+	} else {
+		role = types.ADMIN
+	}
+	_, err := s.DB.Exec("INSERT INTO users (email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Email, hashpassword, role, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
 	if err != nil {
 		return err
 	}
