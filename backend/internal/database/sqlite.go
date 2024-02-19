@@ -33,15 +33,33 @@ func (s *Store) Init(queries ...string) {
 	}
 }
 
-func (s *Store) GetEventNameByID(id string) (event types.Event) {
-	s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event.Id, &event.Name)
+func (s *Store) GetEventByID(id string) (event types.Event) {
+	if err := s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event.Id); err != nil {
+		log.Fatalf("Error getting event with id '%s' : - %s", id, err)
+	}
 	return
 }
 
-func (s *Store) PostEvent(name string) {
-	// query := fmt.Sprintf("INSERT INTO events (name) VALUES ('%s');", name)
-	// _, err := s.DB.Exec(query)
-	_, err := s.DB.Exec("INSERT INTO events (name) VALUES (?);", name)
+func (s *Store) GetAllEvents() []types.Event {
+	events := []types.Event{}
+	rows, err := s.DB.Query("SELECT * FROM events;")
+	if err != nil {
+		log.Fatal("Cannot get events rows - ", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var event types.Event
+		if err := rows.Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
+			log.Fatal("Cannot scan the event - ", err)
+		}
+		events = append(events, event)
+	}
+	return events
+}
+
+func (s *Store) PostEvent(event *types.Event) {
+	_, err := s.DB.Exec("INSERT INTO events (id, location, placecount, date) VALUES (?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, event.Date)
 	if err != nil {
 		log.Fatal("Could not insert new event into the database - ", err)
 	}

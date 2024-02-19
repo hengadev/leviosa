@@ -39,6 +39,8 @@ type Store interface {
 	GetHashPassword(user types.User) (hashpassword string)
 	CreateSession(session_id string, newSession *types.Session) error
 	HasSession(user types.User) bool
+	PostEvent(event *types.Event)
+	GetAllEvents() []types.Event
 	DeleteSession(session *types.Session) error
 	// NOTE: The next one is for auth
 	// VerifyUser(user types.User) bool
@@ -108,14 +110,6 @@ func (s *Server) signOutHandler(w http.ResponseWriter, r *http.Request) {
 	// 2. remove the line in the sessions table
 }
 
-func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.showEventBydID(w, r)
-	case http.MethodPost:
-		s.makeEvent(r)
-	}
-}
 
 func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
