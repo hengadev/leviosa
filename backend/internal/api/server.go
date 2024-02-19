@@ -15,11 +15,15 @@ func NewServer(store Store) *Server {
 
 	router := http.NewServeMux()
 	router.Handle("/event", http.HandlerFunc(server.eventHandler))
-	// NOTE: Maybe change the auth name to signin or signup:
-	// TODO: Add the routes for the sign-in and the sign-up
+	router.Handle("/event/{id}", http.HandlerFunc(server.eventByIdHandler))
+	// You can use the r.PathValue to get the value of id from that URL
+
 	router.Handle("/signup", http.HandlerFunc(server.signUpHandler))
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
-	// router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
+	router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
+
+	// router.Handle("/votes", http.HandlerFunc(server.votesHandler))
+
 	server.Handler = router
 
 	return server
@@ -31,7 +35,8 @@ type Server struct {
 }
 
 type Store interface {
-	GetEventNameByID(id string) types.Event
+	// NOTE: pas besoin de cela
+	GetEventByID(id string) types.Event
 	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
 	CreateUser(newUser *types.User) error
@@ -43,10 +48,4 @@ type Store interface {
 	DeleteSessionByID(id string) error
 	// NOTE: The next one is for auth, do I need that in the store
 	// VerifyUser(user types.User) bool
-}
-func (s *Server) signOutHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromRequest(w, r)
-	_ = user
-	// 1. get the cookie from the request to find the session id
-	// 2. remove the line in the sessions table
 }

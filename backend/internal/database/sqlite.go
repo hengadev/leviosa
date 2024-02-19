@@ -22,6 +22,7 @@ func NewStore(connStr string) (*Store, error) {
 		log.Fatal("Cannot connect to the database - ", err)
 	}
 	return &Store{db}, nil
+	// TODO: Add all the sql prepared statement based on some const query that you define above
 }
 
 func (s *Store) Init(queries ...string) {
@@ -62,6 +63,20 @@ func (s *Store) PostEvent(event *types.Event) {
 	_, err := s.DB.Exec("INSERT INTO events (id, location, placecount, date) VALUES (?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, event.Date)
 	if err != nil {
 		log.Fatal("Could not insert new event into the database - ", err)
+	}
+}
+
+func (s *Store) UpdateEvent(event *types.Event) {
+	_, err := s.DB.Exec("UPDATE events set name=? where id=?;", event.Id, event.Id)
+	if err != nil {
+		log.Fatalf("Could not update event with id %q - %s", event.Id, err)
+	}
+}
+
+func (s *Store) DeleteEvent(event *types.Event) {
+	_, err := s.DB.Exec("DELETE from events where id=?;", event.Id)
+	if err != nil {
+		log.Fatalf("Could not delete event with id %q - %s", event.Id, err)
 	}
 }
 
