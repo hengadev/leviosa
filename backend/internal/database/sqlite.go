@@ -94,6 +94,19 @@ func (s *Store) DeleteEvent(event *types.Event) {
 	}
 }
 
+// Function that returns true if an event with the ID "event_id" is in the database and if the number of place found in "placecount" is > 0.
+func (s *Store) CheckEvent(event_id string) bool {
+	var placecount int
+	err := s.DB.QueryRow("SELECT placecount FROM events WHERE id=?;", event_id).Scan(&placecount)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		log.Fatalf("Could not select to see if event with id %q exists - %s", event_id, err)
+	}
+	return true && placecount > 0
+}
+
 // Function that returns true if user in database already
 func (s *Store) CheckUser(email string) bool {
 	var count int
@@ -207,4 +220,16 @@ func (s *Store) DecreaseEventPlacecount(event_id string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Store) CheckVote(userId, eventId string) bool {
+	var value int
+	err := s.DB.QueryRow("SELECT 1 FROM votes WHERE userid=? AND eventid=?;", userId, eventId).Scan(&value)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		log.Fatal("Cannot qeury if the vote already exist", err)
+	}
+	return true
 }

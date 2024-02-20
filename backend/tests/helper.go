@@ -134,3 +134,10 @@ func cleanSessionTable(store *sqlite.Store) {
 		log.Fatal("Cannot delete everything from the user table", err)
 	}
 }
+
+func cleanVotesTable(store *sqlite.Store) {
+	_, err := store.DB.Exec("DELETE FROM votes;")
+	if err != nil {
+		log.Fatal("Cannot delete everything from the user table", err)
+	}
+}

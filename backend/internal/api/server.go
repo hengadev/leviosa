@@ -40,6 +40,7 @@ type Store interface {
 	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
 	GetUserId(user_email string) string
+	GetUserIdBySessionId(session_id string) string
 	CreateUser(newUser *types.UserStored, isAdmin bool) error
 	CheckUser(email string) bool
 	IsAdmin(session_id string) bool
@@ -50,4 +51,6 @@ type Store interface {
 	DeleteSessionByID(id string) error
 	CreateVote(newVote *types.Vote) error
 	DecreaseEventPlacecount(event_id string) error
+	CheckEvent(event_id string) bool
+	CheckVote(userId, eventId string) bool
 }
