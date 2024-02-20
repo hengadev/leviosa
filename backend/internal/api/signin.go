@@ -14,13 +14,12 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO: Validate the mail and the password
 		if !user.ValidateEmail() || !user.ValidatePassword() {
 			w.WriteHeader(http.StatusForbidden)
+			return
 		}
-
 		if !s.Store.CheckUser(user.Email) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-
 		// TODO: Put that in a get method when hitting the endpoint ?
 		cookie, err := r.Cookie(types.SessionCookieName)
 		if err == nil && s.Store.HasSession(cookie.Value) {
@@ -29,7 +28,6 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 			// http.Redirect(w, r, "/home", http.StatusFound)
 			return
 		}
-
 		hashpassword := s.Store.GetHashPassword(user)
 		if err := bcrypt.CompareHashAndPassword([]byte(hashpassword), []byte(user.Password)); err != nil {
 			w.WriteHeader(http.StatusUnauthorized)

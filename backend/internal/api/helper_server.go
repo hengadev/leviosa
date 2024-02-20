@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	// "fmt"
 	"github.com/GaryHY/event-reservation-app/internal/types"
-	"log"
 	"net/http"
 )
 
@@ -22,24 +20,6 @@ func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(&event)
-}
-
-func (s *Server) showAllEvents(w http.ResponseWriter) {
-	events := s.Store.GetAllEvents()
-	if len(events) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-	}
-	if err := json.NewEncoder(w).Encode(events); err != nil {
-		log.Fatal("Failed to encode events - ", err)
-	}
-}
-
-func (s *Server) makeEvent(r *http.Request) {
-	var event types.Event
-	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		log.Fatal("Failed to decode the body to get the event")
-	}
-	s.Store.PostEvent(&event)
 }
 
 func getUserFromRequest(w http.ResponseWriter, r *http.Request) (user *types.User) {

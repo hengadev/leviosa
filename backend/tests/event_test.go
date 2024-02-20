@@ -111,3 +111,23 @@ func TestPOSTEvent(t *testing.T) {
 		t.Errorf("\ngot %v\n want %v", got, want)
 	}
 }
+
+func TestDELETEEvent(t *testing.T) {
+	// TODO: add test for event not in database
+	server, store := makeServerAndStoreWithUsersTable()
+	store.Init(createEventsTable)
+
+	event := types.NewEvent(40)
+	store.PostEvent(event)
+
+	endpoint := fmt.Sprintf("/event?id=%s", event.Id)
+	request, _ := http.NewRequest(http.MethodDelete, endpoint, nil)
+
+	response := httptest.NewRecorder()
+	server.ServeHTTP(response, request)
+
+	assertStatus(t, response.Code, http.StatusNoContent)
+	var countEvent int
+	store.DB.QueryRow("SELECT count(*) FROM events WHERE id=?", event.Id).Scan(&countEvent)
+	assertEqualInt(t, countEvent, 0)
+}

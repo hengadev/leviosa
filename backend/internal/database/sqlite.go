@@ -87,11 +87,12 @@ func (s *Store) UpdateEvent(event *types.Event) {
 	}
 }
 
-func (s *Store) DeleteEvent(event *types.Event) {
-	_, err := s.DB.Exec("DELETE from events where id=?;", event.Id)
+func (s *Store) DeleteEvent(event_id string) error {
+	_, err := s.DB.Exec("DELETE from events where id=?;", event_id)
 	if err != nil {
-		log.Fatalf("Could not delete event with id %q - %s", event.Id, err)
+		return err
 	}
+	return nil
 }
 
 // Function that returns true if an event with the ID "event_id" is in the database and if the number of place found in "placecount" is > 0.

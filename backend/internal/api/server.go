@@ -16,8 +16,7 @@ func NewServer(store Store) *Server {
 	router := http.NewServeMux()
 	router.Handle("/event", http.HandlerFunc(server.eventHandler))
 	// TODO: DO that one too
-	router.Handle("/event/{id}", http.HandlerFunc(server.eventByIdHandler))
-	// You can use the r.PathValue to get the value of id from that URL
+	// router.Handle("/event/{user_id}", http.HandlerFunc(server.eventByIdHandler))
 
 	router.Handle("/signup", http.HandlerFunc(server.signUpHandler))
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
@@ -37,8 +36,9 @@ type Server struct {
 
 type Store interface {
 	GetEventByID(id string) *types.Event
-	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
+	PostEvent(event *types.Event)
+	DeleteEvent(event_id string) error
 	GetUserId(user_email string) string
 	GetUserIdBySessionId(session_id string) string
 	CreateUser(newUser *types.UserStored) error
