@@ -6,43 +6,35 @@ import (
 )
 
 func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Handle the fact that admin can choose the role of a user
 	switch r.Method {
 	case http.MethodPost:
-		userForm := getUserFormFromRequest(w, r)
-		user := types.NewUserStored(userForm)
+		cookie, err := r.Cookie(types.SessionCookieName)
+		var user *types.UserStored
+		if err != http.ErrNoCookie && s.Store.Authorize(cookie.Value, types.ADMIN) {
+			user = getUserStoredFromRequest(w, r)
+		} else {
+			userForm := getUserFormFromRequest(w, r)
+			user = types.NewUserStored(userForm)
+		}
+
 		if !user.ValidateEmail() || !user.ValidatePassword() {
-			w.WriteHeader(http.StatusForbidden) // forbidden c'est pour quand on a pas les privileges pour realiser une action
+			w.WriteHeader(http.StatusForbidden)
 			return
 		}
-		if s.Store.CheckUser(user.Email) { // sign up if and only if the user in not already registered.
+		if s.Store.CheckUser(user.Email) {
 			w.WriteHeader(http.StatusConflict)
 			// TODO: Send in response body some message about the user already registered
 			return
 		}
-		cookie, err := r.Cookie(types.SessionCookieName)
-		if err != http.ErrNoCookie {
-			print("J'ai un cookie\n")
-			err := s.Store.CreateUser(user, s.Store.IsAdmin(cookie.Value))
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-		} else {
-			err := s.Store.CreateUser(user, false)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			w.WriteHeader(http.StatusCreated)
+		if err := s.Store.CreateUser(user); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
+		w.WriteHeader(http.StatusCreated)
+
 	default:
 		w.Header().Set("Access-Control-Allow-Methods", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-}
-
-func (s *Server) createUser(user types.UserStored, cookie *http.Cookie) {
-
 }

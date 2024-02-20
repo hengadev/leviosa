@@ -125,15 +125,9 @@ func (s *Store) GetUserId(user_email string) (id string) {
 }
 
 // TODO: Change that function once all the field are fine !
-func (s *Store) CreateUser(newUser *types.UserStored, isAdmin bool) error {
+func (s *Store) CreateUser(newUser *types.UserStored) error {
 	hashpassword := hashPassword(newUser.Password)
-	var role types.Role
-	if isAdmin {
-		role = types.ConvertToRole(newUser.Role)
-	} else {
-		role = types.ADMIN
-	}
-	_, err := s.DB.Exec("INSERT INTO users (id, email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Id, newUser.Email, hashpassword, role, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
+	_, err := s.DB.Exec("INSERT INTO users (id, email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Id, newUser.Email, hashpassword, types.BASIC, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
 	if err != nil {
 		return err
 	}
@@ -232,4 +226,18 @@ func (s *Store) CheckVote(userId, eventId string) bool {
 		log.Fatal("Cannot qeury if the vote already exist", err)
 	}
 	return true
+}
+
+func (s *Store) Authorize(session_id string, roleToCompare types.Role) bool {
+	var role string
+	query := `
+        SELECT role FROM users WHERE id = 
+        (SELECT userid FROM sessions WHERE id = ?);
+    `
+	err := s.DB.QueryRow(query, session_id).Scan(&role)
+	if err != nil {
+		log.Fatalf("Failed to find the role of the user refered to the sessions id %q", session_id)
+	}
+
+	return roleToCompare == types.ConvertToRole(role)
 }

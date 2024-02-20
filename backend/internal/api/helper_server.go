@@ -60,6 +60,15 @@ func getUserFormFromRequest(w http.ResponseWriter, r *http.Request) (user *types
 	return
 }
 
+func getUserStoredFromRequest(w http.ResponseWriter, r *http.Request) (user *types.UserStored) {
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return &types.UserStored{}
+	}
+	return
+}
+
 func getEventFromRequest(w http.ResponseWriter, r *http.Request) (event types.Event) {
 	err := json.NewDecoder(r.Body).Decode(&event)
 	if err != nil {

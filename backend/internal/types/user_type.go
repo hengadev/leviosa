@@ -20,9 +20,9 @@ type User struct {
 
 // Use to parse the information from the request from the /signin endpoint
 type UserForm struct {
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	Role       string `json:"role"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	// Role       string `json:"role"`
 	LastName   string `json:"lastname"`
 	FirstName  string `json:"firstname"`
 	Gender     string `json:"gender"`
@@ -39,7 +39,7 @@ func NewUserStored(user *UserForm) *UserStored {
 		Id:         uuid.NewString(),
 		Email:      user.Email,
 		Password:   user.Password,
-		Role:       user.Role,
+		Role:       "basic",
 		LastName:   user.LastName,
 		FirstName:  user.FirstName,
 		Gender:     user.Gender,

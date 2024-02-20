@@ -111,7 +111,6 @@ func initUserTable(store *sqlite.Store) *types.UserStored {
 	userForm := &types.UserForm{
 		Email:      "test@example.fr",
 		Password:   "ThisisA_s@fe-pa22w0rd!",
-		Role:       string(types.BASIC),
 		LastName:   "",
 		FirstName:  "",
 		Gender:     "",
@@ -122,7 +121,7 @@ func initUserTable(store *sqlite.Store) *types.UserStored {
 		PostalCard: "",
 	}
 	user := types.NewUserStored(userForm)
-	if err := store.CreateUser(user, false); err != nil {
+	if err := store.CreateUser(user); err != nil {
 		log.Fatal("cannot create user in the test file - ", err)
 	}
 	return user

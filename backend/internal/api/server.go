@@ -41,7 +41,7 @@ type Store interface {
 	GetAllEvents() []types.Event
 	GetUserId(user_email string) string
 	GetUserIdBySessionId(session_id string) string
-	CreateUser(newUser *types.UserStored, isAdmin bool) error
+	CreateUser(newUser *types.UserStored) error
 	CheckUser(email string) bool
 	IsAdmin(session_id string) bool
 	GetHashPassword(user *types.User) (hashpassword string)
@@ -53,4 +53,6 @@ type Store interface {
 	DecreaseEventPlacecount(event_id string) error
 	CheckEvent(event_id string) bool
 	CheckVote(userId, eventId string) bool
+	// TODO: Function to implement
+	Authorize(session_id string, role types.Role) bool
 }
