@@ -14,7 +14,12 @@ func NewServer(store Store) *Server {
 	server.Store = store
 
 	router := http.NewServeMux()
-	router.Handle("/event", http.HandlerFunc(server.eventHandler))
+	// for admins
+	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
+
+	// for the users
+	// router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
+
 	// TODO: DO that one too
 	// router.Handle("/event/{user_id}", http.HandlerFunc(server.eventByIdHandler))
 

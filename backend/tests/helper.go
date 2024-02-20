@@ -127,6 +127,27 @@ func initUserTable(store *sqlite.Store) *types.UserStored {
 	return user
 }
 
+func initUserTableAdmin(store *sqlite.Store) *types.UserStored {
+	userForm := &types.UserForm{
+		Email:      "test@example.fr",
+		Password:   "ThisisA_s@fe-pa22w0rd!",
+		LastName:   "",
+		FirstName:  "",
+		Gender:     "",
+		BirthDate:  "",
+		Telephone:  "",
+		Address:    "",
+		City:       "",
+		PostalCard: "",
+	}
+	user := types.NewUserStored(userForm)
+	user.Role = string(types.ADMIN)
+	if err := store.CreateUser(user); err != nil {
+		log.Fatal("cannot create user in the test file - ", err)
+	}
+	return user
+}
+
 func cleanSessionTable(store *sqlite.Store) {
 	_, err := store.DB.Exec("DELETE FROM sessions;")
 	if err != nil {

@@ -7,14 +7,22 @@ import (
 	"net/http"
 )
 
-func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.showAllEvents(w)
-	case http.MethodPost:
-		s.makeEvent(r)
-	case http.MethodDelete:
-		s.deleteEvent(w, r)
+func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(types.SessionCookieName)
+	_ = cookie
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if s.Store.Authorize(cookie.Value, types.ADMIN) {
+		switch r.Method {
+		case http.MethodGet:
+			s.showAllEvents(w)
+		case http.MethodPost:
+			s.makeEvent(r)
+		case http.MethodDelete:
+			s.deleteEvent(w, r)
+		}
 	}
 }
 

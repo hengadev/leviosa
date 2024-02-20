@@ -6,7 +6,7 @@ import (
 )
 
 // Create a new session, used in tests
-func NewSession(user *User, user_id string) *Session {
+func NewSession(user_id string) *Session {
 	return &Session{
 		Id:         uuid.NewString(),
 		UserId:     user_id,

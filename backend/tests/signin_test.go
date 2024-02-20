@@ -40,11 +40,11 @@ func TestPOSTSignIn(t *testing.T) {
 		server.ServeHTTP(response, request)
 		assertStatus(t, response.Code, http.StatusOK)
 		cookies := response.Result().Cookies()
-		user_session := &types.User{
-			Email:    user.Email,
-			Password: user.Password,
-		}
-		session := types.NewSession(user_session, user.Id)
+		// user_session := &types.User{
+		// 	Email:    user.Email,
+		// 	Password: user.Password,
+		// }
+		session := types.NewSession(user.Id)
 		assertEqualOne(t, len(cookies), "cookie")
 		assertCookieName(t, cookies[0].Name)
 		assertIsUUID(t, cookies[0].Value)

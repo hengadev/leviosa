@@ -35,7 +35,7 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		// TODO: Get the id associated with the user mail
 		user_id := s.Store.GetUserId(user.Email)
-		session := types.NewSession(user, user_id)
+		session := types.NewSession(user_id)
 		if err := s.Store.CreateSession(session); err != nil {
 			log.Fatal("Failed to create session in the database for the user")
 		}

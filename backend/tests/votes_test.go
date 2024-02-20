@@ -24,7 +24,7 @@ func TestPOSTVote(t *testing.T) {
 	for _, tt := range tableTest {
 		t.Run(tt.name, func(t *testing.T) {
 			defer cleanVotesTable(store)
-			session := types.NewSession(&types.User{Email: user.Email, Password: user.Password}, user.Id)
+			session := types.NewSession(user.Id)
 			if err := store.CreateSession(session); err != nil {
 				t.Error("failed to create the session - ", err)
 			}

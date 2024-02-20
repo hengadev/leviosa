@@ -15,14 +15,30 @@ import (
 )
 
 func TestGETEvents(t *testing.T) {
-
-	// TODO: Complete the create event table with all the fields when the schema is done
-
 	server, store := makeServerAndStoreWithUsersTable()
-	store.Init(createEventsTable)
+	store.Init(createEventsTable, createSessionsTable)
+	user := initUserTableAdmin(store)
+	session := types.NewSession(user.Id)
+
+	cookie := &http.Cookie{
+		Name:    types.SessionCookieName,
+		Value:   session.Id,
+		Expires: time.Now().Add(5 * time.Minute),
+	}
+	store.CreateSession(session)
+
+	t.Run("Not authorized because not admin", func(t *testing.T) {
+		// NOTE: The http.MethodGet here is random, any method would give the same result
+		request, _ := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		response := httptest.NewRecorder()
+
+		server.ServeHTTP(response, request)
+		assertStatus(t, response.Code, http.StatusUnauthorized)
+	})
 
 	t.Run("No event in the database", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodGet, "/event", nil)
+		request, err := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -31,7 +47,7 @@ func TestGETEvents(t *testing.T) {
 		err = json.NewDecoder(response.Body).Decode(&got)
 
 		if err != nil {
-			t.Errorf("Unable to parse response from server %q into slice of Event, '%v'", response.Body, err)
+			t.Errorf("Unable to parse response from server %q into slice of Event - '%v'", response.Body, err)
 		}
 		assertStatus(t, response.Code, http.StatusNotFound)
 		if !reflect.DeepEqual(got, want) {
@@ -40,7 +56,8 @@ func TestGETEvents(t *testing.T) {
 	})
 
 	t.Run("With events in the database", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodGet, "/event", nil)
+		request, err := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
 		time1, err := time.Parse(types.EventFormat, "2024-02-13")
@@ -73,16 +90,21 @@ func TestGETEvents(t *testing.T) {
 			t.Errorf("\ngot %v\n want %v", got, want)
 		}
 	})
-
 }
 
 func TestPOSTEvent(t *testing.T) {
 	// TODO: Add a test for when an event for a day is already planned, do that when the Event is fully implemented
-
-	createEventTable := "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL);"
-
 	server, store := makeServerAndStoreWithUsersTable()
-	store.Init(createEventTable)
+	store.Init(createEventsTable, createSessionsTable)
+	user := initUserTableAdmin(store)
+	session := types.NewSession(user.Id)
+
+	cookie := &http.Cookie{
+		Name:    types.SessionCookieName,
+		Value:   session.Id,
+		Expires: time.Now().Add(5 * time.Minute),
+	}
+	store.CreateSession(session)
 
 	time1, err := time.Parse(types.EventFormat, "2024-02-13")
 	if err != nil {
@@ -98,7 +120,8 @@ func TestPOSTEvent(t *testing.T) {
 	}
 
 	jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placeCount": %d, "date": "%s"}`, want.Id, want.Location, want.PlaceCount, want.Date))
-	request, _ := http.NewRequest(http.MethodPost, "/event", bytes.NewBuffer(jsonData))
+	request, _ := http.NewRequest(http.MethodPost, "/admin/event", bytes.NewBuffer(jsonData))
+	request.AddCookie(cookie)
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	response := httptest.NewRecorder()
@@ -115,19 +138,46 @@ func TestPOSTEvent(t *testing.T) {
 func TestDELETEEvent(t *testing.T) {
 	// TODO: add test for event not in database
 	server, store := makeServerAndStoreWithUsersTable()
-	store.Init(createEventsTable)
+	store.Init(createEventsTable, createSessionsTable)
 
-	event := types.NewEvent(40)
-	store.PostEvent(event)
+	user := initUserTableAdmin(store)
+	session := types.NewSession(user.Id)
 
-	endpoint := fmt.Sprintf("/event?id=%s", event.Id)
-	request, _ := http.NewRequest(http.MethodDelete, endpoint, nil)
+	cookie := &http.Cookie{
+		Name:    types.SessionCookieName,
+		Value:   session.Id,
+		Expires: time.Now().Add(5 * time.Minute),
+	}
+	store.CreateSession(session)
 
-	response := httptest.NewRecorder()
-	server.ServeHTTP(response, request)
+	tableTest := []struct {
+		name             string
+		postEventToStore bool
+		statusCode       int
+	}{
+		{"delete event that is in database", true, http.StatusNoContent},
+		{"event is not in database", false, http.StatusBadRequest},
+	}
 
-	assertStatus(t, response.Code, http.StatusNoContent)
-	var countEvent int
-	store.DB.QueryRow("SELECT count(*) FROM events WHERE id=?", event.Id).Scan(&countEvent)
-	assertEqualInt(t, countEvent, 0)
+	for _, tt := range tableTest {
+		t.Run(tt.name, func(t *testing.T) {
+			event := types.NewEvent(40)
+			if tt.postEventToStore {
+				store.PostEvent(event)
+			}
+
+			endpoint := fmt.Sprintf("/admin/event?id=%s", event.Id)
+			request, _ := http.NewRequest(http.MethodDelete, endpoint, nil)
+			request.AddCookie(cookie)
+
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+
+			assertStatus(t, response.Code, tt.statusCode)
+			var countEvent int
+			store.DB.QueryRow("SELECT count(*) FROM events WHERE id=?", event.Id).Scan(&countEvent)
+			assertEqualInt(t, countEvent, 0)
+		})
+	}
+
 }
