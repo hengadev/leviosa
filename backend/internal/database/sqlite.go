@@ -111,7 +111,8 @@ func (s *Store) CheckEvent(event_id string) bool {
 // Function that returns true if user in database already
 func (s *Store) CheckUser(email string) bool {
 	var count int
-	s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", email).Scan(&count)
+	// s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", email).Scan(&count)
+	s.DB.QueryRow("SELECT 1 from users where email=? ;", email).Scan(&count)
 	return count == 1
 }
 
@@ -128,7 +129,7 @@ func (s *Store) GetUserId(user_email string) (id string) {
 // TODO: Change that function once all the field are fine !
 func (s *Store) CreateUser(newUser *types.UserStored) error {
 	hashpassword := hashPassword(newUser.Password)
-	_, err := s.DB.Exec("INSERT INTO users (id, email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Id, newUser.Email, hashpassword, types.BASIC, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
+	_, err := s.DB.Exec("INSERT INTO users (id, email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Id, newUser.Email, hashpassword, newUser.Role, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
 	if err != nil {
 		return err
 	}
@@ -237,8 +238,7 @@ func (s *Store) Authorize(session_id string, roleToCompare types.Role) bool {
     `
 	err := s.DB.QueryRow(query, session_id).Scan(&role)
 	if err != nil {
-		log.Fatalf("Failed to find the role of the user refered to the sessions id %q", session_id)
+		log.Fatalf("Failed to find the role of the user refered to the sessions id %q - %s)", session_id, err)
 	}
-
 	return roleToCompare == types.ConvertToRole(role)
 }
