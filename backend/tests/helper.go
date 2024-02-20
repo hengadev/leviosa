@@ -15,12 +15,13 @@ import (
 )
 
 const (
-	createUsersTable = "CREATE TABLE IF NOT EXISTS users (id, email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
-	// createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, email TEXT NOT NULL, created_at TEXT NOT NULL);"
+	createUsersTable    = "CREATE TABLE IF NOT EXISTS users (id, email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
 	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, created_at TEXT NOT NULL);"
+	createVotesTable    = "CREATE TABLE IF NOT EXISTS votes (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, eventid TEXT NOT NULL REFERENCES events);"
+	createEventsTable   = "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL);"
 )
 
-func assertResponseBody(t testing.TB, got, want string) {
+func assertEqualString(t testing.TB, got, want string) {
 	t.Helper()
 	if got != want {
 		t.Errorf("got %s, want %s", got, want)
@@ -49,13 +50,19 @@ func assertPasswordHash(t testing.TB, got, want string) {
 }
 
 // Une fonction pour check que j'ai bien qu'une seule fois le meme email dans la base de donnee
-func assertEqualOne(t testing.TB, object int, objectName string) {
+func assertEqualOne(t testing.TB, objectCount int, objectName string) {
 	t.Helper()
-	if object != 1 {
-		t.Errorf("got the count of %d, expected 1 %s", object, objectName)
+	if objectCount != 1 {
+		t.Errorf("got the count of %d, expected 1 %s", objectCount, objectName)
 	}
 }
 
+func assertEqualInt(t testing.TB, got, want int) {
+	t.Helper()
+	if got != want {
+		t.Errorf("got %d, expected %d", got, want)
+	}
+}
 func newPostJSONRequest(email, password, endpoint string) *http.Request {
 	jsonData := []byte(fmt.Sprintf(`{"Email": "%s", "Password": "%s"}`, email, password))
 	request, _ := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(jsonData))

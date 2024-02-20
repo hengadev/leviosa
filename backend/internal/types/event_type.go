@@ -1,6 +1,8 @@
 package types
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -22,11 +24,11 @@ type Event struct {
 }
 
 // TODO: Finish them things
-func NewEvent(name string) *Event {
+func NewEvent(placecount int) *Event {
 	return &Event{
 		Id:         uuid.NewString(),
-		Location:   "",
-		Date:       "",
-		PlaceCount: 40,
+		Location:   "Some Location",
+		Date:       time.Now().Format(EventFormat),
+		PlaceCount: placecount,
 	}
 }

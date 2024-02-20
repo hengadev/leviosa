@@ -24,7 +24,6 @@ func NewServer(store Store) *Server {
 	router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
 
 	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
-	router.Handle("/votes/{id}", http.HandlerFunc(server.votesHandler))
 
 	server.Handler = router
 
@@ -49,4 +48,6 @@ type Store interface {
 	HasSession(email string) bool
 	DeleteSession(session *types.Session) error
 	DeleteSessionByID(id string) error
+	CreateVote(newVote *types.Vote) error
+	DecreaseEventPlacecount(event_id string) error
 }

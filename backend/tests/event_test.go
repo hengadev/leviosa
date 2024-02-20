@@ -17,10 +17,9 @@ import (
 func TestGETEvents(t *testing.T) {
 
 	// TODO: Complete the create event table with all the fields when the schema is done
-	createEventTable := "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL);"
 
 	server, store := makeServerAndStoreWithUsersTable()
-	store.Init(createEventTable)
+	store.Init(createEventsTable)
 
 	t.Run("No event in the database", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodGet, "/event", nil)

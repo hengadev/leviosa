@@ -127,6 +127,11 @@ func (s *Store) CreateUser(newUser *types.UserStored, isAdmin bool) error {
 	return nil
 }
 
+func (s *Store) GetUserIdBySessionId(session_id string) (id string) {
+	s.DB.QueryRow("SELECT userid from sessions where id = ?;", session_id).Scan(&id)
+	return
+}
+
 func hashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
@@ -188,8 +193,18 @@ func (s *Store) parseCreatedAt(id string) (created_at_parsed time.Time) {
 	return
 }
 
-// TODO: Add  the level of auth I want to verify
-func (s *Store) AuthorizeUser(user types.User) bool {
-	// TODO: Something that has to do with verifying if user if authorized to do some actions
-	return true
+func (s *Store) CreateVote(newVote *types.Vote) error {
+	_, err := s.DB.Exec("INSERT INTO votes (id, userid, eventid) VALUES (?, ?, ?);", newVote.Id, newVote.Userid, newVote.EventId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) DecreaseEventPlacecount(event_id string) error {
+	_, err := s.DB.Exec("UPDATE events SET placecount = placecount-1 WHERE id = ?", event_id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
