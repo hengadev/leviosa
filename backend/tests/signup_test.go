@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// TODO: Test the case where the wrong method is used (other than the post method)
+// TODO: Test the case when someone is making an account as an admin and by specifying the role of the user
 
 func TestPOSTSignUp(t *testing.T) {
 	SignUpTests := []struct {
@@ -41,7 +41,6 @@ func TestPOSTSignUp(t *testing.T) {
 		})
 	}
 	t.Run("Incorred method used", func(t *testing.T) {
-		print("yes\n")
 		request, err := http.NewRequest(http.MethodGet, "/signup", nil)
 		if err != nil {
 			log.Fatal("Fail to create new GET request")

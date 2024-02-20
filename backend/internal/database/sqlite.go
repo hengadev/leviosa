@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"github.com/GaryHY/event-reservation-app/internal/types"
+	// "github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -35,19 +36,20 @@ func (s *Store) Init(queries ...string) {
 }
 
 func (s *Store) IsAdmin(session_id string) bool {
-	// TODO: use the session id to find the user email associated and if that user in the user table is an admin
 	var role string
-	// TODO: Finish that query
-	_, err := s.DB.Exec("SELECT role FROM users WHERE email = (SELECT email FROM sessions WHERE id = ?);", session_id)
+	query := `
+        SELECT role FROM users WHERE email = 
+        (SELECT email FROM sessions WHERE id = ?);
+    `
+	err := s.DB.QueryRow(query).Scan(&role)
 	if err != nil {
-
+		log.Fatalf("Failed to find if the user refered to the sessions id %q is an admin user", session_id)
 	}
-
 	return types.ConvertToRole(role) == types.ADMIN
 }
 
-func (s *Store) GetEventByID(id string) (event types.Event) {
-	if err := s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event.Id); err != nil {
+func (s *Store) GetEventByID(id string) (event *types.Event) {
+	if err := s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event); err != nil {
 		log.Fatalf("Error getting event with id '%s' : - %s", id, err)
 	}
 	return
@@ -104,6 +106,11 @@ func (s *Store) GetHashPassword(user *types.User) (hashpassword string) {
 	return
 }
 
+func (s *Store) GetUserId(user_email string) (id string) {
+	s.DB.QueryRow("SELECT id from users where email = ?;", user_email).Scan(&id)
+	return
+}
+
 // TODO: Change that function once all the field are fine !
 func (s *Store) CreateUser(newUser *types.UserStored, isAdmin bool) error {
 	hashpassword := hashPassword(newUser.Password)
@@ -113,7 +120,7 @@ func (s *Store) CreateUser(newUser *types.UserStored, isAdmin bool) error {
 	} else {
 		role = types.ADMIN
 	}
-	_, err := s.DB.Exec("INSERT INTO users (email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Email, hashpassword, role, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
+	_, err := s.DB.Exec("INSERT INTO users (id, email, hashpassword, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", newUser.Id, newUser.Email, hashpassword, role, newUser.LastName, newUser.FirstName, newUser.Gender, newUser.BirthDate, newUser.Telephone, newUser.Address, newUser.City, newUser.PostalCard)
 	if err != nil {
 		return err
 	}
@@ -129,9 +136,8 @@ func hashPassword(password string) string {
 }
 
 func (s *Store) CreateSession(newSession *types.Session) error {
-	// TODO: format the time before writting in the database
 	created_at_formatted := newSession.Created_at.Format(time.RFC822)
-	_, err := s.DB.Exec("INSERT INTO sessions (id, email, created_at) VALUES (?, ?, ?);", newSession.Id, newSession.Email, created_at_formatted)
+	_, err := s.DB.Exec("INSERT INTO sessions (id, userid, created_at) VALUES (?, ?, ?);", newSession.Id, newSession.UserId, created_at_formatted)
 	if err != nil {
 		return err
 	}

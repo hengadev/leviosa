@@ -1,7 +1,6 @@
 package api
 
 import (
-	// "fmt"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -36,8 +35,9 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		session := types.NewSession(user)
-		// session_id := uuid.NewString()
+		// TODO: Get the id associated with the user mail
+		user_id := s.Store.GetUserId(user.Email)
+		session := types.NewSession(user, user_id)
 		if err := s.Store.CreateSession(session); err != nil {
 			log.Fatal("Failed to create session in the database for the user")
 		}

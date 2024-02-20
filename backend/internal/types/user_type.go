@@ -12,14 +12,14 @@ const (
 	SessionCookieName = "session_token"
 )
 
-// Use to parse the information from the request
+// Use to parse the information from the request from the /signup endpoint
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
-// Use to store user information in the database
-type UserStored struct {
+// Use to parse the information from the request from the /signin endpoint
+type UserForm struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	Role       string `json:"role"`
@@ -33,45 +33,37 @@ type UserStored struct {
 	PostalCard string `json:"postalcard"`
 }
 
-type Role string
-
-func ConvertToRole(str string) Role {
-	switch str {
-	case "admin":
-		return ADMIN
-	case "helper":
-		return HELPER
-	default:
-		return BASIC
-	}
-}
-
-const (
-	ADMIN  = Role("admin")
-	BASIC  = Role("basic")
-	HELPER = Role("helper")
-)
-
-// NOTE: Les roles cela va etre admin, helper, basic
-
-// Create a new session, used in tests
-func NewSession(user *User) *Session {
-	return &Session{
+// Use to store user information in the database
+func NewUserStored(user *UserForm) *UserStored {
+	return &UserStored{
 		Id:         uuid.NewString(),
 		Email:      user.Email,
-		Created_at: time.Now(),
+		Password:   user.Password,
+		Role:       user.Role,
+		LastName:   user.LastName,
+		FirstName:  user.FirstName,
+		Gender:     user.Gender,
+		BirthDate:  user.BirthDate,
+		Telephone:  user.Telephone,
+		Address:    user.Address,
+		City:       user.City,
+		PostalCard: user.PostalCard,
 	}
 }
 
-type Session struct {
-	Id         string    `json:"id"`
-	Email      string    `json:"email"`
-	Created_at time.Time `json:"created_at"`
-}
-
-// A function to check whether a session is expired.
-func (s *Session) isExpired() bool {
-	return s.Created_at.Before(time.Now())
+type UserStored struct {
+	Id         string `json:"id"`
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	Role       string `json:"role"`
+	LastName   string `json:"lastname"`
+	FirstName  string `json:"firstname"`
+	Gender     string `json:"gender"`
+	BirthDate  string `json:"birthdate"`
+	Telephone  string `json:"telephone"`
+	Address    string `json:"address"`
+	City       string `json:"city"`
+	PostalCard string `json:"postalcard"`
 }
 
 func (u *User) ValidateEmail() bool {

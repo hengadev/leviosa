@@ -37,7 +37,8 @@ func TestPOSTSignOut(t *testing.T) {
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
-		session := types.Session{Id: uuid, Email: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
+		// session := types.Session{Id: uuid, Email: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
+		session := types.Session{Id: uuid, UserId: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
 		store.CreateSession(&session)
 
 		server.ServeHTTP(response, request)

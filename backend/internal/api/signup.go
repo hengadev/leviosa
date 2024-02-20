@@ -9,7 +9,8 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Handle the fact that admin can choose the role of a user
 	switch r.Method {
 	case http.MethodPost:
-		user := getUserStoredFromRequest(w, r)
+		userForm := getUserFormFromRequest(w, r)
+		user := types.NewUserStored(userForm)
 		if !user.ValidateEmail() || !user.ValidatePassword() {
 			w.WriteHeader(http.StatusForbidden) // forbidden c'est pour quand on a pas les privileges pour realiser une action
 			return

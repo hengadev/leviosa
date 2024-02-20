@@ -51,11 +51,11 @@ func getUserFromRequest(w http.ResponseWriter, r *http.Request) (user *types.Use
 	return
 }
 
-func getUserStoredFromRequest(w http.ResponseWriter, r *http.Request) (user *types.UserStored) {
+func getUserFormFromRequest(w http.ResponseWriter, r *http.Request) (user *types.UserForm) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		return &types.UserStored{}
+		return &types.UserForm{}
 	}
 	return
 }

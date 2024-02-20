@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	createUsersTable    = "CREATE TABLE IF NOT EXISTS users (email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
-	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, email TEXT NOT NULL, created_at TEXT NOT NULL);"
+	createUsersTable = "CREATE TABLE IF NOT EXISTS users (id, email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
+	// createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, email TEXT NOT NULL, created_at TEXT NOT NULL);"
+	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, created_at TEXT NOT NULL);"
 )
 
 func assertResponseBody(t testing.TB, got, want string) {
@@ -98,8 +99,9 @@ func makeServerAndStoreWithUsersTable() (*api.Server, *sqlite.Store) {
 	return server, store
 }
 
+// func initUserTable(store *sqlite.Store) *types.UserStored {
 func initUserTable(store *sqlite.Store) *types.UserStored {
-	user := &types.UserStored{
+	userForm := &types.UserForm{
 		Email:      "test@example.fr",
 		Password:   "ThisisA_s@fe-pa22w0rd!",
 		Role:       string(types.BASIC),
@@ -112,6 +114,7 @@ func initUserTable(store *sqlite.Store) *types.UserStored {
 		City:       "",
 		PostalCard: "",
 	}
+	user := types.NewUserStored(userForm)
 	if err := store.CreateUser(user, false); err != nil {
 		log.Fatal("cannot create user in the test file - ", err)
 	}

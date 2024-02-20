@@ -44,7 +44,7 @@ func TestPOSTSignIn(t *testing.T) {
 			Email:    user.Email,
 			Password: user.Password,
 		}
-		session := types.NewSession(user_session)
+		session := types.NewSession(user_session, user.Id)
 		assertEqualOne(t, len(cookies), "cookie")
 		assertCookieName(t, cookies[0].Name)
 		assertIsUUID(t, cookies[0].Value)
@@ -52,11 +52,16 @@ func TestPOSTSignIn(t *testing.T) {
 
 		var lineCount int
 		store.DB.QueryRow("SELECT COUNT(*) FROM sessions;").Scan(&lineCount)
-		assertEqualOne(t, lineCount, "session saved")
-		var email string
-		store.DB.QueryRow("SELECT email FROM sessions;").Scan(&email)
-		if email != user.Email {
-			t.Errorf("wrong mail registered in database : got %q, want %q", email, user.Email)
+		assertEqualOne(t, lineCount, "sessions saved")
+
+		var userCount int
+		store.DB.QueryRow("SELECT COUNT(*) FROM users;").Scan(&userCount)
+		assertEqualOne(t, userCount, "users saved")
+
+		var id string
+		store.DB.QueryRow("SELECT userid FROM sessions;").Scan(&id)
+		if id != user.Id {
+			t.Errorf("wrong user_id registered in database : got %q, want %q", id, user.Id)
 		}
 		defer cleanSessionTable(store)
 	})
@@ -79,7 +84,8 @@ func TestPOSTSignIn(t *testing.T) {
 				Value: uuid,
 			}
 			request.AddCookie(cookie)
-			session := types.Session{Id: uuid, Email: user.Email, Created_at: tt.session_created_at}
+			// session := types.Session{Id: uuid, Email: user.Email, Created_at: tt.session_created_at}
+			session := types.Session{Id: uuid, UserId: user.Email, Created_at: tt.session_created_at}
 			store.CreateSession(&session)
 
 			response := httptest.NewRecorder()

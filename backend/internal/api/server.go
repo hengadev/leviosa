@@ -15,6 +15,7 @@ func NewServer(store Store) *Server {
 
 	router := http.NewServeMux()
 	router.Handle("/event", http.HandlerFunc(server.eventHandler))
+	// TODO: DO that one too
 	router.Handle("/event/{id}", http.HandlerFunc(server.eventByIdHandler))
 	// You can use the r.PathValue to get the value of id from that URL
 
@@ -22,10 +23,8 @@ func NewServer(store Store) *Server {
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
 	router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
 
-	// TODO: Implement for the admin to be able to modify data about users
-	// router.Handle("/user", http.HandlerFunc(server.userHandler))
-
-	// router.Handle("/votes", http.HandlerFunc(server.votesHandler))
+	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
+	router.Handle("/votes/{id}", http.HandlerFunc(server.votesHandler))
 
 	server.Handler = router
 
@@ -38,10 +37,10 @@ type Server struct {
 }
 
 type Store interface {
-	// NOTE: pas besoin de cela
-	GetEventByID(id string) types.Event
+	GetEventByID(id string) *types.Event
 	PostEvent(event *types.Event)
 	GetAllEvents() []types.Event
+	GetUserId(user_email string) string
 	CreateUser(newUser *types.UserStored, isAdmin bool) error
 	CheckUser(email string) bool
 	IsAdmin(session_id string) bool
@@ -50,6 +49,4 @@ type Store interface {
 	HasSession(email string) bool
 	DeleteSession(session *types.Session) error
 	DeleteSessionByID(id string) error
-	// NOTE: The next one is for auth, do I need that in the store
-	// VerifyUser(user types.User) bool
 }

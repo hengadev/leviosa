@@ -9,7 +9,6 @@ import (
 )
 
 func main() {
-	// NOTE: La BDD n'a rien dedans donc...
 	store, err := sqlite.NewStore("db.sqlite")
 	if err != nil {
 		log.Fatal("Cannot connect to the database")
