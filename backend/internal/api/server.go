@@ -16,9 +16,13 @@ func NewServer(store Store) *Server {
 	router := http.NewServeMux()
 	// for admins
 	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
+	// Pour supprimer des votes si la personne ne le peut pas ou que l'utilisateur est ban
+	// router.Handle("/admin/votes", http.HandlerFunc(server.adminVotesHandler))
+	// Pour gerer les utilisateurs si je le veux bien
+	// router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
 
 	// for the users
-	// router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
+	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
 
 	// TODO: DO that one too
 	// router.Handle("/event/{user_id}", http.HandlerFunc(server.eventByIdHandler))
@@ -58,6 +62,8 @@ type Store interface {
 	CreateVote(newVote *types.Vote) error
 	DecreaseEventPlacecount(event_id string) error
 	CheckEvent(event_id string) bool
-	CheckVote(userId, eventId string) bool
+	CheckVote(userId, eventId *string) bool
+	CheckVoteById(voteId *string) bool
+	DeleteVote(voteId *string) error
 	Authorize(session_id string, role types.Role) bool
 }

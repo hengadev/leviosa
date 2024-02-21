@@ -6,45 +6,62 @@ import (
 )
 
 func (s *Server) votesHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		makeVote(s, w, r)
-	case http.MethodDelete:
-		deleteVote(w, r)
+	cookie, err := r.Cookie(types.SessionCookieName)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if s.Store.Authorize(cookie.Value, types.BASIC) {
+		switch r.Method {
+		case http.MethodPost:
+			s.makeVote(w, r, cookie.Value)
+		case http.MethodDelete:
+			s.deleteVote(w, r)
+		default:
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
 	}
 }
 
-func makeVote(s *Server, w http.ResponseWriter, r *http.Request) {
+func (s *Server) makeVote(w http.ResponseWriter, r *http.Request, session_id string) {
 	event_id := r.URL.Query().Get("id")
-	if !s.Store.CheckEvent(event_id) {
+	if !s.Store.CheckEvent(event_id) || event_id == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// TODO: put that in a get cookie function
-	cookie, err := r.Cookie(types.SessionCookieName)
-	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	session_id := cookie.Value
 	user_id := s.Store.GetUserIdBySessionId(session_id)
-
 	newVote := types.NewVote(&user_id, &event_id)
-	if s.Store.CheckVote(user_id, event_id) {
+	if s.Store.CheckVote(&user_id, &event_id) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 	if err := s.Store.CreateVote(newVote); err != nil {
-		print("failed to create the vote\n")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	if err = s.Store.DecreaseEventPlacecount(event_id); err != nil {
-		print("failed to decrease the placount associated to the event\n")
+	if err := s.Store.DecreaseEventPlacecount(event_id); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-
 	w.WriteHeader(http.StatusCreated)
 }
 
-func deleteVote(w http.ResponseWriter, r *http.Request) {
-
+func (s *Server) deleteVote(w http.ResponseWriter, r *http.Request) {
+	vote_id := r.URL.Query().Get("id")
+	if vote_id == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if s.Store.CheckVoteById(&vote_id) {
+		if err := s.Store.DeleteVote(&vote_id); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
 }

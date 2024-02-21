@@ -114,8 +114,7 @@ func (s *Store) CheckEvent(event_id string) bool {
 // Function that returns true if user in database already
 func (s *Store) CheckUser(email string) bool {
 	var count int
-	// s.DB.QueryRow("SELECT COUNT(email) from users where email=? ;", email).Scan(&count)
-	s.DB.QueryRow("SELECT 1 from users where email=? ;", email).Scan(&count)
+	s.DB.QueryRow("SELECT 1 FROM users WHERE email=? ;", email).Scan(&count)
 	return count == 1
 }
 
@@ -206,7 +205,7 @@ func (s *Store) parseCreatedAt(id string) (created_at_parsed time.Time) {
 }
 
 func (s *Store) CreateVote(newVote *types.Vote) error {
-	_, err := s.DB.Exec("INSERT INTO votes (id, userid, eventid) VALUES (?, ?, ?);", newVote.Id, newVote.Userid, newVote.EventId)
+	_, err := s.DB.Exec("INSERT INTO votes (id, userid, eventid) VALUES (?, ?, ?);", newVote.Id, newVote.UserId, newVote.EventId)
 	if err != nil {
 		return err
 	}
@@ -221,16 +220,36 @@ func (s *Store) DecreaseEventPlacecount(event_id string) error {
 	return nil
 }
 
-func (s *Store) CheckVote(userId, eventId string) bool {
+func (s *Store) CheckVote(userId, eventId *string) bool {
 	var value int
 	err := s.DB.QueryRow("SELECT 1 FROM votes WHERE userid=? AND eventid=?;", userId, eventId).Scan(&value)
 	if err == sql.ErrNoRows {
 		return false
 	}
 	if err != nil {
-		log.Fatal("Cannot qeury if the vote already exist", err)
+		log.Fatal("Cannot query if the vote already exist", err)
 	}
 	return true
+}
+
+func (s *Store) CheckVoteById(voteId *string) bool {
+	var value int
+	err := s.DB.QueryRow("SELECT 1 FROM votes WHERE id=?;", voteId).Scan(&value)
+	if err == sql.ErrNoRows {
+		return false
+	}
+	if err != nil {
+		log.Fatal("Cannot query if the vote already exist", err)
+	}
+	return true
+}
+
+func (s *Store) DeleteVote(voteId *string) error {
+	_, err := s.DB.Exec("DELETE from votes where id=?;", voteId)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Store) Authorize(session_id string, roleToCompare types.Role) bool {

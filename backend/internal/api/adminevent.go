@@ -9,7 +9,6 @@ import (
 
 func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(types.SessionCookieName)
-	_ = cookie
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
@@ -17,6 +16,7 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
 		case http.MethodGet:
+			// TODO: Handle if there an id parameter in the query so that we get only one parameter
 			s.showAllEvents(w)
 		case http.MethodPost:
 			s.makeEvent(r)
@@ -62,10 +62,7 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	if !s.Store.CheckEvent(event_id) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
-	var event types.Event
-	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
-		log.Fatal("Error while decoding the json input - ", err)
-	}
+	event := getEventFromRequest(w, r)
 	if err := s.Store.UpdateEvent(&event); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}

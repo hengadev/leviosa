@@ -6,14 +6,15 @@ import (
 
 type Vote struct {
 	Id      string `json:"id"`
-	Userid  string `json:"userid"`
+	UserId  string `json:"userid"`
 	EventId string `json:"eventid"`
 }
 
 func NewVote(userid, eventid *string) *Vote {
 	return &Vote{
 		Id:      uuid.NewString(),
-		Userid:  *userid,
+		UserId:  *userid,
 		EventId: *eventid,
 	}
+
 }
