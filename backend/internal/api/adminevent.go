@@ -22,6 +22,8 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 			s.makeEvent(r)
 		case http.MethodDelete:
 			s.deleteEvent(w, r)
+		case http.MethodPut:
+			s.updateEvent(w, r)
 		}
 	}
 }
@@ -53,4 +55,19 @@ func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
+	event_id := r.URL.Query().Get("id")
+	if !s.Store.CheckEvent(event_id) {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	var event types.Event
+	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		log.Fatal("Error while decoding the json input - ", err)
+	}
+	if err := s.Store.UpdateEvent(&event); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusCreated)
 }

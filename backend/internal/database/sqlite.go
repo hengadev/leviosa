@@ -48,11 +48,13 @@ func (s *Store) IsAdmin(session_id string) bool {
 	return types.ConvertToRole(role) == types.ADMIN
 }
 
-func (s *Store) GetEventByID(id string) (event *types.Event) {
-	if err := s.DB.QueryRow("SELECT * FROM events WHERE id = ?;", id).Scan(&event); err != nil {
-		log.Fatalf("Error getting event with id '%s' : - %s", id, err)
+func (s *Store) GetEventByID(id string) *types.Event {
+	event := &types.Event{}
+	// if err := s.DB.QueryRow("SELECT * FROM events WHERE id=?;", id).Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err == sql.ErrNoRows {
+	if err := s.DB.QueryRow("SELECT * FROM events WHERE id=?;", id).Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
+		return event
 	}
-	return
+	return event
 }
 
 func (s *Store) GetAllEvents() []types.Event {
@@ -80,11 +82,12 @@ func (s *Store) PostEvent(event *types.Event) {
 	}
 }
 
-func (s *Store) UpdateEvent(event *types.Event) {
-	_, err := s.DB.Exec("UPDATE events set name=? where id=?;", event.Id, event.Id)
+func (s *Store) UpdateEvent(event *types.Event) error {
+	_, err := s.DB.Exec("UPDATE events SET location=?, placecount=?, date=? WHERE id=?;", event.Location, event.PlaceCount, event.Date, event.Id)
 	if err != nil {
-		log.Fatalf("Could not update event with id %q - %s", event.Id, err)
+		return err
 	}
+	return nil
 }
 
 func (s *Store) DeleteEvent(event_id string) error {

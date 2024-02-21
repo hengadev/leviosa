@@ -40,10 +40,6 @@ func TestPOSTSignIn(t *testing.T) {
 		server.ServeHTTP(response, request)
 		assertStatus(t, response.Code, http.StatusOK)
 		cookies := response.Result().Cookies()
-		// user_session := &types.User{
-		// 	Email:    user.Email,
-		// 	Password: user.Password,
-		// }
 		session := types.NewSession(user.Id)
 		assertEqualOne(t, len(cookies), "cookie")
 		assertCookieName(t, cookies[0].Name)
@@ -84,7 +80,6 @@ func TestPOSTSignIn(t *testing.T) {
 				Value: uuid,
 			}
 			request.AddCookie(cookie)
-			// session := types.Session{Id: uuid, Email: user.Email, Created_at: tt.session_created_at}
 			session := types.Session{Id: uuid, UserId: user.Email, Created_at: tt.session_created_at}
 			store.CreateSession(&session)
 

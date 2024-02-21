@@ -179,5 +179,75 @@ func TestDELETEEvent(t *testing.T) {
 			assertEqualInt(t, countEvent, 0)
 		})
 	}
+}
 
+func TestUPDATEEvent(t *testing.T) {
+	// TODO: add test for event not in database
+	server, store := makeServerAndStoreWithUsersTable()
+	store.Init(createEventsTable, createSessionsTable)
+
+	user := initUserTableAdmin(store)
+	session := types.NewSession(user.Id)
+
+	cookie := &http.Cookie{
+		Name:    types.SessionCookieName,
+		Value:   session.Id,
+		Expires: time.Now().Add(5 * time.Minute),
+	}
+	store.CreateSession(session)
+
+	tableTest := []struct {
+		name             string
+		postEventToStore bool
+		statusCode       int
+	}{
+		{"event is not in database", false, http.StatusBadRequest},
+		{"update event that is in database", true, http.StatusCreated},
+	}
+
+	for _, tt := range tableTest {
+		t.Run(tt.name, func(t *testing.T) {
+			event := types.NewEvent(40)
+			if tt.postEventToStore {
+				store.PostEvent(event)
+			}
+
+			newLocation := "My new location"
+			newPlacecount := 120
+			newDate := time.Now().Add(5 * time.Hour)
+			newDateStr := newDate.Format(types.EventFormat)
+			jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placecount": %d, "date": "%s"}`, event.Id, newLocation, newPlacecount, newDateStr))
+
+			endpoint := fmt.Sprintf("/admin/event?id=%s", event.Id)
+			request, _ := http.NewRequest(http.MethodPut, endpoint, bytes.NewBuffer([]byte(jsonData)))
+			request.AddCookie(cookie)
+
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+
+			assertStatus(t, response.Code, tt.statusCode)
+
+			var countEvent int
+			store.DB.QueryRow("SELECT COUNT(*) FROM events WHERE id=?", event.Id).Scan(&countEvent)
+
+			if tt.postEventToStore {
+				var placecount int
+				store.DB.QueryRow("SELECT placecount FROM events WHERE id=?", event.Id).Scan(&placecount)
+				assertEqualInt(t, placecount, newPlacecount)
+
+				var location string
+				store.DB.QueryRow("SELECT location FROM events WHERE id=?", event.Id).Scan(&location)
+				assertEqualString(t, location, newLocation)
+
+				var date string
+				store.DB.QueryRow("SELECT date FROM events WHERE id=?", event.Id).Scan(&date)
+				// assertEqualString(t, date, newDate.Format(time.RFC822))
+				assertEqualString(t, date, newDateStr)
+
+				assertEqualInt(t, countEvent, 1)
+			} else {
+				assertEqualInt(t, countEvent, 0)
+			}
+		})
+	}
 }
