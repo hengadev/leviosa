@@ -45,6 +45,7 @@ type Server struct {
 
 type Store interface {
 	GetEventByID(id string) *types.Event
+	GetEventByUserId(user_id string) []types.Event
 	GetAllEvents() []types.Event
 	PostEvent(event *types.Event)
 	DeleteEvent(event_id string) error
@@ -53,6 +54,7 @@ type Store interface {
 	GetUserIdBySessionId(session_id string) string
 	CreateUser(newUser *types.UserStored) error
 	CheckUser(email string) bool
+	CheckUserById(user_id string) bool
 	IsAdmin(session_id string) bool
 	GetHashPassword(user *types.User) (hashpassword string)
 	CreateSession(newSession *types.Session) error

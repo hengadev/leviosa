@@ -50,11 +50,33 @@ func (s *Store) IsAdmin(session_id string) bool {
 
 func (s *Store) GetEventByID(id string) *types.Event {
 	event := &types.Event{}
-	// if err := s.DB.QueryRow("SELECT * FROM events WHERE id=?;", id).Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err == sql.ErrNoRows {
 	if err := s.DB.QueryRow("SELECT * FROM events WHERE id=?;", id).Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
 		return event
 	}
 	return event
+}
+
+func (s *Store) GetEventByUserId(user_id string) []types.Event {
+	events := []types.Event{}
+	query := `
+       SELECT * FROM events WHERE id IN
+       (SELECT eventid FROM votes WHERE userid=?)
+       ORDER BY rowid ASC;
+	   `
+	rows, err := s.DB.Query(query, user_id)
+	defer rows.Close()
+	if err != nil {
+		log.Fatal("Cannot get events rows - ", err)
+	}
+
+	for rows.Next() {
+		event := types.Event{}
+		if err := rows.Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
+			log.Fatal("Cannot scan the event - ", err)
+		}
+		events = append(events, event)
+	}
+	return events
 }
 
 func (s *Store) GetAllEvents() []types.Event {
@@ -115,6 +137,12 @@ func (s *Store) CheckEvent(event_id string) bool {
 func (s *Store) CheckUser(email string) bool {
 	var count int
 	s.DB.QueryRow("SELECT 1 FROM users WHERE email=? ;", email).Scan(&count)
+	return count == 1
+}
+
+func (s *Store) CheckUserById(user_id string) bool {
+	var count int
+	s.DB.QueryRow("SELECT 1 FROM users WHERE id=? ;", user_id).Scan(&count)
 	return count == 1
 }
 
