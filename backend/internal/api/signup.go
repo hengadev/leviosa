@@ -10,11 +10,17 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		cookie, err := r.Cookie(types.SessionCookieName)
 		var user *types.UserStored
-		if err != http.ErrNoCookie && s.Store.Authorize(cookie.Value, types.ADMIN) {
-			user = getUserStoredFromRequest(w, r)
-		} else {
+		switch err {
+		case nil:
+			if s.Store.Authorize(cookie.Value, types.ADMIN) {
+				user = getUserStoredFromRequest(w, r)
+			}
+		case http.ErrNoCookie:
 			userForm := getUserFormFromRequest(w, r)
 			user = types.NewUserStored(userForm)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		}
 
 		if !user.ValidateEmail() || !user.ValidatePassword() {
