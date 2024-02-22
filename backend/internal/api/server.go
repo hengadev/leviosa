@@ -23,16 +23,16 @@ func NewServer(store Store) *Server {
 
 	// for admins
 	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
-	// Pour supprimer des votes si la personne ne le peut pas ou que l'utilisateur est ban mais c'est la meme fonction que pour /votes
 	// router.Handle("/admin/votes", http.HandlerFunc(server.adminVotesHandler))
-	// Pour gerer les utilisateurs si je le veux bien
-	// router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
+	router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
 
 	// Pour gerer le post de photo dans mon stockage sur S3
+	// NOTE: Use byte array to sore the image in the sqlite database with the blob type. Mais pour le training je vais le faire avec Amazon S3
 	// router.Handle("/helper/photos", http.HandlerFunc(server.helperPhotosHandler))
 
-	// for the users
+	// for users
 	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
+	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
 
 	// TODO: DO that one too
 	// router.Handle("/event/{user_id}", http.HandlerFunc(server.eventByIdHandler))
@@ -40,8 +40,6 @@ func NewServer(store Store) *Server {
 	router.Handle("/signup", http.HandlerFunc(server.signUpHandler))
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
 	router.Handle("/signout", http.HandlerFunc(server.signOutHandler))
-
-	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
 
 	server.Handler = router
 
@@ -56,7 +54,6 @@ type Server struct {
 type Store interface {
 	GetEventByID(id string) *types.Event
 	GetEventByUserId(user_id string) []*types.Event
-	// GetAllEvents() []types.Event
 	GetAllEvents() []*types.Event
 	PostEvent(event *types.Event)
 	DeleteEvent(event_id string) error
@@ -66,6 +63,9 @@ type Store interface {
 	CreateUser(newUser *types.UserStored) error
 	CheckUser(email string) bool
 	CheckUserById(user_id string) bool
+	GetAllUsers() []*types.UserStored
+	DeleteUser(user_id string) error
+	UpdateUser(user *types.UserStored) error
 	IsAdmin(session_id string) bool
 	GetHashPassword(user *types.User) (hashpassword string)
 	CreateSession(newSession *types.Session) error

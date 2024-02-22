@@ -80,7 +80,6 @@ func (s *Store) GetEventByUserId(user_id string) []*types.Event {
 }
 
 func (s *Store) GetAllEvents() []*types.Event {
-	// events := []types.Event{}
 	events := make([]*types.Event, 0)
 	rows, err := s.DB.Query("SELECT * FROM events;")
 	if err != nil {
@@ -147,6 +146,50 @@ func (s *Store) CheckUserById(user_id string) bool {
 	return count == 1
 }
 
+func (s *Store) DeleteUser(user_id string) error {
+	_, err := s.DB.Exec("DELETE FROM users WHERE id = ?", user_id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Store) UpdateUser(user *types.UserStored) error {
+	query := `
+        UPDATE users SET 
+		email=?,
+		password=?,
+		role=?,
+		lastName=?,
+		firstName=?,
+		gender=?,
+		birthDate=?,
+		telephone=?,
+		address=?,
+		city=?,
+		postalCard=?,
+        WHERE id=?;
+    `
+	_, err := s.DB.Exec(
+		query,
+		user.Email,
+		user.Password,
+		user.Role,
+		user.LastName,
+		user.FirstName,
+		user.Gender,
+		user.BirthDate,
+		user.Telephone,
+		user.Address,
+		user.City,
+		user.PostalCard,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Store) GetHashPassword(user *types.User) (hashpassword string) {
 	s.DB.QueryRow("SELECT hashpassword from users where email = ?;", user.Email).Scan(&hashpassword)
 	return
@@ -170,6 +213,38 @@ func (s *Store) CreateUser(newUser *types.UserStored) error {
 func (s *Store) GetUserIdBySessionId(session_id string) (id string) {
 	s.DB.QueryRow("SELECT userid from sessions where id = ?;", session_id).Scan(&id)
 	return
+}
+
+func (s *Store) GetAllUsers() []*types.UserStored {
+	users := make([]*types.UserStored, 0)
+	rows, err := s.DB.Query("SELECT * FROM users;")
+	if err != nil {
+		log.Fatal("Cannot get events rows - ", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		user := &types.UserStored{}
+		err := rows.Scan(
+			&user.Id,
+			&user.Email,
+			&user.Password,
+			&user.Role,
+			&user.LastName,
+			&user.FirstName,
+			&user.Gender,
+			&user.BirthDate,
+			&user.Telephone,
+			&user.Address,
+			&user.City,
+			&user.PostalCard,
+		)
+		if err != nil {
+			log.Fatal("Cannot scan the event - ", err)
+		}
+		users = append(users, user)
+	}
+	return users
 }
 
 func hashPassword(password string) string {

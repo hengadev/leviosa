@@ -80,6 +80,7 @@ func TestPOSTSignIn(t *testing.T) {
 				Value: uuid,
 			}
 			request.AddCookie(cookie)
+			// session := types.Session{Id: uuid, Email: user.Email, Created_at: tt.session_created_at}
 			session := types.Session{Id: uuid, UserId: user.Email, Created_at: tt.session_created_at}
 			store.CreateSession(&session)
 

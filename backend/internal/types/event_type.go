@@ -21,6 +21,7 @@ type Event struct {
 	Location   string `json:"location"`
 	PlaceCount int    `json:"placecount"`
 	Date       string `json:"date"`
+	// TODO: Put the date in a time.Time ? Just need to parse the string parsed in the database with the eventFormat ?
 }
 
 // TODO: Finish them things

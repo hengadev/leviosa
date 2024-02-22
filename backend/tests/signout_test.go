@@ -1,16 +1,13 @@
 package tests
 
 import (
-	// "github.com/GaryHY/event-reservation-app/internal/api"
-	// "github.com/GaryHY/event-reservation-app/internal/database"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"github.com/google/uuid"
-	"net/http"
-	"time"
-	// "fmt"
 	"log"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestPOSTSignOut(t *testing.T) {
@@ -27,18 +24,17 @@ func TestPOSTSignOut(t *testing.T) {
 	})
 
 	t.Run("User has an active session", func(t *testing.T) {
-		uuid := uuid.NewString()
+		session_id := uuid.NewString()
 		cookie := &http.Cookie{
 			Name:  types.SessionCookieName,
-			Value: uuid,
+			Value: session_id,
 		}
 
 		request, _ := http.NewRequest(http.MethodPost, "/signout", nil)
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
-		// session := types.Session{Id: uuid, Email: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
-		session := types.Session{Id: uuid, UserId: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
+		session := types.Session{Id: session_id, UserId: user.Email, Created_at: time.Now().Add(5 * time.Minute)}
 		store.CreateSession(&session)
 
 		server.ServeHTTP(response, request)
