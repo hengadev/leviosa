@@ -281,15 +281,17 @@ func (s *Store) DeleteVote(voteId *string) error {
 	return nil
 }
 
-func (s *Store) Authorize(session_id string, roleToCompare types.Role) bool {
-	var role string
+func (s *Store) Authorize(session_id string, roleMin types.Role) bool {
+	var rolestr string
 	query := `
         SELECT role FROM users WHERE id = 
         (SELECT userid FROM sessions WHERE id = ?);
     `
-	err := s.DB.QueryRow(query, session_id).Scan(&role)
+	err := s.DB.QueryRow(query, session_id).Scan(&rolestr)
 	if err != nil {
 		log.Fatalf("Failed to find the role of the user refered to the sessions id %q - %s)", session_id, err)
 	}
-	return roleToCompare == types.ConvertToRole(role)
+	userRole := types.ConvertToRole(rolestr)
+
+	return userRole.IsSuperior(roleMin)
 }
