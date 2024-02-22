@@ -16,10 +16,10 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
 		case http.MethodGet:
-			// TODO: Handle if there an id parameter in the query so that we get only one parameter
 			s.showAllEvents(w)
 		case http.MethodPost:
-			s.makeEvent(r)
+			// TODO: Des qu'un event est cree je veux creer des cron jobs qui vont etre schedule en fonction de la date de planning de l'event en question.
+			s.makeEvent(w, r)
 		case http.MethodDelete:
 			s.deleteEvent(w, r)
 		case http.MethodPut:
@@ -34,13 +34,15 @@ func (s *Server) showAllEvents(w http.ResponseWriter) {
 		w.WriteHeader(http.StatusNotFound)
 	}
 	if err := json.NewEncoder(w).Encode(events); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatal("Failed to encode events - ", err)
 	}
 }
 
-func (s *Server) makeEvent(r *http.Request) {
+func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
 	var event types.Event
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatal("Failed to decode the body to get the event")
 	}
 	s.Store.PostEvent(&event)

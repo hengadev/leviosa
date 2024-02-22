@@ -3,7 +3,6 @@ package sqlite
 import (
 	"database/sql"
 	"github.com/GaryHY/event-reservation-app/internal/types"
-	// "github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"log"
