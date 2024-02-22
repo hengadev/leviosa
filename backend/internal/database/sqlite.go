@@ -56,8 +56,8 @@ func (s *Store) GetEventByID(id string) *types.Event {
 	return event
 }
 
-func (s *Store) GetEventByUserId(user_id string) []types.Event {
-	events := []types.Event{}
+func (s *Store) GetEventByUserId(user_id string) []*types.Event {
+	events := make([]*types.Event, 0)
 	query := `
        SELECT * FROM events WHERE id IN
        (SELECT eventid FROM votes WHERE userid=?)
@@ -70,7 +70,7 @@ func (s *Store) GetEventByUserId(user_id string) []types.Event {
 	}
 
 	for rows.Next() {
-		event := types.Event{}
+		event := &types.Event{}
 		if err := rows.Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
 			log.Fatal("Cannot scan the event - ", err)
 		}
@@ -79,8 +79,9 @@ func (s *Store) GetEventByUserId(user_id string) []types.Event {
 	return events
 }
 
-func (s *Store) GetAllEvents() []types.Event {
-	events := []types.Event{}
+func (s *Store) GetAllEvents() []*types.Event {
+	// events := []types.Event{}
+	events := make([]*types.Event, 0)
 	rows, err := s.DB.Query("SELECT * FROM events;")
 	if err != nil {
 		log.Fatal("Cannot get events rows - ", err)
@@ -88,7 +89,7 @@ func (s *Store) GetAllEvents() []types.Event {
 	defer rows.Close()
 
 	for rows.Next() {
-		var event types.Event
+		event := &types.Event{}
 		if err := rows.Scan(&event.Id, &event.Location, &event.PlaceCount, &event.Date); err != nil {
 			log.Fatal("Cannot scan the event - ", err)
 		}

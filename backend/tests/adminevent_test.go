@@ -112,7 +112,7 @@ func TestPOSTEvent(t *testing.T) {
 	}
 	time2 := time1.Format(types.EventFormat)
 
-	want := types.Event{
+	want := &types.Event{
 		Id:         uuid.NewString(),
 		Location:   "Somewhere",
 		PlaceCount: 28,

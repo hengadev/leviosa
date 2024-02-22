@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"net/http"
 )
@@ -14,12 +15,21 @@ func NewServer(store Store) *Server {
 	server.Store = store
 
 	router := http.NewServeMux()
+
+	router.Handle("/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Je suis la")
+		fmt.Println("Quelqu'un est sur le serveur")
+	}))
+
 	// for admins
 	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
-	// Pour supprimer des votes si la personne ne le peut pas ou que l'utilisateur est ban
+	// Pour supprimer des votes si la personne ne le peut pas ou que l'utilisateur est ban mais c'est la meme fonction que pour /votes
 	// router.Handle("/admin/votes", http.HandlerFunc(server.adminVotesHandler))
 	// Pour gerer les utilisateurs si je le veux bien
 	// router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
+
+	// Pour gerer le post de photo dans mon stockage sur S3
+	// router.Handle("/helper/photos", http.HandlerFunc(server.helperPhotosHandler))
 
 	// for the users
 	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
@@ -45,8 +55,9 @@ type Server struct {
 
 type Store interface {
 	GetEventByID(id string) *types.Event
-	GetEventByUserId(user_id string) []types.Event
-	GetAllEvents() []types.Event
+	GetEventByUserId(user_id string) []*types.Event
+	// GetAllEvents() []types.Event
+	GetAllEvents() []*types.Event
 	PostEvent(event *types.Event)
 	DeleteEvent(event_id string) error
 	UpdateEvent(event *types.Event) error
