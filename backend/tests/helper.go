@@ -101,8 +101,10 @@ func makeServerAndStoreWithUsersTable() (*api.Server, *sqlite.Store) {
 	if err != nil {
 		log.Fatal("Something went wrong when creating the database")
 	}
+	photostore := sqlite.NewPhotoStore()
 	store.Init(createUsersTable)
-	server := api.NewServer(store)
+	// server := api.NewServer(store)
+	server := api.NewServer(store, photostore)
 	return server, store
 }
 

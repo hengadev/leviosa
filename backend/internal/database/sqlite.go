@@ -355,6 +355,7 @@ func (s *Store) DeleteVote(voteId *string) error {
 	return nil
 }
 
+// Return true if the role corresponding to the session_id given is "superior" to the role provided
 func (s *Store) Authorize(session_id string, roleMin types.Role) bool {
 	var rolestr string
 	query := `

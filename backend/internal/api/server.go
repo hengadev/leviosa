@@ -2,40 +2,43 @@ package api
 
 import (
 	"fmt"
-	"github.com/GaryHY/event-reservation-app/internal/types"
+	"mime/multipart"
 	"net/http"
+
+	"github.com/GaryHY/event-reservation-app/internal/types"
 )
 
 const (
 	YYYYMMDD = "2006-01-02"
 )
 
-func NewServer(store Store) *Server {
+// TODO: Think if you prefer the singular over the plural for the endpoints
+
+// func NewServer(store Store) *Server {
+func NewServer(store Store, photostore PhotoStore) *Server {
 	server := new(Server)
 	server.Store = store
+	server.PhotoStore = photostore
 
 	router := http.NewServeMux()
 
 	router.Handle("/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Je suis la")
+		fmt.Fprint(w, "Je suis la\n")
 		fmt.Println("Quelqu'un est sur le serveur")
 	}))
 
 	// for admins
+	// TODO: Peut etre mettre un "events" au lieu de event
 	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
 	// router.Handle("/admin/votes", http.HandlerFunc(server.adminVotesHandler))
 	router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
 
 	// Pour gerer le post de photo dans mon stockage sur S3
-	// NOTE: Use byte array to sore the image in the sqlite database with the blob type. Mais pour le training je vais le faire avec Amazon S3
-	// router.Handle("/helper/photos", http.HandlerFunc(server.helperPhotosHandler))
+	router.Handle("/photos", http.HandlerFunc(server.photosHandler))
 
 	// for users
 	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
 	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
-
-	// TODO: DO that one too
-	// router.Handle("/event/{user_id}", http.HandlerFunc(server.eventByIdHandler))
 
 	router.Handle("/signup", http.HandlerFunc(server.signUpHandler))
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))
@@ -49,6 +52,11 @@ func NewServer(store Store) *Server {
 type Server struct {
 	Store Store
 	http.Handler
+	PhotoStore PhotoStore
+}
+
+type PhotoStore interface {
+	PostFile(file multipart.File, filename, event_id string)
 }
 
 type Store interface {

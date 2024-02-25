@@ -23,6 +23,10 @@ func (s *Server) adminUsersHandler(w http.ResponseWriter, r *http.Request) {
 			s.deleteUser(w, r)
 		case http.MethodPut:
 			s.updateUser(w, r)
+		default:
+			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
 		}
 	}
 }
