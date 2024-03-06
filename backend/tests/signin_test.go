@@ -47,11 +47,11 @@ func TestPOSTSignIn(t *testing.T) {
 		assertSameExpirationDate(t, cookies[0].Expires, session.Created_at)
 
 		var lineCount int
-		store.DB.QueryRow("SELECT COUNT(*) FROM sessions;").Scan(&lineCount)
+		store.DB.QueryRow("SELECT COUNT(*) FROM sessions where userid=?;", user.Id).Scan(&lineCount)
 		assertEqualOne(t, lineCount, "sessions saved")
 
 		var userCount int
-		store.DB.QueryRow("SELECT COUNT(*) FROM users;").Scan(&userCount)
+		store.DB.QueryRow("SELECT COUNT(*) FROM users where id = ?;", user.Id).Scan(&userCount)
 		assertEqualOne(t, userCount, "users saved")
 
 		var id string

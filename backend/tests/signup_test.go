@@ -33,9 +33,9 @@ func TestPOSTSignUp(t *testing.T) {
 			if tt.succesQuery {
 				var hashpassword string
 				var countEmail int
-				store.DB.QueryRow("SELECT COUNT(email) FROM users;").Scan(&countEmail)
+				store.DB.QueryRow("SELECT COUNT(email) FROM users where email = ?;", tt.email).Scan(&countEmail)
 				assertEqualOne(t, countEmail, "email")
-				store.DB.QueryRow("SELECT hashpassword FROM users;").Scan(&hashpassword)
+				store.DB.QueryRow("SELECT hashpassword FROM users where email = ?;", tt.email).Scan(&hashpassword)
 				assertPasswordHash(t, hashpassword, tt.password)
 			}
 		})
@@ -43,10 +43,11 @@ func TestPOSTSignUp(t *testing.T) {
 	t.Run("Incorred method used", func(t *testing.T) {
 		request, err := http.NewRequest(http.MethodGet, "/signup", nil)
 		if err != nil {
-			log.Fatal("Fail to create new GET request")
+			log.Fatal("Failed to create new GET request")
 		}
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, request)
+		assertEqualString(t, response.Header().Get("Access-Control-Allow-Methods"), "POST")
 		assertStatus(t, response.Code, http.StatusMethodNotAllowed)
 	})
 }
