@@ -36,8 +36,3 @@ const (
 	BASIC  = Role("basic")
 	HELPER = Role("helper")
 )
-
-// TODO : Je veux implementer une relation d'ordre sur les roles tels que je puisse ne plus faire uniquement des comparaisons de role a role mais
-// aussi des comparaisons tels que role >= helper => role = helper || role = admin
-
-// NOTE: Pas d'operator overloading en golang parce trop de complexite selon les createurs. Idee de projet ?

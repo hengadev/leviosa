@@ -2,10 +2,9 @@ package api
 
 import (
 	"fmt"
+	"github.com/GaryHY/event-reservation-app/internal/types"
 	"mime/multipart"
 	"net/http"
-
-	"github.com/GaryHY/event-reservation-app/internal/types"
 )
 
 const (
@@ -14,7 +13,6 @@ const (
 
 // TODO: Think if you prefer the singular over the plural for the endpoints
 
-// func NewServer(store Store) *Server {
 func NewServer(store Store, photostore PhotoStore) *Server {
 	server := new(Server)
 	server.Store = store
@@ -23,8 +21,9 @@ func NewServer(store Store, photostore PhotoStore) *Server {
 	router := http.NewServeMux()
 
 	router.Handle("/test", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "Je suis la\n")
 		fmt.Println("Quelqu'un est sur le serveur")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Je suis la\n"))
 	}))
 
 	// for admins
@@ -39,6 +38,10 @@ func NewServer(store Store, photostore PhotoStore) *Server {
 	// for users
 	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
 	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
+	// TODO: Which one should I use ?
+	router.Handle("/checkout", http.HandlerFunc(server.paymentHandler))
+	router.Handle("/status/checkout/success", http.HandlerFunc(server.paymentHandler))
+	router.Handle("/status/checkout/fail", http.HandlerFunc(server.paymentHandler))
 
 	router.Handle("/signup", http.HandlerFunc(server.signUpHandler))
 	router.Handle("/signin", http.HandlerFunc(server.signInHandler))

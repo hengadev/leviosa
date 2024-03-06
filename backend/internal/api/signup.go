@@ -6,7 +6,11 @@ import (
 )
 
 func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	switch r.Method {
+	case "OPTIONS": // preflight request
+		enableJSON(&w)
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
 	case http.MethodPost:
 		cookie, err := r.Cookie(types.SessionCookieName)
 		var user *types.UserStored
@@ -39,7 +43,6 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 
 	default:
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}

@@ -35,7 +35,7 @@ func main() {
 
 	fmt.Println("Running server on port 5000...")
 	if err := http.ListenAndServe(":5000", server); err != nil {
-		log.Fatal("Cannot launch the server")
+		log.Fatal("Cannot launch the server - ", err)
 	}
 
 }

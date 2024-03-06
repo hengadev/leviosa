@@ -8,6 +8,7 @@ import (
 )
 
 func (s *Server) adminUsersHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -15,6 +16,9 @@ func (s *Server) adminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
+		case "OPTIONS": // preflight request
+			enableJSON(&w)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
 		case http.MethodGet:
 			s.showAllUsers(w)
 		case http.MethodPost:
@@ -58,7 +62,11 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request) {
 	if !s.Store.CheckUserById(user_id) {
 		w.WriteHeader(http.StatusBadRequest)
 	}
-	user := getUserStoredFromRequest(w, r)
+	user := getUserStoredFromRequest(r)
+	if types.IsNullGeneric(user) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	if err := s.Store.UpdateUser(user); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}

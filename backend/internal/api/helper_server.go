@@ -6,28 +6,38 @@ import (
 	"net/http"
 )
 
-func getUserFromRequest(w http.ResponseWriter, r *http.Request) (user *types.User) {
+const (
+	FRONTENDORIGIN = "http://localhost:4321"
+)
+
+// A function to enable the frontend (at http://localhost:4321 for testing) to access the endpoint where it is called from.
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", FRONTENDORIGIN)
+}
+
+func enableJSON(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func getUserFromRequest(r *http.Request) (user *types.User) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		return &types.User{}
 	}
 	return
 }
 
-func getUserFormFromRequest(w http.ResponseWriter, r *http.Request) (user *types.UserForm) {
+func getUserFormFromRequest(r *http.Request) (user *types.UserForm) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		return &types.UserForm{}
 	}
 	return
 }
 
-func getUserStoredFromRequest(w http.ResponseWriter, r *http.Request) (user *types.UserStored) {
+func getUserStoredFromRequest(r *http.Request) (user *types.UserStored) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
 		return &types.UserStored{}
 	}
 	return

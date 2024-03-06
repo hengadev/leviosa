@@ -8,7 +8,11 @@ import (
 )
 
 func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	switch r.Method {
+	case "OPTIONS": // preflight request
+		enableJSON(&w)
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
 	case http.MethodPost:
 		user := getUserFromRequest(w, r)
 		// TODO: Validate the mail and the password
@@ -20,7 +24,6 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		// TODO: Put that in a get method when hitting the endpoint ?
 		cookie, err := r.Cookie(types.SessionCookieName)
 		if err == nil && s.Store.HasSession(cookie.Value) {
 			w.WriteHeader(http.StatusOK)
@@ -33,23 +36,18 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		// TODO: Get the id associated with the user mail
 		user_id := s.Store.GetUserId(user.Email)
 		session := types.NewSession(user_id)
 		if err := s.Store.CreateSession(session); err != nil {
 			log.Fatal("Failed to create session in the database for the user")
 		}
-
 		expired_at := session.Created_at.Add(types.SessionDuration)
-
 		http.SetCookie(w, &http.Cookie{
 			Name:    types.SessionCookieName,
 			Value:   session.Id,
 			Expires: expired_at,
 		})
-
 	default:
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}

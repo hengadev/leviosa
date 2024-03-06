@@ -8,6 +8,7 @@ import (
 )
 
 func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -15,6 +16,9 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
+		case "OPTIONS": // preflight request
+			enableJSON(&w)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
 		case http.MethodGet:
 			s.showAllEvents(w)
 		case http.MethodPost:
