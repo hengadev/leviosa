@@ -1,0 +1,59 @@
+---
+export type Event = {
+    date: string;
+    location: string;
+    payment_status: boolean;
+};
+
+// get the events using fetch  to the right endpoint of my server.
+export const events: Event[] = [
+    {
+        date: "01/01/01",
+        location: "Some place fist",
+        payment_status: true,
+    },
+    {
+        date: "01/01/01",
+        location: "Somewhere man",
+        payment_status: false,
+    },
+];
+
+// TODO: fetch the data to help me display it.
+---
+
+<div class="mt-4 grid grid-cols-3 text-center">
+    <div>
+        <div
+            class="bg-[#0f172a] p-2 text-white border-2 border-t-0 border-b-0 border-l-[#0f172a] border-r-[#0f172a]"
+        >
+            date
+        </div>
+        <div class="p-2 border-2 border-[#0f172a]">01/01/01</div>
+        <div class="p-2 border-2 border-[#0f172a]">01/01/01</div>
+        <div class="p-2 border-2 border-[#0f172a]">01/01/01</div>
+        <div class="p-2 border-2 border-[#0f172a]">01/01/01</div>
+    </div>
+    <div>
+        <div
+            class="bg-[#0f172a] p-2 text-white border-2 border-t-0 border-b-0 border-l-white border-r-white"
+        >
+            location
+        </div>
+        <div class="p-2 border-2 border-[#0f172a]">Somewhere</div>
+        <div class="p-2 border-2 border-[#0f172a]">Somewhere</div>
+        <div class="p-2 border-2 border-[#0f172a]">Somewhere</div>
+        <div class="p-2 border-2 border-[#0f172a]">Somewhere</div>
+    </div>
+    <div>
+        <div
+            class="bg-[#0f172a] p-2 text-white border-2 border-t-0 border-b-0 border-l-[#0f172a] border-r-[#0f172a]"
+        >
+            paiement
+        </div>
+        <div class="p-2 border-2 border-[#0f172a]">true</div>
+        <div class="p-2 border-2 border-[#0f172a]">true</div>
+        <div class="p-2 border-2 border-[#0f172a]">true</div>
+        <div class="p-2 border-2 border-[#0f172a]">true</div>
+    </div>
+</div>

@@ -1,0 +1,23 @@
+---
+import "@/styles/globals.css";
+import Layout from "../layouts/Layout.astro";
+import ProfileForm from "../components/ProfileForm.tsx";
+---
+
+<Layout title="Formulaire">
+    <!-- <main class="grid place-content-center"> -->
+    <main class="w-[90%] m-auto py-4">
+        <ProfileForm client:load />
+    </main>
+</Layout>
+
+<style>
+    body {
+        height: 100vh;
+        display: grid;
+        place-content: center;
+    }
+    .container {
+        display: grid;
+    }
+</style>

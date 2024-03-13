@@ -1,0 +1,36 @@
+---
+// TODO: Aller fetch les evenemnts par individu pour les display au calme
+import "@/styles/globals.css";
+import Navigation from "../components/Navigation.astro";
+import { Button } from "@/components/ui/button";
+import EventTable from "../components/EventTable.astro";
+
+// TODO: Get the events my friend
+
+// NOTE: schema de la table event
+// date - location - payment status - intervenant
+---
+
+<div class="h-full">
+    <div class="text-lg py-8 px-6">
+        <div class="text-center">
+            <Button className="text-lg py-6">
+                <a href="/event">Participer a un evenement ?</a>
+            </Button>
+        </div>
+        <h2 class="mt-8 text-2xl font-black">Mes evenements</h2>
+        <h3 class="mt-8 font-700 underline">Les evenements a venir</h3>
+        <EventTable />
+        <h3 class="mt-8 font-700 underline">Les evenements passes</h3>
+        <EventTable />
+    </div>
+    <div class="sticky bottom-0 left-0 right-0">
+        <Navigation />
+    </div>
+</div>
+<style>
+    body {
+        height: 100vh;
+        /* overflow-x: scroll; */
+    }
+</style>

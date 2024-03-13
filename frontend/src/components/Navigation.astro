@@ -1,0 +1,54 @@
+---
+// TODO: Mettre des icones a la place du texte
+// TODO: Ajouter une icone pour la deconnection
+import Profile from "../assets/Profile.svg?raw";
+import Event from "../assets/Event.svg?raw";
+import Signout from "../assets/Signout.svg?raw";
+import Home from "../assets/Home.svg?raw";
+import Photo from "../assets/Photo.svg?raw";
+// TODO: clean les cookies d'authentification on click sur sign out
+// TODO: change the link to the photos sections
+---
+
+<nav class="bg-[#0f172a] w-full text-white px-8 py-4">
+    <ul class="flex align-center justify-between">
+        <div class="flex gap-4">
+            <li class="focus:underline focus:underline-offset-2">
+                <a href="/events">
+                    <Fragment set:html={Event} />
+                </a>
+            </li>
+            <li class="focus:underline focus:underline-offset-2">
+                <a href="/events">
+                    <Fragment set:html={Photo} />
+                </a>
+            </li>
+        </div>
+        <li class="flex align-center">
+            <button>
+                <a href="/account">
+                    <Fragment set:html={Home} />
+                </a>
+            </button>
+        </li>
+        <div class="flex gap-4">
+            <li class="focus:underline focus:underline-offset-2">
+                <a href="/account">
+                    <Fragment set:html={Profile} />
+                </a>
+            </li>
+            <li class="focus:underline focus:underline-offset-2">
+                <a href="/">
+                    <Fragment set:html={Signout} />
+                </a>
+            </li>
+        </div>
+    </ul>
+</nav>
+<style>
+    .logo-placeholder {
+        width: 20px;
+        aspect-ratio: 1;
+        background-color: white;
+    }
+</style>
