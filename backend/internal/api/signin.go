@@ -14,9 +14,12 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 		enableJSON(&w)
 		w.Header().Set("Access-Control-Allow-Methods", "POST")
 	case http.MethodPost:
-		user := getUserFromRequest(w, r)
-		// TODO: Validate the mail and the password
-		if !user.ValidateEmail() || !user.ValidatePassword() {
+		user := getUserFromRequest(r)
+		if types.IsNullGeneric(user) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if !types.ValidateEmailGeneric(user) || !types.ValidatePasswordGeneric(user) {
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -28,7 +31,8 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 		if err == nil && s.Store.HasSession(cookie.Value) {
 			w.WriteHeader(http.StatusOK)
 			// TODO: Comment je gere la redirection vers la page d'accueil ?
-			// http.Redirect(w, r, "/home", http.StatusFound)
+			// redirectURL := fmt.Sprintf(os.Getenv("HOST"), "/home")
+			// http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 			return
 		}
 		hashpassword := s.Store.GetHashPassword(user)
@@ -42,10 +46,14 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 			log.Fatal("Failed to create session in the database for the user")
 		}
 		expired_at := session.Created_at.Add(types.SessionDuration)
+		// TODO: Make the cookie secure to only use https using SSL encryption and use httpOnly.
+		// How does that change the tests, and how to use https in golang ?
 		http.SetCookie(w, &http.Cookie{
-			Name:    types.SessionCookieName,
-			Value:   session.Id,
-			Expires: expired_at,
+			Name:     types.SessionCookieName,
+			Value:    session.Id,
+			Expires:  expired_at,
+			HttpOnly: true,
+			Secure:   true,
 		})
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)

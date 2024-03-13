@@ -1,8 +1,11 @@
 package api
 
 import (
+	// "github.com/GaryHY/event-reservation-app/internal/mail"
+	// "fmt"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"net/http"
+	// "os"
 )
 
 func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
@@ -17,16 +20,19 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case nil:
 			if s.Store.Authorize(cookie.Value, types.ADMIN) {
-				user = getUserStoredFromRequest(w, r)
+				user = getUserStoredFromRequest(r)
 			}
 		case http.ErrNoCookie:
-			userForm := getUserFormFromRequest(w, r)
+			userForm := getUserFormFromRequest(r)
 			user = types.NewUserStored(userForm)
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
+		if types.IsNullGeneric(user) {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		if !user.ValidateEmail() || !user.ValidatePassword() {
 			w.WriteHeader(http.StatusForbidden)
 			return
@@ -40,7 +46,11 @@ func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		// mail.SendWelcomeUserMail(user)
 		w.WriteHeader(http.StatusCreated)
+		// TODO: Comment je gere la redirection vers la page d'accueil ?
+		// redirectURL := fmt.Sprintf(os.Getenv("HOST"), "/home")
+		// http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)

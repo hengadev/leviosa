@@ -1,10 +1,12 @@
 package types
 
 import (
+	"net/mail"
+	"reflect"
+	"time"
+
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"net/mail"
-	"time"
 )
 
 const (
@@ -73,6 +75,54 @@ func (u *User) ValidateEmail() bool {
 
 // TODO: Add the logic to verify if the password are good enough
 func (u *User) ValidatePassword() bool {
+	return true
+}
+
+// TODO: DO THE GENERICS OFF THAT !!!
+func (u *User) IsNull() bool {
+	if u.Email == "" && u.Password == "" {
+		return true
+	}
+	return false
+}
+
+// TODO: use both of the following function or use a simple one that just take a reference to a string to make the calculation since I just want to read the values
+func ValidatePasswordGeneric[T any](data *T) bool {
+	v := reflect.ValueOf(*data)
+	if v.Kind() != reflect.Struct {
+		panic("Expected a struct")
+	}
+	password := v.FieldByNameFunc(func(s string) bool {
+		return s == "Password"
+	})
+	// TODO: do something to  check password value validity
+	_ = password
+	return true
+}
+
+func ValidateEmailGeneric[T any](data *T) bool {
+	v := reflect.ValueOf(*data)
+	if v.Kind() != reflect.Struct {
+		panic("Expected a struct")
+	}
+	email := v.FieldByNameFunc(func(s string) bool {
+		return s == "Email"
+	})
+	_, err := mail.ParseAddress(email.String())
+	return err == nil
+}
+
+func IsNullGeneric[T any](data *T) bool {
+	v := reflect.ValueOf(*data)
+	if v.Kind() != reflect.Struct {
+		panic("Expected a struct")
+	}
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Kind() == reflect.String && field.String() != "" {
+			return false
+		}
+	}
 	return true
 }
 

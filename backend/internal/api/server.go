@@ -28,7 +28,7 @@ func NewServer(store Store, photostore PhotoStore) *Server {
 
 	// for admins
 	// TODO: Peut etre mettre un "events" au lieu de event
-	router.Handle("/admin/event", http.HandlerFunc(server.adminEventHandler))
+	router.Handle("/admin/events", http.HandlerFunc(server.adminEventHandler))
 	// router.Handle("/admin/votes", http.HandlerFunc(server.adminVotesHandler))
 	router.Handle("/admin/users", http.HandlerFunc(server.adminUsersHandler))
 
@@ -36,10 +36,11 @@ func NewServer(store Store, photostore PhotoStore) *Server {
 	router.Handle("/photos", http.HandlerFunc(server.photosHandler))
 
 	// for users
-	router.Handle("/event", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
+	router.Handle("/events", http.HandlerFunc(server.eventHandler)) // avec un get avec le query string et un get sans pour prendre tous les events d'un user
 	router.Handle("/votes", http.HandlerFunc(server.votesHandler))
 	// TODO: Which one should I use ?
 	router.Handle("/checkout", http.HandlerFunc(server.paymentHandler))
+	router.Handle("/stripe", http.HandlerFunc(server.paymentHandler))
 	router.Handle("/status/checkout/success", http.HandlerFunc(server.paymentHandler))
 	router.Handle("/status/checkout/fail", http.HandlerFunc(server.paymentHandler))
 

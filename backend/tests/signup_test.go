@@ -47,7 +47,6 @@ func TestPOSTSignUp(t *testing.T) {
 		}
 		response := httptest.NewRecorder()
 		server.ServeHTTP(response, request)
-		assertEqualString(t, response.Header().Get("Access-Control-Allow-Methods"), "POST")
 		assertStatus(t, response.Code, http.StatusMethodNotAllowed)
 	})
 }

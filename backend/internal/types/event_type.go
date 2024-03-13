@@ -8,6 +8,7 @@ import (
 
 const (
 	EventFormat = "2006-01-02"
+	EventPrice  = 4000 // the price for one ticket for an event
 )
 
 type EventDate struct {

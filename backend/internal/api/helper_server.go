@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// TODO: Put that in a .env file
 const (
 	FRONTENDORIGIN = "http://localhost:4321"
 )
@@ -19,6 +20,7 @@ func enableJSON(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
+// TODO: Can I use generic for that ?
 func getUserFromRequest(r *http.Request) (user *types.User) {
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {

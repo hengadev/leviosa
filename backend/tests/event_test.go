@@ -25,11 +25,11 @@ func TestGETUserEvents(t *testing.T) {
 		Expires: time.Now().Add(5 * time.Minute),
 	}
 	store.CreateSession(session)
-	endpoint := fmt.Sprintf("/event?id=%s", user.Id)
+	endpoint := fmt.Sprintf("/events?id=%s", user.Id)
 
 	t.Run("Not authorized because not authenticated", func(t *testing.T) {
 		userNotAuthenticatedId := uuid.NewString()
-		endpoint := fmt.Sprintf("/event?id=%s", userNotAuthenticatedId)
+		endpoint := fmt.Sprintf("/events?id=%s", userNotAuthenticatedId)
 		request, _ := http.NewRequest(http.MethodGet, endpoint, nil)
 		response := httptest.NewRecorder()
 

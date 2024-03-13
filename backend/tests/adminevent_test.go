@@ -29,7 +29,7 @@ func TestGETEvents(t *testing.T) {
 
 	t.Run("Not authorized because not admin", func(t *testing.T) {
 		// NOTE: The http.MethodGet here is random, any method would give the same result
-		request, _ := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		request, _ := http.NewRequest(http.MethodGet, "/admin/events", nil)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
@@ -37,18 +37,17 @@ func TestGETEvents(t *testing.T) {
 	})
 
 	t.Run("No event in the database", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		request, err := http.NewRequest(http.MethodGet, "/admin/events", nil)
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
 		server.ServeHTTP(response, request)
 		want := []types.Event{}
 		got := []types.Event{}
-		err = json.NewDecoder(response.Body).Decode(&got)
-
-		if err != nil {
+		if err = json.NewDecoder(response.Body).Decode(&got); err != nil {
 			t.Errorf("Unable to parse response from server %q into slice of Event - '%v'", response.Body, err)
 		}
+
 		assertStatus(t, response.Code, http.StatusNotFound)
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got %v want %v", got, want)
@@ -56,7 +55,7 @@ func TestGETEvents(t *testing.T) {
 	})
 
 	t.Run("With events in the database", func(t *testing.T) {
-		request, err := http.NewRequest(http.MethodGet, "/admin/event", nil)
+		request, err := http.NewRequest(http.MethodGet, "/admin/events", nil)
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
@@ -120,7 +119,7 @@ func TestPOSTEvent(t *testing.T) {
 	}
 
 	jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placeCount": %d, "date": "%s"}`, want.Id, want.Location, want.PlaceCount, want.Date))
-	request, _ := http.NewRequest(http.MethodPost, "/admin/event", bytes.NewBuffer(jsonData))
+	request, _ := http.NewRequest(http.MethodPost, "/admin/events", bytes.NewBuffer(jsonData))
 	request.AddCookie(cookie)
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
@@ -128,7 +127,7 @@ func TestPOSTEvent(t *testing.T) {
 
 	server.ServeHTTP(response, request)
 
-	assertStatus(t, response.Code, http.StatusOK)
+	assertStatus(t, response.Code, http.StatusCreated)
 	got := store.GetAllEvents()[0]
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("\ngot %v\n want %v", got, want)
@@ -166,7 +165,7 @@ func TestDELETEEvent(t *testing.T) {
 				store.PostEvent(event)
 			}
 
-			endpoint := fmt.Sprintf("/admin/event?id=%s", event.Id)
+			endpoint := fmt.Sprintf("/admin/events?id=%s", event.Id)
 			request, _ := http.NewRequest(http.MethodDelete, endpoint, nil)
 			request.AddCookie(cookie)
 
@@ -218,7 +217,7 @@ func TestUPDATEEvent(t *testing.T) {
 			newDateStr := newDate.Format(types.EventFormat)
 			jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placecount": %d, "date": "%s"}`, event.Id, newLocation, newPlacecount, newDateStr))
 
-			endpoint := fmt.Sprintf("/admin/event?id=%s", event.Id)
+			endpoint := fmt.Sprintf("/admin/events?id=%s", event.Id)
 			request, _ := http.NewRequest(http.MethodPut, endpoint, bytes.NewBuffer([]byte(jsonData)))
 			request.AddCookie(cookie)
 

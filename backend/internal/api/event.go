@@ -23,7 +23,7 @@ func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
 				s.showUserEvents(w, id)
 			}
 		default:
-			w.Header().Set("Access-Control-Allow-Methods", "POST")
+			w.Header().Set("Access-Control-Allow-Methods", "GET")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
