@@ -50,6 +50,9 @@ func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("Failed to decode the body to get the event")
 	}
 	s.Store.PostEvent(&event)
+	// TODO: Add that to the function when done with the function code
+	// createEventProductStripe(event.Id, event.Date)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +63,8 @@ func (s *Server) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.Store.DeleteEvent(event_id); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	// TODO: Add that to the function when done with the function code
+	// deleteEventProductStripe(event_id)
 	w.WriteHeader(http.StatusNoContent)
 }
 

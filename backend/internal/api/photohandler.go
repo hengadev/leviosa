@@ -18,9 +18,10 @@ func (s *Server) photosHandler(w http.ResponseWriter, r *http.Request) {
 		event_id := r.URL.Query().Get("eventid")
 		if s.Store.Authorize(cookie.Value, types.HELPER) {
 			s.showAllPhotos(w, r, event_id)
-		} else { // for the users
-			s.showAllPhotosByUser(w, r, event_id)
 		}
+		// } else { // for the users
+		// 	s.showAllPhotosByUser(w, r, event_id)
+		// }
 	case http.MethodPost:
 		// if s.Store.Authorize(cookie.Value, types.HELPER) {
 		s.postPhoto(w, r)
@@ -36,6 +37,10 @@ func (s *Server) photosHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+}
+
+func (s *Server) showAllPhotos(w http.ResponseWriter, r *http.Request, event_id string) {
+
 }
 
 func (s *Server) postPhoto(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +59,4 @@ func (s *Server) deletePhoto(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updatePhoto(w http.ResponseWriter, r *http.Request) {
 }
 
-func (s *Server) showAllPhotos(w http.ResponseWriter, r *http.Request, event_id string) {}
-
-func (s *Server) showAllPhotosByUser(w http.ResponseWriter, r *http.Request, event_id string) {}
+// func (s *Server) showAllPhotosByUser(w http.ResponseWriter, r *http.Request, event_id string) {}

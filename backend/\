@@ -1,59 +1,57 @@
 package api
 
 import (
-	"fmt"
+	// "fmt"
+	"github.com/GaryHY/event-reservation-app/internal/types"
+	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 )
 
-func NewServer(store Store) *Server {
-	server := new(Server)
-	server.Store = store
-
-	router := http.NewServeMux()
-	router.Handle("/users", http.HandlerFunc(server.usersHandler))
-	router.Handle("/event", http.HandlerFunc(server.eventHandler))
-	server.Handler = router
-
-	return server
-}
-
-type Server struct {
-	Store Store
-	http.Handler
-}
-
-type Store interface {
-	GetEventNameByID(id string) string
-	PostEvent(name string)
-
-	// TODO: Model that using the Event type implemented
-	// GetEventNameByID(id string) Event
-	// PostEvent(event Event)
-}
-
-func (s *Server) usersHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-}
-
-func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
+	// enableCors(&w)
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4321")
 	switch r.Method {
-	case http.MethodGet:
-		s.showEventBydID(w, r)
 	case http.MethodPost:
-		s.makeEvent(r)
-	}
-}
+		user := getUserFromRequest(w, r)
+		// TODO: Validate the mail and the password
+		if !user.ValidateEmail() || !user.ValidatePassword() {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		if !s.Store.CheckUser(user.Email) {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// TODO: Put that in a get method when hitting the endpoint ?
+		cookie, err := r.Cookie(types.SessionCookieName)
+		if err == nil && s.Store.HasSession(cookie.Value) {
+			w.WriteHeader(http.StatusOK)
+			// TODO: Comment je gere la redirection vers la page d'accueil ?
+			// http.Redirect(w, r, "/home", http.StatusFound)
+			return
+		}
+		hashpassword := s.Store.GetHashPassword(user)
+		if err := bcrypt.CompareHashAndPassword([]byte(hashpassword), []byte(user.Password)); err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// TODO: Get the id associated with the user mail
+		user_id := s.Store.GetUserId(user.Email)
+		session := types.NewSession(user_id)
+		if err := s.Store.CreateSession(session); err != nil {
+			log.Fatal("Failed to create session in the database for the user")
+		}
 
-func (s *Server) showEventBydID(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-	name := s.Store.GetEventNameByID(id)
-	if name == "" {
-		w.WriteHeader(http.StatusNotFound)
-	}
-	fmt.Fprint(w, name)
-}
+		expired_at := session.Created_at.Add(types.SessionDuration)
 
-func (s *Server) makeEvent(r *http.Request) {
-	name := r.URL.Query().Get("name")
-	s.Store.PostEvent(name)
+		http.SetCookie(w, &http.Cookie{
+			Name:    types.SessionCookieName,
+			Value:   session.Id,
+			Expires: expired_at,
+		})
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 }

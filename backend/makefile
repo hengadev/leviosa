@@ -1,5 +1,7 @@
 run: 
 	@echo "Running the application..."
+	@echo "Removing, just for testing, the previous db.sqlite instance..."
+	@rm db.sqlite
 	@go run ./cmd/event-reservation-app/main.go
 
 build:
@@ -9,9 +11,11 @@ build:
 
 test:
 	@echo "Running all tests...\n"
-	@# NOTE: To run all the tests when we are done
-	@# @go test -v ./tests/...
-	@go test -v ./tests/... -run TestPOSTSignUp
+	@go test -v ./tests/... -run TestGETEvents
+
+ta: # for test all
+	@echo "Running all tests...\n"
+	@go test -v ./tests/...
 
 clean:
 	@echo "Removing all binaries..."
