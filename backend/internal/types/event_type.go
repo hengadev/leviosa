@@ -11,26 +11,36 @@ const (
 	EventPrice  = 4000 // the price for one ticket for an event
 )
 
-type EventDate struct {
-	Day   string `json:"day"`
-	Month string
-	Year  string
+type EventForm struct {
+	Location   string    `json:"location"`
+	PlaceCount int       `json:"placecount"`
+	Date       time.Time `json:"date"`
 }
 
 type Event struct {
-	Id         string `json:"id"`
-	Location   string `json:"location"`
-	PlaceCount int    `json:"placecount"`
-	Date       string `json:"date"`
-	// TODO: Put the date in a time.Time ? Just need to parse the string parsed in the database with the eventFormat ?
+	Id         string    `json:"id"`
+	Location   string    `json:"location"`
+	PlaceCount int       `json:"placecount"`
+	Date       time.Time `json:"date"`
+	PriceId    string    `json:"priceid"`
 }
 
-// TODO: Finish them things
-func NewEvent(placecount int) *Event {
+func NewEvent(location string, placecount int, date time.Time, priceid string) *Event {
 	return &Event{
 		Id:         uuid.NewString(),
-		Location:   "Some Location",
-		Date:       time.Now().Format(EventFormat),
+		Location:   location,
+		Date:       date,
 		PlaceCount: placecount,
+		PriceId:    priceid,
 	}
 }
+
+// NOTE: old function
+// func NewEvent(placecount int) *Event {
+// 	return &Event{
+// 		Id:       uuid.NewString(),
+// 		Location: "Some Location",
+//      Date:       time.Now().Format(EventFormat),
+// 		PlaceCount: placecount,
+// 	}
+// }

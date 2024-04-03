@@ -62,19 +62,18 @@ func TestGETUserEvents(t *testing.T) {
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
-		time1, err := time.Parse(types.EventFormat, "2024-02-13")
+		time1, err := time.Parse(time.RFC3339, "2024-04-02T13:39:43.000Z")
 		if err != nil {
 			log.Fatal("Failed parse in Location time - ", err)
 		}
-		time2 := time1.Format(types.EventFormat)
 
 		want := []types.Event{
-			types.Event{Id: uuid.NewString(), Location: "Somewhere", PlaceCount: 40, Date: time2},
-			types.Event{Id: uuid.NewString(), Location: "Some other place", PlaceCount: 32, Date: time2},
+			{Id: uuid.NewString(), Location: "Somewhere", PlaceCount: 40, Date: time1, PriceId: ""},
+			{Id: uuid.NewString(), Location: "Some other place", PlaceCount: 32, Date: time1, PriceId: ""},
 		}
 
 		for _, event := range want {
-			_, err := store.DB.Exec("INSERT INTO events VALUES (?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, event.Date)
+			_, err := store.DB.Exec("INSERT INTO events VALUES (?, ?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, event.Date.Format(time.RFC3339), event.PriceId)
 			if err != nil {
 				log.Fatal("Error executing the query insert in events table - ", err)
 			}

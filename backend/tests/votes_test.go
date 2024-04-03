@@ -3,11 +3,13 @@ package tests
 import (
 	"database/sql"
 	"fmt"
-	"github.com/GaryHY/event-reservation-app/internal/types"
-	"github.com/google/uuid"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/GaryHY/event-reservation-app/internal/types"
+	"github.com/google/uuid"
 )
 
 func TestPOSTVote(t *testing.T) {
@@ -37,7 +39,7 @@ func TestPOSTVote(t *testing.T) {
 			}
 
 			placecount_event := 20
-			event := types.NewEvent(placecount_event)
+			event := types.NewEvent("Some Location", placecount_event, time.Now(), "")
 			store.PostEvent(event)
 
 			endpoint := fmt.Sprintf("/votes?id=%s", event.Id)
@@ -95,7 +97,7 @@ func TestPOSTVote(t *testing.T) {
 	for _, tt := range noVoteTest {
 		t.Run(tt.name, func(t *testing.T) {
 			placecount_event := tt.placecount
-			event := types.NewEvent(placecount_event)
+			event := types.NewEvent("Some location", placecount_event, time.Now(), "")
 			if tt.postEventToStore {
 				store.PostEvent(event)
 			}

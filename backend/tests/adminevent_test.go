@@ -59,19 +59,19 @@ func TestGETEvents(t *testing.T) {
 		request.AddCookie(cookie)
 		response := httptest.NewRecorder()
 
-		time1, err := time.Parse(types.EventFormat, "2024-02-13")
+		time1, err := time.Parse(time.RFC3339, "2024-04-02T13:39:43.000Z")
 		if err != nil {
 			log.Fatal("Failed parse in Location time - ", err)
 		}
-		time2 := time1.Format(types.EventFormat)
 
 		want := []types.Event{
-			types.Event{Id: uuid.NewString(), Location: "Somewhere", PlaceCount: 40, Date: time2},
-			types.Event{Id: uuid.NewString(), Location: "Some other place", PlaceCount: 32, Date: time2},
+			{Id: uuid.NewString(), Location: "Somewhere", PlaceCount: 40, Date: time1, PriceId: ""},
+			{Id: uuid.NewString(), Location: "Some other place", PlaceCount: 32, Date: time1, PriceId: ""},
 		}
 
+		//put the want in the database
 		for _, event := range want {
-			_, err := store.DB.Exec("INSERT INTO events (id, location, placecount, date) VALUES (?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, event.Date)
+			_, err := store.DB.Exec("INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)", event.Id, event.Location, event.PlaceCount, time1.Format(time.RFC3339), event.PriceId)
 			if err != nil {
 				log.Fatal("Error executing the query insert in database - ", err)
 			}
@@ -105,20 +105,21 @@ func TestPOSTEvent(t *testing.T) {
 	}
 	store.CreateSession(session)
 
-	time1, err := time.Parse(types.EventFormat, "2024-02-13")
+	// NOTE: The formatting for the time sent should be time.RFC3339
+
+	time1, err := time.Parse(time.RFC3339, "2024-04-02T13:39:43.000Z")
+
 	if err != nil {
 		log.Fatal("Failed parse time - ", err)
 	}
-	time2 := time1.Format(types.EventFormat)
 
-	want := &types.Event{
-		Id:         uuid.NewString(),
+	want := &types.EventForm{
 		Location:   "Somewhere",
 		PlaceCount: 28,
-		Date:       time2,
+		Date:       time1,
 	}
 
-	jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placeCount": %d, "date": "%s"}`, want.Id, want.Location, want.PlaceCount, want.Date))
+	jsonData := []byte(fmt.Sprintf(`{"location": "%s", "placecount": %d, "date": "%s"}`, want.Location, want.PlaceCount, want.Date.Format(time.RFC3339)))
 	request, _ := http.NewRequest(http.MethodPost, "/admin/events", bytes.NewBuffer(jsonData))
 	request.AddCookie(cookie)
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
@@ -128,10 +129,16 @@ func TestPOSTEvent(t *testing.T) {
 	server.ServeHTTP(response, request)
 
 	assertStatus(t, response.Code, http.StatusCreated)
+	// NOTE: check if that function return the time with time.RFC3339 formatting
 	got := store.GetAllEvents()[0]
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("\ngot %v\n want %v", got, want)
+
+	assertIsUUID(t, got.Id)
+	assertEqualString(t, got.Location, want.Location)
+	assertEqualInt(t, got.PlaceCount, want.PlaceCount)
+	if got.Date != want.Date {
+		t.Errorf("\ngot %v\n want %v", got.Date, want.Date)
 	}
+	// TODO: add test to see if the product is created in stripe.
 }
 
 func TestDELETEEvent(t *testing.T) {
@@ -160,7 +167,7 @@ func TestDELETEEvent(t *testing.T) {
 
 	for _, tt := range tableTest {
 		t.Run(tt.name, func(t *testing.T) {
-			event := types.NewEvent(40)
+			event := types.NewEvent("Some Location", 40, time.Now(), "")
 			if tt.postEventToStore {
 				store.PostEvent(event)
 			}
@@ -206,7 +213,7 @@ func TestUPDATEEvent(t *testing.T) {
 
 	for _, tt := range tableTest {
 		t.Run(tt.name, func(t *testing.T) {
-			event := types.NewEvent(40)
+			event := types.NewEvent("Some Location", 40, time.Now(), "")
 			if tt.postEventToStore {
 				store.PostEvent(event)
 			}
@@ -214,8 +221,8 @@ func TestUPDATEEvent(t *testing.T) {
 			newLocation := "My new location"
 			newPlacecount := 120
 			newDate := time.Now().Add(5 * time.Hour)
-			newDateStr := newDate.Format(types.EventFormat)
-			jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placecount": %d, "date": "%s"}`, event.Id, newLocation, newPlacecount, newDateStr))
+			newDateStr := newDate.Format(time.RFC3339)
+			jsonData := []byte(fmt.Sprintf(`{"id": "%s", "location": "%s", "placecount": %d, "date": "%s", "priceid": ""}`, event.Id, newLocation, newPlacecount, newDateStr))
 
 			endpoint := fmt.Sprintf("/admin/events?id=%s", event.Id)
 			request, _ := http.NewRequest(http.MethodPut, endpoint, bytes.NewBuffer([]byte(jsonData)))

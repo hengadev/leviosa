@@ -2,9 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/GaryHY/event-reservation-app/internal/types"
+	// "fmt"
 	"log"
 	"net/http"
+	// "os"
+
+	"github.com/GaryHY/event-reservation-app/internal/types"
+	"github.com/stripe/stripe-go/v76"
 )
 
 func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -16,9 +20,9 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
-		case "OPTIONS": // preflight request
+		case http.MethodOptions: // preflight request
 			enableJSON(&w)
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+			enableMethods(&w, "*")
 		case http.MethodGet:
 			s.showAllEvents(w)
 		case http.MethodPost:
@@ -44,14 +48,21 @@ func (s *Server) showAllEvents(w http.ResponseWriter) {
 }
 
 func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
-	var event types.Event
+	var event types.EventForm
 	if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Failed to decode the body to get the event")
+		log.Fatal("Failed to decode the body to get the event - ", err)
 	}
-	s.Store.PostEvent(&event)
-	// TODO: Add that to the function when done with the function code
-	// createEventProductStripe(event.Id, event.Date)
+	newevent := types.NewEvent(event.Location, event.PlaceCount, event.Date, stripe.Price{}.ID)
+	// TODO: to make that request, I need to be authorized and with https (https://docs.stripe.com/api/authentication)
+	// priceid, err := createEventProductStripe(&w, newevent.Id, newevent.Date)
+	// if err != nil {
+	// 	log.Fatal("Failed to create the product for stripe - ", err)
+	// }
+
+	priceid := "" // to remove once I made the https connection
+	newevent.PriceId = priceid
+	s.Store.PostEvent(newevent)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -77,5 +88,7 @@ func (s *Server) updateEvent(w http.ResponseWriter, r *http.Request) {
 	if err := s.Store.UpdateEvent(&event); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	// TODO: Make that function in payment to update the possible event, if that is somehting possible
+	// updateEventProductStripe(event_id)
 	w.WriteHeader(http.StatusCreated)
 }

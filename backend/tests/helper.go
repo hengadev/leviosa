@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/GaryHY/event-reservation-app/internal/api"
-	"github.com/GaryHY/event-reservation-app/internal/database"
+	"github.com/GaryHY/event-reservation-app/internal/database/s3"
+	"github.com/GaryHY/event-reservation-app/internal/database/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -18,7 +19,7 @@ const (
 	createUsersTable    = "CREATE TABLE IF NOT EXISTS users (id, email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
 	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, created_at TEXT NOT NULL);"
 	createVotesTable    = "CREATE TABLE IF NOT EXISTS votes (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, eventid TEXT NOT NULL REFERENCES events);"
-	createEventsTable   = "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL);"
+	createEventsTable   = "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL, priceid TEXT NOT NULL);"
 )
 
 func assertEqualString(t testing.TB, got, want string) {
@@ -101,7 +102,7 @@ func makeServerAndStoreWithUsersTable() (*api.Server, *sqlite.Store) {
 	if err != nil {
 		log.Fatal("Something went wrong when creating the database")
 	}
-	photostore := sqlite.NewPhotoStore()
+	photostore := s3.NewPhotoStore()
 	store.Init(createUsersTable)
 	// server := api.NewServer(store)
 	server := api.NewServer(store, photostore)

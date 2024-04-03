@@ -2,12 +2,14 @@ package api
 
 import (
 	"encoding/json"
-	"github.com/GaryHY/event-reservation-app/internal/types"
 	"log"
 	"net/http"
+
+	"github.com/GaryHY/event-reservation-app/internal/types"
 )
 
 func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -22,8 +24,9 @@ func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				s.showUserEvents(w, id)
 			}
+		case http.MethodOptions:
+			enableMethods(&w, http.MethodGet)
 		default:
-			w.Header().Set("Access-Control-Allow-Methods", "GET")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
@@ -38,6 +41,6 @@ func (s *Server) showUserEvents(w http.ResponseWriter, id string) {
 	}
 	events := s.Store.GetEventByUserId(id)
 	if err := json.NewEncoder(w).Encode(&events); err != nil {
-		log.Fatal("Unable to encode the data for the events of the user identified by the id %q - %s", id, err)
+		log.Fatalf("Unable to encode the data for the events of the user identified by the id %q - %s", id, err)
 	}
 }
