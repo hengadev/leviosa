@@ -6,6 +6,7 @@ import (
 )
 
 func (s *Server) votesHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -17,8 +18,9 @@ func (s *Server) votesHandler(w http.ResponseWriter, r *http.Request) {
 			s.makeVote(w, r, cookie.Value)
 		case http.MethodDelete:
 			s.deleteVote(w, r)
+		case http.MethodOptions:
+			enableMethods(&w, http.MethodDelete, http.MethodPost)
 		default:
-			w.Header().Set("Access-Control-Allow-Methods", "POST")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}

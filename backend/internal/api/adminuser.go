@@ -16,9 +16,10 @@ func (s *Server) adminUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.Store.Authorize(cookie.Value, types.ADMIN) {
 		switch r.Method {
-		case "OPTIONS": // preflight request
+		case http.MethodOptions: // preflight request
 			enableJSON(&w)
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT")
+			// enableMethods(&w, http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPost)
+			enableMethods(&w, "*")
 		case http.MethodGet:
 			s.showAllUsers(w)
 		case http.MethodPost:
@@ -28,7 +29,6 @@ func (s *Server) adminUsersHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodPut:
 			s.updateUser(w, r)
 		default:
-			w.Header().Set("Access-Control-Allow-Methods", "POST")
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}

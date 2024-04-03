@@ -3,11 +3,8 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
-	"github.com/GaryHY/event-reservation-app/internal/types"
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 	"log"
-	"time"
 )
 
 type Store struct {

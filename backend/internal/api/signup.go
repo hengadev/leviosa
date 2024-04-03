@@ -11,9 +11,9 @@ import (
 func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 	switch r.Method {
-	case "OPTIONS": // preflight request
+	case http.MethodOptions: // preflight request
 		enableJSON(&w)
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
+		enableMethods(&w, http.MethodPost)
 	case http.MethodPost:
 		cookie, err := r.Cookie(types.SessionCookieName)
 		var user *types.UserStored

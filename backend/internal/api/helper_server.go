@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/GaryHY/event-reservation-app/internal/types"
 	"net/http"
+	"strings"
 )
 
 // TODO: Put that in a .env file
@@ -18,6 +19,14 @@ func enableCors(w *http.ResponseWriter) {
 
 func enableJSON(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+func enableMethods(w *http.ResponseWriter, methods ...string) {
+	(*w).Header().Set("Access-Control-Allow-Methods", strings.Join(methods, " "))
+}
+
+func enableHeaders(w *http.ResponseWriter, headers ...string) {
+	(*w).Header().Set("Access-Control-Allow-Headers", strings.Join(headers, ","))
 }
 
 // TODO: Can I use generic for that ?
