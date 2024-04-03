@@ -8,10 +8,11 @@ import (
 )
 
 func (s *Server) photosHandler(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {
-		// w.WriteHeader(http.StatusUnauthorized)
-		// return
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
 	switch r.Method {
 	case http.MethodGet:
@@ -32,8 +33,9 @@ func (s *Server) photosHandler(w http.ResponseWriter, r *http.Request) {
 		if s.Store.Authorize(cookie.Value, types.ADMIN) {
 			s.updatePhoto(w, r)
 		}
+	case http.MethodOptions:
+		enableMethods(&w, http.MethodPost)
 	default:
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
