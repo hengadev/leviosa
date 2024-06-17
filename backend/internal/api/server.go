@@ -54,9 +54,9 @@ func NewServer(store Store, photostore PhotoStore) *Server {
 }
 
 type Server struct {
-	Store Store
+	Store
 	http.Handler
-	PhotoStore PhotoStore
+	PhotoStore
 }
 
 type PhotoStore interface {
