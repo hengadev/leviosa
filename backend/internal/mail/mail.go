@@ -8,19 +8,19 @@ import (
 	"os"
 )
 
-// TODO: Use a generic for the types user used
+// TODO: use the right user type for this, you just have to use the struct tag better
 
-// Function that send an email to all users to specify that a new email has been created.
+// Function that send an email to all users to specify that a new event has been created.
 func HandleNewEventMail(usersList []*types.UserStored, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	for _, user := range usersList {
-		go func() {
+		go func(user *types.UserStored) {
 			templData := struct {
 				Username string
 				Heure    string
 			}{Username: user.FirstName, Heure: eventTime}
 			sendMail(companyMail, user.Email, "Un nouvel evenement pourrait vous interesser", "/internal/mail/templates/newEvent.html", password, templData)
-		}()
+		}(user)
 	}
 }
 
@@ -64,6 +64,7 @@ func sendMail(from, to, subject, templateFilename, password string, data any) {
 	// m.SetAddressHeader("Cc", "dan@example.com", "Dan")
 	m.SetHeader("Subject", subject)
 
+	// get the working directory to get the file to parse (the one with the template)
 	wd, _ := os.Getwd()
 	t, _ := template.ParseFiles(wd + templateFilename)
 
@@ -83,8 +84,10 @@ func getCompanyCredentials() (string, string) {
 	return os.Getenv("MAIL"), os.Getenv("GMAILPASSWORD")
 }
 
-// A function to get back a forgottend password.
-func HandlePasswordForgotten() {}
+// TODO: A function to get back a forgottend password.
+func HandlePasswordForgotten() {
+	// send an email to the user and when redirected to that link, give the user an opportunity to remake the password.
+}
 
 // FIX:
 // 0. Learn how to send a simple mail.
