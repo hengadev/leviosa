@@ -8,6 +8,7 @@ import (
 )
 
 func (s *Server) photosHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: handle the authorization for helper or above using the session_id in the header authorization.
 	enableCors(&w)
 	cookie, err := r.Cookie(types.SessionCookieName)
 	if err != nil {

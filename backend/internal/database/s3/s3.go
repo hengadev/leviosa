@@ -53,6 +53,8 @@ func (p *PhotoStore) PostFile(file multipart.File, filename, event_id string) {
 
 // TODO:
 // https://dev.to/aws-builders/get-objects-from-aws-s3-bucket-with-golang-2mne
+// TODO: add an error in the return type
+// func (p *PhotoStore) GetAllobjects(event_id string) ([]types.Object) {
 func (p *PhotoStore) GetAllobjects(event_id string) []types.Object {
 	res := make([]types.Object, 0)
 	localisation := fmt.Sprintf("%s/%s", BUCKETNAME, event_id)
