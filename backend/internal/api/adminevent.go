@@ -23,8 +23,8 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 		case http.MethodOptions: // preflight request
 			enableJSON(&w)
 			enableMethods(&w, "*")
-		case http.MethodGet:
-			s.showAllEvents(w)
+		// case http.MethodGet:
+		// 	s.showAllEvents(w)
 		case http.MethodPost:
 			// TODO: Des qu'un event est cree je veux creer des cron jobs qui vont etre schedule en fonction de la date de planning de l'event en question.
 			s.makeEvent(w, r)
@@ -36,16 +36,16 @@ func (s *Server) adminEventHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) showAllEvents(w http.ResponseWriter) {
-	events := s.Store.GetAllEvents()
-	if len(events) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-	}
-	if err := json.NewEncoder(w).Encode(events); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Fatal("Failed to encode events - ", err)
-	}
-}
+// func (s *Server) showAllEvents(w http.ResponseWriter) {
+// 	events := s.Store.GetAllEvents()
+// 	if len(events) == 0 {
+// 		w.WriteHeader(http.StatusNotFound)
+// 	}
+// 	if err := json.NewEncoder(w).Encode(events); err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		log.Fatal("Failed to encode events - ", err)
+// 	}
+// }
 
 func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
 	var event types.EventForm
@@ -53,7 +53,8 @@ func (s *Server) makeEvent(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Fatal("Failed to decode the body to get the event - ", err)
 	}
-	newevent := types.NewEvent(event.Location, event.PlaceCount, event.Date, stripe.Price{}.ID)
+	defer r.Body.Close() // close the body after the reading of the struct from the request
+	newevent := types.NewEvent(event.Location, event.PlaceCount, event.BeginAt, stripe.Price{}.ID)
 	// TODO: to make that request, I need to be authorized and with https (https://docs.stripe.com/api/authentication)
 	// priceid, err := createEventProductStripe(&w, newevent.Id, newevent.Date)
 	// if err != nil {

@@ -1,46 +1,140 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
-	"log"
+	"errors"
+	"fmt"
 	"net/http"
-
-	"github.com/GaryHY/event-reservation-app/internal/types"
+	"sync"
+	"time"
 )
 
+// handler
 func (s *Server) eventHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
-	cookie, err := r.Cookie(types.SessionCookieName)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
+	sessionId := parseAuthorizationHeader(r)
+	switch r.Method {
+	case http.MethodOptions:
+		enableMethods(&w, http.MethodGet)
+	case http.MethodGet:
+		// TODO: use the r.PathValue method instead and split the handler so that I cna use only one function
+		// id := r.PathValue("id")
+		id := r.URL.Query().Get("id") // the id I get is the eventId for specific information around it.
+		if id == "" {
+			s.showAllEvents(w, sessionId)
+		} else {
+			s.showEvent(w, id)
+		}
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if s.Store.Authorize(cookie.Value, types.BASIC) {
-		switch r.Method {
-		case http.MethodGet:
-			id := r.URL.Query().Get("id")
-			if id == "" {
-				s.showAllEvents(w) // ne sera pas tester puisque deja pour le /admin/event endpoint
-			} else {
-				s.showUserEvents(w, id)
-			}
-		case http.MethodOptions:
-			enableMethods(&w, http.MethodGet)
-		default:
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
+}
+
+func (s *Server) getEventById(w http.ResponseWriter, r *http.Request) {
+	eventID := r.PathValue("id")
+	event := s.Store.GetEventByID(eventID)
+	if err := encode(w, http.StatusOK, event); err != nil {
+		http.Error(w, fmt.Sprintf("Unable to get event with the id of %q", eventID), http.StatusInternalServerError)
+	}
+}
+
+const requestDuration = 500
+
+type userch struct {
+	userID string
+	err    error
+}
+
+func otherGetUserIdBySessionId(
+	ctx context.Context,
+	sessionId string,
+	wg *sync.WaitGroup,
+) chan<- userch {
+	var ch = make(chan userch)
+	defer wg.Done()
+	userID := "302933498234"
+	err := errors.New("some error")
+	go func() {
+		defer close(ch)
+		ch <- userch{
+			userID: userID,
+			err:    err,
+		}
+	}()
+	return ch
+}
+
+// the function that I try to code that uses go routines to speed up the process.
+func (s *Server) otherGetAllEvents(w http.ResponseWriter, r *http.Request) {
+	sessionId := parseAuthorizationHeader(r)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(requestDuration)*time.Millisecond)
+	defer cancel()
+	var userch = make(chan struct {
+		userID string
+		err    error
+	})
+	var eventch = make(chan struct {
+		event types.EventBody
+		err   error
+	})
+	var wg sync.WaitGroup
+	wg.Add(2)
+	// that thing should return a channel
+	otherGetUserIdBySessionId(ctx, sessionId, userch, &wg)
+	// TODO: do the same thing for the event thing.
+	for i := 0; i < 2; i++ {
+		select {
+		case <-userch:
+		case <-eventch:
+		case <-ctx.Done():
+			http.Error(w, "The request takes too long to finish", http.StatusInternalServerError)
 		}
 	}
 }
 
-// Retourne tous les events auxquels est inscrit un utilisateur donneee.
-func (s *Server) showUserEvents(w http.ResponseWriter, id string) {
-	if !s.Store.CheckUserById(id) {
-		w.WriteHeader(http.StatusBadRequest)
+func (s *Server) getAllEvents(w http.ResponseWriter, r *http.Request) {
+	sessionId := parseAuthorizationHeader(r)
+	userID, err := s.Store.GetUserIdBySessionId(sessionId)
+	if err != nil {
+		WriteResponse(w, "Unable to get the events from the database", http.StatusInternalServerError)
 		return
 	}
-	events := s.Store.GetEventByUserId(id)
-	if err := json.NewEncoder(w).Encode(&events); err != nil {
-		log.Fatalf("Unable to encode the data for the events of the user identified by the id %q - %s", id, err)
+	resBody, err := s.Store.GetEventForUser(userID)
+	if err != nil {
+		WriteResponse(w, "Unable to get the events from the database", http.StatusInternalServerError)
+		return
+	}
+	if err := encode(w, http.StatusOK, resBody); err != nil {
+		http.Error(w, "Unable to serialize data for the events", http.StatusInternalServerError)
+	}
+}
+
+// NOTE: old api with the general handler
+// Return an event specific by ID.
+func (s *Server) showEvent(w http.ResponseWriter, eventId string) {
+	event := s.Store.GetEventByID(eventId)
+	if err := json.NewEncoder(w).Encode(&event); err != nil {
+		WriteResponse(w, fmt.Sprintf("Unable to encode the data for the events of the event identified by the id %q - %s", eventId, err), http.StatusInternalServerError)
+		return
+	}
+}
+
+// Return events for specific user.
+func (s *Server) showAllEvents(w http.ResponseWriter, sessionId string) {
+	userId, err := s.Store.GetUserIdBySessionId(sessionId)
+	if err != nil {
+		WriteResponse(w, "Unable to get the events from the database", http.StatusInternalServerError)
+		return
+	}
+	resBody, err := s.Store.GetEventForUser(userId)
+	if err != nil {
+		WriteResponse(w, "Unable to get the events from the database", http.StatusInternalServerError)
+		return
+	}
+	// the encode send some problem for some reason
+	if err := encode(w, http.StatusOK, resBody); err != nil {
+		http.Error(w, "Unable to serialize data for the events", http.StatusInternalServerError)
 	}
 }

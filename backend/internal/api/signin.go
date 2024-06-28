@@ -45,7 +45,8 @@ func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 		if err := s.Store.CreateSession(session); err != nil {
 			log.Fatal("Failed to create session in the database for the user")
 		}
-		expired_at := session.Created_at.Add(types.SessionDuration)
+		expired_at := session.Created_at.Add(types.CookieDuration)
+		// TODO: Storethe session information on a redis database to get faster retrieval of user information.
 		// TODO: Make the cookie secure to only use https using SSL encryption and use httpOnly.
 		// How does that change the tests, and how to use https in golang ?
 		http.SetCookie(w, &http.Cookie{

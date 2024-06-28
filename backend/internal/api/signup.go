@@ -9,6 +9,7 @@ import (
 )
 
 func (s *Server) signUpHandler(w http.ResponseWriter, r *http.Request) {
+	// do the cors and all that thing in some middleware or it does not make any sense
 	enableCors(&w)
 	switch r.Method {
 	case http.MethodOptions: // preflight request
