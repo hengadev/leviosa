@@ -1,7 +1,9 @@
 package types
 
-type Role string
+// The link for how to implement enums in golang : https://www.sohamkamani.com/golang/enums/
+type Role int8
 
+// why would I need that ?
 func ConvertToRole(str string) Role {
 	switch str {
 	case "admin":
@@ -31,8 +33,27 @@ func (r Role) IsSuperior(role Role) bool {
 	}
 }
 
+func (r Role) String() string {
+	switch r {
+	case ADMIN:
+		return "admin"
+	case HELPER:
+		return "helper"
+	case BASIC:
+		return "basic"
+	}
+	return "unknown"
+}
+
+// const (
+// 	ADMIN  = Role("admin")
+// 	BASIC  = Role("basic")
+// 	HELPER = Role("helper")
+// )
+
+// The implementation of the isSuperior function is easier with that.
 const (
-	ADMIN  = Role("admin")
-	BASIC  = Role("basic")
-	HELPER = Role("helper")
+	BASIC Role = iota // the default value too
+	HELPER
+	ADMIN
 )
