@@ -40,7 +40,7 @@ func (s *Store) HasSession(id string) bool {
 		return false
 	} else {
 		created_at_parsed := s.parseCreatedAt(id)
-		if created_at_parsed.Add(types.SessionDuration).Before(time.Now()) {
+		if created_at_parsed.Add(types.CookieDuration).Before(time.Now()) {
 			if err := s.DeleteSessionByID(id); err != nil {
 				log.Fatal("Failed to deleted from session")
 			}

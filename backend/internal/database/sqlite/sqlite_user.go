@@ -146,12 +146,13 @@ func hashPassword(password string) string {
 func (s *Store) Authorize(session_id string, roleMin types.Role) bool {
 	var rolestr string
 	query := `
-        SELECT role FROM users WHERE id = 
-        (SELECT userid FROM sessions WHERE id = ?);
+        SELECT role FROM users WHERE id=
+        (SELECT userid FROM sessions WHERE id=?);
     `
 	err := s.DB.QueryRow(query, session_id).Scan(&rolestr)
+	// TODO: do better error handling on that, I do not want to stop the server if that request fails.
 	if err != nil {
-		log.Fatalf("Failed to find the role of the user refered to the sessions id %q - %s)", session_id, err)
+		log.Fatalf("Failed to find the role of the user referred to the session id %q - %s)", session_id, err)
 	}
 	userRole := types.ConvertToRole(rolestr)
 
