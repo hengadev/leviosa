@@ -105,8 +105,6 @@ func TestPOSTEvent(t *testing.T) {
 	}
 	store.CreateSession(session)
 
-	// NOTE: The formatting for the time sent should be time.RFC3339
-
 	time1, err := time.Parse(time.RFC3339, "2024-04-02T13:39:43.000Z")
 
 	if err != nil {
@@ -129,7 +127,6 @@ func TestPOSTEvent(t *testing.T) {
 	server.ServeHTTP(response, request)
 
 	assertStatus(t, response.Code, http.StatusCreated)
-	// NOTE: check if that function return the time with time.RFC3339 formatting
 	got := store.GetAllEvents()[0]
 
 	assertIsUUID(t, got.Id)
@@ -142,7 +139,6 @@ func TestPOSTEvent(t *testing.T) {
 }
 
 func TestDELETEEvent(t *testing.T) {
-	// TODO: add test for event not in database
 	server, store := makeServerAndStoreWithUsersTable()
 	store.Init(createEventsTable, createSessionsTable)
 

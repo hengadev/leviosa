@@ -68,7 +68,7 @@ func TestPOSTSignIn(t *testing.T) {
 		new_cookie         bool
 	}{
 		{"User already registered with valid cookie", time.Now(), false},
-		{"User has an expired (non valid) cookie", time.Now().Add(-types.SessionDuration), true},
+		{"User has an expired (non valid) cookie", time.Now().Add(-types.CookieDuration), true},
 	}
 
 	for _, tt := range testWithCookie {

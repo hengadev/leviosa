@@ -89,7 +89,7 @@ func assertIsUUID(t testing.TB, uuidString string) {
 func assertSameExpirationDate(t testing.TB, got, want time.Time) {
 	t.Helper()
 	gotParsed := got.Local().Format(time.RFC822)
-	wantParsed := want.Add(types.SessionDuration).Format(time.RFC822)
+	wantParsed := want.Add(types.CookieDuration).Format(time.RFC822)
 
 	if gotParsed != wantParsed {
 		// t.Errorf("Expected cookie's %q, got expiration of %q", gotExpiration, expectedExpiration)
