@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -15,18 +16,14 @@ func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		input, err := serverutil.Decode[struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}](r)
-		user, err := usr.CreateAccount(ctx, input.Email, input.Password)
+		// TODO: Need to see if that works especially the part with the birth date.
+		input, err := serverutil.Decode[user.User](r)
+		user, err := usr.CreateAccount(ctx, &input)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create account", "error", err)
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		_ = user
-
 		sessionID, err := ssn.CreateSession(ctx, user.ID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create session", "error", err)
@@ -47,9 +44,28 @@ func UpdateUser(svc *user.Service) http.Handler {
 	})
 }
 
-func GetUser(repo *user.Reader) http.Handler {
+func GetUser(repo user.Reader) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		print("get the user handler")
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+		// TODO:
+		// - get the id
+		userID, err := serverutil.Decode[struct {
+			ID string `json:"userid"`
+		}](r)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
+			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			return
+		}
+		// - fing the id using the reader
+		user, err := repo.FindAccountByID(ctx, userID.ID)
+		// - return the user trough json
+		if err := serverutil.Encode(w, http.StatusFound, user); err != nil {
+			slog.ErrorContext(ctx, "failed to send the user", "error", err)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 	})
 }
 
