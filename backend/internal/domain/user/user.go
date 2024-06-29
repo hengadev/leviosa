@@ -44,3 +44,36 @@ func (a *User) Create() {
 func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
 }
+
+type Role int8
+
+const (
+	UNKNOWN       Role = iota
+	BASIC         Role = iota
+	GUEST         Role = iota
+	ADMINISTRATOR Role = iota
+)
+
+func (r Role) String() string {
+	roles := []string{
+		"unknown",
+		"basic",
+		"guest",
+		"administrator",
+	}
+	return roles[r]
+}
+
+// Function qui retourne si un role est superieur (ou egal a un autre role).
+func (r Role) IsSuperior(role Role) bool {
+	switch r {
+	case ADMINISTRATOR:
+		return role == ADMINISTRATOR || role == GUEST || role == BASIC
+	case GUEST:
+		return role == GUEST
+	case BASIC:
+		return role == BASIC
+	default:
+		return false
+	}
+}
