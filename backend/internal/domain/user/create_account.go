@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 )
 
-func (s *Service) CreateAccount(ctx context.Context, email, password string) (*Account, error) {
+func (s *Service) CreateAccount(ctx context.Context, email, password string) (*User, error) {
 	var input struct {
 		Email    Email
 		Password Password

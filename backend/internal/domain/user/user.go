@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: do better with the address
-type Account struct {
+type User struct {
 	ID         string    `json:"id"`
 	Email      string    `json:"email" validate:"required,email"`
 	Password   string    `json:"-" validate:"required,min=6"`
@@ -27,8 +27,8 @@ type Account struct {
 }
 
 // what is the option pattern in golang ? Can I use it in here since some element are not going to be used to send by the user
-func NewAccount(email Email, password Password) *Account {
-	return &Account{
+func NewAccount(email Email, password Password) *User {
+	return &User{
 		Email:    email.String(),
 		Password: password.String(),
 		// put the role in a parameter please
@@ -36,11 +36,11 @@ func NewAccount(email Email, password Password) *Account {
 	}
 }
 
-func (a *Account) Create() {
+func (a *User) Create() {
 	a.ID = uuid.NewString()
 	a.CreatedAt = time.Now().UTC()
 }
 
-func (a *Account) Login() {
+func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
 }
