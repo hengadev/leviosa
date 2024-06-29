@@ -16,10 +16,10 @@ type User struct {
 	CreatedAt  time.Time `json:"createdat"`
 	LoggedInAt time.Time `json:"loggedinat"`
 	Role       string    `json:"role"`
+	BirthDate  time.Time `json:"birthdate"`
 	LastName   string    `json:"lastname"`
 	FirstName  string    `json:"firstname"`
 	Gender     string    `json:"gender"`
-	BirthDate  time.Time `json:"birthdate"`
 	Telephone  string    `json:"telephone"`
 	Address    string    `json:"address"`
 	City       string    `json:"city"`
@@ -27,12 +27,30 @@ type User struct {
 }
 
 // what is the option pattern in golang ? Can I use it in here since some element are not going to be used to send by the user
-func NewAccount(email Email, password Password) *User {
+func NewUser(
+	email Email,
+	password Password,
+	birthdate time.Time,
+	lastname,
+	firstname,
+	gender,
+	telephone,
+	address,
+	city,
+	postalcard string,
+) *User {
 	return &User{
-		Email:    email.String(),
-		Password: password.String(),
-		// put the role in a parameter please
-		// Role: role.User.String(),
+		Email:      email.String(),
+		Password:   password.String(),
+		Role:       BASIC.String(),
+		BirthDate:  birthdate,
+		LastName:   lastname,
+		FirstName:  firstname,
+		Gender:     gender,
+		Telephone:  telephone,
+		Address:    address,
+		City:       city,
+		PostalCard: postalcard,
 	}
 }
 
