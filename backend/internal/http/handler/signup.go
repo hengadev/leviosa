@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	// "github.com/GaryHY/event-reservation-app/internal/mail"

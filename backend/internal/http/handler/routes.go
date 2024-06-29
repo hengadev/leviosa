@@ -1,4 +1,4 @@
-package api
+package handler
 
 // NOTE: I get this from this link : https://grafana.com/blog/2024/02/09/how-i-write-http-services-in-go-after-13-years/
 
