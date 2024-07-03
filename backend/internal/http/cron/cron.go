@@ -38,7 +38,7 @@ func checkCloseVote() {
 	fmt.Println("Checking if I need to close the votes.")
 }
 
-// Une fonction pour backer mon fichier sqlite ailleurs
+// Une fonction pour backer mes BDD. Faire les migrations en gros.
 func backupDatabase() {
 	fmt.Println("Ici on bien dormi en fait.")
 }
