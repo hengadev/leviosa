@@ -33,8 +33,8 @@ func NewServer(services *handler.Services, opts ...ServerOption) *Server {
 	// add middlewares common to all routes. [Order important]
 	server.Use(
 		mw.AddRequestID,
+		mw.Auth(services.Repo.Session, services.Repo.User),
 		mw.TestPrint,
-		// TODO: add the auth middleware and make it avoid some endpoints with exceptions.
 	)
 	return server
 }

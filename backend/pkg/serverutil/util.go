@@ -7,6 +7,9 @@ import (
 	"net/http"
 )
 
+const SIGNINENDPOINT = "/signin"
+const SIGNUPENDPOINT = "/signup"
+
 type Validator interface {
 	Valid(ctx context.Context) (problems map[string]string)
 }

@@ -1,53 +1,78 @@
 package middleware
 
 import (
-	"errors"
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
+	app "github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/google/uuid"
 )
 
-// change the store here to a session store to use the interface for that.
-func Auth(store *session.Reader) Middleware {
+type Sessionkey int
+
+const SessionIDKey Sessionkey = 23
+
+// Function middleware to authenticate and authorize users.
+func Auth(s session.Reader, u user.Reader) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var cred struct {
-				expectedRole user.Role
-				sessionId    string
+			// make exception for certain path where you just call next.ServeHTTP(w,r)
+			enpointsToAvoid := []string{
+				serverutil.SIGNINENDPOINT,
+				serverutil.SIGNUPENDPOINT,
 			}
-			{
-				header := r.Header.Get("Authorization")
-				if cred.sessionId, cred.expectedRole = parseRequestAuth(r); cred.sessionId == header || cred.sessionId == "" {
-					serverutil.WriteResponse(w, "session ID invalid, you need to login again", http.StatusUnauthorized)
-					return
-				}
-				// TODO: Do i need the next two conditions split ?
-				if !store.HasSession(cred.sessionId) {
-					serverutil.WriteResponse(w, "Session has expired, you need to login again.", http.StatusUnauthorized)
-					return
-				}
-				if !store.Authorize(cred.sessionId, cred.expectedRole) {
-					serverutil.WriteResponse(w, "The user does not have right to access this ressource.", http.StatusUnauthorized)
-					return
+			for _, endpoint := range enpointsToAvoid {
+				if r.URL.Path == endpoint {
+					next.ServeHTTP(w, r)
 				}
 			}
-			next.ServeHTTP(w, r)
+			ctx := r.Context()
+			// get expected role for url path
+			expectedRole := getExpectedRoleFromRequest(r)
+			// get sessionID from request
+			sessionID, err := getSessionIDFromRequest(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			// get session object from session repo
+			session, err := s.FindSessionByID(ctx, sessionID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			// validate session
+			if pbms := session.Valid(ctx, expectedRole); len(pbms) > 0 {
+				errors := "session error: ["
+				for field, err := range pbms {
+					errors += fmt.Sprintf("%s: %s, ", field, err)
+				}
+				errors += "]"
+				http.Error(w, errors, http.StatusUnauthorized)
+				return
+			}
+			// add userID to context.
+			ctx = context.WithValue(ctx, SessionIDKey, session.UserID)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// use that and the logger to log the error if this is something that I want.
-var (
-	ErrNoValidSession = errors.New("no valid session")
-	ErrNotAuthorized  = errors.New("not authorized")
-)
+func getSessionIDFromRequest(r *http.Request) (string, error) {
+	sessionID := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if err := uuid.Validate(sessionID); err != nil {
+		return "", app.NewInvalidSessionErr(err)
+	}
+	return sessionID, nil
+}
 
-func parseRequestAuth(r *http.Request) (string, user.Role) {
+func getExpectedRoleFromRequest(r *http.Request) user.Role {
 	var role user.Role
-	sessionId := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	values := strings.Split(r.URL.Path, "/")
 	switch values[1] {
 	case user.ADMINISTRATOR.String():
@@ -56,8 +81,8 @@ func parseRequestAuth(r *http.Request) (string, user.Role) {
 		role = user.GUEST
 	case user.BASIC.String():
 		role = user.BASIC
-	default: // the default is an error since the role is not known
+	default:
 		role = user.UNKNOWN
 	}
-	return sessionId, role
+	return role
 }
