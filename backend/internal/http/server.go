@@ -1,68 +1,64 @@
 package http
 
 import (
+	"context"
 	"net/http"
 	"time"
 
+	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/http/service"
 )
 
-// NOTE: for a more in depth customization of the server I can consult this folder : /home/henga/Documents/projects/learn_golang/grpc/nicjackson/first
 type Server struct {
-	port              int
-	host              string
-	http.Handler      // the router of the application
-	*handler.Services // contains all the services and repos
-	// need to add this and see how to use it in the functions
-	ReadTimeout       time.Time // 1s
-	ReadHeaderTimeout time.Time
-	WriteTimeout      time.Time
-	IdleTimeout       time.Time
+	srv *http.Server
 }
 
 func NewServer(services *handler.Services, opts ...ServerOption) *Server {
-	// build serve with default options.
-	srv := &Server{
-		port:     8000,
-		host:     "localhost",
-		Services: services,
+	// build server with default options.
+	server := &Server{
+		srv: &http.Server{
+			// might need to change these values
+			IdleTimeout:       120 * time.Second,
+			ReadTimeout:       1 * time.Second,
+			WriteTimeout:      1 * time.Second,
+			ReadHeaderTimeout: 1 * time.Second,
+		},
 	}
-	// NOTE: the way I want my routers to be.
-	// handlecreateAccount := srv.Svc.User.CreateAccount
-
-	// add option for the server.
+	// add server options
 	for _, opt := range opts {
-		opt(srv)
+		opt(server)
 	}
-	// create the router and add the routes
-	router := &http.ServeMux{}
-	// TODO: How to add all the services in here so that I can actually make all the routes since I need to make them easy brother.
-	addRoutes(router, services)
-	// add middlewares to all the routes.
-	srv.Use(midw, midw)
-	srv.Handler = router
-	return srv
-}
-
-func midw(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// do the thing for that handler brother
-		next.ServeHTTP(w, r)
-	})
+	// create router and add routes
+	server.addRoutes(services)
+	// add middlewares common to all routes. [Order important]
+	server.Use(
+		mw.AddRequestID,
+		mw.TestPrint,
+		// TODO: add the auth middleware and make it avoid some endpoints with exceptions.
+	)
+	return server
 }
 
 // I think that is what we need to do
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// addr := fmt.Sprintf(":%d", s.port)
-	// slog.Info("HTTP server listening", "addr", addr)
-	s.Handler.ServeHTTP(w, r)
+func (s *Server) ListenAndServe() error {
+	return s.srv.ListenAndServe()
 }
 
-type Middleware func(http.Handler) http.Handler
+func (s *Server) ListenAndServeTLS(certFile, keyFile string) error {
+	return s.srv.ListenAndServeTLS(certFile, keyFile)
+}
+
+func (s *Server) Close() error {
+	return s.srv.Close()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.srv.Shutdown(ctx)
+}
 
 // A function to add middleware to all the routes of the multiplexer.
-func (s *Server) Use(middlewares ...Middleware) {
+func (s *Server) Use(middlewares ...mw.Middleware) {
 	for _, mw := range middlewares {
-		s.Handler = mw(s.Handler)
+		s.srv.Handler = mw(s.srv.Handler)
 	}
 }
