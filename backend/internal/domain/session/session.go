@@ -1,7 +1,10 @@
 package session
 
 import (
+	"context"
 	"time"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 
 	"github.com/google/uuid"
 )
@@ -11,17 +14,19 @@ const SessionExpirationDuration = time.Minute * 20
 type Session struct {
 	ID         string    `json:"id"`
 	UserID     string    `json:"userid"`
+	Role       string    `json:"userrole"`
 	LoggedInAt time.Time `json:"loggedinat"`
 	CreatedAt  time.Time `json:"createdat"`
 	ExpiresAt  time.Time `json:"expiresat"`
 }
 
-func NewSession(userID string) (*Session, error) {
+func NewSession(userID, role string) (*Session, error) {
 	if err := uuid.Validate(userID); err != nil {
 		return nil, err
 	}
 	return &Session{
 		UserID: userID,
+		Role:   role,
 	}, nil
 }
 
@@ -41,3 +46,4 @@ func (s *Session) Validate() map[string]string {
 	var pbms = make(map[string]string)
 	return pbms
 }
+

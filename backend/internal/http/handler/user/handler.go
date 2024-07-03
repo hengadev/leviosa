@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -24,7 +23,7 @@ func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		sessionID, err := ssn.CreateSession(ctx, user.ID)
+		sessionID, err := ssn.CreateSession(ctx, user.ID, user.Role)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create session", "error", err)
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
@@ -63,6 +62,7 @@ func GetUser(repo user.Reader) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
+		// I need to get the userID from the sessionID that I have in the header
 		userID, err := serverutil.Decode[struct {
 			ID string `json:"userid"`
 		}](r)
