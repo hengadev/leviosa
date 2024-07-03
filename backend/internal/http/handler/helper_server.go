@@ -88,6 +88,7 @@ func WriteResponse(w http.ResponseWriter, message string, status int) error {
 	return nil
 }
 
+// I use that already my friend
 func encode[T any](w http.ResponseWriter, status int, v T) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

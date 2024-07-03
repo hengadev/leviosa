@@ -38,9 +38,24 @@ func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
 	})
 }
 
-func UpdateUser(svc *user.Service) http.Handler {
+func UpdateUser(usr *user.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		print("updating the user handler")
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+		// TODO:
+		// - get the user from this
+		user, err := serverutil.Decode[user.User](r)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
+			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			return
+		}
+		// - modify the user
+		if err = usr.UpdateAccount(ctx, &user); err != nil {
+			slog.ErrorContext(ctx, "failed to modify the user", "error", err)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 	})
 }
 
@@ -48,8 +63,6 @@ func GetUser(repo user.Reader) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		// TODO:
-		// - get the id
 		userID, err := serverutil.Decode[struct {
 			ID string `json:"userid"`
 		}](r)
@@ -58,9 +71,7 @@ func GetUser(repo user.Reader) http.Handler {
 			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		// - fing the id using the reader
 		user, err := repo.FindAccountByID(ctx, userID.ID)
-		// - return the user trough json
 		if err := serverutil.Encode(w, http.StatusFound, user); err != nil {
 			slog.ErrorContext(ctx, "failed to send the user", "error", err)
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
