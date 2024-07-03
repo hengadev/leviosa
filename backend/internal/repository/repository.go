@@ -8,6 +8,7 @@ import (
 var (
 	ErrNotFound          = errors.New("not found")
 	ErrRessourceCreation = errors.New("ressource not created")
+	ErrRessourceUpdate   = errors.New("ressource not updated")
 )
 
 func NewNotFoundError(err error) error {
@@ -16,4 +17,8 @@ func NewNotFoundError(err error) error {
 
 func NewRessourceCreationErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrRessourceCreation, err)
+}
+
+func NewRessourceUpdateErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrRessourceUpdate, err)
 }
