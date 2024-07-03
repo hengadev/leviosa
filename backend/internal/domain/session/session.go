@@ -47,3 +47,20 @@ func (s *Session) Validate() map[string]string {
 	return pbms
 }
 
+func (s *Session) Valid(ctx context.Context, minRole user.Role) (problems map[string]string) {
+	var pbms = make(map[string]string)
+	if err := uuid.Validate(s.ID); err != nil {
+		pbms["id"] = "session ID is not of type UUID"
+	}
+	if err := uuid.Validate(s.UserID); err != nil {
+		pbms["userid"] = "user ID is not of type UUID"
+	}
+	if time.Now().Add(SessionExpirationDuration).Before(s.ExpiresAt) {
+		pbms["expiredat"] = "session expired"
+	}
+	sessionRole := user.ConvertToRole(s.Role)
+	if !sessionRole.IsSuperior(minRole) {
+		pbms["role"] = "unauthorized, user does not have the right priviledge"
+	}
+	return pbms
+}
