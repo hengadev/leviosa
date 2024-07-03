@@ -9,10 +9,15 @@ type Password string
 
 const passwordMinLength = 8
 
-func NewPassword(p string) (Password, error) {
-	// TODO: do some validation on the password
+func ValidatePassword(p string) error {
 	if len(p) < passwordMinLength {
-		return "", errors.New(fmt.Sprintf("password too short, expect at least %d caracter", passwordMinLength))
+		return errors.New(fmt.Sprintf("password too short, expect at least %d caracter", passwordMinLength))
+	}
+	return nil
+}
+func NewPassword(p string) (Password, error) {
+	if err := ValidatePassword(p); err != nil {
+		return "", err
 	}
 	return Password(p), nil
 }
