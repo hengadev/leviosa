@@ -104,9 +104,22 @@ func (r Role) String() string {
 		"unknown",
 		"basic",
 		"guest",
-		"administrator",
+		"admin",
 	}
 	return roles[r]
+}
+
+func ConvertToRole(role string) Role {
+	switch role {
+	case "admin":
+		return ADMINISTRATOR
+	case "helper":
+		return GUEST
+	case "basic":
+		return BASIC
+	default:
+		return UNKNOWN
+	}
 }
 
 // Function qui retourne si un role est superieur (ou egal a un autre role).
