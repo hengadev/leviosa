@@ -1,9 +1,8 @@
 package user
 
 import (
+	"reflect"
 	"time"
-
-	// "where is the role type ?"
 
 	"github.com/google/uuid"
 )
@@ -13,9 +12,9 @@ type User struct {
 	ID         string    `json:"id"`
 	Email      string    `json:"email" validate:"required,email"`
 	Password   string    `json:"-" validate:"required,min=6"`
-	CreatedAt  time.Time `json:"createdat"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	Role       string    `json:"role"`
+	CreatedAt  time.Time `json:"-"`
+	LoggedInAt time.Time `json:"-"`
+	Role       string    `json:"-"`
 	BirthDate  time.Time `json:"birthdate"`
 	LastName   string    `json:"lastname"`
 	FirstName  string    `json:"firstname"`
@@ -23,7 +22,7 @@ type User struct {
 	Telephone  string    `json:"telephone"`
 	Address    string    `json:"address"`
 	City       string    `json:"city"`
-	PostalCard string    `json:"postalcard"`
+	PostalCard int       `json:"postalcard"`
 }
 
 // what is the option pattern in golang ? Can I use it in here since some element are not going to be used to send by the user
@@ -36,8 +35,8 @@ func NewUser(
 	gender,
 	telephone,
 	address,
-	city,
-	postalcard string,
+	city string,
+	postalcard int,
 ) *User {
 	return &User{
 		Email:      email.String(),
@@ -61,6 +60,34 @@ func (a *User) Create() {
 
 func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
+}
+
+// do some generic fucntion to that so that I can use it for all function
+// that function is not something that I want, when I have a user, it should already be checked.
+func (u *User) Validate() map[string]string {
+	var pbms = make(map[string]string)
+	vf := reflect.VisibleFields(reflect.TypeOf(u))
+	// PERF: use concurrency for that ? How about the concurrent writing on the map ?
+	for _, f := range vf {
+		switch f.Name {
+		case "Email":
+			if err := ValidateEmail(u.Email); err != nil {
+				pbms["email"] = err.Error()
+			}
+		case "Password":
+			if err := ValidatePassword(u.Password); err != nil {
+				pbms["password"] = err.Error()
+			}
+		case "Telephone":
+			// do the validation using the rule that follows :
+			// if len(u.Telephone) < 10 && strings.HasPrefix(u.Telephone) {
+			// 	pbms["telephone"] = ""
+			// }
+		default:
+			continue
+		}
+	}
+	return pbms
 }
 
 type Role int8

@@ -8,7 +8,8 @@ type Reader interface {
 	FindAccountByID(ctx context.Context, id string) (*User, error)
 }
 type Writer interface {
-	AddAccount(ctx context.Context, account *User) error
+	AddAccount(ctx context.Context, user *User) error
+	ModifyAccount(ctx context.Context, user *User) error
 }
 
 type ReadWriter interface {
