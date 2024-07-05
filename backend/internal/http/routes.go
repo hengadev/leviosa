@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	ch "github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
 	py "github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
 	uh "github.com/GaryHY/event-reservation-app/internal/http/handler/user"
 	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
@@ -28,6 +28,9 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// payment
 	handlePostPayment := py.CreateEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
 	handleDeletePayment := py.DeleteEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
+	// checkout
+	handleCheckout := ch.CreateCheckoutSession(*svcs.Svcs.Checkout, svcs.Repos.Event)
+
 	// assign to multiplexer
 	// user
 	mux.Handle("GET /me", handleGetUser)
@@ -38,6 +41,8 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// payment
 	mux.Handle("POST /admin/payment", handlePostPayment)
 	mux.Handle("DELETE /admin/payment", handleDeletePayment)
+	// checkout
+	mux.Handle("POST /checkout", handleCheckout)
 
 	s.srv.Handler = mux
 }

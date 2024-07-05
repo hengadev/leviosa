@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -8,10 +9,11 @@ import (
 )
 
 type Services struct {
-	User    *user.Service
-	Session *session.Service
-	Event   *event.Service
-	Payment *payment.Service
+	User     *user.Service
+	Session  *session.Service
+	Event    *event.Service
+	Payment  *payment.Service
+	Checkout *checkout.Service
 }
 
 type Repos struct {
