@@ -1,11 +1,37 @@
 package user
 
 import (
+	"context"
 	"reflect"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type Credentials struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"-" validate:"required,min=6"`
+}
+
+func (c Credentials) Valid(ctx context.Context) map[string]string {
+	var pbms = make(map[string]string)
+	vf := reflect.VisibleFields(reflect.TypeOf(c))
+	for _, f := range vf {
+		switch f.Name {
+		case "Email":
+			if err := ValidateEmail(c.Email); err != nil {
+				pbms["email"] = err.Error()
+			}
+		case "Password":
+			if err := ValidatePassword(c.Password); err != nil {
+				pbms["password"] = err.Error()
+			}
+		default:
+			continue
+		}
+	}
+	return pbms
+}
 
 // TODO: do better with the address
 type User struct {
@@ -64,7 +90,7 @@ func (a *User) Login() {
 
 // do some generic fucntion to that so that I can use it for all function
 // that function is not something that I want, when I have a user, it should already be checked.
-func (u *User) Validate() map[string]string {
+func (u *User) Valid(ctx context.Context) map[string]string {
 	var pbms = make(map[string]string)
 	vf := reflect.VisibleFields(reflect.TypeOf(u))
 	// PERF: use concurrency for that ? How about the concurrent writing on the map ?

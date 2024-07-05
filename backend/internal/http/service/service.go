@@ -16,7 +16,14 @@ type Repo struct {
 	Session session.Reader
 }
 
-type Services struct {
-	Svc  *Service
-	Repo *Repo
+type Handler struct {
+	Svcs  *Services
+	Repos *Repos
+}
+
+func NewHandler(svcs *Services, repos *Repos) *Handler {
+	return &Handler{
+		Svcs:  svcs,
+		Repos: repos,
+	}
 }
