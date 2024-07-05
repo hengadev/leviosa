@@ -9,6 +9,7 @@ var (
 	ErrNotFound          = errors.New("not found")
 	ErrRessourceCreation = errors.New("ressource not created")
 	ErrRessourceUpdate   = errors.New("ressource not updated")
+	ErrRessourceDelete   = errors.New("ressource not deleted")
 )
 
 func NewNotFoundError(err error) error {
@@ -21,4 +22,8 @@ func NewRessourceCreationErr(err error) error {
 
 func NewRessourceUpdateErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrRessourceUpdate, err)
+}
+
+func NewRessourceDeleteErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrRessourceDelete, err)
 }

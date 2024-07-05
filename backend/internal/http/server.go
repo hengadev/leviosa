@@ -13,7 +13,7 @@ type Server struct {
 	srv *http.Server
 }
 
-func NewServer(services *handler.Services, opts ...ServerOption) *Server {
+func NewServer(handler *handler.Handler, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
@@ -29,11 +29,13 @@ func NewServer(services *handler.Services, opts ...ServerOption) *Server {
 		opt(server)
 	}
 	// create router and add routes
-	server.addRoutes(services)
+	server.addRoutes(handler)
 	// add middlewares common to all routes. [Order important]
 	server.Use(
 		mw.AddRequestID,
-		mw.Auth(services.Repo.Session),
+		mw.Auth(handler.Repos.Session),
+		mw.Cors,
+		mw.EnableApplicationJSON,
 		mw.TestPrint,
 	)
 	return server

@@ -15,10 +15,10 @@ import (
 
 type Sessionkey int
 
-const SessionIDKey Sessionkey = 23
+const SessionIDKey = Sessionkey(23)
 
 // Function middleware to authenticate and authorize users.
-func Auth(s session.Reader, u user.Reader) Middleware {
+func Auth(s session.Reader) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
@@ -37,7 +37,7 @@ func Auth(s session.Reader, u user.Reader) Middleware {
 			// get sessionID from request
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// get session object from session repo

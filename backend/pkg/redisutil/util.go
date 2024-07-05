@@ -13,6 +13,7 @@ type RedisOption func(*redis.Options)
 
 func WithPort(addr int) RedisOption {
 	return func(r *redis.Options) {
+		// TODO: get the host from some configuration file or an env variable
 		r.Addr = fmt.Sprintf("localhost:%d", addr)
 	}
 }
@@ -45,7 +46,6 @@ func Connect(ctx context.Context, opts ...RedisOption) (*redis.Client, error) {
 }
 
 // TODO: find a value for the expiration of the value set
-
 func Init(ctx context.Context, client *redis.Client, queries map[string]interface{}) error {
 	for k, v := range queries {
 		err := client.Set(ctx, k, v, session.SessionExpirationDuration).Err()

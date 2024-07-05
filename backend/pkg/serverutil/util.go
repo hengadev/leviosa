@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 const SIGNINENDPOINT = "/signin"
@@ -29,7 +30,7 @@ func DecodeValid[T Validator](r *http.Request) (T, map[string]string, error) {
 		return v, nil, fmt.Errorf("decode json: %w", err)
 	}
 	if pbms := v.Valid(r.Context()); len(pbms) > 0 {
-		return v, nil, fmt.Errorf("invalid %T: %d problems", v, len(pbms))
+		return v, pbms, fmt.Errorf("invalid %T: %d problems", v, len(pbms))
 	}
 	return v, nil, nil
 }
@@ -54,4 +55,9 @@ func WriteResponse(w http.ResponseWriter, message string, status int) error {
 		return err
 	}
 	return nil
+}
+
+func GetSessionIDFromHeader(r *http.Request) string {
+	header := r.Header["Authorization"][0]
+	return strings.TrimPrefix(header, "Bearer ")
 }
