@@ -1,11 +1,11 @@
 package session
 
 type Service struct {
-	repo ReadWriter
+	Repo ReadWriter
 }
 
 func NewService(repo ReadWriter) *Service {
 	return &Service{
-		repo: repo,
+		Repo: repo,
 	}
 }

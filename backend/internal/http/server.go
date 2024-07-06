@@ -18,6 +18,7 @@ func NewServer(handler *handler.Handler, opts ...ServerOption) *Server {
 	server := &Server{
 		srv: &http.Server{
 			// might need to change these values
+			Addr:              ":5000",
 			IdleTimeout:       120 * time.Second,
 			ReadTimeout:       1 * time.Second,
 			WriteTimeout:      1 * time.Second,

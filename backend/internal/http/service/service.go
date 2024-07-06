@@ -6,6 +6,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 )
 
 type Services struct {
@@ -13,6 +14,7 @@ type Services struct {
 	Session  *session.Service
 	Event    *event.Service
 	Payment  *payment.Service
+	Vote     *vote.Service
 	Checkout *checkout.Service
 }
 
@@ -20,6 +22,7 @@ type Repos struct {
 	User    user.Reader
 	Session session.Reader
 	Event   event.Reader
+	Vote    vote.Reader
 }
 
 type Handler struct {

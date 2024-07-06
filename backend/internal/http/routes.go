@@ -7,6 +7,7 @@ import (
 	ch "github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
 	py "github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
 	uh "github.com/GaryHY/event-reservation-app/internal/http/handler/user"
+	vh "github.com/GaryHY/event-reservation-app/internal/http/handler/vote"
 	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/http/service"
 )
@@ -30,6 +31,8 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	handleDeletePayment := py.DeleteEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
 	// checkout
 	handleCheckout := ch.CreateCheckoutSession(*svcs.Svcs.Checkout, svcs.Repos.Event)
+	// vote
+	handleGetVotesByUserID := vh.GetVotesByUserID(svcs.Svcs.Vote)
 
 	// assign to multiplexer
 	// user
@@ -43,6 +46,8 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	mux.Handle("DELETE /admin/payment", handleDeletePayment)
 	// checkout
 	mux.Handle("POST /checkout", handleCheckout)
+	// vote
+	mux.Handle("GET /vote/{month}/{year}", handleCheckout)
 
 	s.srv.Handler = mux
 }
