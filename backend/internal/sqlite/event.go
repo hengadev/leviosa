@@ -4,31 +4,45 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
+	"os"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
 type EventRepository struct {
 	DB *sql.DB
 }
 
-// setup the redis database right ?
-func NewSessionRepository() *EventRepository {
-	return &EventRepository{}
-}
-
-func (s *EventRepository) GetEventByID(ctx context.Context, id string) *event.Event {
-	event := &event.Event{}
-	if err := s.DB.QueryRowContext(ctx, "SELECT * FROM events WHERE id=?;", id).Scan(&event.ID, &event.Location, &event.PlaceCount, &event.BeginAt); err != nil {
-		return event
+func NewEventRepository(ctx context.Context) (*EventRepository, error) {
+	connStr := os.Getenv("eventdb")
+	db, err := sqliteutil.Connect(ctx, connStr)
+	if err != nil {
+		return nil, err
 	}
-	return event
+	if os.Getenv("env") == "dev" {
+		ProdInit(db)
+	}
+	return &EventRepository{db}, nil
 }
 
-// func (s *SessionRepository) GetEventByUserID(ctx context.Context, user_id string) []*event.Event {
-func (s *EventRepository) GetEventByUserID(ctx context.Context, userID string) []*event.Event {
+// the new functions
+func (s *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
+	event := &event.Event{}
+	if err := s.DB.QueryRowContext(ctx, "SELECT * FROM events WHERE id=?;", id).Scan(
+		&event.ID,
+		&event.Location,
+		&event.PlaceCount,
+		&event.BeginAt,
+	); err != nil {
+		return nil, rp.NewNotFoundError(err)
+	}
+	return event, nil
+}
+
+func (s *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
 	events := make([]*event.Event, 0)
 	query := `
        SELECT * FROM events WHERE id IN
@@ -38,62 +52,95 @@ func (s *EventRepository) GetEventByUserID(ctx context.Context, userID string) [
 	rows, err := s.DB.QueryContext(ctx, query, userID)
 	defer rows.Close()
 	if err != nil {
-		log.Fatal("Cannot get events rows - ", err)
+		return nil, rp.NewErrRow(err)
 	}
 
 	for rows.Next() {
 		event := &event.Event{}
 		var dataTemp string
 		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
-			log.Fatal("Cannot scan the event - ", err)
+			return nil, rp.NewErrScan(err)
 		}
 		event.BeginAt, err = time.Parse(time.RFC3339, dataTemp)
 		if err != nil {
-			log.Fatal("Failed to parse the date from the database in the GetUserByEventID function - ", err)
+			return nil, fmt.Errorf("%s: %w", "error parsing time", err)
 		}
 		events = append(events, event)
 	}
-	return events
+	return events, nil
 }
 
-func (s *EventRepository) GetAllEvents(ctx context.Context) []*event.Event {
+func (s *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, error) {
 	events := make([]*event.Event, 0)
 	rows, err := s.DB.QueryContext(ctx, "SELECT * FROM events;")
 	if err != nil {
-		log.Fatal("Cannot get events rows - ", err)
+		return nil, rp.NewErrRow(err)
 	}
 	defer rows.Close()
 	var dateTemp string
 
 	for rows.Next() {
 		event := &event.Event{}
-		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dateTemp, &event.PriceID); err != nil {
-			log.Fatal("Cannot scan the event - ", err)
+		if err := rows.Scan(
+			&event.ID,
+			&event.Location,
+			&event.PlaceCount,
+			&dateTemp,
+			&event.PriceID,
+		); err != nil {
+			return nil, rp.NewErrScan(err)
 		}
 		// NOTE: Old version but now I am using another formatting to send to the frontend
 		// event.BeginAt, err = time.Parse(event.EventFormat, dateTemp)
 		event.BeginAt, err = time.Parse(time.RFC3339, dateTemp)
 		if err != nil {
-			log.Fatal("Failed to parse the date from the database - ", err)
+			return nil, fmt.Errorf("%s: %w", "error parsing time", err)
 		}
 		events = append(events, event)
 	}
-	return events
+	return events, nil
 }
 
-func (s *EventRepository) PostEvent(ctx context.Context, event *event.Event) {
-	new_date := event.BeginAt.Format(time.RFC3339)
-	_, err := s.DB.ExecContext(ctx, "INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)", event.ID, event.Location, event.PlaceCount, new_date, event.PriceID)
-	// _, err := s.DB.Exec("INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)", event.ID, event.Location, event.PlaceCount, event.BeginAt, event.PriceID)
-	if err != nil {
-		log.Fatal("Could not insert new event into the database - ", err)
+func (s *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
+	if _, err := s.DB.ExecContext(
+		ctx,
+		"UPDATE events SET freeplace = freeplace - 1 WHERE id=?;",
+		eventID,
+	); err != nil {
+		return rp.NewRessourceUpdateErr(err)
 	}
+	return nil
+}
+
+// old functions
+func (s *EventRepository) PostEvent(ctx context.Context, event *event.Event) error {
+	new_date := event.BeginAt.Format(time.RFC3339)
+	_, err := s.DB.ExecContext(
+		ctx,
+		"INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)",
+		event.ID,
+		event.Location,
+		event.PlaceCount,
+		new_date,
+		event.PriceID,
+	)
+	if err != nil {
+		return rp.NewRessourceCreationErr(err)
+	}
+	return nil
 }
 
 func (s *EventRepository) UpdateEvent(ctx context.Context, event *event.Event) error {
-	_, err := s.DB.ExecContext(ctx, "UPDATE events SET location=?, placecount=?, date=? WHERE id=?;", event.Location, event.PlaceCount, event.BeginAt.Format(time.RFC3339), event.ID)
+	_, err := s.DB.ExecContext(
+		ctx,
+		"UPDATE events SET location=?, placecount=?, date=? WHERE id=?;",
+		event.Location,
+		event.PlaceCount,
+		event.BeginAt.Format(time.RFC3339),
+		event.ID,
+	)
 	if err != nil {
-		return err
+		return rp.NewRessourceUpdateErr(err)
 	}
 	return nil
 }
@@ -101,40 +148,47 @@ func (s *EventRepository) UpdateEvent(ctx context.Context, event *event.Event) e
 func (s *EventRepository) DeleteEvent(ctx context.Context, eventID string) error {
 	_, err := s.DB.ExecContext(ctx, "DELETE from events where id=?;", eventID)
 	if err != nil {
-		return err
+		return rp.NewRessourceDeleteErr(err)
 	}
 	return nil
 }
 
-// Function that returns true if an event with the ID "event_id" is in the database and if the number of place found in "placecount" is > 0.
-func (s *EventRepository) CheckEvent(ctx context.Context, eventID string) bool {
+// Function that returns true if an event with the ID "eventID" is in the database and if the number of place found in "placecount" is > 0.
+func (s *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool, error) {
 	var placecount int
 	err := s.DB.QueryRowContext(ctx, "SELECT placecount FROM events WHERE id=?;", eventID).Scan(&placecount)
 	if err == sql.ErrNoRows {
-		return false
+		return false, rp.NewNotFoundError(err)
 	}
 	if err != nil {
-		log.Fatalf("Could not select to see if event with id %q exists - %s", eventID, err)
+		return false, rp.NewBadQueryErr(err)
 	}
-	return true && placecount > 0
+	return placecount > 0, nil
 }
 
 func (s *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID string) error {
 	_, err := s.DB.ExecContext(ctx, "UPDATE events SET placecount = placecount-1 WHERE id=?", eventID)
 	if err != nil {
-		return err
+		return rp.NewRessourceUpdateErr(err)
 	}
 	return nil
 }
 
-func (s *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (priceID string) {
-	s.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
-	return
+func (s *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
+	var priceID string
+	err := s.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
+	if err == sql.ErrNoRows {
+		return "", rp.NewNotFoundError(err)
+	}
+	if err != nil {
+		return "", rp.NewBadQueryErr(err)
+	}
+	return priceID, nil
 }
 
 // On part du principe que le beginAt est store comme "xx:xx:xx"
 
-func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (event.EventUser, error) {
+func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
 	var res event.EventUser
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
@@ -144,18 +198,15 @@ func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (e
 	}{
 		{condition: fmt.Sprintf("(month < %d AND year = %d) OR (year < %d) OR (day < %d AND month = %d AND year = %d) LIMIT 3", month, year, year, day, month, year), field: "past"},
 		{condition: fmt.Sprintf("(year > %d) OR (month > %d AND year = %d) OR (day > %d AND month = %d AND year = %d) LIMIT 3", year, month, year, day, month, year), field: "next"},
-		// TODO: make that condition right so that I get the right incoming events
-		// {condition: fmt.Sprintf("(month > %d AND year = %d) OR (day > %d AND month = %d AND year = %d) LIMIT=1", month, year, day, month, year), field: "incoming"},
 		{condition: fmt.Sprintf("(day > %d AND month = %d AND year = %d) OR (month = %d + 1 AND year = %d) OR (month = 1 AND year = %d + 1) LIMIT 1", day, month, year, year, month, year), field: "incoming"},
 	}
 
-	// PERF: Can I access this concurrently for speed purposes ?
 	for _, statement := range statements {
 		query := fmt.Sprintf("SELECT * FROM events WHERE %s;", statement.condition)
 		rows, err := s.DB.QueryContext(ctx, query, userID)
 		defer rows.Close()
 		if err != nil {
-			return res, err
+			return &res, err
 		}
 		for rows.Next() {
 			var priceID string
@@ -172,16 +223,16 @@ func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (e
 				&event.Month,
 				&event.Year,
 			); err != nil {
-				return res, fmt.Errorf("Failed to scan events: %w", err)
+				return &res, rp.NewErrScan(err)
 			}
 			event.BeginAt, err = parseBeginAt(beginAt, event.Day, event.Month, event.Year)
 			if err != nil {
-				return res, fmt.Errorf("Failed to parse the beginAt field : %w", err)
+				return &res, fmt.Errorf("%s: %w", "error parsing time", err)
 			}
 			var usedCount int
 			query := fmt.Sprintf("SELECT COUNT(userid) from event_%s;", event.ID)
-			if err := s.DB.QueryRow(query).Scan(&usedCount); err != nil {
-				return res, fmt.Errorf("Failed to get the FreePlace field for the event: %w", err)
+			if err := s.DB.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
+				return &res, rp.NewNotFoundError(err)
 			}
 			event.FreePlace = event.PlaceCount - usedCount
 			switch statement.field {
@@ -194,15 +245,11 @@ func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (e
 			}
 		}
 	}
-	return res, nil
+	return &res, nil
 }
 
-// TODO:
-// admin stores the BeginAt as some time in a specific format
-// I get here the time that I parse since it is going to be written as what ?
-
 // helper function for the GetEventForUser function
-func convertToString(value int) string {
+func convIntToStr(value int) string {
 	var res string
 	if value < 10 {
 		res = fmt.Sprintf("0%d", value)
@@ -213,16 +260,16 @@ func convertToString(value int) string {
 }
 
 // helper function for the GetEventForUser function
-func convertToStringHour(hour string) (string, error) {
+func stringifyHour(hour string) (string, error) {
 	res := hour
 	suffix := "AM"
 	timeHour, err := time.Parse(time.TimeOnly, hour)
 	if err != nil {
-		return "", fmt.Errorf("got some error mate : %w", err)
+		return "", fmt.Errorf("error parsing the time: %w", err)
 	}
 	if timeHour.Hour() > 12 {
 		suffix = "PM"
-		res = fmt.Sprintf("%s:%s:%s", convertToString(timeHour.Hour()-12), convertToString(timeHour.Minute()), convertToString(timeHour.Second()))
+		res = fmt.Sprintf("%s:%s:%s", convIntToStr(timeHour.Hour()-12), convIntToStr(timeHour.Minute()), convIntToStr(timeHour.Second()))
 	}
 	return res + suffix, nil
 }
@@ -230,11 +277,11 @@ func convertToStringHour(hour string) (string, error) {
 // helper function for the GetEventForUser function
 func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 	var res time.Time
-	hourFormatted, err := convertToStringHour(hour)
+	hourFormatted, err := stringifyHour(hour)
 	if err != nil {
 		return res, err
 	}
-	dateFormatted := fmt.Sprintf("%s/%s %s '%s -0700", convertToString(month), convertToString(day), hourFormatted, convertToString(year%100))
+	dateFormatted := fmt.Sprintf("%s/%s %s '%s -0700", convIntToStr(month), convIntToStr(day), hourFormatted, convIntToStr(year%100))
 	res, err = time.Parse(time.Layout, dateFormatted)
 	if err != nil {
 		fmt.Println("got some error mate : ", err)

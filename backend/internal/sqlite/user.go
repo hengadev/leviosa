@@ -58,6 +58,11 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id string) (*user.
 	return user, nil
 }
 
+// TODO: finsh that implementation, it is just for my code to compile
+func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (*user.User, error) {
+	return nil, nil
+}
+
 func (u *UserRepository) GetUserIDBySessionID(ctx context.Context, sessionID string) (id string) {
 	u.DB.QueryRowContext(ctx, "SELECT userid from sessions where id = ?;", sessionID).Scan(&id)
 	return
