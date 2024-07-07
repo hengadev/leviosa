@@ -53,7 +53,7 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// vote
 	mux.Handle("GET /vote/{month}/{year}", handleGetVotesByUserID)
 	// register
-	mux.Handle("GET /register/{id}", handlePostRegistration)
+	mux.Handle("POST /register/{id}", handlePostRegistration)
 
 	s.srv.Handler = mux
 }
