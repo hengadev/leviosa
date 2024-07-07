@@ -4,7 +4,7 @@ import "context"
 
 type Reader interface {
 	FindVotesByUserID(ctx context.Context, month, year, userID string) (string, error)
-	GetNextVotes(ctx context.Context) ([]*Vote, error)
+	GetNextVotes(ctx context.Context, month, year int) ([]*Vote, error)
 	HasVote(ctx context.Context, userID string, month, year int) (bool, error)
 }
 type Writer interface {

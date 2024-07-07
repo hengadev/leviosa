@@ -5,7 +5,7 @@ import (
 )
 
 func (s *Service) GetSessionIDByUserID(ctx context.Context, userID string) (string, error) {
-	sessionID, err := s.repo.GetSessionIDByUserID(ctx, userID)
+	sessionID, err := s.Repo.GetSessionIDByUserID(ctx, userID)
 	if err != nil {
 		return "", nil
 	}

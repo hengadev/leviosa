@@ -9,7 +9,7 @@ import (
 
 // that is basically the sign up of that function
 func (s *Service) CreateSession(ctx context.Context, userID, role string) (string, error) {
-	sessionID, err := s.repo.GetSessionIDByUserID(ctx, userID)
+	sessionID, err := s.Repo.GetSessionIDByUserID(ctx, userID)
 	if err == nil && sessionID != "" {
 		return sessionID, nil
 	}
@@ -19,7 +19,7 @@ func (s *Service) CreateSession(ctx context.Context, userID, role string) (strin
 		return "", app.NewInvalidUserErr(err)
 	}
 
-	sessionID, err = s.repo.CreateSession(ctx, session)
+	sessionID, err = s.Repo.CreateSession(ctx, session)
 	if err != nil {
 		return "", fmt.Errorf("create session: %w", err)
 	}

@@ -29,11 +29,15 @@ func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		serverutil.Encode(w, http.StatusCreated, struct {
+		if err = serverutil.Encode(w, http.StatusCreated, struct {
 			SessionID string `json:"sessionid"`
 		}{
 			SessionID: sessionID,
-		})
+		}); err != nil {
+			slog.ErrorContext(ctx, "failed to encode the votes from database", "error", err)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 	})
 }
 
