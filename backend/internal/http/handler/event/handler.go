@@ -54,6 +54,7 @@ func FindEventsForUser(eventRepo event.Reader) http.Handler {
 	})
 }
 
+// TODO: add the fact that creating an event, should also create a vote and a table with the style votes_month_year.
 func CreateEvent(svc *event.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())

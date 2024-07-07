@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -22,8 +21,6 @@ func NewVoteRepository(ctx context.Context) (*VoteRepository, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: initialise the admin if the env variable is set to dev.
-	// or maybe us flags for this ?
 	if os.Getenv("env") == "dev" {
 		ProdInit(db)
 	}
@@ -37,14 +34,12 @@ func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, use
 	if err := v.DB.QueryRowContext(ctx, query).Scan(&votes); err != nil {
 		return "", rp.NewNotFoundError(err)
 	}
-	return votes, nil // votes the string thing
+	return votes, nil
 }
 
 // TODO: I need the next votes, the past votes, the closest vote
-func (v *VoteRepository) GetNextVotes(ctx context.Context) ([]*vote.Vote, error) {
-	now := time.Now().UTC()
-	month := int(now.Month())
-	year := int(now.Year())
+// get inspiration from some similar function in sqlite/event.go
+func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.Vote, error) {
 	var votes = make([]*vote.Vote, 8)
 	condition := fmt.Sprintf("(year=? AND month>?) OR year=?", year, month+1, year+1)
 	query := fmt.Sprintf("SELECT (month, year) from votes where %s LIMIT 8;", condition)
@@ -67,11 +62,11 @@ func (v *VoteRepository) GetNextVotes(ctx context.Context) ([]*vote.Vote, error)
 	return votes, nil
 }
 
-func (v *VoteRepository) HasSession(ctx context.Context, userID, month, year int) (bool, error) {
+func (v *VoteRepository) HasVote(ctx context.Context, year int, month, userID string) (bool, error) {
 	var res bool
 	tablename := fmt.Sprintf("votes_%d_%d", month, year)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?;", tablename)
-	err := v.DB.QueryRowContext(ctx, query).Scan(&res)
+	err := v.DB.QueryRowContext(ctx, query, userID).Scan(&res)
 	if err == sql.ErrNoRows {
 		return false, rp.NewNotFoundError(err)
 	}

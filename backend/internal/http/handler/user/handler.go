@@ -8,6 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/http/handler"
+	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
@@ -76,12 +77,28 @@ func Signin(usr user.Reader, ssn *session.Service) http.Handler {
 			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
+		// TODO: send the session information within a cookie ?
 		// send session ID to user
 		serverutil.Encode(w, http.StatusCreated, struct {
 			SessionID string `json:"sessionid"`
 		}{
 			SessionID: sessionID,
 		})
+	})
+}
+
+func Signout(s *session.Service) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithCancel(r.Context())
+		defer cancel()
+		// get userID through context
+		userID := ctx.Value(mw.SessionIDKey).(string)
+		// remove the session that has userID
+		if err := s.Repo.Signout(ctx, userID); err != nil {
+			slog.ErrorContext(ctx, "failed to remove user session", "error", err)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 	})
 }
 

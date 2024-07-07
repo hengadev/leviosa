@@ -52,6 +52,11 @@ func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID str
 	return sessionDecoded.ID, nil
 }
 
+// TODO: do the implementation, I do not have time for now
+func (s *SessionRepository) Signout(ctx context.Context, userID string) error {
+	return nil
+}
+
 // TODO:
 func (s *SessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*session.Session, error) {
 	return &session.Session{}, nil
