@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	ch "github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
 	py "github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
+	reg "github.com/GaryHY/event-reservation-app/internal/http/handler/register"
 	uh "github.com/GaryHY/event-reservation-app/internal/http/handler/user"
 	vh "github.com/GaryHY/event-reservation-app/internal/http/handler/vote"
-	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 func (s *Server) addRoutes(svcs *handler.Handler) {
@@ -18,6 +18,12 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	mux.Handle("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello world")
 	}))
+	// TODO: Do I need that ? Plus I have the same thing with EnableHeaders
+	// something := mw.EnableMethods(
+	// 	uh.GetUser(svcs.Repos.User),
+	// 	http.MethodGet,
+	// 	http.MethodPost,
+	// )
 
 	// handler declaration
 	// user
@@ -29,25 +35,25 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// payment
 	handlePostPayment := py.CreateEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
 	handleDeletePayment := py.DeleteEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
-	// checkout
-	handleCheckout := ch.CreateCheckoutSession(*svcs.Svcs.Checkout, svcs.Repos.Event)
 	// vote
 	handleGetVotesByUserID := vh.GetVotesByUserID(svcs.Svcs.Vote)
+	// register
+	handlePostRegistration := reg.MakeRegistration(svcs.Svcs.Register, svcs.Svcs.Event, *svcs.Svcs.Checkout)
 
 	// assign to multiplexer
 	// user
 	mux.Handle("GET /me", handleGetUser)
 	mux.Handle("PUT /me", handleUpdateUser)
 	mux.Handle("DELETE /me", handleDeleteUser)
-	mux.Handle(fmt.Sprintf("POST ", serverutil.SIGNUPENDPOINT), handleSignup)
-	mux.Handle(fmt.Sprintf("POST ", serverutil.SIGNINENDPOINT), handleSignin)
+	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNUPENDPOINT), handleSignup)
+	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNINENDPOINT), handleSignin)
 	// payment
 	mux.Handle("POST /admin/payment", handlePostPayment)
 	mux.Handle("DELETE /admin/payment", handleDeletePayment)
-	// checkout
-	mux.Handle("POST /checkout", handleCheckout)
 	// vote
-	mux.Handle("GET /vote/{month}/{year}", handleCheckout)
+	mux.Handle("GET /vote/{month}/{year}", handleGetVotesByUserID)
+	// register
+	mux.Handle("GET /register/{id}", handlePostRegistration)
 
 	s.srv.Handler = mux
 }
