@@ -52,8 +52,19 @@ func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID str
 	return sessionDecoded.ID, nil
 }
 
-// TODO: do the implementation, I do not have time for now
 func (s *SessionRepository) Signout(ctx context.Context, userID string) error {
+	sessionID, err := s.GetSessionIDByUserID(ctx, userID)
+	if err != nil {
+		return rp.NewNotFoundError(err)
+	}
+	err = s.Client.Del(ctx, sessionID).Err()
+	if err != nil {
+		return rp.NewRessourceCreationErr(err)
+	}
+	err = s.Client.Del(ctx, userID).Err()
+	if err != nil {
+		return rp.NewRessourceCreationErr(err)
+	}
 	return nil
 }
 
@@ -80,17 +91,4 @@ func (s *SessionRepository) CreateSession(ctx context.Context, userSession *sess
 }
 
 func (s *SessionRepository) DeleteSessionBySessionID(ctx context.Context, sessionID string) error {
-	err := s.Client.Del(ctx, sessionID).Err()
-	if err != nil {
-		return rp.NewRessourceCreationErr(err)
-	}
-	return nil
-}
-
-func (s *SessionRepository) DeleteSessionByUserID(ctx context.Context, userID string) error {
-	err := s.Client.Del(ctx, userID).Err()
-	if err != nil {
-		return rp.NewRessourceCreationErr(err)
-	}
-	return nil
 }

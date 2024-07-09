@@ -88,12 +88,9 @@ func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
 }
 
-// do some generic fucntion to that so that I can use it for all function
-// that function is not something that I want, when I have a user, it should already be checked.
 func (u *User) Valid(ctx context.Context) map[string]string {
 	var pbms = make(map[string]string)
 	vf := reflect.VisibleFields(reflect.TypeOf(u))
-	// PERF: use concurrency for that ? How about the concurrent writing on the map ?
 	for _, f := range vf {
 		switch f.Name {
 		case "Email":

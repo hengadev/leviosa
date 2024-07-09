@@ -50,6 +50,7 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	mux.Handle("DELETE /me", handleDeleteUser)
 	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNUPENDPOINT), handleSignup)
 	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNINENDPOINT), handleSignin)
+	mux.Handle("POST /signout", handleDeleteUser)
 	// payment
 	mux.Handle("POST /admin/payment", handlePostPayment)
 	mux.Handle("DELETE /admin/payment", handleDeletePayment)
