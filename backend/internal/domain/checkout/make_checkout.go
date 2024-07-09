@@ -8,7 +8,17 @@ import (
 	"github.com/stripe/stripe-go/v79/checkout/session"
 )
 
-func (s *Service) CreateCheckoutSession(ctx context.Context, domain, priceID string) (string, error) {
+// TODO: add in the checkoutsessionparams the field:
+// - customer: so that is easier for them to pay next time
+// - metadata: I think I can use that for the webhook after that.
+// So here, I will send the userID and the eventID so that I can use that easily in the handler for the wh
+
+func (s *Service) CreateCheckoutSession(ctx context.Context, domain, priceID, eventID, userID, spot string) (string, error) {
+	metadata := map[string]string{
+		"eventID": eventID,
+		"userID":  userID,
+		"spot":    spot,
+	}
 	params := &stripe.CheckoutSessionParams{
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
@@ -20,10 +30,12 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, domain, priceID str
 		SuccessURL:   stripe.String(domain + "app/checkout/success/"),
 		CancelURL:    stripe.String(domain + "app/checkout/cancel/"),
 		AutomaticTax: &stripe.CheckoutSessionAutomaticTaxParams{Enabled: stripe.Bool(true)},
+		Metadata:     metadata,
 	}
 	checkoutSession, err := session.New(params)
 	if err != nil {
 		return "", fmt.Errorf("Error with creating the new session Stripe : %v", err)
 	}
+	// TODO: en fonction ce que je recois de l'event triggered par le webhook je peux retourner plus d'infos ou utiliser d'autres infos pour une db et tout.
 	return checkoutSession.URL, nil
 }

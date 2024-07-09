@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	ch "github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
 	py "github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
 	reg "github.com/GaryHY/event-reservation-app/internal/http/handler/register"
 	uh "github.com/GaryHY/event-reservation-app/internal/http/handler/user"
@@ -37,6 +38,8 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	handleDeletePayment := py.DeleteEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
 	// vote
 	handleGetVotesByUserID := vh.GetVotesByUserID(svcs.Svcs.Vote)
+	// checkout
+	handlePostCheckout := ch.CreateCheckoutSession(svcs.Svcs.Checkout, svcs.Repos.Event)
 	// register
 	handlePostRegistration := reg.MakeRegistration(svcs.Svcs.Register, svcs.Svcs.Event, *svcs.Svcs.Checkout)
 
@@ -52,6 +55,8 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	mux.Handle("DELETE /admin/payment", handleDeletePayment)
 	// vote
 	mux.Handle("GET /vote/{month}/{year}", handleGetVotesByUserID)
+	// checkout
+	mux.Handle("POST /checkout/{id}/{spot}", handlePostCheckout)
 	// register
 	mux.Handle("POST /register/{id}", handlePostRegistration)
 

@@ -56,8 +56,3 @@ func WriteResponse(w http.ResponseWriter, message string, status int) error {
 	}
 	return nil
 }
-
-func GetSessionIDFromHeader(r *http.Request) string {
-	header := r.Header["Authorization"][0]
-	return strings.TrimPrefix(header, "Bearer ")
-}
