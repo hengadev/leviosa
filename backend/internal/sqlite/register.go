@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	// "github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
@@ -68,41 +69,41 @@ func (v *RegisterRepository) RemoveRegistration(ctx context.Context, day, year i
 // old api
 
 // Function that return if there is a registration for a certain user for a certain event at a certain time.
-func (v *VoteRepository) CheckRegistration(registration *register.Registration) bool {
+func (v *VoteRepository) CheckRegistration(registration *register.Registration) (bool, error) {
 	var value int
 	query := "SELECT 1 FROM ? WHERE beginAt=?;"
 	err := v.DB.QueryRow(query, registration.EventID, registration.BeginAt.Format(time.RFC3339)).Scan(&value)
 	if err == sql.ErrNoRows {
-		return false
+		return false, rp.NewNotFoundError(err)
 	}
 	if err != nil {
-		log.Fatal("Cannot query due to some internal error with the database - ", err)
-		return false
+		return false, rp.NewBadQueryErr(err)
 	}
-	return true
+	return true, nil
 }
 
-func (s *Store) CreateRegistration(registration *types.Registration) error {
-	_, err := s.DB.Exec("INSERT INTO ? (userid, beginAt) VALUES (?, ?);", registration.EventId, registration.UserId, registration.BeginAt.Format(time.RFC3339))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *Store) GetBeginAtByEventId(eventId string) time.Time {
-	var dateTemp string
-	err := s.DB.QueryRow("SELECT beginAt FROM events WHERE eventid=?;", eventId).Scan(&dateTemp)
-	if err != nil {
-		log.Fatalf("Failed to get the beginAt field from the row corresponding to the event %s - %s", eventId, err)
-	}
-	res, err := time.Parse(time.RFC3339, dateTemp)
-	if err != nil {
-		log.Fatal("Failed to parse the time from the database - ", err)
-	}
-	return res
-}
-
+// utils
 func getTablename(day, year int, month string) string {
 	return fmt.Sprintf("registration_%d_%s_%d", day, month, year)
 }
+
+//	func (s *Store) CreateRegistration(registration *types.Registration) error {
+//		_, err := s.DB.Exec("INSERT INTO ? (userid, beginAt) VALUES (?, ?);", registration.EventId, registration.UserId, registration.BeginAt.Format(time.RFC3339))
+//		if err != nil {
+//			return err
+//		}
+//		return nil
+//	}
+//
+//	func (s *Store) GetBeginAtByEventId(eventId string) time.Time {
+//		var dateTemp string
+//		err := s.DB.QueryRow("SELECT beginAt FROM events WHERE eventid=?;", eventId).Scan(&dateTemp)
+//		if err != nil {
+//			log.Fatalf("Failed to get the beginAt field from the row corresponding to the event %s - %s", eventId, err)
+//		}
+//		res, err := time.Parse(time.RFC3339, dateTemp)
+//		if err != nil {
+//			log.Fatal("Failed to parse the time from the database - ", err)
+//		}
+//		return res
+//	}

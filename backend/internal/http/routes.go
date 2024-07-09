@@ -41,7 +41,7 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// checkout
 	handlePostCheckout := ch.CreateCheckoutSession(svcs.Svcs.Checkout, svcs.Repos.Event)
 	// register
-	handlePostRegistration := reg.MakeRegistration(svcs.Svcs.Register, svcs.Svcs.Event, *svcs.Svcs.Checkout)
+	handlePostRegistration := reg.MakeRegistration(svcs.Svcs.Register, svcs.Svcs.Event, svcs.Svcs.Checkout)
 
 	// assign to multiplexer
 	// user
@@ -58,7 +58,7 @@ func (s *Server) addRoutes(svcs *handler.Handler) {
 	// checkout
 	mux.Handle("POST /checkout/{id}/{spot}", handlePostCheckout)
 	// register
-	mux.Handle("POST /register/{id}", handlePostRegistration)
+	mux.Handle("POST /register", handlePostRegistration)
 
 	s.srv.Handler = mux
 }
