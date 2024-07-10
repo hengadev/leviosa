@@ -8,32 +8,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Credentials struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"-" validate:"required,min=6"`
-}
-
-func (c Credentials) Valid(ctx context.Context) map[string]string {
-	var pbms = make(map[string]string)
-	vf := reflect.VisibleFields(reflect.TypeOf(c))
-	for _, f := range vf {
-		switch f.Name {
-		case "Email":
-			if err := ValidateEmail(c.Email); err != nil {
-				pbms["email"] = err.Error()
-			}
-		case "Password":
-			if err := ValidatePassword(c.Password); err != nil {
-				pbms["password"] = err.Error()
-			}
-		default:
-			continue
-		}
-	}
-	return pbms
-}
-
-// TODO: do better with the address
 type User struct {
 	ID         string    `json:"id"`
 	Email      string    `json:"email" validate:"required,email"`
@@ -51,15 +25,14 @@ type User struct {
 	PostalCard int       `json:"postalcard"`
 }
 
-// what is the option pattern in golang ? Can I use it in here since some element are not going to be used to send by the user
 func NewUser(
 	email Email,
 	password Password,
 	birthdate time.Time,
 	lastname,
 	firstname,
-	gender,
-	telephone,
+	gender string,
+	telephone Telephone,
 	address,
 	city string,
 	postalcard int,
@@ -72,7 +45,7 @@ func NewUser(
 		LastName:   lastname,
 		FirstName:  firstname,
 		Gender:     gender,
-		Telephone:  telephone,
+		Telephone:  telephone.String(),
 		Address:    address,
 		City:       city,
 		PostalCard: postalcard,
@@ -111,50 +84,4 @@ func (u *User) Valid(ctx context.Context) map[string]string {
 		}
 	}
 	return pbms
-}
-
-type Role int8
-
-const (
-	UNKNOWN       Role = iota
-	BASIC         Role = iota
-	GUEST         Role = iota
-	ADMINISTRATOR Role = iota
-)
-
-func (r Role) String() string {
-	roles := []string{
-		"unknown",
-		"basic",
-		"guest",
-		"admin",
-	}
-	return roles[r]
-}
-
-func ConvertToRole(role string) Role {
-	switch role {
-	case "admin":
-		return ADMINISTRATOR
-	case "helper":
-		return GUEST
-	case "basic":
-		return BASIC
-	default:
-		return UNKNOWN
-	}
-}
-
-// Function qui retourne si un role est superieur (ou egal a un autre role).
-func (r Role) IsSuperior(role Role) bool {
-	switch r {
-	case ADMINISTRATOR:
-		return role == ADMINISTRATOR || role == GUEST || role == BASIC
-	case GUEST:
-		return role == GUEST
-	case BASIC:
-		return role == BASIC
-	default:
-		return false
-	}
 }

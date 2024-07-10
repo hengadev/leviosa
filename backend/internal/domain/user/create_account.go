@@ -11,20 +11,10 @@ import (
 
 // TODO: Do the validation for the rest of the fields.
 func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User, error) {
-	// NOTE: One way to do it.
-	// if pbms := userCandidate.Validate(); len(pbms) > 0 {
-	// 	err := "user error : ["
-	// 	for field, pbm := range pbms {
-	// 		err += fmt.Sprintf("%s: %s, ", field, pbm)
-	// 	}
-	// 	err += "]"
-	// 	return nil, app.NewInvalidInputErr(fmt.Errorf(err))
-	// }
-	// NOTE: Other way to do it.
-	// TODO: change the New function to the validate one since I made them both split.
 	var input struct {
-		Email    Email
-		Password Password
+		Email     Email
+		Password  Password
+		Telephone Telephone
 	}
 	{
 		var err error
@@ -32,6 +22,9 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 			return nil, app.NewInvalidInputErr(err)
 		}
 		if input.Password, err = NewPassword(userCandidate.Password); err != nil {
+			return nil, app.NewInvalidInputErr(err)
+		}
+		if input.Telephone, err = NewTelephone(userCandidate.Telephone); err != nil {
 			return nil, app.NewInvalidInputErr(err)
 		}
 	}
@@ -42,7 +35,7 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 		userCandidate.LastName,
 		userCandidate.FirstName,
 		userCandidate.Gender,
-		userCandidate.Telephone,
+		input.Telephone,
 		userCandidate.Address,
 		userCandidate.City,
 		userCandidate.PostalCard,
