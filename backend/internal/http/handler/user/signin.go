@@ -1,4 +1,4 @@
-package userhandler
+package user
 
 // func (s *Server) signInHandler(w http.ResponseWriter, r *http.Request) {
 // 	enableCors(&w)

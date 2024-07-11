@@ -33,6 +33,7 @@ type Handler struct {
 	Repos *Repos
 }
 
+// Function to use in the main, once all the services and repos are built.
 func NewHandler(svcs *Services, repos *Repos) *Handler {
 	return &Handler{
 		Svcs:  svcs,

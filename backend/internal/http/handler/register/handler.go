@@ -7,16 +7,23 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/http/handler"
+	"github.com/GaryHY/event-reservation-app/internal/http/service"
 
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/webhook"
 )
 
-func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Service) http.Handler {
+type Handler struct {
+	*handler.Handler
+}
+
+func NewHandler(handler *handler.Handler) *Handler {
+	return &Handler{handler}
+}
+
+// func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Service) http.Handler {
+func (h *Handler) MakeRegistration() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -25,7 +32,7 @@ func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Serv
 		payload, err := io.ReadAll(r.Body)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get read request body", "error", err)
-			http.Error(w, handler.NewServiceUnavailableErr(err), http.StatusServiceUnavailable)
+			http.Error(w, errsrv.NewServiceUnavailableErr(err), http.StatusServiceUnavailable)
 			return
 		}
 		// TODO: that thing should be hidden in an env variable : stripe_webhook_secret
@@ -33,7 +40,7 @@ func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Serv
 		stripeEvent, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), endpointSecret)
 		if err := json.Unmarshal(payload, &stripeEvent); err != nil {
 			slog.ErrorContext(ctx, "failed to parse webhook body json", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// I get that part from the part types of event of the documentation: https://docs.stripe.com/api/events/types
@@ -44,7 +51,7 @@ func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Serv
 			err = json.Unmarshal(stripeEvent.Data.Raw, &sessionCompletion)
 			if err != nil {
 				slog.ErrorContext(ctx, "failed to parse webhook body json", "error", err)
-				http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 				return
 			}
 			metadata = sessionCompletion.Metadata
@@ -52,20 +59,20 @@ func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Serv
 		_ = metadata
 		// fmt.Println("the metadata", metadata)
 
-		event, err := e.Repo.GetEventByID(ctx, metadata["eventID"])
+		event, err := h.Repos.Event.GetEventByID(ctx, metadata["eventID"])
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get event with given ID", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		if err := reg.CreateRegistration(ctx, metadata["userID"], metadata["spot"], event); err != nil {
+		if err := h.Svcs.Register.CreateRegistration(ctx, metadata["userID"], metadata["spot"], event); err != nil {
 			slog.ErrorContext(ctx, "failed creating registration for user", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		if err = e.DecreasePlacecount(ctx, metadata["eventID"]); err != nil {
+		if err = h.Svcs.Event.DecreasePlacecount(ctx, metadata["eventID"]); err != nil {
 			slog.ErrorContext(ctx, "failed decreasing placecount for event", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

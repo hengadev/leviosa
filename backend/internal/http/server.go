@@ -17,7 +17,7 @@ func NewServer(handler *handler.Handler, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
-			// might need to change these values
+			// might need to change the values of the timeouts
 			Addr:              ":5000",
 			IdleTimeout:       120 * time.Second,
 			ReadTimeout:       1 * time.Second,
@@ -33,16 +33,15 @@ func NewServer(handler *handler.Handler, opts ...ServerOption) *Server {
 	server.addRoutes(handler)
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.AddRequestID,
-		mw.Auth(handler.Repos.Session),
-		mw.Cors,
-		mw.EnableApplicationJSON,
+		// mw.Auth(handler.Repos.Session), // TODO: add the auth mw when you have the session service set.
 		mw.TestPrint,
+		mw.EnableApplicationJSON,
+		mw.Cors,
+		mw.AddRequestID,
 	)
 	return server
 }
 
-// I think that is what we need to do
 func (s *Server) ListenAndServe() error {
 	return s.srv.ListenAndServe()
 }

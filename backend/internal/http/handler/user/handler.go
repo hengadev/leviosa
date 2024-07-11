@@ -1,33 +1,52 @@
-package userhandler
+package user
 
 import (
 	"context"
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/http/handler"
 	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/http/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
+type Handler struct {
+	*handler.Handler
+}
+
+func NewHandler(handler *handler.Handler) *Handler {
+	return &Handler{handler}
+}
+
+func (h *Handler) CreateAccount() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		// TODO: Need to see if that works especially the part with the birth date.
-		input, err := serverutil.Decode[user.User](r)
-		user, err := usr.CreateAccount(ctx, &input)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to create account", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		// decode user sent and validate it.
+		input, pbms, err := serverutil.DecodeValid[user.User](r)
+		if len(pbms) > 0 {
+			slog.ErrorContext(ctx, "failed to decode user", "error", err)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		sessionID, err := ssn.CreateSession(ctx, user.ID, user.Role)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to decode user", "error", err)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
+		user, err := h.Svcs.User.CreateAccount(ctx, &input)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to create account", "error", err)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
+		// sessionID, err := ssn.CreateSession(ctx, user.ID, user.Role)
+		sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create session", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		if err = serverutil.Encode(w, http.StatusCreated, struct {
@@ -36,13 +55,13 @@ func CreateAccount(usr *user.Service, ssn *session.Service) http.Handler {
 			SessionID: sessionID,
 		}); err != nil {
 			slog.ErrorContext(ctx, "failed to encode the votes from database", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
-func Signin(usr user.Reader, ssn *session.Service) http.Handler {
+func (h *Handler) Signin() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -50,101 +69,102 @@ func Signin(usr user.Reader, ssn *session.Service) http.Handler {
 		input, pbms, err := serverutil.DecodeValid[user.Credentials](r)
 		if len(pbms) > 0 {
 			slog.ErrorContext(ctx, "failed to authenticate the user, bad request", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to authenticate the user", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// validate credentials
-		user, err := usr.ValidateCredentials(ctx, &input)
+		user, err := h.Repos.User.ValidateCredentials(ctx, &input)
 		if user != nil {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// create session
-		sessionID, err := ssn.CreateSession(ctx, user.ID, user.Role)
+		sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create session", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// TODO: send the session information within a cookie ?
-		// send session ID to user
-		serverutil.Encode(w, http.StatusCreated, struct {
+		// TODO: send the session information within a cookie ? as before ?
+		type Response struct {
 			SessionID string `json:"sessionid"`
-		}{
-			SessionID: sessionID,
-		})
+		}
+		serverutil.Encode(w, http.StatusCreated, Response{sessionID})
 	})
 }
 
-func Signout(s *session.Service) http.Handler {
+func (h *Handler) Signout() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		// get userID through context
 		userID := ctx.Value(mw.SessionIDKey).(string)
 		// remove the session that has userID
-		if err := s.Repo.Signout(ctx, userID); err != nil {
+		if err := h.Svcs.Session.RemoveSession(ctx, userID); err != nil {
 			slog.ErrorContext(ctx, "failed to remove user session", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
+		// TODO: send some redirection or something ?
 	})
 }
 
-func UpdateUser(svc *user.Service) http.Handler {
+func (h *Handler) UpdateUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// get the user from this
-		user, err := serverutil.Decode[user.User](r)
+		user, pbms, err := serverutil.DecodeValid[user.User](r)
+		if len(pbms) > 0 {
+			slog.ErrorContext(ctx, "failed to decode user", "error", err)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			return
+		}
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			slog.ErrorContext(ctx, "failed to decode user", "error", err)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// modify the user
-		if err = svc.UpdateAccount(ctx, &user); err != nil {
+		if err = h.Svcs.User.UpdateAccount(ctx, &user); err != nil {
 			slog.ErrorContext(ctx, "failed to modify the user", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
-func GetUser(repo user.Reader) http.Handler {
+func (h *Handler) GetUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// I need to get the userID from the sessionID that I have in the header
-		userID, err := serverutil.Decode[struct {
-			ID string `json:"userid"`
-		}](r)
+		userID := ctx.Value(mw.SessionIDKey).(string)
+		user, err := h.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			slog.ErrorContext(ctx, "failed to get user", "error", err)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		user, err := repo.FindAccountByID(ctx, userID.ID)
 		if err := serverutil.Encode(w, http.StatusFound, user); err != nil {
 			slog.ErrorContext(ctx, "failed to send the user", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
-func DeleteUser(svc *user.Service) http.Handler {
+func (h *Handler) DeleteUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		print("delete the user handler")
 	})

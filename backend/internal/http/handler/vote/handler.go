@@ -1,4 +1,4 @@
-package votehandler
+package vote
 
 import (
 	"context"
@@ -10,11 +10,20 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	"github.com/GaryHY/event-reservation-app/internal/http/handler"
 	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/http/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
+type Handler struct {
+	*handler.Handler
+}
+
+func NewHandler(handler *handler.Handler) *Handler {
+	return &Handler{handler}
+}
+
 // Function that get all the votes for a user.
-func GetVotesByUserID(v *vote.Service) http.Handler {
+func (h *Handler) GetVotesByUserID() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -26,11 +35,11 @@ func GetVotesByUserID(v *vote.Service) http.Handler {
 		if month == "" || year == "" {
 			err := fmt.Errorf("month or year are not well formatted")
 			slog.ErrorContext(ctx, "failed to parse month or year", "error", err)
-			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// get the votes
-		votes, err := v.GetVotesByUserID(ctx, month, year, userID)
+		votes, err := h.Svcs.Vote.GetVotesByUserID(ctx, month, year, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the votes from database", "error", err)
 			http.Error(w, fmt.Sprintf("Failed to get the data from the database - %s", err), http.StatusInternalServerError)
@@ -39,13 +48,13 @@ func GetVotesByUserID(v *vote.Service) http.Handler {
 		// encode the result to the user
 		if err := serverutil.Encode(w, http.StatusFound, votes); err != nil {
 			slog.ErrorContext(ctx, "failed to encode the votes", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
-func GetNextVotes(v vote.Reader) http.Handler {
+func (h *Handler) GetNextVotes() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -53,23 +62,23 @@ func GetNextVotes(v vote.Reader) http.Handler {
 		now := time.Now()
 		month, year := int(now.Month()), int(now.Year())
 		// get the votes
-		votes, err := v.GetNextVotes(ctx, month, year)
+		votes, err := h.Repos.Vote.GetNextVotes(ctx, month, year)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the votes from database", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// encode the result to the user
 		if err := serverutil.Encode(w, http.StatusFound, votes); err != nil {
 			slog.ErrorContext(ctx, "failed to encode the votes", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
 }
 
 // Function that create or update vote
-func MakeVote(v *vote.Service) http.Handler {
+func (h *Handler) MakeVote() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -79,7 +88,7 @@ func MakeVote(v *vote.Service) http.Handler {
 		votes, err := serverutil.Decode[[]*vote.Vote](r)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode vote", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// add the userID field to the votes.
@@ -87,9 +96,9 @@ func MakeVote(v *vote.Service) http.Handler {
 			vote.UserID = userID
 		}
 		// create the vote
-		if err := v.CreateVote(ctx, votes); err != nil {
+		if err := h.Svcs.Vote.CreateVote(ctx, votes); err != nil {
 			slog.ErrorContext(ctx, "failed to create vote", "error", err)
-			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 
 		}

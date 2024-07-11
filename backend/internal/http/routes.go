@@ -4,62 +4,48 @@ import (
 	"fmt"
 	"net/http"
 
-	ch "github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
-	py "github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
-	reg "github.com/GaryHY/event-reservation-app/internal/http/handler/register"
-	uh "github.com/GaryHY/event-reservation-app/internal/http/handler/user"
-	vh "github.com/GaryHY/event-reservation-app/internal/http/handler/vote"
+	"github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
+	"github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
+	"github.com/GaryHY/event-reservation-app/internal/http/handler/register"
+	"github.com/GaryHY/event-reservation-app/internal/http/handler/user"
+	"github.com/GaryHY/event-reservation-app/internal/http/handler/vote"
 	"github.com/GaryHY/event-reservation-app/internal/http/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (s *Server) addRoutes(svcs *handler.Handler) {
+// make all the routes start with "/api/v1"
+func (s *Server) addRoutes(h *handler.Handler) {
 	mux := http.NewServeMux()
-	// basic route
-	mux.Handle("/hello", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello world")
-	}))
-	// TODO: Do I need that ? Plus I have the same thing with EnableHeaders
-	// something := mw.EnableMethods(
-	// 	uh.GetUser(svcs.Repos.User),
-	// 	http.MethodGet,
-	// 	http.MethodPost,
-	// )
-
+	// basic route to test things out
+	mux.Handle("/hello", http.HandlerFunc(sayHello))
 	// handler declaration
-	// user
-	handleGetUser := uh.GetUser(svcs.Repos.User)
-	handleUpdateUser := uh.UpdateUser(svcs.Svcs.User)
-	handleDeleteUser := uh.DeleteUser(svcs.Svcs.User)
-	handleSignup := uh.CreateAccount(svcs.Svcs.User, svcs.Svcs.Session)
-	handleSignin := uh.Signin(svcs.Repos.User, svcs.Svcs.Session)
-	// payment
-	handlePostPayment := py.CreateEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
-	handleDeletePayment := py.DeleteEventProduct(svcs.Svcs.Payment, svcs.Svcs.Event)
-	// vote
-	handleGetVotesByUserID := vh.GetVotesByUserID(svcs.Svcs.Vote)
-	// checkout
-	handlePostCheckout := ch.CreateCheckoutSession(svcs.Svcs.Checkout, svcs.Repos.Event)
-	// register
-	handlePostRegistration := reg.MakeRegistration(svcs.Svcs.Register, svcs.Svcs.Event, svcs.Svcs.Checkout)
+	userHandler := user.NewHandler(h)
+	voteHandler := vote.NewHandler(h)
+	paymentHandler := payment.NewHandler(h)
+	checkoutHandler := checkout.NewHandler(h)
+	registerHandler := register.NewHandler(h)
 
 	// assign to multiplexer
 	// user
-	mux.Handle("GET /me", handleGetUser)
-	mux.Handle("PUT /me", handleUpdateUser)
-	mux.Handle("DELETE /me", handleDeleteUser)
-	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNUPENDPOINT), handleSignup)
-	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNINENDPOINT), handleSignin)
-	mux.Handle("POST /signout", handleDeleteUser)
+	mux.Handle("GET /me", userHandler.GetUser())
+	mux.Handle("PUT /me", userHandler.UpdateUser())
+	mux.Handle("DELETE /me", userHandler.DeleteUser())
+	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNUPENDPOINT), userHandler.CreateAccount())
+	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNINENDPOINT), userHandler.Signin())
+	mux.Handle("POST /signout", userHandler.Signout())
 	// payment
-	mux.Handle("POST /admin/payment", handlePostPayment)
-	mux.Handle("DELETE /admin/payment", handleDeletePayment)
+	mux.Handle("POST /admin/payment", paymentHandler.CreateEventProduct())
+	mux.Handle("DELETE /admin/payment", paymentHandler.DeleteEventProduct())
 	// vote
-	mux.Handle("GET /vote/{month}/{year}", handleGetVotesByUserID)
+	mux.Handle("GET /vote/{month}/{year}", voteHandler.GetVotesByUserID())
 	// checkout
-	mux.Handle("POST /checkout/{id}/{spot}", handlePostCheckout)
+	mux.Handle("POST /checkout/{id}/{spot}", checkoutHandler.CreateCheckoutSession())
 	// register
-	mux.Handle("POST /register", handlePostRegistration)
+	mux.Handle("POST /register", registerHandler.MakeRegistration())
 
 	s.srv.Handler = mux
+}
+
+func sayHello(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Hello World!")
 }

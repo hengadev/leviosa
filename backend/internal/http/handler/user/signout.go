@@ -1,4 +1,4 @@
-package userhandler
+package user
 
 // func (s *Server) signOutHandler(w http.ResponseWriter, r *http.Request) {
 // 	cookie, err := r.Cookie(types.SessionCookieName)
