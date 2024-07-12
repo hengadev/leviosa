@@ -1,1 +1,3 @@
 backend/db.sqlite
+backend/todo.md
+frontend/node_modules/*
