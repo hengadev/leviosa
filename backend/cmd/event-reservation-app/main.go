@@ -13,6 +13,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/server"
 	"github.com/GaryHY/event-reservation-app/pkg/config"
+	"github.com/GaryHY/event-reservation-app/pkg/flags"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 
 	// "github.com/GaryHY/event-reservation-app/internal/redis"
@@ -24,7 +25,7 @@ import (
 )
 
 var opts struct {
-	mode   string
+	mode   mode.EnvMode
 	server struct {
 		port int
 	}
@@ -43,11 +44,11 @@ func run(ctx context.Context, w io.Writer) error {
 	defer cancel()
 	// flags
 	flag.IntVar(&opts.server.port, "port", 5000, "the port the server listens to")
-	flag.StringVar(&opts.mode, "mode", "dev", "the mode environment for the project")
+	flag.Var(&opts.mode, "mode", "the mode environment for the project")
 	flag.Parse()
 
 	// set environment file
-	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode))
+	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String()))
 	if err != nil {
 		return fmt.Errorf("load env variables: %w", err)
 	}
@@ -56,7 +57,7 @@ func run(ctx context.Context, w io.Writer) error {
 	// c.SetCron()
 
 	// config
-	conf := config.New(ctx, opts.mode, "env")
+	conf := config.New(ctx, opts.mode.String(), "env")
 	if err := conf.Load(ctx); err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
