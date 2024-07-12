@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/event-reservation-app/internal/http/handler"
-	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler"
+	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 	"github.com/stripe/stripe-go/v79"
 )
@@ -21,7 +21,6 @@ func NewHandler(handler *handler.Handler) *Handler {
 	return &Handler{handler}
 }
 
-// func CreateCheckoutSession(ch *checkout.Service, e event.Reader) http.Handler {
 func (h *Handler) CreateCheckoutSession() http.Handler {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

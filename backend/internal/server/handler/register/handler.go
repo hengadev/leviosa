@@ -1,4 +1,4 @@
-package registerhandler
+package register
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/http/handler"
-	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/webhook"
@@ -22,7 +22,6 @@ func NewHandler(handler *handler.Handler) *Handler {
 	return &Handler{handler}
 }
 
-// func MakeRegistration(reg *register.Service, e *event.Service, ch *checkout.Service) http.Handler {
 func (h *Handler) MakeRegistration() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())

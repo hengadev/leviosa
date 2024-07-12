@@ -1,19 +1,19 @@
-package http
+package server
 
 import (
 	"context"
 	"net/http"
 	"time"
 
-	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 )
 
 type Server struct {
 	srv *http.Server
 }
 
-func NewServer(handler *handler.Handler, opts ...ServerOption) *Server {
+func New(handler *handler.Handler, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{

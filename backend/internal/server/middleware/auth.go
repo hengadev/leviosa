@@ -29,6 +29,7 @@ func Auth(s session.Reader) Middleware {
 			for _, endpoint := range enpointsToAvoid {
 				if r.URL.Path == endpoint {
 					next.ServeHTTP(w, r)
+					return
 				}
 			}
 			ctx := r.Context()
