@@ -11,6 +11,7 @@ import (
 
 type RedisOption func(*redis.Options)
 
+// the with things here do not serve because they are not optional, soo.....
 func WithPort(addr int) RedisOption {
 	return func(r *redis.Options) {
 		// TODO: get the host from some configuration file or an env variable
@@ -22,6 +23,11 @@ func WithPassword(pwd string) RedisOption {
 	return func(r *redis.Options) {
 		r.Password = pwd
 	}
+}
+
+// TODO: implement that to return the DSN for redis
+func BuildDSN() string {
+	return fmt.Sprintf("")
 }
 
 func Connect(ctx context.Context, opts ...RedisOption) (*redis.Client, error) {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+type pbms map[string]string
+
 var (
 	//general
 	ErrForbidden = errors.New("forbidden")
@@ -31,15 +33,6 @@ func NewAuthErr(err error) error {
 // user errors
 func NewInvalidUserErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrInvalidUser, err)
-}
-
-func NewInvalidUserToUpdateErr(pbms map[string]string) error {
-	errs := "["
-	for k, v := range pbms {
-		errs += fmt.Sprintf("{%s: %s}", k, v)
-	}
-	errs += "]"
-	return fmt.Errorf("%w: %w", ErrInvalidUserUpdate, errors.New(errs))
 }
 
 // session errors

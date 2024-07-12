@@ -91,4 +91,5 @@ func (s *SessionRepository) CreateSession(ctx context.Context, userSession *sess
 }
 
 func (s *SessionRepository) DeleteSessionBySessionID(ctx context.Context, sessionID string) error {
+	return nil
 }

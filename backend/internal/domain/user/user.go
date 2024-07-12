@@ -61,7 +61,7 @@ func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
 }
 
-func (u *User) Valid(ctx context.Context) map[string]string {
+func (u User) Valid(ctx context.Context) map[string]string {
 	var pbms = make(map[string]string)
 	vf := reflect.VisibleFields(reflect.TypeOf(u))
 	for _, f := range vf {

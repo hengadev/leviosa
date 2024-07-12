@@ -3,10 +3,6 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"github.com/GaryHY/event-reservation-app/internal/api"
-	"github.com/GaryHY/event-reservation-app/internal/database/s3"
-	"github.com/GaryHY/event-reservation-app/internal/database/sqlite"
-	"github.com/GaryHY/event-reservation-app/internal/types"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"log"
@@ -15,6 +11,7 @@ import (
 	"time"
 )
 
+// I should take that and put that into some migration file
 const (
 	createUsersTable    = "CREATE TABLE IF NOT EXISTS users (id, email TEXT NOT NULL PRIMARY KEY, hashpassword TEXT NOT NULL, role TEXT NOT NULL, lastname TEXT NOT NULL, firstname TEXT NOT NULL, gender TEXT NOT NULL, birthdate TEXT NOT NULL, telephone TEXT NOT NULL, address TEXT NOTN NULL, city TEXT NOT NULL, postalcard INTEGER NOT NULL);"
 	createSessionsTable = "CREATE TABLE IF NOT EXISTS sessions (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, created_at TEXT NOT NULL);"

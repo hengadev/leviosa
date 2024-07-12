@@ -8,7 +8,7 @@ type sqliteCreds struct {
 	Filename string `json:"filename"`
 }
 
-func (c *Config) GetSqlite() *sqliteCreds {
+func (c *Config) GetSQLITE() *sqliteCreds {
 	return c.sqlite
 }
 

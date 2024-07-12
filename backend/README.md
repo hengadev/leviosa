@@ -11,6 +11,9 @@
 - [ ] Refacto ou je fais attention d'utiliser le plus possible des references pour speed mon code en fait.
 - [ ] Refacto ou je design mieux mes fonctions, si on regarde les fonctions hasSession et parseCreatedAt, elles ne font pas exactement ce que leur nom suggere.
 
+<!-- TODO: -->
+<!-- Learn how to validate the user ie for a user value, go through each field and use some sort of validation to return if the field is fine. -->
+
 
 ### Prise de note
 

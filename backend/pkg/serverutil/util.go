@@ -3,9 +3,9 @@ package serverutil
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 const SIGNINENDPOINT = "/signin"
@@ -30,7 +30,8 @@ func DecodeValid[T Validator](r *http.Request) (T, map[string]string, error) {
 		return v, nil, fmt.Errorf("decode json: %w", err)
 	}
 	if pbms := v.Valid(r.Context()); len(pbms) > 0 {
-		return v, pbms, fmt.Errorf("invalid %T: %d problems", v, len(pbms))
+		err := FormatError(pbms, fmt.Sprintf("%T", v))
+		return v, pbms, fmt.Errorf("invalid %T with %d problems : %w", v, len(pbms), err)
 	}
 	return v, nil, nil
 }
@@ -48,11 +49,18 @@ func WriteResponse(w http.ResponseWriter, message string, status int) error {
 	resBody := struct {
 		Message string `json:"message"`
 	}{message}
-	// TODO: that gives an error for whatever reason
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(resBody); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	}
 	return nil
+}
+
+func FormatError(pbms map[string]string, name string) error {
+	var temp string
+	for field, pbm := range pbms {
+		temp += fmt.Sprintf("invalid %s: %s, ", field, pbm)
+	}
+	return errors.New(fmt.Sprintf("%s error : [%s]", name, temp))
 }

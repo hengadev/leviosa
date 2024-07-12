@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -18,21 +17,12 @@ type UserRepository struct {
 	DB *sql.DB
 }
 
-func NewUserRepository(ctx context.Context) (*UserRepository, error) {
-	connStr := os.Getenv("userdb")
-	db, err := sqliteutil.Connect(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: initialise the admin if the env variable is set to dev.
-	// or maybe us flags for this ?
-	if os.Getenv("env") == "dev" {
-		ProdInit(db)
-	}
-	return &UserRepository{db}, nil
+func NewUserRepository(ctx context.Context, db *sql.DB) *UserRepository {
+	return &UserRepository{db}
 }
 
 // Cette fonction je ne l'utilise qu'en environment de production dev, comment le retranscrire dans mon code ?
+// TODO: we need to use migration for that.
 func ProdInit(db *sql.DB) error {
 	// init some administrator
 	adminpassword, err := sqliteutil.HashPassword("1234")

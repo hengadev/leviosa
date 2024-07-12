@@ -10,6 +10,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func BuildDSN(connStr string) string {
+	return fmt.Sprintf("%s.db", connStr)
+}
+
 func Connect(ctx context.Context, connStr string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", connStr)
 	if err != nil {
