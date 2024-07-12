@@ -13,5 +13,6 @@ func (c *Config) GetSQLITE() *sqliteCreds {
 }
 
 func (c *Config) setSQLITE(context.Context) error {
+	c.sqlite.Filename = c.viper.GetString("sqlite.filename")
 	return nil
 }
