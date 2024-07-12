@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/http/handler"
-	mw "github.com/GaryHY/event-reservation-app/internal/http/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler"
+	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 

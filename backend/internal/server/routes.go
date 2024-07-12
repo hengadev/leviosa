@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/http/handler/checkout"
-	"github.com/GaryHY/event-reservation-app/internal/http/handler/payment"
-	"github.com/GaryHY/event-reservation-app/internal/http/handler/register"
-	"github.com/GaryHY/event-reservation-app/internal/http/handler/user"
-	"github.com/GaryHY/event-reservation-app/internal/http/handler/vote"
-	"github.com/GaryHY/event-reservation-app/internal/http/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/checkout"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/payment"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/register"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/vote"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
