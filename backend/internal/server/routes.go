@@ -17,7 +17,7 @@ import (
 func (s *Server) addRoutes(h *handler.Handler) {
 	mux := http.NewServeMux()
 	// basic route to test things out
-	mux.Handle("/hello", http.HandlerFunc(sayHello))
+	mux.Handle("GET /api/v1/hello", http.HandlerFunc(sayHello))
 	// handler declaration
 	userHandler := user.NewHandler(h)
 	voteHandler := vote.NewHandler(h)
@@ -27,21 +27,21 @@ func (s *Server) addRoutes(h *handler.Handler) {
 
 	// assign to multiplexer
 	// user
-	mux.Handle("GET /me", userHandler.GetUser())
-	mux.Handle("PUT /me", userHandler.UpdateUser())
-	mux.Handle("DELETE /me", userHandler.DeleteUser())
-	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNUPENDPOINT), userHandler.CreateAccount())
-	mux.Handle(fmt.Sprintf("POST %s", serverutil.SIGNINENDPOINT), userHandler.Signin())
-	mux.Handle("POST /signout", userHandler.Signout())
+	mux.Handle("GET /api/v1/me", userHandler.GetUser())
+	mux.Handle("PUT /api/v1/me", userHandler.UpdateUser())
+	mux.Handle("DELETE /api/v1/me", userHandler.DeleteUser())
+	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNUPENDPOINT), userHandler.CreateAccount())
+	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNINENDPOINT), userHandler.Signin())
+	mux.Handle("POST /api/v1/signout", userHandler.Signout())
 	// payment
-	mux.Handle("POST /admin/payment", paymentHandler.CreateEventProduct())
-	mux.Handle("DELETE /admin/payment", paymentHandler.DeleteEventProduct())
+	mux.Handle("POST /api/v1/admin/payment", paymentHandler.CreateEventProduct())
+	mux.Handle("DELETE /api/v1/admin/payment", paymentHandler.DeleteEventProduct())
 	// vote
-	mux.Handle("GET /vote/{month}/{year}", voteHandler.GetVotesByUserID())
+	mux.Handle("GET /api/v1/vote/{month}/{year}", voteHandler.GetVotesByUserID())
 	// checkout
-	mux.Handle("POST /checkout/{id}/{spot}", checkoutHandler.CreateCheckoutSession())
+	mux.Handle("POST /api/v1/checkout/{id}/{spot}", checkoutHandler.CreateCheckoutSession())
 	// register
-	mux.Handle("POST /register", registerHandler.MakeRegistration())
+	mux.Handle("POST /api/v1/register", registerHandler.MakeRegistration())
 
 	s.srv.Handler = mux
 }

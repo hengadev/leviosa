@@ -4,6 +4,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
+	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -18,6 +19,7 @@ type Services struct {
 	Vote     *vote.Service
 	Checkout *checkout.Service
 	Register *register.Service
+	Photo    *photo.Service
 }
 
 type Repos struct {
@@ -25,7 +27,8 @@ type Repos struct {
 	Session  session.Reader
 	Event    event.Reader
 	Vote     vote.Reader
-	Register *register.Reader
+	Register register.Reader
+	Photo    photo.Reader
 }
 
 type Handler struct {
