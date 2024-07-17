@@ -1,0 +1,19 @@
+FROM golang:1.22.1-alpine AS builder
+
+RUN apk add build-base
+ADD . /app
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify 
+
+# TODO: Add that when you have test ready
+# RUN go test --cover -v ./tests/...
+RUN CGO_ENABLED=1 GOOS=linux go build -v -o myapp ./cmd/event-reservation-app/*.go
+
+FROM alpine:latest 
+EXPOSE 3500
+# ENV PORT=3500
+# ENV APP_ENV="production"
+CMD ["./myapp", "-port", "3500"]
+COPY --from=builder /app/myapp /app/*.env ./
