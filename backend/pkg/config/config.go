@@ -13,6 +13,7 @@ type Config struct {
 
 	sqlite *sqliteCreds
 	redis  *redisCreds
+	s3     *s3Creds
 }
 
 // TODO: Add the other creds needed

@@ -17,9 +17,8 @@ func (c *Config) GetRedis() *redisCreds {
 func (c *Config) setRedis(context.Context) error {
 	host := c.viper.GetString("redis.host")
 	port := c.viper.GetInt("redis.port")
-	addr := fmt.Sprintf("%s:%d", host, port)
 	c.redis = &redisCreds{
-		Addr: addr,
+		Addr: fmt.Sprintf("%s:%d", host, port),
 	}
 	return nil
 }
