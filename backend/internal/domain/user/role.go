@@ -3,19 +3,24 @@ package user
 type Role int8
 
 const (
-	UNKNOWN       Role = iota
-	BASIC         Role = iota
-	GUEST         Role = iota
-	ADMINISTRATOR Role = iota
+	UNKNOWN Role = iota
+	BASIC
+	GUEST
+	ADMINISTRATOR
 )
 
+var roles = [4]string{
+	"unknown",
+	"basic",
+	"guest",
+	"admin",
+}
+
+func GetRoles() [4]string {
+	return roles
+}
+
 func (r Role) String() string {
-	roles := []string{
-		"unknown",
-		"basic",
-		"guest",
-		"admin",
-	}
 	return roles[r]
 }
 
@@ -25,10 +30,10 @@ func ConvertToRole(role string) Role {
 		return ADMINISTRATOR
 	case "helper":
 		return GUEST
-	case "basic":
-		return BASIC
-	default:
+	case "":
 		return UNKNOWN
+	default:
+		return BASIC
 	}
 }
 
