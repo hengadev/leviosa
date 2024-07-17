@@ -4,34 +4,24 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
 type EventRepository struct {
 	DB *sql.DB
 }
 
-func NewEventRepository(ctx context.Context) (*EventRepository, error) {
-	connStr := os.Getenv("eventdb")
-	db, err := sqliteutil.Connect(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-	if os.Getenv("env") == "dev" {
-		ProdInit(db)
-	}
-	return &EventRepository{db}, nil
+func NewEventRepository(ctx context.Context, db *sql.DB) *EventRepository {
+	return &EventRepository{db}
 }
 
 // the new functions
-func (s *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
+func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
 	event := &event.Event{}
-	if err := s.DB.QueryRowContext(ctx, "SELECT * FROM events WHERE id=?;", id).Scan(
+	if err := e.DB.QueryRowContext(ctx, "SELECT * FROM events WHERE id=?;", id).Scan(
 		&event.ID,
 		&event.Location,
 		&event.PlaceCount,
@@ -42,14 +32,14 @@ func (s *EventRepository) GetEventByID(ctx context.Context, id string) (*event.E
 	return event, nil
 }
 
-func (s *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
+func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
 	events := make([]*event.Event, 0)
 	query := `
        SELECT * FROM events WHERE id IN
        (SELECT eventid FROM votes WHERE userid=?)
        ORDER BY rowid ASC;
 	   `
-	rows, err := s.DB.QueryContext(ctx, query, userID)
+	rows, err := e.DB.QueryContext(ctx, query, userID)
 	defer rows.Close()
 	if err != nil {
 		return nil, rp.NewErrRow(err)
@@ -70,9 +60,9 @@ func (s *EventRepository) GetEventByUserID(ctx context.Context, userID string) (
 	return events, nil
 }
 
-func (s *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, error) {
+func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, error) {
 	events := make([]*event.Event, 0)
-	rows, err := s.DB.QueryContext(ctx, "SELECT * FROM events;")
+	rows, err := e.DB.QueryContext(ctx, "SELECT * FROM events;")
 	if err != nil {
 		return nil, rp.NewErrRow(err)
 	}
@@ -101,8 +91,8 @@ func (s *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, err
 	return events, nil
 }
 
-func (s *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
-	if _, err := s.DB.ExecContext(
+func (e *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
+	if _, err := e.DB.ExecContext(
 		ctx,
 		"UPDATE events SET freeplace = freeplace - 1 WHERE id=?;",
 		eventID,
@@ -113,9 +103,9 @@ func (s *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string)
 }
 
 // old functions
-func (s *EventRepository) PostEvent(ctx context.Context, event *event.Event) error {
+func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) (string, error) {
 	new_date := event.BeginAt.Format(time.RFC3339)
-	_, err := s.DB.ExecContext(
+	_, err := e.DB.ExecContext(
 		ctx,
 		"INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)",
 		event.ID,
@@ -125,13 +115,13 @@ func (s *EventRepository) PostEvent(ctx context.Context, event *event.Event) err
 		event.PriceID,
 	)
 	if err != nil {
-		return rp.NewRessourceCreationErr(err)
+		return "", rp.NewRessourceCreationErr(err)
 	}
-	return nil
+	return event.ID, nil
 }
 
-func (s *EventRepository) UpdateEvent(ctx context.Context, event *event.Event) error {
-	_, err := s.DB.ExecContext(
+func (e *EventRepository) ModifyEvent(ctx context.Context, event *event.Event) (*event.Event, error) {
+	_, err := e.DB.ExecContext(
 		ctx,
 		"UPDATE events SET location=?, placecount=?, date=? WHERE id=?;",
 		event.Location,
@@ -140,23 +130,23 @@ func (s *EventRepository) UpdateEvent(ctx context.Context, event *event.Event) e
 		event.ID,
 	)
 	if err != nil {
-		return rp.NewRessourceUpdateErr(err)
+		return nil, rp.NewRessourceUpdateErr(err)
 	}
-	return nil
+	return event, nil
 }
 
-func (s *EventRepository) DeleteEvent(ctx context.Context, eventID string) error {
-	_, err := s.DB.ExecContext(ctx, "DELETE from events where id=?;", eventID)
+func (e *EventRepository) RemoveEvent(ctx context.Context, eventID string) (string, error) {
+	_, err := e.DB.ExecContext(ctx, "DELETE from events where id=?;", eventID)
 	if err != nil {
-		return rp.NewRessourceDeleteErr(err)
+		return "", rp.NewRessourceDeleteErr(err)
 	}
-	return nil
+	return eventID, nil
 }
 
 // Function that returns true if an event with the ID "eventID" is in the database and if the number of place found in "placecount" is > 0.
-func (s *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool, error) {
+func (e *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool, error) {
 	var placecount int
-	err := s.DB.QueryRowContext(ctx, "SELECT placecount FROM events WHERE id=?;", eventID).Scan(&placecount)
+	err := e.DB.QueryRowContext(ctx, "SELECT placecount FROM events WHERE id=?;", eventID).Scan(&placecount)
 	if err == sql.ErrNoRows {
 		return false, rp.NewNotFoundError(err)
 	}
@@ -166,17 +156,17 @@ func (s *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool,
 	return placecount > 0, nil
 }
 
-func (s *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID string) error {
-	_, err := s.DB.ExecContext(ctx, "UPDATE events SET placecount = placecount-1 WHERE id=?", eventID)
+func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID string) error {
+	_, err := e.DB.ExecContext(ctx, "UPDATE events SET placecount = placecount-1 WHERE id=?", eventID)
 	if err != nil {
 		return rp.NewRessourceUpdateErr(err)
 	}
 	return nil
 }
 
-func (s *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
+func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
 	var priceID string
-	err := s.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
+	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
 	if err == sql.ErrNoRows {
 		return "", rp.NewNotFoundError(err)
 	}
@@ -188,7 +178,7 @@ func (s *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID strin
 
 // On part du principe que le beginAt est store comme "xx:xx:xx"
 
-func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
+func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
 	var res event.EventUser
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
@@ -203,7 +193,7 @@ func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 
 	for _, statement := range statements {
 		query := fmt.Sprintf("SELECT * FROM events WHERE %s;", statement.condition)
-		rows, err := s.DB.QueryContext(ctx, query, userID)
+		rows, err := e.DB.QueryContext(ctx, query, userID)
 		defer rows.Close()
 		if err != nil {
 			return &res, err
@@ -231,7 +221,7 @@ func (s *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 			}
 			var usedCount int
 			query := fmt.Sprintf("SELECT COUNT(userid) from event_%s;", event.ID)
-			if err := s.DB.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
+			if err := e.DB.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
 				return &res, rp.NewNotFoundError(err)
 			}
 			event.FreePlace = event.PlaceCount - usedCount
