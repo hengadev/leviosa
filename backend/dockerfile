@@ -9,7 +9,7 @@ RUN go mod download && go mod verify
 
 # TODO: Add that when you have test ready
 # RUN go test --cover -v ./tests/...
-RUN CGO_ENABLED=1 GOOS=linux go build -v -o myapp ./cmd/event-reservation-app/*.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
 
 FROM alpine:latest 
 EXPOSE 3500
