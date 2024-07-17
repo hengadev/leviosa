@@ -4,31 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"time"
 
 	// "github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
 type RegisterRepository struct {
 	DB *sql.DB
 }
 
-func NewRegisterRepository(ctx context.Context) (*RegisterRepository, error) {
-	connStr := os.Getenv("votedb")
-	db, err := sqliteutil.Connect(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: initialise the admin if the env variable is set to dev.
-	// or maybe us flags for this ?
-	if os.Getenv("env") == "dev" {
-		ProdInit(db)
-	}
-	return &RegisterRepository{db}, nil
+func NewRegisterRepository(ctx context.Context, db *sql.DB) *RegisterRepository {
+	return &RegisterRepository{db}
 }
 
 func (v *RegisterRepository) AddRegistration(ctx context.Context, r *register.Registration, day, year int, month string) error {
@@ -47,7 +35,7 @@ func (v *RegisterRepository) AddRegistration(ctx context.Context, r *register.Re
 	return nil
 }
 
-func (v *VoteRepository) HasSession(ctx context.Context, day, year int, month, userID string) (bool, error) {
+func (v *RegisterRepository) HasRegistration(ctx context.Context, day, year int, month, userID string) (bool, error) {
 	var hasSession int
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?", tablename)
