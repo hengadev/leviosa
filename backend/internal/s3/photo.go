@@ -1,4 +1,4 @@
-package photo
+package s3
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
+// NOTE: the bucket is not env variable, I am supposed to have one bucket per event
 const (
 	BUCKETNAME = "test-bucket-golang-gary"
 )
@@ -36,6 +37,12 @@ func NewPhotoRepository(ctx context.Context) (*PhotoRepository, error) {
 	}, nil
 }
 
+// TODO: implement that one too.
+func (p *PhotoRepository) GetAllObjects(ctx context.Context, eventID string) (any, error) {
+	return nil, nil
+}
+
+// this thing is a handler dumbass
 func (p *PhotoRepository) AddFile(ctx context.Context, file multipart.File, key string) (string, error) {
 	result, err := p.Uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(BUCKETNAME),
