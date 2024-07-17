@@ -4,27 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
 type VoteRepository struct {
 	DB *sql.DB
 }
 
-func NewVoteRepository(ctx context.Context) (*VoteRepository, error) {
-	connStr := os.Getenv("votedb")
-	db, err := sqliteutil.Connect(ctx, connStr)
-	if err != nil {
-		return nil, err
-	}
-	if os.Getenv("env") == "dev" {
-		ProdInit(db)
-	}
-	return &VoteRepository{db}, nil
+func NewVoteRepository(ctx context.Context, db *sql.DB) *VoteRepository {
+	return &VoteRepository{db}
 }
 
 func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, userID string) (string, error) {
@@ -62,7 +52,7 @@ func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*
 	return votes, nil
 }
 
-func (v *VoteRepository) HasVote(ctx context.Context, year int, month, userID string) (bool, error) {
+func (v *VoteRepository) HasVote(ctx context.Context, month, year int, userID string) (bool, error) {
 	var res bool
 	tablename := fmt.Sprintf("votes_%d_%d", month, year)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?;", tablename)
@@ -74,6 +64,11 @@ func (v *VoteRepository) HasVote(ctx context.Context, year int, month, userID st
 		return false, rp.NewBadQueryErr(err)
 	}
 	return true, nil
+}
+
+// TODO: implement that function
+func (v *VoteRepository) RemoveVote(ctx context.Context, userID string, month, year int) error {
+	return nil
 }
 
 // Function to create vote for a user in a specific month and year

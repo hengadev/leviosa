@@ -7,17 +7,18 @@ import (
 )
 
 func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
+	// month := votes[0].Month
 	month := votes[0].Month
 	year := votes[0].Year
 	userID := votes[0].UserID
 	days := stringifyVote(votes)
 	// check if has vote
-	ok, err := s.Repo.HasVote(ctx, userID, month, year)
+	hasVote, err := s.Repo.HasVote(ctx, month, year, userID)
 	if err != nil {
 		return fmt.Errorf("know if user has votes %w", err)
 	}
 	// remove previous vote
-	if ok {
+	if hasVote {
 		if err := s.Repo.RemoveVote(ctx, userID, month, year); err != nil {
 			return fmt.Errorf("remove existing vote: %w", err)
 		}
