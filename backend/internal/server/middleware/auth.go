@@ -22,18 +22,20 @@ func Auth(s session.Reader) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
-			enpointsToAvoid := []string{
+			noAuthEndpoints := []string{
 				serverutil.SIGNINENDPOINT,
 				serverutil.SIGNUPENDPOINT,
 			}
-			for _, endpoint := range enpointsToAvoid {
-				if r.URL.Path == endpoint {
+			url := strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
+			fmt.Println("the url is :", url)
+			for _, endpoint := range noAuthEndpoints {
+				if url == endpoint {
 					next.ServeHTTP(w, r)
 					return
 				}
 			}
 			ctx := r.Context()
-			// get expected role for url path
+			// get expected role from url path
 			expectedRole := getExpectedRoleFromRequest(r)
 			// get sessionID from request
 			sessionID, err := getSessionIDFromRequest(r)
@@ -73,17 +75,19 @@ func getSessionIDFromRequest(r *http.Request) (string, error) {
 }
 
 func getExpectedRoleFromRequest(r *http.Request) user.Role {
-	var role user.Role
 	values := strings.Split(r.URL.Path, "/")
-	switch values[1] {
-	case user.ADMINISTRATOR.String():
-		role = user.ADMINISTRATOR
-	case user.GUEST.String():
-		role = user.GUEST
-	case user.BASIC.String():
-		role = user.BASIC
-	default:
-		role = user.UNKNOWN
-	}
-	return role
+	return user.ConvertToRole(values[3])
+	// old api
+	// var role user.Role
+	// switch values[1] {
+	// case user.ADMINISTRATOR.String():
+	// 	role = user.ADMINISTRATOR
+	// case user.GUEST.String():
+	// 	role = user.GUEST
+	// case user.BASIC.String():
+	// 	role = user.BASIC
+	// default:
+	// 	role = user.UNKNOWN
+	// }
+	// return role
 }
