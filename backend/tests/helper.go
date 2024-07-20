@@ -3,12 +3,14 @@ package tests
 import (
 	"bytes"
 	"fmt"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // I should take that and put that into some migration file
@@ -18,6 +20,13 @@ const (
 	createVotesTable    = "CREATE TABLE IF NOT EXISTS votes (id TEXT NOT NULL PRIMARY KEY, userid TEXT NOT NULL REFERENCES users, eventid TEXT NOT NULL REFERENCES events);"
 	createEventsTable   = "CREATE TABLE IF NOT EXISTS events (id UUID NOT NULL PRIMARY KEY, location TEXT NOT NULL, placecount INTEGER NOT NULL, date TEXT NOT NULL, priceid TEXT NOT NULL);"
 )
+
+// the generic thing to compare two values of the same type
+func assert[T comparable](t testing.TB, got, want T) {
+	if got != want {
+		t.Errorf("got %T, want %T", got, want)
+	}
+}
 
 func assertEqualString(t testing.TB, got, want string) {
 	t.Helper()

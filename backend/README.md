@@ -14,6 +14,7 @@
 <!-- TODO: -->
 <!-- Learn how to validate the user ie for a user value, go through each field and use some sort of validation to return if the field is fine. -->
 
+### projets pour generer un qrcode a partir d'un URL : https://www.youtube.com/watch?v=OqPJ5SyowQg
 
 ### Prise de note
 

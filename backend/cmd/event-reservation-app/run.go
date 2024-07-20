@@ -51,6 +51,7 @@ func run(ctx context.Context, w io.Writer) error {
 
 	// set environment file
 	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String()))
+	// err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode))
 	if err != nil {
 		return fmt.Errorf("load env variables: %w", err)
 	}

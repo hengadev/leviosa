@@ -2,7 +2,7 @@ package mail
 
 import (
 	"bytes"
-	"github.com/GaryHY/event-reservation-app/internal/types"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"gopkg.in/gomail.v2"
 	"html/template"
 	"os"
@@ -11,10 +11,11 @@ import (
 // TODO: use the right user type for this, you just have to use the struct tag better
 
 // Function that send an email to all users to specify that a new event has been created.
-func HandleNewEventMail(usersList []*types.UserStored, eventTime string) {
+func HandleNewEventMail(usersList []*user.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	for _, user := range usersList {
-		go func(user *types.UserStored) {
+		// go func(user interface{}) {
+		go func(user *user.User) {
 			templData := struct {
 				Username string
 				Heure    string
@@ -25,7 +26,7 @@ func HandleNewEventMail(usersList []*types.UserStored, eventTime string) {
 }
 
 // Function that send an email to user after receiving payment.
-func SendNewVoteMail(user *types.UserStored, eventTime string) {
+func SendNewVoteMail(user *user.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	templData := struct {
 		Username string
@@ -34,11 +35,11 @@ func SendNewVoteMail(user *types.UserStored, eventTime string) {
 	sendMail(companyMail, user.Email, "Bienvenue parmi nous !", "/internal/mail/newRegistry.html", password, templData)
 }
 
-func HandleNewPaymentMail(user *types.UserStored, eventTime string) {
+func HandleNewPaymentMail(user *user.User, eventTime string) {
 }
 
 // Function that send an email to user to remind them of an event incoming.
-func HandleRemainderEventMail(user *types.UserStored, eventTime string, daysLeft int) {
+func HandleRemainderEventMail(user *user.User, eventTime string, daysLeft int) {
 	// TODO: Add the call to a certain function to handle using that value
 	switch daysLeft {
 	case 2:
@@ -46,7 +47,7 @@ func HandleRemainderEventMail(user *types.UserStored, eventTime string, daysLeft
 	}
 }
 
-func HandleRemainderPaymentMail(user *types.UserStored, eventTime string) {
+func HandleRemainderPaymentMail(user *user.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	templData := struct {
 		Username string
@@ -54,7 +55,7 @@ func HandleRemainderPaymentMail(user *types.UserStored, eventTime string) {
 	sendMail(companyMail, user.Email, "Bienvenue parmi nous !", "/internal/mail/welcomeUser.html", password, templData)
 }
 
-func SendWelcomeUserMail(user *types.UserStored) {
+func SendWelcomeUserMail(user *user.User) {
 }
 
 func sendMail(from, to, subject, templateFilename, password string, data any) {

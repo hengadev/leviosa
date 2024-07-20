@@ -10,11 +10,17 @@ const (
 	ModeStaging
 )
 
+var modeStr = []string{
+	"development",
+	"production",
+	"staging",
+}
+
 func (m *EnvMode) Set(value string) error {
 	switch value {
-	case "dev":
+	case "development":
 		*m = ModeDev
-	case "prod":
+	case "production":
 		*m = ModeProd
 	case "staging":
 		*m = ModeStaging
@@ -23,11 +29,7 @@ func (m *EnvMode) Set(value string) error {
 	}
 	return nil
 }
+
 func (m *EnvMode) String() string {
-	modes := []string{
-		"dev",
-		"prod",
-		"staging",
-	}
-	return modes[*m]
+	return modeStr[*m]
 }
