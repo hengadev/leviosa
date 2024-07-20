@@ -1,4 +1,4 @@
 # Event Reservation api
-1. Frontend in astro
-2. Backend usings se rverless function in lambda
+1. Frontend in svelte
+2. Backend in golang
 

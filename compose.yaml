@@ -29,8 +29,7 @@ services:
     ports:
       - 8080:8080  
     environment: 
-      # TODO: Use sqlite3 instead
-      db_url: mongodb://db/anime
+      PORT: 3500
     develop: # for the docker compose watch mode
       # TODO: Change that with the correct  setup for a golang backend
       watch: 
@@ -41,19 +40,23 @@ services:
         - path: ./backend/
           target: /app
           action: sync
-  # TODO: Change the database used from postgres to sqlite, because the application is very light.
-  db:
-    # TODO: Est ce le bon nom ?
-    image: postgres:latest-alpine3.18
-    container_name: database
+  generaldb:
+    build: "."
+    container_name: sqlite-container
+    image: alpine:latest
     environment: 
-      # TODO: Use the file in the .env file to read the environment variables if you can.
-      POSTGRES_USER: root 
-      POSTGRES_PASSWORD: root 
+      database-name: "event-reservation-app"
     ports:
       - 27017:27017  
     volumes:
-      - events:/data/db
+      - sqlite-container:/data/db
 
-volumes:
-  events:
+  redis:
+    image: redis:latest
+    container_name: redis_session
+    environment:
+      REDIS_USER: root 
+      REDIS_PASSWORD: root 
+    ports:
+      - 6789
+
