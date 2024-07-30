@@ -1,0 +1,81 @@
+import { redirect, invalid } from "@sveltejs/kit"
+import type { Action, Actions, PageServerLoad } from "./$types"
+
+// type DomainName = "fr" | "com"
+// type Email = `${string}@${string}.${DomainName}`
+
+function validate(email: string, password: string): boolean {
+    if (
+        typeof email !== 'string' ||
+        typeof password !== 'string' ||
+        !email ||
+        !password
+    ) {
+        return invalid(400, { invalid: true })
+    }
+    return true
+}
+
+type CookieParsed = {
+    sessionId: string,
+    Expires: Date,
+    HttpOnly: boolean,
+    Secure: boolean,
+}
+
+function parseCookie(cookie: string): CookieParsed {
+    const res: CookieParsed = {
+        sessionId: "",
+        Expires: new Date(),
+        HttpOnly: true,
+        Secure: true,
+    };
+    cookie.split(";").map((field) => {
+        const split = field.trim().split("=");
+        if (split[0] === "Expires") {
+            split[1] = new Date(split[1]);
+        }
+        res[split[0]] = split[1] ?? true;
+    });
+    return res;
+}
+
+export const register: Action = async ({ request, cookies }) => {
+    // get info from the form
+    const formData = await request.formData()
+    const email = String(formData.get("email"))
+    const password = String(formData.get("password"))
+    // validate the email and password
+    validate(email, password)
+    const body = JSON.stringify({ email, password })
+    // make request to the server.
+    const res = await fetch("http://localhost:5000/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body
+    })
+    // TODO: Do better error handling between the server and this file to handle is the user exists for example.
+    if (res.ok) {
+        // parse the reponse to reform the cookie.
+        const cookieParsed = parseCookie(res.headers.getSetCookie()[0])
+        cookies.set("sessionId", cookieParsed.sessionId, {
+            path: "/",
+        })
+        // redirect to the auth home page.
+        throw redirect(302, "/app")
+    }
+    // return data, in case we did not redirect the page and the fetching failed for some reason.
+    return {
+        email,
+        success: false,
+        message: "Error in setting the cookie or fetching the data."
+    }
+}
+
+export const load: PageServerLoad = ({ locals }) => {
+    if (locals.user) {
+        throw redirect(301, "/app")
+    }
+}
+
+export const actions: Actions = { register }

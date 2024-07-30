@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+/* TODO: change that when I am done with the component so that I can customize my thing */
 @layer base {
     :root {
         --background: 0 0% 100%;
@@ -37,11 +38,17 @@
     }
 
     .dark {
-        --background: 222.2 84% 4.9%;
+        /* NOTE: old values */
+        /* --background: 222.2 84% 4.9%; */
+        /* --muted: 217.2 32.6% 17.5%; */
+        /* --muted-foreground: 215 20.2% 65.1%; */
+
+        /* NOTE: new values */
+        --background: 240 6.9% 11.37%;
         --foreground: 210 40% 98%;
 
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
+        --muted: 231.43 9.86% 13.92%;
+        --muted-foreground: 235 235% 245% 0.6;
 
         --popover: 222.2 84% 4.9%;
         --popover-foreground: 210 40% 98%;
