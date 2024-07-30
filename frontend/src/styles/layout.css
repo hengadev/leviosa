@@ -1,0 +1,12 @@
+/* font */
+@font-face {
+    font-family: geist;
+    src: url('/fonts/variable-woff/GeistVF.woff2') format('woff2'),
+        url('/fonts/variable-woff/GeistVF.woff') format('woff');
+    font-display: swap;
+    font-style: normal;
+}
+
+body {
+    font-family: geist;
+}
