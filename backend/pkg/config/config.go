@@ -28,6 +28,7 @@ func New(ctx context.Context, envFilename, envFileType string) *Config {
 	return &Config{
 		viper:  vp,
 		sqlite: &sqliteCreds{},
+		redis:  &redisCreds{},
 	}
 }
 
@@ -37,6 +38,9 @@ func (c *Config) Load(ctx context.Context) error {
 		key      string
 	}{
 		"DATABASE_FILENAME": {required: true, key: "sqlite.filename"},
+		"REDIS_ADDR":        {required: true, key: "redis.addr"},
+		"REDIS_DB":          {required: true, key: "redis.db"},
+		"REDIS_PASSWORD":    {required: true, key: "redis.password"},
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {
@@ -48,6 +52,9 @@ func (c *Config) Load(ctx context.Context) error {
 	}
 	if err := c.setSQLITE(ctx); err != nil {
 		return fmt.Errorf("set SQLITE: %w", err)
+	}
+	if err := c.setRedis(ctx); err != nil {
+		return fmt.Errorf("set Redis: %w", err)
 	}
 	return nil
 }

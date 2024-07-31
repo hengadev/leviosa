@@ -2,12 +2,12 @@ package config
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/go-redis/redis"
 )
 
 type redisCreds struct {
-	Addr string
-	DB   string
+	*redis.Options
 }
 
 func (c *Config) GetRedis() *redisCreds {
@@ -15,10 +15,12 @@ func (c *Config) GetRedis() *redisCreds {
 }
 
 func (c *Config) setRedis(context.Context) error {
-	host := c.viper.GetString("redis.host")
-	port := c.viper.GetInt("redis.port")
 	c.redis = &redisCreds{
-		Addr: fmt.Sprintf("%s:%d", host, port),
+		&redis.Options{
+			Addr:     c.viper.GetString("redis.addr"),
+			Password: c.viper.GetString("redis.password"),
+			DB:       c.viper.GetInt("redis.db"),
+		},
 	}
 	return nil
 }
