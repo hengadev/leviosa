@@ -4,7 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
@@ -79,7 +81,7 @@ func (h *Handler) Signin() http.Handler {
 		}
 		// validate credentials
 		user, err := h.Repos.User.ValidateCredentials(ctx, &input)
-		if user != nil {
+		if user == nil {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
@@ -96,11 +98,17 @@ func (h *Handler) Signin() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// TODO: send the session information within a cookie ? as before ?
-		type Response struct {
-			SessionID string `json:"sessionid"`
-		}
-		serverutil.Encode(w, http.StatusCreated, Response{sessionID})
+		// TODO: send the session information within a cookie ? as before ? Or remove that as a chore if the cookie is well sent.
+		// type Response struct {
+		// 	SessionID string `json:"sessionid"`
+		// }
+		// serverutil.Encode(w, http.StatusCreated, Response{sessionID})
+		http.SetCookie(w, &http.Cookie{
+			Name:     session.SessionName,
+			Value:    sessionID,
+			Expires:  time.Now().Add(session.SessionDuration),
+			HttpOnly: true,
+		})
 	})
 }
 
