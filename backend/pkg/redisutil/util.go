@@ -12,10 +12,15 @@ import (
 type RedisOption func(*redis.Options)
 
 // the with things here do not serve because they are not optional, soo.....
-func WithPort(addr int) RedisOption {
+func WithAddr(addr string) RedisOption {
 	return func(r *redis.Options) {
-		// TODO: get the host from some configuration file or an env variable
-		r.Addr = fmt.Sprintf("localhost:%d", addr)
+		r.Addr = addr
+	}
+}
+
+func WithDB(DB int) RedisOption {
+	return func(r *redis.Options) {
+		r.DB = DB
 	}
 }
 
@@ -23,11 +28,6 @@ func WithPassword(pwd string) RedisOption {
 	return func(r *redis.Options) {
 		r.Password = pwd
 	}
-}
-
-// TODO: implement that to return the DSN for redis
-func BuildDSN() string {
-	return fmt.Sprintf("")
 }
 
 func Connect(ctx context.Context, opts ...RedisOption) (*redis.Client, error) {
@@ -54,7 +54,7 @@ func Connect(ctx context.Context, opts ...RedisOption) (*redis.Client, error) {
 // TODO: find a value for the expiration of the value set
 func Init(ctx context.Context, client *redis.Client, queries map[string]interface{}) error {
 	for k, v := range queries {
-		err := client.Set(ctx, k, v, session.SessionExpirationDuration).Err()
+		err := client.Set(ctx, k, v, session.SessionDuration).Err()
 		if err != nil {
 			return rp.NewRessourceCreationErr(err)
 		}
