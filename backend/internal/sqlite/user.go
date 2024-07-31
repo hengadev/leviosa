@@ -7,6 +7,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -32,9 +33,15 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id string) (*user.
 
 // TODO: finsh that implementation, it is just for my code to compile
 func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (*user.User, error) {
-	return nil, nil
+	var userRetrieved user.User
+	u.DB.QueryRowContext(ctx, "SELECT * from users where email = ?;", usr.Email).Scan(&userRetrieved)
+	if err := bcrypt.CompareHashAndPassword([]byte(usr.Password), []byte(userRetrieved.Password)); err != nil {
+		return nil, rp.NewNotFoundError(err)
+	}
+	return &userRetrieved, nil
 }
 
+// TODO: move that function to the session repository
 func (u *UserRepository) GetUserIDBySessionID(ctx context.Context, sessionID string) (id string) {
 	u.DB.QueryRowContext(ctx, "SELECT userid from sessions where id = ?;", sessionID).Scan(&id)
 	return
