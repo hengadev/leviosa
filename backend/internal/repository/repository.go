@@ -30,6 +30,7 @@ func NewRessourceUpdateErr(err error) error {
 func NewRessourceDeleteErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrRessourceDelete, err)
 }
+
 func NewBadQueryErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrBadQuery, err)
 }
