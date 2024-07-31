@@ -10,10 +10,10 @@ import (
 	"syscall"
 
 	// api
-	// "github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
+	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	"github.com/GaryHY/event-reservation-app/internal/server"
@@ -22,11 +22,13 @@ import (
 	// utils
 	"github.com/GaryHY/event-reservation-app/pkg/config"
 	"github.com/GaryHY/event-reservation-app/pkg/flags"
+	"github.com/GaryHY/event-reservation-app/pkg/redisutil"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+
 	// "github.com/GaryHY/event-reservation-app/internal/http/cron"
 
 	// databases
-	// "github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/internal/s3"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 
@@ -62,6 +64,7 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("load configuration: %w", err)
 	}
 	sqliteConf := conf.GetSQLITE()
+	redisConf := conf.GetRedis()
 
 	// databases setup
 	sqlitedb, err := sqliteutil.Connect(ctx, sqliteutil.BuildDSN(sqliteConf.Filename))
@@ -69,15 +72,26 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("create connection to sqlite : %w", err)
 	}
 
+	// redisdb, err := redisutil.Connect(ctx, redisutil.BuildDSN(redisConf.Filename))
+	redisdb, err := redisutil.Connect(
+		ctx,
+		redisutil.WithAddr(redisConf.Addr),
+		redisutil.WithPassword(redisConf.Password),
+		redisutil.WithDB(redisConf.DB),
+	)
+	if err != nil {
+		return fmt.Errorf("create connection to redis : %w", err)
+	}
+
 	// user
 	userRepo := sqlite.NewUserRepository(ctx, sqlitedb)
 	userSvc := user.NewService(userRepo)
 	// session
-	// sessionRepo, err := redis.NewSessionRepository(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("create session repo : %w", err)
-	// }
-	// sessionSvc := session.NewService(sessionRepo)
+	sessionRepo, err := redis.NewSessionRepository(ctx, redisdb)
+	if err != nil {
+		return fmt.Errorf("create session repo : %w", err)
+	}
+	sessionSvc := session.NewService(sessionRepo)
 	// event
 	eventRepo := sqlite.NewEventRepository(ctx, sqlitedb)
 	eventSvc := event.NewService(eventRepo)
@@ -102,6 +116,7 @@ func run(ctx context.Context, w io.Writer) error {
 		Vote:     voteSvc,
 		Register: registerSvc,
 		Photo:    photoSvc,
+		Session:  sessionSvc,
 	}
 	// repos
 	appRepos := handler.Repos{
@@ -111,6 +126,7 @@ func run(ctx context.Context, w io.Writer) error {
 		Vote:     voteRepo,
 		Register: registerRepo,
 		Photo:    photoRepo,
+		Session:  sessionRepo,
 	}
 
 	handler := handler.NewHandler(&appSvcs, &appRepos)
