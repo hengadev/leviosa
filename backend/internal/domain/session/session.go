@@ -9,7 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-const SessionExpirationDuration = time.Minute * 20
+const SessionDuration = 30 * 24 * time.Hour
+const SessionName = "session_token"
 
 type Session struct {
 	ID         string    `json:"id"`
@@ -34,7 +35,7 @@ func NewSession(userID, role string) (*Session, error) {
 func (s *Session) Create() {
 	s.ID = uuid.NewString()
 	s.CreatedAt = time.Now().UTC()
-	s.ExpiresAt = time.Now().UTC().Add(SessionExpirationDuration)
+	s.ExpiresAt = time.Now().UTC().Add(SessionDuration)
 }
 
 func (s *Session) Login() {
@@ -55,7 +56,7 @@ func (s *Session) Valid(ctx context.Context, minRole user.Role) (problems map[st
 	if err := uuid.Validate(s.UserID); err != nil {
 		pbms["userid"] = "user ID is not of type UUID"
 	}
-	if time.Now().Add(SessionExpirationDuration).Before(s.ExpiresAt) {
+	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
 		pbms["expiredat"] = "session expired"
 	}
 	sessionRole := user.ConvertToRole(s.Role)

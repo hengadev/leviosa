@@ -79,11 +79,11 @@ func (s *SessionRepository) CreateSession(ctx context.Context, userSession *sess
 	if err != nil {
 		return "", err
 	}
-	err = s.Client.Set(ctx, userSession.ID, sessionEncoded, session.SessionExpirationDuration).Err()
+	err = s.Client.Set(ctx, userSession.ID, sessionEncoded, session.SessionDuration).Err()
 	if err != nil {
 		return "", rp.NewRessourceCreationErr(err)
 	}
-	err = s.Client.Set(ctx, userSession.UserID, sessionEncoded, session.SessionExpirationDuration).Err()
+	err = s.Client.Set(ctx, userSession.UserID, sessionEncoded, session.SessionDuration).Err()
 	if err != nil {
 		return "", rp.NewRessourceCreationErr(err)
 	}
