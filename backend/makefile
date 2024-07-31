@@ -10,11 +10,16 @@ docker:
 	@docker run -p 3500:3500 $(imageName):latest 
 
 .PHONY: run
-run: 
+run:  redis
 	@echo "Running the application..."
 	@# @echo "Removing, just for testing, the previous db.sqlite instance..."
 	@# @rm db.sqlite
 	@go run ./cmd/event-reservation-app/*.go -port 3500
+
+.PHONY: redis
+redis:
+	@echo "run the redis server with the basic configuration"
+	@docker run --name session-manager -p 6379:6379 -d redis
 
 .PHONY: build
 build:
