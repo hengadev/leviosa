@@ -72,12 +72,11 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("create connection to sqlite : %w", err)
 	}
 
-	// redisdb, err := redisutil.Connect(ctx, redisutil.BuildDSN(redisConf.Filename))
 	redisdb, err := redisutil.Connect(
 		ctx,
 		redisutil.WithAddr(redisConf.Addr),
-		redisutil.WithPassword(redisConf.Password),
 		redisutil.WithDB(redisConf.DB),
+		redisutil.WithPassword(redisConf.Password),
 	)
 	if err != nil {
 		return fmt.Errorf("create connection to redis : %w", err)

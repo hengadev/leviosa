@@ -18,25 +18,33 @@ migrationPath:="./internal/sqlite/migrations"
 goosePrefix:=GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) goose -dir=$(migrationPath) 
 name:=""
 
-.PHONY: all run docker redis build test tesall clean db-status create up down reset
+.PHONY: help all run docker redis build test tesall clean db-status create up down reset
 
 # TODO: find how to use that command with this link : https://dev.to/flpslv/using-makefiles-to-build-and-publish-docker-containers-7c8
 help:
+	@echo "==========================="
+	@echo "Makefile backend arguments:"
+	@echo "==========================="
 	@echo ""
+	@echo "imageName"
+	@echo "redisName"
+	@echo ""
+	@echo "==========================="
+	@echo "Makefile backend commands:"
+	@echo "==========================="
+	@echo ""
+	@echo "docker: dockerize the application"
+	@echo "run: run the application with the go run command"
+	@echo "redis: configure the redis container and run it"
 
-.DEFAULT_GOAL := hello
-
-hello:
-	@echo "Hello"
+.DEFAULT_GOAL := all
 
 all: docker redis
-	echo "TODO: build all the application and run all the docker needs and things"
 
 run: redis
 	@echo "Running the application..."
-	@if [ -f "db.db" ]; then \
-		@echo "Removing, just for testing, the previous db.sqlite instance..."; \
-		@rm db.sqlite; \
+	@if [ -f "$(DATABASE_FILENAME).db" ]; then \
+		rm "$(DATABASE_FILENAME).db"; \
 	fi
 	@go run ./cmd/event-reservation-app/*.go -port 3500
 
@@ -53,16 +61,17 @@ redis:
 	$(eval CONTAINER_ID := $(shell docker ps -a --filter name=$(redisName) --format '{{.ID}}'))
 	@echo "Removing the container with ID : $(CONTAINER_ID)"
 	@if [ -n "$(CONTAINER_ID)" ]; then \
-	  docker stop $(redisName); \
-	  docker rm $(redisName); \
+	  docker stop $(redisName) > /dev/null 2>&1; \
+	  docker rm $(redisName) > /dev/null 2>&1; \
 	fi
-	@echo "Docker run redis server with configuration"
+	@echo "Container stopped and removed successfully"
+	@echo "Running redis server with configuration..."
 	@docker run -d \
 	--name $(redisName) \
 	-p 6379:6379 \
 	redis \
-	--db $(REDIS_DB) \
 	--requirepass $(REDIS_PASSWORD)
+	@echo "Done.\n"
 
 build:
 	@echo "Building the application..."
