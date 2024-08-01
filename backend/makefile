@@ -1,4 +1,5 @@
 imageName:= "henga/backend-event_reservation_app"
+redisName:= "session-manager"
 
 .PHONY: docker
 docker:
@@ -16,10 +17,27 @@ run:  redis
 	@# @rm db.sqlite
 	@go run ./cmd/event-reservation-app/*.go -port 3500
 
+ifneq (,$(wildcard ./.env))
+    include development.env
+    export
+
+endif
+
 .PHONY: redis
 redis:
-	@echo "run the redis server with the basic configuration"
-	@docker run --name session-manager -p 6379:6379 -d redis
+	$(eval CONTAINER_ID := $(shell docker ps -a --filter name=$(redisName) --format '{{.ID}}'))
+	@echo "Removing the container with ID : $(CONTAINER_ID)"
+	@if [ -n "$(CONTAINER_ID)" ]; then \
+	  docker stop $(redisName); \
+	  docker rm $(redisName); \
+	fi
+	@echo "Docker run redis server with configuration"
+	@docker run -d \
+	--name $(redisName) \
+	-p 6379:6379 \
+	redis \
+	--db $(REDIS_DB) \
+	--requirepass $(REDIS_PASSWORD)
 
 .PHONY: build
 build:
