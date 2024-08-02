@@ -11,20 +11,20 @@ import (
 const BirthdayLayout = "2006-01-02"
 
 type User struct {
-	ID         string    `json:"id"`
-	Email      string    `json:"email" validate:"required,email"`
+	ID         string    `json:"-"`
+	Email      string    `json:"email,omitempty" validate:"required,email"`
 	Password   string    `json:"-" validate:"required,min=6"`
 	CreatedAt  time.Time `json:"-"`
 	LoggedInAt time.Time `json:"-"`
 	Role       string    `json:"-"`
-	BirthDate  string    `json:"birthdate"`
-	LastName   string    `json:"lastname"`
-	FirstName  string    `json:"firstname"`
-	Gender     string    `json:"gender"`
-	Telephone  string    `json:"telephone"`
-	Address    string    `json:"address"`
-	City       string    `json:"city"`
-	PostalCard int       `json:"postalcard"`
+	BirthDate  string    `json:"birthdate,omitempty"`
+	LastName   string    `json:"lastname,omitempty"`
+	FirstName  string    `json:"firstname,omitempty"`
+	Gender     string    `json:"gender,omitempty"`
+	Telephone  string    `json:"telephone,omitempty"`
+	Address    string    `json:"address,omitempty"`
+	City       string    `json:"city,omitempty"`
+	PostalCard int       `json:"postalcard,omitempty"`
 }
 
 func NewUser(
