@@ -33,16 +33,6 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
-func Init(db *sql.DB, queries ...string) error {
-	for _, query := range queries {
-		_, err := db.Exec(query)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 // Return the necessary elements to write a query update to target the non zero value.
 func WriteUpdateQuery[S any](s S) (string, []any) {
 	var tables []string

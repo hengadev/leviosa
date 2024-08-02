@@ -34,6 +34,7 @@ import (
 
 	// external packages
 	"github.com/joho/godotenv"
+	"github.com/pressly/goose/v3"
 )
 
 var opts struct {
@@ -53,7 +54,6 @@ func run(ctx context.Context, w io.Writer) error {
 
 	// set environment file
 	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String()))
-	// err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode))
 	if err != nil {
 		return fmt.Errorf("load env variables: %w", err)
 	}
@@ -70,6 +70,25 @@ func run(ctx context.Context, w io.Writer) error {
 	sqlitedb, err := sqliteutil.Connect(ctx, sqliteutil.BuildDSN(sqliteConf.Filename))
 	if err != nil {
 		return fmt.Errorf("create connection to sqlite : %w", err)
+	}
+
+	// setup goose
+	goose.SetBaseFS(nil)
+	// Set the dialect to SQLite3
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return fmt.Errorf("Failed to set dialect: %w", err)
+	}
+	// run the migration to the database.
+	if err := goose.Up(sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
+		return fmt.Errorf("failed to run migration %w", err)
+	}
+	// init hte database
+	queries, err := sqliteutil.GetInitQueries()
+	if err != nil {
+		return fmt.Errorf("failed to get init queries for sqlite database: %w", err)
+	}
+	if err := sqliteutil.Init(sqlitedb, queries...); err != nil {
+		return fmt.Errorf("failed to init sqlite database: %w", err)
 	}
 
 	redisdb, err := redisutil.Connect(
