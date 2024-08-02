@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-const password = "secret"
+const password = "secret1234"
 
 func GetInitQueries() ([]string, error) {
 	hashedpassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -22,7 +22,7 @@ func GetInitQueries() ([]string, error) {
 			`INSERT OR IGNORE INTO users 
             (email, password, createdat, loggedinat, role, birthdate, lastname, firstname, gender, telephone, address, city, postalcard)
             VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');`,
-			"admin@admin.fr",
+			"admin-livio@outlook.fr",
 			hashedpassword,
 			time.Now(),
 			time.Now(),

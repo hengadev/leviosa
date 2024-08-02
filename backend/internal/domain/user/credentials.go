@@ -7,7 +7,7 @@ import (
 
 type Credentials struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"-" validate:"required,min=6"`
+	Password string `json:"password" validate:"required,min=6"`
 }
 
 func (c Credentials) Valid(ctx context.Context) map[string]string {

@@ -26,7 +26,8 @@ func Decode[T any](r *http.Request) (T, error) {
 
 func DecodeValid[T Validator](r *http.Request) (T, map[string]string, error) {
 	var v T
-	if v, err := Decode[T](r); err != nil {
+	v, err := Decode[T](r)
+	if err != nil {
 		return v, nil, fmt.Errorf("decode json: %w", err)
 	}
 	if pbms := v.Valid(r.Context()); len(pbms) > 0 {
