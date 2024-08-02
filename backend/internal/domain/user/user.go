@@ -8,6 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const BirthdayLayout = "2006-01-02"
+
 type User struct {
 	ID         string    `json:"id"`
 	Email      string    `json:"email" validate:"required,email"`
@@ -15,7 +17,7 @@ type User struct {
 	CreatedAt  time.Time `json:"-"`
 	LoggedInAt time.Time `json:"-"`
 	Role       string    `json:"-"`
-	BirthDate  time.Time `json:"birthdate"`
+	BirthDate  string    `json:"birthdate"`
 	LastName   string    `json:"lastname"`
 	FirstName  string    `json:"firstname"`
 	Gender     string    `json:"gender"`
@@ -28,7 +30,7 @@ type User struct {
 func NewUser(
 	email Email,
 	password Password,
-	birthdate time.Time,
+	birthdate string,
 	lastname,
 	firstname,
 	gender string,
@@ -79,6 +81,12 @@ func (u User) Valid(ctx context.Context) map[string]string {
 			// if len(u.Telephone) < 10 && strings.HasPrefix(u.Telephone) {
 			// 	pbms["telephone"] = ""
 			// }
+		case "Birthday":
+			parsedDate, err := time.Parse(BirthdayLayout, u.BirthDate)
+			nonValidDate, _ := time.Parse(BirthdayLayout, "01-01-01")
+			if err != nil && parsedDate != nonValidDate {
+				pbms["birthday"] = err.Error()
+			}
 		default:
 			continue
 		}
