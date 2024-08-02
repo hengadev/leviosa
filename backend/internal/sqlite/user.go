@@ -31,14 +31,19 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id string) (*user.
 	return user, nil
 }
 
-// TODO: finsh that implementation, it is just for my code to compile
-func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (*user.User, error) {
+func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (string, user.Role, error) {
 	var userRetrieved user.User
-	u.DB.QueryRowContext(ctx, "SELECT * from users where email = ?;", usr.Email).Scan(&userRetrieved)
-	if err := bcrypt.CompareHashAndPassword([]byte(usr.Password), []byte(userRetrieved.Password)); err != nil {
-		return nil, rp.NewNotFoundError(err)
+	if err := u.DB.QueryRowContext(ctx, "SELECT id, password, role from users where email = ?;", usr.Email).Scan(
+		&userRetrieved.ID,
+		&userRetrieved.Password,
+		&userRetrieved.Role,
+	); err != nil {
+		return "", user.ConvertToRole(""), rp.NewNotFoundError(err)
 	}
-	return &userRetrieved, nil
+	if err := bcrypt.CompareHashAndPassword([]byte(userRetrieved.Password), []byte(usr.Password)); err != nil {
+		return "", user.ConvertToRole(""), rp.NewNotFoundError(err)
+	}
+	return userRetrieved.ID, user.ConvertToRole(userRetrieved.Role), nil
 }
 
 // TODO: move that function to the session repository

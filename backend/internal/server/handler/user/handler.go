@@ -80,8 +80,8 @@ func (h *Handler) Signin() http.Handler {
 			return
 		}
 		// validate credentials
-		user, err := h.Repos.User.ValidateCredentials(ctx, &input)
-		if user == nil {
+		userID, role, err := h.Repos.User.ValidateCredentials(ctx, &input)
+		if userID == "" || role == user.UNKNOWN {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
@@ -92,17 +92,12 @@ func (h *Handler) Signin() http.Handler {
 			return
 		}
 		// create session
-		sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
+		sessionID, err := h.Svcs.Session.CreateSession(ctx, userID, role.String())
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create session", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// TODO: send the session information within a cookie ? as before ?
-		// type Response struct {
-		// 	SessionID string `json:"sessionid"`
-		// }
-		// serverutil.Encode(w, http.StatusCreated, Response{sessionID})
 		http.SetCookie(w, &http.Cookie{
 			Name:     session.SessionName,
 			Value:    sessionID,
