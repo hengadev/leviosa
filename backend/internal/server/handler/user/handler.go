@@ -98,7 +98,7 @@ func (h *Handler) Signin() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// TODO: send the session information within a cookie ? as before ? Or remove that as a chore if the cookie is well sent.
+		// TODO: send the session information within a cookie ? as before ?
 		// type Response struct {
 		// 	SessionID string `json:"sessionid"`
 		// }
