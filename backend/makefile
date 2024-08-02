@@ -1,11 +1,6 @@
 # env vars
-ifneq (,$(wildcard ./.env))
+ifneq (,$(wildcard ./development.env))
     include development.env
-    export
-endif
-
-ifneq (,$(wildcard ./.env))
-    include .env
     export
 endif
 
@@ -14,8 +9,7 @@ imageName:= "henga/backend-event_reservation_app"
 redisName:= "session-manager"
 
 # goose vars
-migrationPath:="./internal/sqlite/migrations"
-goosePrefix:=GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) goose -dir=$(migrationPath) 
+goosePrefix:=GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) goose -dir=$(MIGRATION_PATH) 
 name:=""
 
 .PHONY: help all run docker redis build test tesall clean db-status create up down reset
