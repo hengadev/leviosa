@@ -22,9 +22,6 @@ type Session struct {
 }
 
 func NewSession(userID, role string) (*Session, error) {
-	if err := uuid.Validate(userID); err != nil {
-		return nil, err
-	}
 	return &Session{
 		UserID: userID,
 		Role:   role,
