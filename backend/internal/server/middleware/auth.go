@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -27,7 +28,6 @@ func Auth(s session.Reader) Middleware {
 				serverutil.SIGNUPENDPOINT,
 			}
 			url := strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-			fmt.Println("the url is :", url)
 			for _, endpoint := range noAuthEndpoints {
 				if url == endpoint {
 					next.ServeHTTP(w, r)
@@ -40,12 +40,14 @@ func Auth(s session.Reader) Middleware {
 			// get sessionID from request
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
+				slog.ErrorContext(ctx, "failed to get sessionID from the request", "error", err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// get session object from session repo
 			session, err := s.FindSessionByID(ctx, sessionID)
 			if err != nil {
+				slog.ErrorContext(ctx, "failed to get the session object from sessionID", "error", err)
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
@@ -56,6 +58,7 @@ func Auth(s session.Reader) Middleware {
 					errors += fmt.Sprintf("%s: %s, ", field, err)
 				}
 				errors += "]"
+				slog.ErrorContext(ctx, "failed to validate session", "error", errors)
 				http.Error(w, errors, http.StatusUnauthorized)
 				return
 			}
