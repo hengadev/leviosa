@@ -55,11 +55,9 @@
 		padding: 2rem 1.5rem;
 		margin-bottom: 4rem;
 	}
-
-	.tabs {
-		border: 1px solid rgba(60, 60, 67, 0.78);
-	}
-
+	/* .tabs { */
+	/* 	border: 1px solid rgba(60, 60, 67, 0.78); */
+	/* } */
 	.block {
 		margin-top: 3rem;
 		padding: 1rem;

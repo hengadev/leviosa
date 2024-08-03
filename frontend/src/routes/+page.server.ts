@@ -1,17 +1,17 @@
-import { redirect, invalid } from "@sveltejs/kit"
+import { redirect, fail } from "@sveltejs/kit"
 import type { Action, Actions, PageServerLoad } from "./$types"
 
 // type DomainName = "fr" | "com"
 // type Email = `${string}@${string}.${DomainName}`
 
-function validate(email: string, password: string): boolean {
+function validate(email: string, password: string) {
     if (
         typeof email !== 'string' ||
         typeof password !== 'string' ||
         !email ||
         !password
     ) {
-        return invalid(400, { invalid: true })
+        return fail(400, { invalid: true })
     }
     return true
 }
@@ -46,7 +46,7 @@ function parseCookie(cookie: string): CookieParsed {
     return res;
 }
 
-export const register: Action = async ({ request, cookies }) => {
+const register: Action = async ({ request, cookies }) => {
     // get info from the form
     const formData = await request.formData()
     const email = String(formData.get("email"))

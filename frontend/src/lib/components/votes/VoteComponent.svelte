@@ -1,5 +1,7 @@
 <script lang="ts">
-	import Vote from '$assets/Vote.svg';
+	// import Vote from '../$lib/assets/Vote.svg';
+	// import Vote from '@/assets/Vote.svg';
+	import Vote from '../../../assets/Vote.svg';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { months, vowelRegex } from '$lib/types';
 	export let year: number;

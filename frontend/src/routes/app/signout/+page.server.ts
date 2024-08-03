@@ -1,4 +1,4 @@
-import { redirect, invalid } from "@sveltejs/kit"
+import { redirect } from "@sveltejs/kit"
 import type { PageServerLoad, Action, Actions } from "./$types"
 
 export const load: PageServerLoad = async () => {
@@ -6,20 +6,16 @@ export const load: PageServerLoad = async () => {
     throw redirect(302, "/")
 }
 
-export const signout: Action = async ({ cookies }) => {
+const signout: Action = async ({ cookies }) => {
+    // eat the cookie
+    cookies.set("sessionId", "", {
+        path: "/",
+        expires: new Date(0),
+    })
+    // redirect to the sign in page
+    throw redirect(302, "/")
 }
 
-// NOTE: How to hit that thing ?
-export const actions: Actions = {
-    default: async ({ cookies }) => {
-        // eat the cookie
-        cookies.set("sessionId", "", {
-            path: "/",
-            expires: new Date(0),
-        })
-        // redirect to the sign in page
-        throw redirect(302, "/")
-    }
-}
+export const actions: Actions = { signout }
 
 

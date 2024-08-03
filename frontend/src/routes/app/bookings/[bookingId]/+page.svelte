@@ -2,14 +2,14 @@
 	// import type { PageData } from './$types';
 	// export let data: PageData;
 	// $: ({ bookings } = data);
-	import VoteComponent from '$lib/components/events/VoteComponent.svelte';
+	import VoteComponent from '$lib/components/votes/VoteComponent.svelte';
 </script>
 
 <div class="content">
-	<VoteComponent />
-	<VoteComponent />
-	<VoteComponent />
-	<VoteComponent />
+	<VoteComponent year={2024} month={8} />
+	<VoteComponent year={2024} month={8} />
+	<VoteComponent year={2024} month={8} />
+	<VoteComponent year={2024} month={8} />
 </div>
 
 <style>

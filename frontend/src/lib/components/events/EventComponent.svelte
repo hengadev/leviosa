@@ -34,7 +34,7 @@
 						>
 					</p>
 				</div>
-				<h3 class="title mt-1">Some event to announce</h3>
+				<h3 class="title mt-1">Event for {day}/{month}/{year} for a duration of {sessionduration}</h3>
 				<p class="mt-1 text-sm">{location}</p>
 			</div>
 			<button type="button">
