@@ -33,7 +33,7 @@ func New(handler *handler.Handler, opts ...ServerOption) *Server {
 	server.addRoutes(handler)
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		// mw.Auth(handler.Repos.Session), // TODO: add the auth mw when you have the session service set.
+		mw.Auth(handler.Repos.Session),
 		mw.EnableApplicationJSON,
 		mw.Cors,
 		mw.AddRequestID,
