@@ -1,4 +1,3 @@
-import { redirect } from "@sveltejs/kit"
 import type { PageLoad } from "./$types"
 
 type InputType = "email" | "password" | "text" | "hidden"
@@ -16,14 +15,14 @@ const formControls: FormControl[] = [
         label: "Email",
         type: "email",
         placeholder: "Entrer votre email",
-        value: "test@example.fr"
+        value: "admin-livio@outlook.fr"
     },
     {
         name: "password",
         label: "Mot de passe",
         type: "password",
         placeholder: "Entrer votre mot de passe",
-        value: "1234"
+        value: "secret1234"
     },
 ]
 
