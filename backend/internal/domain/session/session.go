@@ -39,19 +39,10 @@ func (s *Session) Login() {
 	s.LoggedInAt = time.Now().UTC()
 }
 
-func (s *Session) Validate() map[string]string {
-	// check all the field of that session and see if that thing is valid...
-	var pbms = make(map[string]string)
-	return pbms
-}
-
 func (s *Session) Valid(ctx context.Context, minRole user.Role) (problems map[string]string) {
 	var pbms = make(map[string]string)
 	if err := uuid.Validate(s.ID); err != nil {
 		pbms["id"] = "session ID is not of type UUID"
-	}
-	if err := uuid.Validate(s.UserID); err != nil {
-		pbms["userid"] = "user ID is not of type UUID"
 	}
 	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
 		pbms["expiredat"] = "session expired"

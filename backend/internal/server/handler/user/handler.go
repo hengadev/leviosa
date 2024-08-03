@@ -151,7 +151,6 @@ func (h *Handler) GetUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		// I need to get the userID from the sessionID that I have in the header
 		userID := ctx.Value(mw.SessionIDKey).(string)
 		user, err := h.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
