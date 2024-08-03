@@ -1,23 +1,23 @@
 import { redirect, type Handle } from "@sveltejs/kit";
+import { cookieName } from "$lib/types"
 
-// TODO: What happens if my cookie is no longer valid ?
 export const handle: Handle = async ({ event, resolve }) => {
     // get cookies from browser
-    const sessionId = event.cookies.get("sessionId");
+    const sessionID = event.cookies.get(cookieName);
     // if no session then load page as normal
-    if (!sessionId) {
+    if (!sessionID) {
         console.log("No session active")
         return await resolve(event)
     }
-    const res = await fetch("http://localhost:5000/me", {
+    const res = await fetch("http://localhost:3500/api/v1/me", {
         headers: {
-            "Authorization": `Bearer ${sessionId}`,
+            "Authorization": `Bearer ${sessionID}`,
         },
     })
     // if there  is a sessionId but the session is no longer valid, remove the cookie and redirect to sign in.
     if (res.status === 401) {
         console.log("the status is so that I should redirect the user and cancel the previous cookie.")
-        event.cookies.set("sessionId", "", {
+        event.cookies.set(cookieName, "", {
             path: "/",
             expires: new Date(0),
         })
