@@ -1,9 +1,14 @@
-frontend/node_modules/*
+frontend/node_modules
 
 backend/db.sqlite
 backend/todo.md
 backend/db.db
 backend/bin
 backend/README.md
+
+todo.md
+makefile
+
+note.md
 
 .worktrees
