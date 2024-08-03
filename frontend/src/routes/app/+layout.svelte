@@ -11,7 +11,7 @@
 	import type { Icon } from 'lucide-svelte';
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	import Vote from 'lucide-svelte/icons/vote';
-	import Home from 'lucide-svelte/icons/home';
+	import Home from 'lucide-svelte/icons/house';
 	import Mail from 'lucide-svelte/icons/mail';
 	import CircleUser from 'lucide-svelte/icons/circle-user';
 
