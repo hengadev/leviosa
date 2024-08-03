@@ -23,11 +23,10 @@ export const handle: Handle = async ({ event, resolve }) => {
         })
         throw redirect(302, "/")
     }
+
     // else we get back a user from successful request.
     const user = (await res.json()) as {
-        id: string,
         email: string,
-        role: string,
         lastname: string,
         firstname: string,
         gender: string,
@@ -38,22 +37,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         postalcard: string,
     }
     // set the user with the information from got the server.
-    if (user) {
-        event.locals.user = { ...user } // better ?
-        // event.locals.user = {
-        //     id: user.id,
-        //     email: user.email,
-        //     role: user.role,
-        //     lastname: user.lastname,
-        //     firstname: user.firstname,
-        //     gender: user.gender,
-        //     birthdate: user.birthdate,
-        //     telephone: user.telephone,
-        //     address: user.address,
-        //     city: user.city,
-        //     postalcard: user.postalcard,
-        // }
-    }
+    if (user) { event.locals.user = { ...user } }
     // load page as normal if error
     return await resolve(event)
 }
