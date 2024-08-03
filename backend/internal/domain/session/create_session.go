@@ -18,6 +18,8 @@ func (s *Service) CreateSession(ctx context.Context, userID, role string) (strin
 	if err != nil {
 		return "", app.NewInvalidUserErr(err)
 	}
+	session.Create()
+	session.Login()
 
 	sessionID, err = s.Repo.CreateSession(ctx, session)
 	if err != nil {
