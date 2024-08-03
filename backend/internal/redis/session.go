@@ -52,7 +52,13 @@ func (s *SessionRepository) Signout(ctx context.Context, userID string) error {
 
 // TODO:
 func (s *SessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*session.Session, error) {
-	return &session.Session{}, nil
+	var res session.Session
+	val, err := s.Client.Get(ctx, sessionID).Result()
+	if err != nil {
+		return nil, rp.NewNotFoundError(err)
+	}
+	json.Unmarshal([]byte(val), &res)
+	return &res, nil
 }
 
 // writer
