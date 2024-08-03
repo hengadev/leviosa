@@ -18,7 +18,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
     // NOTE: How I want to do it when everything setup.
     // const userId = locals.user.id
-    // const res = await fetch("http://localhost:5000/mails", {
+    // const res = await fetch("http://localhost:5000/api/v1/mails", {
     //     method: "POST",
     //     headers: { "Content-Type": "application/json" },
     //     body: JSON.stringify({ "userId": userId })

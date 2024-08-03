@@ -18,7 +18,7 @@ export async function load({ locals, cookies, params }) {
     }
     const eventId = params.eventId
     const sessionId = cookies.get("sessionId");
-    const res = await fetch(`http://localhost:5000/events?id=${eventId}`, {
+    const res = await fetch(`http://localhost:5000/api/v1/events?id=${eventId}`, {
         method: "GET",
         headers: { "Authorization": `Bearer ${sessionId}`, "Content-Type": "application/json", },
     })

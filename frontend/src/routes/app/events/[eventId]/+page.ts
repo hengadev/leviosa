@@ -4,7 +4,7 @@ async function handleCheckout(eventId: string) {
     try {
         // TODO: send the event information through the body because more secure ?
         // const body = JSON.stringify(eventId)
-        const res = await fetch(`http://localhost:5000/checkout?eventId=${eventId}`, {
+        const res = await fetch(`http://localhost:5000/api/v1/checkout?eventId=${eventId}`, {
             method: 'POST',
             mode: 'cors',
             // body

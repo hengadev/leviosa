@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
         throw redirect(302, "/")
     }
     const sessionId = cookies.get("sessionId");
-    const res = await fetch("http://localhost:5000/events", {
+    const res = await fetch("http://localhost:5000/api/v1/events", {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${sessionId}`,

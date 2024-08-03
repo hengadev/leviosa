@@ -9,7 +9,7 @@ export const load: PageLoadServer = async ({ locals }) => {
         throw redirect(301, "/")
     }
     const userId = locals.user.id
-    const res = await fetch("http://localhost:5000/", {
+    const res = await fetch("http://localhost:5000/api/v1/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })

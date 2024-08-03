@@ -44,7 +44,7 @@ export const actions: Action = {
         // TODO: check all the different informations if they have a valid format.
         const body = JSON.stringify({ email, password, firstname, lastname, telephone })
 
-        const res = await fetch("http://localhost:5000/signup", {
+        const res = await fetch("http://localhost:5000/api/v1/signup", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body

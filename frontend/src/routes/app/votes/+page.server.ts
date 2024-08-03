@@ -22,11 +22,11 @@ export async function load({ locals, cookies }) {
     if (!locals.user) {
         throw redirect(302, "/")
     }
-    const sessionId = cookies.get("sessionId");
-    const res = await fetch("http://localhost:5000/votes", {
+    const sessionID = cookies.get("sessionId");
+    const res = await fetch("http://localhost:5000/api/v1/votes", {
         method: "GET",
         headers: {
-            "Authorization": `Bearer ${sessionId}`,
+            "Authorization": `Bearer ${sessionID}`,
         },
     })
     // TODO: do the error handling in here.
