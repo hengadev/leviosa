@@ -24,11 +24,22 @@ func NewUserRepository(ctx context.Context, db *sql.DB) *UserRepository {
 // reader
 // here put the function that you need to put brother
 func (u *UserRepository) FindAccountByID(ctx context.Context, id string) (*user.User, error) {
-	var user *user.User
-	if err := u.DB.QueryRowContext(ctx, "select (id, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) from users where id = ?;", id).Scan(user); err != nil {
-		return user, rp.NewNotFoundError(err)
+	var user user.User
+	if err := u.DB.QueryRowContext(ctx,
+		"SELECT email, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users WHERE id = ?;", id).Scan(
+		&user.Email,
+		&user.LastName,
+		&user.FirstName,
+		&user.Gender,
+		&user.BirthDate,
+		&user.Telephone,
+		&user.Address,
+		&user.City,
+		&user.PostalCard,
+	); err != nil {
+		return &user, rp.NewNotFoundError(err)
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (string, user.Role, error) {
