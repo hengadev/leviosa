@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	// get all the bookings with some nice graphics.
 	// I can use the tab thing to switch between just month and month+day
 	// NOTE:
