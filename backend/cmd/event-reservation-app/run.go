@@ -9,31 +9,17 @@ import (
 	"syscall"
 
 	// api
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	"github.com/GaryHY/event-reservation-app/internal/server"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
 
 	// utils
 	"github.com/GaryHY/event-reservation-app/pkg/config"
 	"github.com/GaryHY/event-reservation-app/pkg/flags"
-	"github.com/GaryHY/event-reservation-app/pkg/redisutil"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 
 	// "github.com/GaryHY/event-reservation-app/internal/http/cron"
 
-	// databases
-	"github.com/GaryHY/event-reservation-app/internal/redis"
-	"github.com/GaryHY/event-reservation-app/internal/s3"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite"
-
 	// external packages
 	"github.com/joho/godotenv"
-	"github.com/pressly/goose/v3"
 )
 
 var opts struct {
@@ -66,52 +52,10 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("setup databases: %w", err)
 	}
 
-	// user
-	userRepo := sqlite.NewUserRepository(ctx, sqlitedb)
-	userSvc := user.NewService(userRepo)
-	// session
-	sessionRepo, err := redis.NewSessionRepository(ctx, redisdb)
+	appSvcs, appRepos, err := makeServices(ctx, sqlitedb, redisdb)
 	if err != nil {
-		return fmt.Errorf("create session repo : %w", err)
+		return fmt.Errorf("create services: %w", err)
 	}
-	sessionSvc := session.NewService(sessionRepo)
-	// event
-	eventRepo := sqlite.NewEventRepository(ctx, sqlitedb)
-	eventSvc := event.NewService(eventRepo)
-	// vote
-	voteRepo := sqlite.NewVoteRepository(ctx, sqlitedb)
-	voteSvc := vote.NewService(voteRepo)
-	// register
-	registerRepo := sqlite.NewRegisterRepository(ctx, sqlitedb)
-	registerSvc := register.NewService(registerRepo)
-	// photo
-	photoRepo, err := s3.NewPhotoRepository(ctx)
-	if err != nil {
-		return fmt.Errorf("create photo repository: %w", err)
-	}
-	photoSvc := photo.NewService(photoRepo)
-
-	// services
-	appSvcs := handler.Services{
-		// Session: sessionSvc,
-		User:     userSvc,
-		Event:    eventSvc,
-		Vote:     voteSvc,
-		Register: registerSvc,
-		Photo:    photoSvc,
-		Session:  sessionSvc,
-	}
-	// repos
-	appRepos := handler.Repos{
-		// Session: sessionRepo,
-		User:     userRepo,
-		Event:    eventRepo,
-		Vote:     voteRepo,
-		Register: registerRepo,
-		Photo:    photoRepo,
-		Session:  sessionRepo,
-	}
-
 	handler := handler.NewHandler(&appSvcs, &appRepos)
 	srv := server.New(
 		handler,
