@@ -1,5 +1,6 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageLoadServer } from "./$types"
+import { API_URL } from "$env/static/private"
 
 export const load: PageLoadServer = async ({ locals }) => {
     if (!locals.user) {
@@ -9,7 +10,7 @@ export const load: PageLoadServer = async ({ locals }) => {
         throw redirect(301, "/")
     }
     const userId = locals.user.id
-    const res = await fetch("http://localhost:5000/api/v1/photos", {
+    const res = await fetch(`${API_URL}/api/v1/photos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })

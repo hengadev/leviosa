@@ -1,5 +1,6 @@
 import { redirect } from "@sveltejs/kit";
 import type { Action } from "./$types.js";
+import { API_URL } from "$env/static/private"
 
 type Vote = {
     day: number,
@@ -18,7 +19,7 @@ export async function load({ locals, cookies, params }) {
     const month = Number(months.indexOf(params.month)) + 1
     console.log("month", month)
     const sessionId = cookies.get("sessionId");
-    const res = await fetch(`http://localhost:5000/api/v1/vote?year=${year}&month=${month}`, {
+    const res = await fetch(`${API_URL}/api/v1/vote?year=${year}&month=${month}`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${sessionId}`,
@@ -46,7 +47,7 @@ export const actions: Action = {
         }
         const body = JSON.stringify(votes)
         console.log("the body is : ", body)
-        const res = await fetch("http://localhost:5000/api/v1/votes", {
+        const res = await fetch(`${API_URL}/api/v1/votes`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${sessionId}`, "Content-Type": "application/json", },
             body,

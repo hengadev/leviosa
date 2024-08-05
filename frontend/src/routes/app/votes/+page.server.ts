@@ -1,4 +1,5 @@
 import { redirect } from "@sveltejs/kit"
+import { API_URL } from "$env/static/private"
 
 // TODO: 
 // - how many dates for the month (pick the x most ranked)
@@ -23,7 +24,7 @@ export async function load({ locals, cookies }) {
         throw redirect(302, "/")
     }
     const sessionID = cookies.get("sessionId");
-    const res = await fetch("http://localhost:5000/api/v1/votes", {
+    const res = await fetch(`${API_URL}/api/v1/votes`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${sessionID}`,

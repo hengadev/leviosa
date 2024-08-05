@@ -1,5 +1,6 @@
 import { redirect, type Handle } from "@sveltejs/kit";
 import { cookieName } from "$lib/types"
+import { API_URL } from "$env/static/private"
 
 export const handle: Handle = async ({ event, resolve }) => {
     // get cookies from browser
@@ -9,7 +10,8 @@ export const handle: Handle = async ({ event, resolve }) => {
         console.log("No session active")
         return await resolve(event)
     }
-    const res = await fetch("http://localhost:3500/api/v1/me", {
+
+    const res = await fetch(`${API_URL}/api/v1/me`, {
         headers: {
             "Authorization": `Bearer ${sessionID}`,
         },

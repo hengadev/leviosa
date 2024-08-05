@@ -1,5 +1,6 @@
 import type { PageServerLoad } from "./$types"
 import { redirect } from "@sveltejs/kit"
+import { API_URL } from "$env/static/private"
 
 // TODO: make the right type based on the backend
 // type Event = {
@@ -13,7 +14,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
         throw redirect(302, "/")
     }
     const sessionId = cookies.get("sessionId");
-    const res = await fetch("http://localhost:5000/api/v1/events", {
+    const res = await fetch(`${API_URL}/api/v1/events`, {
         method: "GET",
         headers: {
             "Authorization": `Bearer ${sessionId}`,

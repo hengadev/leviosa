@@ -1,5 +1,6 @@
 import { redirect, fail } from "@sveltejs/kit"
 import type { Action, Actions, PageServerLoad } from "./$types"
+import { API_URL } from "$env/static/private"
 
 // type DomainName = "fr" | "com"
 // type Email = `${string}@${string}.${DomainName}`
@@ -55,7 +56,7 @@ const register: Action = async ({ request, cookies }) => {
     validate(email, password)
     const body = JSON.stringify({ email, password })
     // make request to the server.
-    const res = await fetch("http://localhost:3500/api/v1/signin", {
+    const res = await fetch(`${API_URL}/api/v1/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body

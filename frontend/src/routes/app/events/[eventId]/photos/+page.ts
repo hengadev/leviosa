@@ -1,10 +1,11 @@
 import { redirect } from "@sveltejs/kit"
 import type { PageLoad } from "./$types"
+import { API_URL } from "$env/static/private"
 
 async function getPhotos(userId: string, eventId: string) {
     // TODO: fetch the photos from S3 bucket via the backend golang
     const body = JSON.stringify({ userId, eventId })
-    const res = await fetch("http://localhost:5000/api/v1/photos", {
+    const res = await fetch(`${API_URL}/api/v1/photos`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         body

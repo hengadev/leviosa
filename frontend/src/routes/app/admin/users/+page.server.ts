@@ -1,5 +1,6 @@
 import type { PageServerLoad, Action, Actions } from "./$types"
 import { redirect } from "@sveltejs/kit"
+import { API_URL } from "$env/static/private"
 
 // TODO: complete the user type so that it is easy.
 type User = {
@@ -25,7 +26,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
     }
     const sessionId = cookies.get("sessionId")
     // TODO: send something for the user to be identified.use the session id ?
-    const res = await fetch("http://localhost:5000/api/v1/admin/users", {
+    const res = await fetch(`${API_URL}/api/v1/admin/users`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ "sessionId": sessionId })
@@ -39,7 +40,7 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 const deleteUser: Action = async ({ request }) => {
     const formData = request.formData()
     const userId = formData.get("userid")
-    const res = await fetch("http://localhost:5000/api/v1/admin/users", {
+    const res = await fetch(`${API_URL}/api/v1/admin/users`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
