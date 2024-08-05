@@ -23,4 +23,4 @@ COPY --from=builder /app/*.env ./
 
 EXPOSE 3500
 
-CMD ["./myapp", "-port", "3500"]
+CMD ["./myapp"]
