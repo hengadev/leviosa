@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -47,17 +46,16 @@ var opts struct {
 func run(ctx context.Context, w io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	// flags
-	flag.IntVar(&opts.server.port, "port", 5000, "the port the server listens to")
-	flag.Var(&opts.mode, "mode", "the mode environment for the project")
-	flag.Parse()
 
+	// setup env variables
+	if err := setupEnvVars(); err != nil {
+		return fmt.Errorf("failed to get env variables: %w", err)
+	}
 	// set environment file
 	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String()))
 	if err != nil {
 		return fmt.Errorf("load env variables: %w", err)
 	}
-
 	// config
 	conf := config.New(ctx, opts.mode.String(), "env")
 	if err := conf.Load(ctx); err != nil {
@@ -82,6 +80,7 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := goose.Up(sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
 		return fmt.Errorf("failed to run migration %w", err)
 	}
+
 	// init hte database
 	queries, err := sqliteutil.GetInitQueries()
 	if err != nil {
