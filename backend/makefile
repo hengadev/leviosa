@@ -5,8 +5,9 @@ ifneq (,$(wildcard ./development.env))
 endif
 
 # dockerfile vars
-imageName:= "henga/backend-event_reservation_app"
+imageName:= "henga/event_reservation_app"
 redisName:= "session-manager"
+PORT=6000
 
 # goose vars
 goosePrefix:=GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) goose -dir=$(MIGRATION_PATH) 
@@ -40,16 +41,16 @@ run: redis
 	@if [ -f "$(DATABASE_FILENAME).db" ]; then \
 		rm "$(DATABASE_FILENAME).db"; \
 	fi
-	@go run ./cmd/event-reservation-app/*.go -port 3500
+	@APP_ENV=staging PORT=7300 go run  ./cmd/event-reservation-app/*.go
 
 
 docker:
-	@docker image rm $(imageName):latest -f
+	@docker image rm $(imageName):backend -f
 	@echo "Removed old image $(imageName)"
-	@docker build -t $(imageName) .
+	@docker build -t $(imageName):backend .
 	@echo "Image built !\n"
 	@echo "Running image..."
-	@docker run -p 3500:3500 $(imageName):latest 
+	@docker run -e APP_ENV='development' -e PORT=$(PORT) -p $(PORT):$(PORT) $(imageName):backend 
 
 redis:
 	$(eval CONTAINER_ID := $(shell docker ps -a --filter name=$(redisName) --format '{{.ID}}'))
