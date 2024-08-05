@@ -25,7 +25,7 @@ func (m *EnvMode) Set(value string) error {
 	case "staging":
 		*m = ModeStaging
 	default:
-		return fmt.Errorf("mode value can only be 'dev', 'prod' or 'staging', got : %q", *m)
+		return fmt.Errorf("mode value can only be 'development', 'production' or 'staging', got : %q", value)
 	}
 	return nil
 }
