@@ -61,43 +61,9 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := conf.Load(ctx); err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
-	sqliteConf := conf.GetSQLITE()
-	redisConf := conf.GetRedis()
-
-	// databases setup
-	sqlitedb, err := sqliteutil.Connect(ctx, sqliteutil.BuildDSN(sqliteConf.Filename))
+	sqlitedb, redisdb, err := setupDatabases(ctx, conf)
 	if err != nil {
-		return fmt.Errorf("create connection to sqlite : %w", err)
-	}
-
-	// setup goose
-	goose.SetBaseFS(nil)
-	// Set the dialect to SQLite3
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return fmt.Errorf("Failed to set dialect: %w", err)
-	}
-	// run the migration to the database.
-	if err := goose.Up(sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
-		return fmt.Errorf("failed to run migration %w", err)
-	}
-
-	// init hte database
-	queries, err := sqliteutil.GetInitQueries()
-	if err != nil {
-		return fmt.Errorf("failed to get init queries for sqlite database: %w", err)
-	}
-	if err := sqliteutil.Init(sqlitedb, queries...); err != nil {
-		return fmt.Errorf("failed to init sqlite database: %w", err)
-	}
-
-	redisdb, err := redisutil.Connect(
-		ctx,
-		redisutil.WithAddr(redisConf.Addr),
-		redisutil.WithDB(redisConf.DB),
-		redisutil.WithPassword(redisConf.Password),
-	)
-	if err != nil {
-		return fmt.Errorf("create connection to redis : %w", err)
+		return fmt.Errorf("setup databases: %w", err)
 	}
 
 	// user
