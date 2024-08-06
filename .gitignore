@@ -5,6 +5,7 @@ backend/todo.md
 backend/db.db
 backend/bin
 backend/README.md
+backend/example.env
 
 todo.md
 makefile
