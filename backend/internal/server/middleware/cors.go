@@ -2,34 +2,24 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 )
 
 // NOTE: find inspiration with this : https://github.com/rs/cors/blob/master/cors.go
-// TODO: get that from an env variable
-const (
-	FRONTENDORIGIN = "http://localhost:5173"
-)
 
 func Cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: Find to do that things correctly
-		(w).Header().Set("Access-Control-Allow-Origin", FRONTENDORIGIN)
+		url := os.Getenv("HOST")
+
+		w.Header().Set("Access-Control-Allow-Origin", url)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		next.ServeHTTP(w, r)
 	})
 }
-
-// TODO: Il me faut :
-// - Une liste d'origine a open a l'application
-
-// func EnableMethods(methods ...string) Middleware {
-// 	return func(next http.Handler) http.Handler {
-// 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 			next.ServeHTTP(w, r)
-// 		})
-// 	}
-// }
 
 func EnableMethods(next http.Handler, methods ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
