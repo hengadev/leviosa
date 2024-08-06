@@ -5,6 +5,7 @@ import { API_URL } from "$env/static/private"
 // type DomainName = "fr" | "com"
 // type Email = `${string}@${string}.${DomainName}`
 
+// TODO: make a better email validation
 function validate(email: string, password: string) {
     if (
         typeof email !== 'string' ||
@@ -28,6 +29,7 @@ type CookieParsed = {
 import { cookieName } from "$lib/types"
 
 function parseCookie(cookie: string): CookieParsed {
+    // the default cookie object
     const res: CookieParsed = {
         Name: cookieName,
         Value: "",
@@ -48,35 +50,43 @@ function parseCookie(cookie: string): CookieParsed {
 }
 
 const register: Action = async ({ request, cookies }) => {
+    const url = `${API_URL}/api/v1/signin`
     // get info from the form
     const formData = await request.formData()
     const email = String(formData.get("email"))
     const password = String(formData.get("password"))
-    // validate the email and password client side
-    validate(email, password)
-    const body = JSON.stringify({ email, password })
-    // make request to the server.
-    const res = await fetch(`${API_URL}/api/v1/signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body
-    })
-    if (res.ok) {
-        // parse the reponse to reform the cookie.
-        const cookieParsed = parseCookie(res.headers.getSetCookie()[0])
+
+    try {
+        // validate the email and password client side
+        if (!validate(email, password)) {
+            throw new Error("email or password invalid")
+        }
+        const body = JSON.stringify({ email, password })
+        // make request to the server.
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+            credentials: "include",
+        })
+        if (!res.ok) {
+            throw new Error(`Failed fetch with response status: ${res.statusText}`)
+        }
+        // parse reponse to use cookie.
+        const cookie = res.headers.getSetCookie()[0]
+        if (!cookie) {
+            throw new Error(`No cookie found with response status: ${res.statusText}`)
+        }
+        const cookieParsed = parseCookie(cookie)
         cookies.set(cookieName, cookieParsed.Value, {
             path: "/",
             maxAge: 60 * 60 * 24 * 30,
             ...cookieParsed,
         })
-        // redirect to sign in page.
+        // redirect to home page.
         throw redirect(302, "/app")
-    }
-    // return data, in case we did not redirect the page and the fetching failed for some reason.
-    return {
-        email,
-        success: false,
-        message: "Error in setting the cookie or fetching the data."
+    } catch (error) {
+        console.error(error.message)
     }
 }
 
