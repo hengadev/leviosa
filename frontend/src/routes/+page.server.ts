@@ -92,10 +92,6 @@ const register: Action = async ({ request, cookies }) => {
     }
 }
 
-export const config = {
-    csrf: false
-}
-
 export const load: PageServerLoad = ({ locals }) => {
     if (locals.user) {
         throw redirect(301, "/app")
