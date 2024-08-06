@@ -50,11 +50,13 @@ function parseCookie(cookie: string): CookieParsed {
 }
 
 const register: Action = async ({ request, cookies }) => {
+    console.log("in the register action")
     const url = `${API_URL}/api/v1/signin`
     // get info from the form
     const formData = await request.formData()
     const email = String(formData.get("email"))
     const password = String(formData.get("password"))
+    console.log("the url that I am fetching is :", url)
 
     try {
         // validate the email and password client side
@@ -88,6 +90,10 @@ const register: Action = async ({ request, cookies }) => {
     } catch (error) {
         console.error(error.message)
     }
+}
+
+export const config = {
+    csrf: false
 }
 
 export const load: PageServerLoad = ({ locals }) => {

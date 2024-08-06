@@ -4,6 +4,7 @@ import { API_URL } from "$env/static/private"
 
 export const handle: Handle = async ({ event, resolve }) => {
     // get cookies from browser
+    console.log("the url that is going to be used for the backend is :", API_URL)
     const sessionID = event.cookies.get(cookieName);
     // if no session then load page as normal
     if (!sessionID) {
