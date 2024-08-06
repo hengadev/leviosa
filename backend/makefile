@@ -5,7 +5,7 @@ ifneq (,$(wildcard ./development.env))
 endif
 
 # dockerfile vars
-imageName:= "henga/event_reservation_app"
+imageName:= "henga/event-reservation-app"
 redisName:= "session-manager"
 PORT=3500
 
