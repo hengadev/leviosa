@@ -1,5 +1,5 @@
 import { redirect } from "@sveltejs/kit"
-import type { PageLoad } from "./$types"
+import type { PageServerLoad } from "./$types"
 import { API_URL } from "$env/static/private"
 
 async function getPhotos(userId: string, eventId: string) {
@@ -17,7 +17,7 @@ async function getPhotos(userId: string, eventId: string) {
 
 
 
-export const load: PageLoad = async ({ locals, params }) => {
+export const load: PageServerLoad = async ({ locals, params }) => {
     if (!locals.user) {
         throw redirect(301, "/")
     }
@@ -25,7 +25,5 @@ export const load: PageLoad = async ({ locals, params }) => {
     const userid = locals.user.id
     const eventid = params.eventId
     const photos = await getPhotos(userid, eventid)
-    return {
-        photos
-    }
+    return { photos }
 }
