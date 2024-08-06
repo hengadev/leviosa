@@ -7,7 +7,7 @@ endif
 # dockerfile vars
 imageName:= "henga/event_reservation_app"
 redisName:= "session-manager"
-PORT=6000
+PORT=3500
 
 # goose vars
 goosePrefix:=GOOSE_DRIVER=$(GOOSE_DRIVER) GOOSE_DBSTRING=$(GOOSE_DBSTRING) goose -dir=$(MIGRATION_PATH) 
@@ -41,7 +41,7 @@ run: redis
 	@if [ -f "$(DATABASE_FILENAME).db" ]; then \
 		rm "$(DATABASE_FILENAME).db"; \
 	fi
-	@APP_ENV=staging PORT=7300 go run  ./cmd/event-reservation-app/*.go
+	@APP_ENV=staging go run  ./cmd/event-reservation-app/*.go
 
 
 docker:
