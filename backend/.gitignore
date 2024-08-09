@@ -1,0 +1,19 @@
+# output
+bin
+db.db
+
+# build
+*.makefile
+# for me to dev the application
+# makefile send to repository for testing
+!Makefile
+
+!README.md
+notes
+
+# env
+*.env
+!example.env
+
+# dockerfile
+*.dockerfile

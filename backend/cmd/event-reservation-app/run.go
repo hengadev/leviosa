@@ -38,9 +38,10 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("failed to get env variables: %w", err)
 	}
 	// set environment file
-	err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String()))
-	if err != nil {
-		return fmt.Errorf("load env variables: %w", err)
+	if opts.mode != mode.ModeProd {
+		if err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String())); err != nil {
+			return fmt.Errorf("load env variables: %w", err)
+		}
 	}
 	// config
 	conf := config.New(ctx, opts.mode.String(), "env")
