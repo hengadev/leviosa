@@ -82,7 +82,7 @@ func sendMail(from, to, subject, templateFilename, password string, data any) {
 }
 
 func getCompanyCredentials() (string, string) {
-	return os.Getenv("MAIL"), os.Getenv("GMAILPASSWORD")
+	return os.Getenv("GMAIL_EMAIL"), os.Getenv("GMAIL_PASSWORD")
 }
 
 // TODO: A function to get back a forgottend password.
