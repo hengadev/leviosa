@@ -1,10 +1,11 @@
 /* font */
 @font-face {
-    font-family: geist;
-    src: url('/fonts/variable-woff/GeistVF.woff2') format('woff2'),
-        url('/fonts/variable-woff/GeistVF.woff') format('woff');
-    font-display: swap;
-    font-style: normal;
+	font-family: geist;
+	src:
+		url('/fonts/variable-woff/GeistVF.woff2') format('woff2'),
+		url('/fonts/variable-woff/GeistVF.woff') format('woff');
+	font-display: swap;
+	font-style: normal;
 }
 
 /*
@@ -13,16 +14,15 @@
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
+	box-sizing: border-box;
 }
-
 
 /*
   2. Remove default margin
 */
 * {
-    margin: 0;
-    padding: 0;
+	margin: 0;
+	padding: 0;
 }
 
 /*
@@ -31,13 +31,13 @@
   4. Improve text rendering
 */
 body {
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    font-family: geist;
-    /* TODO: use these colors to change the colors the shadcn components. */
-    /* NOTE: the color used */
-    background-color: #1b1b1f;
-    color: rgba(235, 235, 245, 0.6);
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	font-family: geist;
+	/* TODO: use these colors to change the colors the shadcn components. */
+	/* NOTE: the color used */
+	background-color: #1b1b1f;
+	color: rgba(235, 235, 245, 0.6);
 }
 
 /*
@@ -48,8 +48,8 @@ picture,
 video,
 canvas,
 svg {
-    display: block;
-    max-width: 100%;
+	display: block;
+	max-width: 100%;
 }
 
 /*
@@ -59,7 +59,7 @@ input,
 button,
 textarea,
 select {
-    font: inherit;
+	font: inherit;
 }
 
 /*
@@ -72,7 +72,7 @@ h3,
 h4,
 h5,
 h6 {
-    overflow-wrap: break-word;
+	overflow-wrap: break-word;
 }
 
 /*
@@ -80,18 +80,18 @@ h6 {
 */
 #root,
 #__next {
-    isolation: isolate;
+	isolation: isolate;
 }
 
 /* general styling that I am going to reuse: */
 button {
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
+	border: none;
+	padding: 0.5rem 1rem;
+	border-radius: 0.5rem;
 }
 
 button:is(:hover, :focus) {
-    opacity: 0.95;
+	opacity: 0.95;
 }
 
 /* TODO: Do the title and subtitle one in here too. */

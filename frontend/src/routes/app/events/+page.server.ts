@@ -1,6 +1,6 @@
-import type { PageServerLoad } from "./$types"
-import { redirect } from "@sveltejs/kit"
-import { API_URL } from "$env/static/private"
+import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
+import { API_URL } from '$env/static/private';
 
 // TODO: make the right type based on the backend
 // type Event = {
@@ -10,25 +10,25 @@ import { API_URL } from "$env/static/private"
 // }
 
 export const load: PageServerLoad = async ({ locals, cookies }) => {
-    if (!locals.user) {
-        throw redirect(302, "/")
-    }
-    const sessionId = cookies.get("sessionId");
-    const res = await fetch(`${API_URL}/api/v1/events`, {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${sessionId}`,
-        },
-    })
-    const { pastEvents, nextEvents, incomingEvents } = await res.json()
-    return { pastEvents, nextEvents, incomingEvents }
-}
+	if (!locals.user) {
+		throw redirect(302, '/');
+	}
+	const sessionId = cookies.get('sessionId');
+	const res = await fetch(`${API_URL}/api/v1/events`, {
+		method: 'GET',
+		headers: {
+			Authorization: `Bearer ${sessionId}`
+		}
+	});
+	const { pastEvents, nextEvents, incomingEvents } = await res.json();
+	return { pastEvents, nextEvents, incomingEvents };
+};
 
 // TODO: Should I use a form action or just a <a> balise ?
 export const actions = {
-    default: async ({ request }) => {
-        const formData = await request.formData()
-        const eventId = formData.get("id")
-        throw redirect(302, `/app/events/${eventId}`)
-    }
-}
+	default: async ({ request }) => {
+		const formData = await request.formData();
+		const eventId = formData.get('id');
+		throw redirect(302, `/app/events/${eventId}`);
+	}
+};
