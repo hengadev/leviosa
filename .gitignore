@@ -1,15 +1,10 @@
-frontend/node_modules
-
-backend/db.sqlite
-backend/todo.md
-backend/db.db
-backend/bin
-backend/README.md
-backend/example.env
-
-todo.md
-makefile
-
-note.md
+*.makefile
 
 .worktrees
+
+.env
+
+*.docker-compose.yaml
+
+echo
+notes

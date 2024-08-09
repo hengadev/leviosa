@@ -1,0 +1,78 @@
+name: 🌐 Front
+on:
+  push:
+    branches: 
+    - main
+  pull_request: 
+    branches:
+      - main
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+defaults:
+  run: 
+    working-directory: ./frontend
+
+jobs:
+  lint:
+    name: ⬣ ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - name: Install dependencies with pnpm
+        uses: ./.github/actions/pnpm-install
+      - name: 🔬 Lint
+        run: pnpm run lint
+
+  typecheck:
+    name: ʦ TypeScript
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - name: Install dependencies with pnpm
+        uses: ./.github/actions/pnpm-install
+      - name: 🔎 Type check
+        run: pnpm run check
+
+  vitest:
+    name: 🧪 vitest
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - name: Install dependencies with pnpm
+        uses: ./.github/actions/pnpm-install
+      - name: 🔎 Type check
+        run: pnpm run test:unit
+
+  playwright:
+    name: 🧪 playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - name: Install dependencies with pnpm
+        uses: ./.github/actions/pnpm-install
+      - name: 🔎 Type check
+        run: pnpm run test:integration
+
+  docker-front:
+    name: 🐳 Push frontend application docker image
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/push-docker-image
+        with:
+          tag: 'frontend'
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}

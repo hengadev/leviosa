@@ -1,0 +1,87 @@
+name: 🛢 Back
+
+on:
+  push:
+    branches: 
+    - main
+  pull_request: 
+    branches:
+      - main
+
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+  checks: write
+
+defaults:
+  run: 
+    working-directory: backend
+
+jobs:
+  gobuild:
+    name: ⬣ Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.1'
+      - name: Update CA certificates
+        run: |
+          apt-get update
+          apt-get install -y ca-certificates
+          update-ca-certificates
+      - name: Build go application
+        run: |
+          go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
+        with:
+          CGO_ENABLED: 1
+          GOOS: linux
+
+  golangci:
+    name: ⬣ Golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.1'
+      - name: 🔬 golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.59
+          working-directory: backend
+
+  test:
+    name: 🧪 Golang unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.1'
+      - name: Unit test application
+        run: |
+          $(MAKE) test-unit
+          $(MAKE) test-integration
+          $(MAKE) test-e2e
+
+  docker-back:
+    name: 🐳 Build backend application docker image
+    runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/push-docker-image
+        with:
+          tag: 'backend'
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }} 
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
