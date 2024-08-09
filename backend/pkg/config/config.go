@@ -19,11 +19,13 @@ type Config struct {
 // TODO: Add the other creds needed
 func New(ctx context.Context, envFilename, envFileType string) *Config {
 	vp := viper.New()
-	vp.AddConfigPath(".")
-	vp.SetConfigName(envFilename)
-	vp.SetConfigType(envFileType)
-	if err := vp.ReadInConfig(); err != nil {
-		fmt.Println("viper reading :", err)
+	if os.Getenv("APP_ENV") != "production" {
+		vp.AddConfigPath(".")
+		vp.SetConfigName(envFilename)
+		vp.SetConfigType(envFileType)
+		if err := vp.ReadInConfig(); err != nil {
+			fmt.Println("viper reading :", err)
+		}
 	}
 	return &Config{
 		viper:  vp,
