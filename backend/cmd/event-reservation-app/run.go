@@ -33,6 +33,11 @@ func run(ctx context.Context, w io.Writer) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
+	// always load the .env file
+	if err := godotenv.Load(); err != nil {
+		return fmt.Errorf("load env variables: %w", err)
+	}
+
 	// setup env variables
 	if err := setupEnvVars(); err != nil {
 		return fmt.Errorf("failed to get env variables: %w", err)

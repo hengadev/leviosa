@@ -10,7 +10,8 @@ import (
 
 func Cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		url := os.Getenv("HOST")
+		// url := os.Getenv("HOST")
+		url := os.Getenv("FRONTEND_ORIGIN")
 
 		w.Header().Set("Access-Control-Allow-Origin", url)
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
