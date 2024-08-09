@@ -38,9 +38,19 @@ func (c *Config) Load(ctx context.Context) error {
 		key      string
 	}{
 		"DATABASE_FILENAME": {required: true, key: "sqlite.filename"},
-		"REDIS_ADDR":        {required: true, key: "redis.addr"},
-		"REDIS_DB":          {required: true, key: "redis.db"},
-		"REDIS_PASSWORD":    {required: true, key: "redis.password"},
+
+		"REDIS_ADDR":     {required: true, key: "redis.addr"},
+		"REDIS_DB":       {required: true, key: "redis.db"},
+		"REDIS_PASSWORD": {required: true, key: "redis.password"},
+
+		"STRIPE_SECRET_KEY": {required: true, key: "stripe.secret.key"},
+
+		"GMAIL_EMAIL":    {required: true, key: "gmail.email"},
+		"GMAIL_PASSWORD": {required: true, key: "gmail.password"},
+
+		"AWS_REGION":            {required: true, key: "aws.region"},
+		"AWS_ACCESS_KEY_ID":     {required: true, key: "aws.access.key.id"},
+		"AWS_SECRET_ACCESS_KEY": {required: true, key: "aws.secret.access.key"},
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {
