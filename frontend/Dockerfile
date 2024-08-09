@@ -16,8 +16,13 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
+RUN adduser -D sveltekit
+
 COPY --from=build /app/build ./build
+COPY --from=build /app/.env.production .
 COPY --from=build /app/package.json /app/pnpm-lock.yaml ./
+
+RUN chown -R sveltekit:sveltekit /app/build
 
 RUN pnpm install --prod --frozen-lockfile && \
     pnpm store prune && \
