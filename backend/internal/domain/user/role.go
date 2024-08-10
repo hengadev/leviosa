@@ -16,10 +16,6 @@ var roles = [4]string{
 	"admin",
 }
 
-func GetRoles() [4]string {
-	return roles
-}
-
 func (r Role) String() string {
 	return roles[r]
 }
@@ -28,12 +24,12 @@ func ConvertToRole(role string) Role {
 	switch role {
 	case "admin":
 		return ADMINISTRATOR
-	case "helper":
+	case "guest":
 		return GUEST
-	case "":
-		return UNKNOWN
-	default:
+	case "basic":
 		return BASIC
+	default:
+		return UNKNOWN
 	}
 }
 
