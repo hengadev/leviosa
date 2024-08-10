@@ -31,7 +31,7 @@ func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, use
 // get inspiration from some similar function in sqlite/event.go
 func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.Vote, error) {
 	var votes = make([]*vote.Vote, 8)
-	condition := fmt.Sprintf("(year=? AND month>?) OR year=?", year, month+1, year+1)
+	condition := fmt.Sprintf("(year=%d AND month>%d) OR year=%d", year, month+1, year+1)
 	query := fmt.Sprintf("SELECT (month, year) from votes where %s LIMIT 8;", condition)
 	rows, err := v.DB.QueryContext(ctx, query)
 	if err != nil {
