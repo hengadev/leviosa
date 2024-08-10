@@ -46,7 +46,7 @@ func setupDatabases(
 		return nil, nil, fmt.Errorf("Failed to set dialect: %w", err)
 	}
 	// run the migration to the database.
-	if err := goose.Up(sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
+	if err := goose.UpContext(ctx, sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
 		return nil, nil, fmt.Errorf("failed to run migration %w", err)
 	}
 
