@@ -2,10 +2,12 @@ package mail
 
 import (
 	"bytes"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"gopkg.in/gomail.v2"
 	"html/template"
 	"os"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+
+	"gopkg.in/gomail.v2"
 )
 
 // TODO: use the right user type for this, you just have to use the struct tag better
@@ -14,14 +16,13 @@ import (
 func HandleNewEventMail(usersList []*user.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	for _, user := range usersList {
-		// go func(user interface{}) {
-		go func(user *user.User) {
+		go func(firstname string) {
 			templData := struct {
 				Username string
 				Heure    string
 			}{Username: user.FirstName, Heure: eventTime}
 			sendMail(companyMail, user.Email, "Un nouvel evenement pourrait vous interesser", "/internal/mail/templates/newEvent.html", password, templData)
-		}(user)
+		}(user.FirstName)
 	}
 }
 
