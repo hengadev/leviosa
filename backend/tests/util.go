@@ -1,11 +1,28 @@
 package test
 
 import (
+	"testing"
 	"time"
 	"unsafe"
 
 	"math/rand"
 )
+
+// the generic way to compare two values of the same type
+func Assert[T comparable](t testing.TB, got, want T) {
+	t.Helper()
+	if got != want {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+// the generic way to compare two values of the same type
+func OK(t testing.TB, got error) {
+	t.Helper()
+	if got != nil {
+		t.Errorf("got %q, want nil error", got)
+	}
+}
 
 // NOTE: link for the number generator : https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
