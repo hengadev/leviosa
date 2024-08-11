@@ -6,7 +6,6 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	// "github.com/GaryHY/event-reservation-app/internal/domain/user/validator"
-	"github.com/google/uuid"
 )
 
 // TODO: Do the validation for the rest of the fields.
@@ -43,7 +42,7 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	user.Create()
 	user.Login()
 	userID, err := s.repo.AddAccount(ctx, user)
-	if err != nil && uuid.Validate(userID) == nil {
+	if err != nil && userID > 1 {
 		return nil, fmt.Errorf("add account: %w", err)
 	}
 	return user, nil

@@ -14,14 +14,14 @@ const SessionName = "session_token"
 
 type Session struct {
 	ID         string    `json:"id"`
-	UserID     string    `json:"userid"`
+	UserID     int       `json:"userid"`
 	Role       string    `json:"userrole"`
 	LoggedInAt time.Time `json:"loggedinat"`
 	CreatedAt  time.Time `json:"createdat"`
 	ExpiresAt  time.Time `json:"expiresat"`
 }
 
-func NewSession(userID, role string) (*Session, error) {
+func NewSession(userID int, role string) (*Session, error) {
 	return &Session{
 		UserID: userID,
 		Role:   role,

@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -21,8 +22,9 @@ func NewSessionRepository(ctx context.Context, client *redis.Client) (*SessionRe
 
 // reader
 // A function used for authentication and authorization.
-func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID string) (string, error) {
-	value, err := s.Client.Get(ctx, userID).Result()
+func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID int) (string, error) {
+	userIDstr := strconv.Itoa(userID)
+	value, err := s.Client.Get(ctx, userIDstr).Result()
 	if err != nil {
 		return "", rp.NewNotFoundError(err)
 	}
@@ -34,7 +36,7 @@ func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID str
 	return sessionDecoded.ID, nil
 }
 
-func (s *SessionRepository) Signout(ctx context.Context, userID string) error {
+func (s *SessionRepository) Signout(ctx context.Context, userID int) error {
 	sessionID, err := s.GetSessionIDByUserID(ctx, userID)
 	if err != nil {
 		return rp.NewNotFoundError(err)
@@ -43,7 +45,8 @@ func (s *SessionRepository) Signout(ctx context.Context, userID string) error {
 	if err != nil {
 		return rp.NewRessourceCreationErr(err)
 	}
-	err = s.Client.Del(ctx, userID).Err()
+	userIDstr := strconv.Itoa(userID)
+	err = s.Client.Del(ctx, userIDstr).Err()
 	if err != nil {
 		return rp.NewRessourceCreationErr(err)
 	}
@@ -71,7 +74,8 @@ func (s *SessionRepository) CreateSession(ctx context.Context, userSession *sess
 	if err != nil {
 		return "", rp.NewRessourceCreationErr(err)
 	}
-	err = s.Client.Set(ctx, userSession.UserID, sessionEncoded, session.SessionDuration).Err()
+	userIDstr := strconv.Itoa(userSession.UserID)
+	err = s.Client.Set(ctx, userIDstr, sessionEncoded, session.SessionDuration).Err()
 	if err != nil {
 		return "", rp.NewRessourceCreationErr(err)
 	}

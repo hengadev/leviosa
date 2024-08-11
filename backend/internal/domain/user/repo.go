@@ -5,11 +5,11 @@ import (
 )
 
 type Reader interface {
-	FindAccountByID(ctx context.Context, id string) (*User, error)
-	ValidateCredentials(ctx context.Context, usr *Credentials) (string, Role, error)
+	FindAccountByID(ctx context.Context, id int) (*User, error)
+	ValidateCredentials(ctx context.Context, usr *Credentials) (int, Role, error)
 }
 type Writer interface {
-	AddAccount(ctx context.Context, user *User) (string, error)
+	AddAccount(ctx context.Context, user *User) (int, error)
 	ModifyAccount(ctx context.Context, user *User) error
 }
 

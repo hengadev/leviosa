@@ -8,7 +8,7 @@ import (
 )
 
 // that is basically the sign up of that function
-func (s *Service) CreateSession(ctx context.Context, userID, role string) (string, error) {
+func (s *Service) CreateSession(ctx context.Context, userID int, role string) (string, error) {
 	sessionID, err := s.Repo.GetSessionIDByUserID(ctx, userID)
 	if err == nil && sessionID != "" {
 		return sessionID, nil

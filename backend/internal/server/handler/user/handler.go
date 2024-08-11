@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -81,7 +82,7 @@ func (h *Handler) Signin() http.Handler {
 		}
 		// validate credentials
 		userID, role, err := h.Repos.User.ValidateCredentials(ctx, &input)
-		if userID == "" || role == user.UNKNOWN {
+		if userID == 0 || role == user.UNKNOWN {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
@@ -151,7 +152,13 @@ func (h *Handler) GetUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userID := ctx.Value(mw.SessionIDKey).(string)
+		userIDstr := ctx.Value(mw.SessionIDKey).(string)
+		userID, err := strconv.Atoi(userIDstr)
+		if err != nil {
+			slog.ErrorContext(ctx, "failed to convert string userID to int", "error", err)
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 		user, err := h.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get user", "error", err)
