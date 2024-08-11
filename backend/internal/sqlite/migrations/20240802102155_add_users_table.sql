@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
 	telephone TEXT NOT NULL UNIQUE,
 	address TEXT NOT NULL,
 	city TEXT NOT NULL,
-	postalcard INTEGER NOT NULL
+	postalcard INTEGER NOT NULL,
+    UNIQUE(lastname, firstname)
 );
 -- +goose StatementEnd
 
