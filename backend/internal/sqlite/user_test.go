@@ -10,10 +10,7 @@ import (
 )
 
 func TestAddAccount(t *testing.T) {
-	// NOTE: done cases:
-	// - add the user, right case
-	// - user already exists so can not add the user
-	// TODO: cases:
+	// TODO: other cases ?
 	// - email unique
 	// - nom prenom unique
 	// - telephone unique
@@ -30,8 +27,10 @@ func TestAddAccount(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			repo, err := setupUserRepo(ctx, tt.version)
+			defer testdb.Teardown(repo.DB)
 			if err != nil {
 				t.Errorf("setup repo: %s", err)
 			}
@@ -46,7 +45,6 @@ func TestAddAccount(t *testing.T) {
 				// TODO: see if the users are the same ?
 				_ = userFromDB
 			}
-			testdb.Teardown(repo.DB)
 		})
 	}
 }

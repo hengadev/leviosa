@@ -73,6 +73,7 @@ func TestIsSuperior(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.comparing.IsSuperior(tt.compared)
 			test.Assert(t, got, tt.expected)
 		})

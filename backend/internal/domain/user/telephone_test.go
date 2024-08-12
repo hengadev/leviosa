@@ -20,8 +20,11 @@ func TestValidateTelephone(t *testing.T) {
 	}{
 		{telephone: "012345678A", wantErr: true, name: "Contain letters"},
 	}
+
 	for _, tt := range tests {
-		got := user.ValidateTelephone(tt.telephone)
-		test.Assert(t, got != nil, tt.wantErr)
+		t.Run(tt.name, func(t *testing.T) {
+			got := user.ValidateTelephone(tt.telephone)
+			test.Assert(t, got != nil, tt.wantErr)
+		})
 	}
 }

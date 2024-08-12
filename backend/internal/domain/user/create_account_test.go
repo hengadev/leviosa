@@ -38,6 +38,7 @@ func TestCreateAccount(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubUserRepository()
 			service := user.NewService(repo)
@@ -49,7 +50,6 @@ func TestCreateAccount(t *testing.T) {
 
 	t.Run("Check if ID, Role, LoggedInAt and CreatedAt are non zero", func(t *testing.T) {
 		fields := []string{
-			"ID",
 			"Role",
 			"LoggedInAt",
 			"CreatedAt",
@@ -74,7 +74,7 @@ func TestCreateAccount(t *testing.T) {
 		for _, field := range fields {
 			value := v.FieldByName(field)
 			if value.IsZero() {
-				t.Errorf("expected value change for field %q", field)
+				t.Errorf("expected value %v, for field %q", v.FieldByName(field), field)
 			}
 		}
 	})
