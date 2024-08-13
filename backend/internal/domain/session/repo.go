@@ -5,7 +5,6 @@ import (
 )
 
 type Reader interface {
-	GetSessionIDByUserID(ctx context.Context, userID int) (string, error)
 	FindSessionByID(ctx context.Context, sessionID string) (*Session, error)
 }
 
