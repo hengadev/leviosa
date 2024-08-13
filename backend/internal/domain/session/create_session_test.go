@@ -21,9 +21,7 @@ func TestCreateSession(t *testing.T) {
 		name          string
 	}{
 		{sess: sessionTest, sessions: initSessionValues, wantErr: false, wantSessionID: true, name: "no session already"},
-		{sess: sessionTest, sessions: Values{
-			sessionTest.ID: sessionTest.Values(),
-		}, wantErr: false, wantSessionID: true, name: "session already exists"},
+		{sess: sessionTest, sessions: Values{sessionTest.ID: sessionTest.Values()}, wantErr: false, wantSessionID: true, name: "session already exists"},
 	}
 
 	for _, tt := range tests {
