@@ -36,18 +36,8 @@ func (s *SessionRepository) GetSessionIDByUserID(ctx context.Context, userID int
 	return sessionDecoded.ID, nil
 }
 
-func (s *SessionRepository) Signout(ctx context.Context, userID int) error {
-	sessionID, err := s.GetSessionIDByUserID(ctx, userID)
-	if err != nil {
-		return rp.NewNotFoundError(err)
-	}
-	err = s.Client.Del(ctx, sessionID).Err()
-	if err != nil {
-		return rp.NewRessourceCreationErr(err)
-	}
-	userIDstr := strconv.Itoa(userID)
-	err = s.Client.Del(ctx, userIDstr).Err()
-	if err != nil {
+func (s *SessionRepository) RemoveSession(ctx context.Context, sessionID string) error {
+	if err := s.Client.Del(ctx, sessionID).Err(); err != nil {
 		return rp.NewRessourceCreationErr(err)
 	}
 	return nil

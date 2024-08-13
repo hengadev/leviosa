@@ -10,7 +10,7 @@ type Reader interface {
 
 type Writer interface {
 	CreateSession(ctx context.Context, session *Session) (string, error)
-	Signout(ctx context.Context, userID int) error
+	RemoveSession(ctx context.Context, sessionID string) error
 }
 
 type ReadWriter interface {
