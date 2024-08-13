@@ -35,10 +35,7 @@ func makeServices(
 	userRepo := sqlite.NewUserRepository(ctx, sqlitedb)
 	userSvc := user.NewService(userRepo)
 	// session
-	sessionRepo, err := redis.NewSessionRepository(ctx, redisdb)
-	if err != nil {
-		return appSvcs, appRepos, fmt.Errorf("create session repo : %w", err)
-	}
+	sessionRepo := redis.NewSessionRepository(ctx, redisdb)
 	sessionSvc := session.NewService(sessionRepo)
 	// event
 	eventRepo := sqlite.NewEventRepository(ctx, sqlitedb)
