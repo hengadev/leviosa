@@ -10,10 +10,11 @@ import (
 
 func (s *SessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*session.Session, error) {
 	var res session.Session
-	val, err := s.Client.Get(ctx, sessionID).Result()
+	val, err := s.Client.Get(ctx, sessionID).Bytes()
 	if err != nil {
 		return nil, rp.NewNotFoundError(err)
 	}
-	json.Unmarshal([]byte(val), &res)
+	json.Unmarshal(val, &res)
+	res.ID = sessionID
 	return &res, nil
 }

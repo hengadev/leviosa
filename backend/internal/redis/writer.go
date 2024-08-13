@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"strconv"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -19,14 +18,12 @@ func (s *SessionRepository) CreateSession(ctx context.Context, userSession *sess
 	if err != nil {
 		return "", rp.NewRessourceCreationErr(err)
 	}
-	userIDstr := strconv.Itoa(userSession.UserID)
-	err = s.Client.Set(ctx, userIDstr, sessionEncoded, session.SessionDuration).Err()
-	if err != nil {
-		return "", rp.NewRessourceCreationErr(err)
-	}
 	return userSession.ID, nil
 }
 
-func (s *SessionRepository) DeleteSessionBySessionID(ctx context.Context, sessionID string) error {
+func (s *SessionRepository) RemoveSession(ctx context.Context, sessionID string) error {
+	if err := s.Client.Del(ctx, sessionID).Err(); err != nil {
+		return rp.NewRessourceCreationErr(err)
+	}
 	return nil
 }
