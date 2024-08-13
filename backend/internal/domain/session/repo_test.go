@@ -7,13 +7,13 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 )
 
-type Values map[string]*session.Values
+type KVMap map[string]*session.Values
 
 type StubSessionRepository struct {
-	sessions Values
+	sessions KVMap
 }
 
-func NewStubSessionRepository(ctx context.Context, sessions Values) *StubSessionRepository {
+func NewStubSessionRepository(ctx context.Context, sessions KVMap) *StubSessionRepository {
 	return &StubSessionRepository{sessions: sessions}
 }
 

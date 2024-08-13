@@ -31,7 +31,7 @@ func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string
 	registrationBeginAt := event.BeginAt.Add(offsetDuration)
 	registration := NewRegistration(userID, event.ID, registrationBeginAt)
 	if err = s.Repo.AddRegistration(ctx, registration, day, year, month); err != nil {
-		fmt.Errorf("add registration: %w", err)
+		return fmt.Errorf("add registration: %w", err)
 	}
 	return nil
 }

@@ -15,13 +15,13 @@ func TestCreateSession(t *testing.T) {
 	// - has valid session
 	tests := []struct {
 		sess          *session.Session
-		sessions      Values
+		sessions      KVMap
 		wantErr       bool
 		wantSessionID bool
 		name          string
 	}{
 		{sess: sessionTest, sessions: initSessionValues, wantErr: false, wantSessionID: true, name: "no session already"},
-		{sess: sessionTest, sessions: Values{sessionTest.ID: sessionTest.Values()}, wantErr: false, wantSessionID: true, name: "session already exists"},
+		{sess: sessionTest, sessions: KVMap{sessionTest.ID: sessionTest.Values()}, wantErr: false, wantSessionID: true, name: "session already exists"},
 	}
 
 	for _, tt := range tests {
