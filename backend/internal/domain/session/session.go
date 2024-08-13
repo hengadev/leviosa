@@ -21,6 +21,24 @@ type Session struct {
 	ExpiresAt  time.Time `json:"expiresat"`
 }
 
+type Values struct {
+	UserID     int       `json:"userid"`
+	Role       string    `json:"userrole"`
+	LoggedInAt time.Time `json:"loggedinat"`
+	CreatedAt  time.Time `json:"createdat"`
+	ExpiresAt  time.Time `json:"expiresat"`
+}
+
+func (s *Session) Values() *Values {
+	return &Values{
+		UserID:     s.UserID,
+		Role:       s.Role,
+		LoggedInAt: s.LoggedInAt,
+		CreatedAt:  s.CreatedAt,
+		ExpiresAt:  s.ExpiresAt,
+	}
+}
+
 func NewSession(userID int, role string) (*Session, error) {
 	return &Session{
 		UserID: userID,
