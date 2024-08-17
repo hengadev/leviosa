@@ -1,58 +1,10 @@
-import { redirect, fail } from '@sveltejs/kit'; import type { Action, Actions, PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit'; import type { Action, Actions, PageServerLoad } from './$types';
 import { API_URL } from '$env/static/private';
-import { describe, it, expect } from "vitest"
 
 import { validate } from "$lib/scripts/credentials"
+import { parseCookie } from "$lib/scripts/parseCookie"
+import { cookieName } from '$lib/types/cookie';
 
-type CookieParsed = {
-    Name: string;
-    Value: string;
-    Expires: Date;
-    HttpOnly: boolean;
-    Secure: boolean;
-};
-
-import { cookieName } from '$lib/types';
-
-// TODO: I need to use that function is some sort of library and test it.
-
-/**
- * Parse cookie into a CookieParsed object
- *
- * @param   cookie  the cookie in string format. 
- * @returns A cookie parsed into an exploitable CookieParsed object.
- */
-function parseCookie(cookie: string): CookieParsed {
-    // the default cookie object
-    const res: CookieParsed = {
-        Name: cookieName,
-        Value: '',
-        Expires: new Date(),
-        HttpOnly: true,
-        Secure: true
-    };
-    cookie.split(';').map((field) => {
-        const split = field.trim().split('=');
-        if (split[0] === 'Expires') {
-            res.Expires = new Date(split[1]);
-        }
-        if (split[0] === cookieName) {
-            res.Value = split[1];
-        }
-    });
-    return res;
-}
-
-describe("parseCookie", () => {
-    // just an example for the test in here and for me to use all my imports
-    const cookie: string = ""
-    it.todo("should do nothing for now", () => {
-        const cookieParsed = parseCookie(cookie)
-        // TODO: find the right format for the cookoie that I am going to exploit
-        expect(cookieParsed).toHaveTextContent(/sometextcontent/iu)
-    })
-    expect(2 + 2).toBe(4)
-})
 
 // TODO: should I test that function with some mocking thing ?
 const register: Action = async ({ request, cookies }) => {

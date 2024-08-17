@@ -17,5 +17,3 @@ export const months = [
 type months = (typeof months)[number];
 
 export const vowelRegex = '^[aieouâêîôûäëïöüàéèùœAIEOUÂÊÎÔÛÄËÏÖÜÀÉÈÙŒ].*';
-
-export const cookieName = 'session_token';
