@@ -1,15 +1,12 @@
 import type { PageLoad } from './$types';
+import { type FormControl } from '$lib/types/forms';
 
-type InputType = 'email' | 'password' | 'text' | 'hidden';
-
-type FormControl = {
-    name: string;
-    label: string;
-    type: InputType;
-    placeholder?: string;
-    value: string; // just for now for the testing part with the backend
+// TODO: remove when app done, just for testing, should use FormControl
+type TestingFormControl = FormControl & {
+    value: string;
 };
-const formControls: FormControl[] = [
+
+const formControls: TestingFormControl[] = [
     {
         name: 'email',
         label: 'Email',
@@ -27,13 +24,5 @@ const formControls: FormControl[] = [
 ];
 
 export const load: PageLoad = () => {
-    // TODO: get to see if the cookie is set and if we do not need to reset it.
-    // redirect if the cookie already set.
-    // const a = 5;
-    // if (a < 6) {
-    //     throw redirect(300, "/app")
-    // }
-    return {
-        formControls
-    };
+    return { formControls };
 };
