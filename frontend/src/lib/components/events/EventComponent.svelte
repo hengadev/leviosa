@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
-	// TODO: use the props to build the thing
 
 	// TODO: add all the right component in here based on the formatting of the event type.
 	export let beginat: Date;

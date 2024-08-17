@@ -25,7 +25,7 @@
 			};
 		}}
 	>
-		<h2 class="title">Email et mot de passe</h2>
+		<h1 class="title">Email et mot de passe</h1>
 		<h2 class="subtitle">Pour s'identifier !</h2>
 		<div class="separator"></div>
 		<div class="fields">

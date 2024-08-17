@@ -1,8 +1,9 @@
 <script lang="ts">
 	//icons
-	export let eventId: string;
 	import Clock from 'lucide-svelte/icons/clock';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
+
+	export let eventId: string;
 	// TODO: get the user id for the next event for the user
 </script>
 
