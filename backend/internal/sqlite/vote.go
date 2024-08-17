@@ -17,7 +17,7 @@ func NewVoteRepository(ctx context.Context, db *sql.DB) *VoteRepository {
 	return &VoteRepository{db}
 }
 
-func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, userID string) (string, error) {
+func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, userID int) (string, error) {
 	var votes string
 	tableName := fmt.Sprintf("votes_%s_%s", month, year)
 	query := fmt.Sprintf("SELECT * FROM %s WHERE userid=?;", tableName)
@@ -52,7 +52,7 @@ func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*
 	return votes, nil
 }
 
-func (v *VoteRepository) HasVote(ctx context.Context, month, year int, userID string) (bool, error) {
+func (v *VoteRepository) HasVote(ctx context.Context, month, year int, userID int) (bool, error) {
 	var res bool
 	tablename := fmt.Sprintf("votes_%d_%d", month, year)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?;", tablename)
@@ -67,12 +67,12 @@ func (v *VoteRepository) HasVote(ctx context.Context, month, year int, userID st
 }
 
 // TODO: implement that function
-func (v *VoteRepository) RemoveVote(ctx context.Context, userID string, month, year int) error {
+func (v *VoteRepository) RemoveVote(ctx context.Context, userID, month, year int) error {
 	return nil
 }
 
 // Function to create vote for a user in a specific month and year
-func (v *VoteRepository) CreateVote(ctx context.Context, userID, days string, month, year int) error {
+func (v *VoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) error {
 	tablename := fmt.Sprintf("votes_%d_%d", month, year)
 	query := fmt.Sprintf("INSERT INTO %s (userid, days) VALUES (?, ?);", tablename)
 	_, err := v.DB.ExecContext(ctx, query, userID, days)

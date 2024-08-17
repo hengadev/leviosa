@@ -3,13 +3,13 @@ package vote
 import "context"
 
 type Reader interface {
-	FindVotesByUserID(ctx context.Context, month, year, userID string) (string, error)
+	FindVotesByUserID(ctx context.Context, month, year, userID int) (string, error)
 	GetNextVotes(ctx context.Context, month, year int) ([]*Vote, error)
-	HasVote(ctx context.Context, month, year int, userID string) (bool, error)
+	HasVote(ctx context.Context, month, year int, userID int) (bool, error)
 }
 type Writer interface {
-	CreateVote(ctx context.Context, userID, days string, month, year int) error
-	RemoveVote(ctx context.Context, userID string, month, year int) error
+	CreateVote(ctx context.Context, userID int, days string, month, year int) error
+	RemoveVote(ctx context.Context, userID int, month, year int) error
 }
 
 type ReadWriter interface {

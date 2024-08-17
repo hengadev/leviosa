@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
-	// app "github.com/GaryHY/event-reservation-app/internal/domain"
 )
 
 // Function that returns the votes (order is important) for a specific user
-func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr, userID string) ([]*Vote, error) {
+func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string, userID int) ([]*Vote, error) {
 	monthInt, err := strconv.Atoi(monthStr)
 	if err != nil {
 		return nil, fmt.Errorf("fail to convert string month to int")
@@ -19,8 +17,7 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr, userI
 	if err != nil {
 		return nil, fmt.Errorf("fail to convert string year to int")
 	}
-	month := strings.ToLower(time.Month(monthInt).String())
-	votesStr, err := s.Repo.FindVotesByUserID(ctx, month, yearStr, userID)
+	votesStr, err := s.Repo.FindVotesByUserID(ctx, monthInt, yearInt, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get votes by userID: %w", err)
 	}
