@@ -1,17 +1,8 @@
-import { redirect, fail } from '@sveltejs/kit';
-import type { Action, Actions, PageServerLoad } from './$types';
+import { redirect, fail } from '@sveltejs/kit'; import type { Action, Actions, PageServerLoad } from './$types';
 import { API_URL } from '$env/static/private';
+import { describe, it, expect } from "vitest"
 
-// type DomainName = "fr" | "com"
-// type Email = `${string}@${string}.${DomainName}`
-
-// TODO: make a better email validation
-function validate(email: string, password: string) {
-    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
-        return fail(400, { invalid: true });
-    }
-    return true;
-}
+import { validate } from "$lib/scripts/credentials"
 
 type CookieParsed = {
     Name: string;
@@ -23,6 +14,14 @@ type CookieParsed = {
 
 import { cookieName } from '$lib/types';
 
+// TODO: I need to use that function is some sort of library and test it.
+
+/**
+ * Parse cookie into a CookieParsed object
+ *
+ * @param   cookie  the cookie in string format. 
+ * @returns A cookie parsed into an exploitable CookieParsed object.
+ */
 function parseCookie(cookie: string): CookieParsed {
     // the default cookie object
     const res: CookieParsed = {
@@ -44,6 +43,18 @@ function parseCookie(cookie: string): CookieParsed {
     return res;
 }
 
+describe("parseCookie", () => {
+    // just an example for the test in here and for me to use all my imports
+    const cookie: string = ""
+    it.todo("should do nothing for now", () => {
+        const cookieParsed = parseCookie(cookie)
+        // TODO: find the right format for the cookoie that I am going to exploit
+        expect(cookieParsed).toHaveTextContent(/sometextcontent/iu)
+    })
+    expect(2 + 2).toBe(4)
+})
+
+// TODO: should I test that function with some mocking thing ?
 const register: Action = async ({ request, cookies }) => {
     console.log('in the register action');
     const url = `${API_URL}/api/v1/signin`;
@@ -86,6 +97,10 @@ const register: Action = async ({ request, cookies }) => {
         console.error(error.message);
     }
 };
+
+describe("register User", () => {
+    it.todo("should register user with the right credentials")
+})
 
 export const load: PageServerLoad = ({ locals }) => {
     if (locals.user) {
