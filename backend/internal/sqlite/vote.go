@@ -13,13 +13,17 @@ type VoteRepository struct {
 	DB *sql.DB
 }
 
+func (v *VoteRepository) GetDB() *sql.DB {
+	return v.DB
+}
+
 func NewVoteRepository(ctx context.Context, db *sql.DB) *VoteRepository {
 	return &VoteRepository{db}
 }
 
-func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month, year, userID int) (string, error) {
+func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
 	var votes string
-	tableName := fmt.Sprintf("votes_%s_%s", month, year)
+	tableName := fmt.Sprintf("votes_%s_%d", month, year)
 	query := fmt.Sprintf("SELECT * FROM %s WHERE userid=?;", tableName)
 	if err := v.DB.QueryRowContext(ctx, query).Scan(&votes); err != nil {
 		return "", rp.NewNotFoundError(err)

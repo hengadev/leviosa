@@ -5,8 +5,9 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
-	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestAddAccount(t *testing.T) {
@@ -29,19 +30,17 @@ func TestAddAccount(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := setupUserRepo(ctx, tt.version)
+			repo, err := setupRepo[*sqlite.UserRepository](ctx, tt.version, sqlite.NewUserRepository)
 			defer testdb.Teardown(repo.DB)
 			if err != nil {
 				t.Errorf("setup repo: %s", err)
 			}
 			userID, err := repo.AddAccount(ctx, tt.usr)
-			test.Assert(t, userID, tt.expectedUserID)
-			test.Assert(t, err != nil, tt.wantErr)
+			assert.Equal(t, userID, tt.expectedUserID)
+			assert.Equal(t, err != nil, tt.wantErr)
 			if tt.wantErr == false {
 				userFromDB, err := getOnlyUser(ctx, repo.DB)
-				if err != nil {
-					t.Errorf("user not found after addition to database: %s", err)
-				}
+				assert.NotNil(t, err)
 				// TODO: see if the users are the same ?
 				_ = userFromDB
 			}

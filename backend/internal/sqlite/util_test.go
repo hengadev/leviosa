@@ -14,6 +14,7 @@ import (
 )
 
 var johndoe = &user.User{
+	ID:         1,
 	Email:      "john.doe@gmail.com",
 	Password:   "$a9rfNhA$N$A78#m",
 	CreatedAt:  time.Now().Add(-time.Hour * 4),
@@ -29,14 +30,17 @@ var johndoe = &user.User{
 	PostalCard: 12345,
 }
 
-func setupUserRepo(ctx context.Context, version int64) (*sqlite.UserRepository, error) {
+type RepoConstructor[T sqlite.Repository] func(context.Context, *sql.DB) T
+
+func setupRepo[T sqlite.Repository](ctx context.Context, version int64, constructor RepoConstructor[T]) (T, error) {
+	var repo T
 	db, err := testdb.NewDatabase(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("database connection: %s", err)
+		return repo, fmt.Errorf("database connection: %s", err)
 	}
-	repo := sqlite.NewUserRepository(ctx, db)
-	if err := testdb.Setup(ctx, repo.DB, version); err != nil {
-		return nil, fmt.Errorf("migration to the database: %s", err)
+	repo = constructor(ctx, db)
+	if err := testdb.Setup(ctx, repo.GetDB(), version); err != nil {
+		return repo, fmt.Errorf("migration to the database: %s", err)
 	}
 	return repo, nil
 }
