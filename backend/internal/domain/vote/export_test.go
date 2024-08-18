@@ -1,3 +1,4 @@
 package vote
 
-var ExportFormatVote = formatVote
+var ExportedFormatVote = formatVote
+var ExportedParseVotes = parseVotes

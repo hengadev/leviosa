@@ -35,11 +35,11 @@ func TestCreateVote(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubVoteRepository(ctx)
 			service := vote.NewService(repo)
 			err := service.CreateVote(ctx, tt.votes)
-			fmt.Println("the error that I get is :", err)
 			_, ok := repo.votes[key]
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.NotEqual(t, ok, tt.wantErr)
@@ -93,7 +93,8 @@ func TestFormatVote(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := vote.ExportFormatVote(tt.votes)
+			t.Parallel()
+			got := vote.ExportedFormatVote(tt.votes)
 			assert.Equal(t, got, tt.expect)
 		})
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 // Function that returns the votes (order is important) for a specific user
@@ -21,7 +23,7 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string
 	if err != nil {
 		return nil, fmt.Errorf("get votes by userID: %w", err)
 	}
-	votes, err := parseVotes(votesStr, monthInt, yearInt)
+	votes, err := parseVotes(ctx, votesStr, monthInt, yearInt)
 	if err != nil {
 		return nil, fmt.Errorf("parse votes by userID: %w", err)
 	}
@@ -36,7 +38,10 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string
 // votes_april_2024
 
 // Function that parse string stored in repository into votes.
-func parseVotes(daysStr string, month, year int) ([]*Vote, error) {
+func parseVotes(ctx context.Context, daysStr string, month, year int) ([]*Vote, error) {
+	if daysStr == "" {
+		return nil, nil
+	}
 	days := strings.Split(daysStr, VoteSeparator)
 	var votes = make([]*Vote, len(days))
 	for i, day := range days {
@@ -44,11 +49,11 @@ func parseVotes(daysStr string, month, year int) ([]*Vote, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot convert string day to int")
 		}
-		votes[i] = &Vote{
-			Day:   day,
-			Month: month,
-			Year:  year,
+		vote := &Vote{Day: day, Month: month, Year: year}
+		if pbms := vote.Valid(ctx); len(pbms) > 0 {
+			return nil, serverutil.FormatError(pbms, "vote")
 		}
+		votes[i] = vote
 	}
-	return nil, nil
+	return votes, nil
 }
