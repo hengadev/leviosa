@@ -1,10 +1,19 @@
 package vote_test
 
 import (
+	"context"
 	"testing"
+	"time"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestValidVote(t *testing.T) {
+	now := time.Now().UTC()
+	day := now.Day()
+	month := int(now.Month())
+	year := now.Year()
 	tests := []struct {
 		day     int
 		month   int
@@ -12,10 +21,19 @@ func TestValidVote(t *testing.T) {
 		wantErr bool
 		name    string
 	}{
-		{},
+		{day: -2, month: month, year: year, wantErr: true, name: "day too small"},
+		{day: 54, month: month, year: year, wantErr: true, name: "day too large"},
+		{day: day, month: -4, year: year, wantErr: true, name: "month too small"},
+		{day: day, month: 45, year: year, wantErr: true, name: "month too large"},
+		{day: day, month: month, year: year - 3, wantErr: true, name: "year too small"},
 	}
 	for _, tt := range tests {
-		_ = tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			vote := &vote.Vote{Day: tt.day, Month: tt.month, Year: tt.year}
+			pbms := vote.Valid(ctx)
+			assert.Equal(t, len(pbms) > 0, tt.wantErr)
+		})
 	}
-
 }
