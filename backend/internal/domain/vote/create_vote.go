@@ -4,18 +4,26 @@ import (
 	"context"
 	"fmt"
 	"strings"
+
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
-	// month := votes[0].Month
+	for _, vote := range votes {
+		if pbms := vote.Valid(ctx); len(pbms) > 0 {
+			return serverutil.FormatError(pbms, "vote")
+		}
+	}
+
 	month := votes[0].Month
 	year := votes[0].Year
 	userID := votes[0].UserID
-	days := stringifyVote(votes)
+
+	days := formatVote(votes)
 	// check if has vote
 	hasVote, err := s.Repo.HasVote(ctx, month, year, userID)
 	if err != nil {
-		return fmt.Errorf("know if user has votes %w", err)
+		return fmt.Errorf("check if user votes %w", err)
 	}
 	// remove previous vote
 	if hasVote {
@@ -30,7 +38,8 @@ func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
 	return nil
 }
 
-func stringifyVote(votes []*Vote) string {
+// formatVote takes an array of Vote type to return formatted days respecting the order of Votes (indicating user's preference) to write in database. The separator string is a package constant.
+func formatVote(votes []*Vote) string {
 	var daysArr = make([]string, len(votes))
 	for i, vote := range votes {
 		daysArr[i] = fmt.Sprintf("%d", vote.Day)
