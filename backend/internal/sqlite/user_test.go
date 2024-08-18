@@ -2,6 +2,7 @@ package sqlite_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -23,14 +24,14 @@ func TestAddAccount(t *testing.T) {
 		version        int64
 		name           string
 	}{
-		{usr: johndoe, expectedUserID: 1, wantErr: false, version: 20240811085134, name: "add the user"},
 		{usr: johndoe, expectedUserID: 0, wantErr: true, version: 20240811140841, name: "user already exists"},
+		{usr: johndoe, expectedUserID: 1, wantErr: false, version: 20240811085134, name: "add the user"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := setupRepo[*sqlite.UserRepository](ctx, tt.version, sqlite.NewUserRepository)
+			repo, err := setupRepo(ctx, tt.version, sqlite.NewUserRepository)
 			defer testdb.Teardown(repo.DB)
 			if err != nil {
 				t.Errorf("setup repo: %s", err)
@@ -43,6 +44,44 @@ func TestAddAccount(t *testing.T) {
 				assert.NotNil(t, err)
 				// TODO: see if the users are the same ?
 				_ = userFromDB
+			}
+		})
+	}
+}
+
+func TestFindAccountByID(t *testing.T) {
+	t.Setenv("TEST_MIGRATION_PATH", "./migrations/tests")
+	tests := []struct {
+		expectedUser *user.User
+		wantErr      bool
+		version      int64
+		name         string
+	}{
+		{expectedUser: nil, wantErr: true, version: 20240811085134, name: "user not in the database"},
+		{expectedUser: johndoe, wantErr: false, version: 20240811140841, name: "nominal case, user in database"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			repo, err := setupRepo(ctx, tt.version, sqlite.NewUserRepository)
+			defer testdb.Teardown(repo.DB)
+			if err != nil {
+				t.Errorf("setup repo: %s", err)
+			}
+			user, err := repo.FindAccountByID(ctx, 1)
+			assert.Equal(t, err != nil, tt.wantErr)
+			if tt.expectedUser != nil {
+				fields := []string{"ID", "Email", "Role", "BirthDate", "LastName", "FirstName", "Gender", "Telephone", "Address", "City", "PostalCard"}
+				userDBValue := reflect.ValueOf(*user)
+				userRealValue := reflect.ValueOf(*johndoe)
+				for _, field := range fields {
+					dbValue := userDBValue.FieldByName(field).Interface()
+					realValue := userRealValue.FieldByName(field).Interface()
+					if dbValue != realValue {
+						t.Errorf("got %v, want %v", dbValue, realValue)
+					}
+				}
 			}
 		})
 	}

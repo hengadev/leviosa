@@ -29,19 +29,23 @@ func NewUserRepository(ctx context.Context, db *sql.DB) *UserRepository {
 // here put the function that you need to put brother
 func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.User, error) {
 	var user user.User
-	if err := u.DB.QueryRowContext(ctx,
-		"SELECT email, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users WHERE id = ?;", id).Scan(
+	if err := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE id = ?;", id).Scan(
+		&user.ID,
 		&user.Email,
+		&user.Password,
+		&user.CreatedAt,
+		&user.LoggedInAt,
+		&user.Role,
+		&user.BirthDate,
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,
-		&user.BirthDate,
 		&user.Telephone,
 		&user.Address,
 		&user.City,
 		&user.PostalCard,
 	); err != nil {
-		return &user, rp.NewNotFoundError(err)
+		return nil, rp.NewNotFoundError(err)
 	}
 	return &user, nil
 }
@@ -59,12 +63,6 @@ func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Cred
 		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
 	}
 	return userRetrieved.ID, user.ConvertToRole(userRetrieved.Role), nil
-}
-
-// TODO: move that function to the session repository
-func (u *UserRepository) GetUserIDBySessionID(ctx context.Context, sessionID string) (id int) {
-	u.DB.QueryRowContext(ctx, "SELECT userid from sessions where id = ?;", sessionID).Scan(&id)
-	return
 }
 
 func (u *UserRepository) GetAllUsers(ctx context.Context) ([]*user.User, error) {

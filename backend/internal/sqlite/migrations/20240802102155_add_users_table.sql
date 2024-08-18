@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
 	createdat  DATETIME,
 	loggedinat DATETIME,
     role TEXT NOT NULL,
-	birthdate  DATETIME,
+	birthdate  TEXT NOT NULL,
     lastname TEXT NOT NULL,
     firstname TEXT NOT NULL,
 	gender TEXT NOT NULL CHECK (GENDER IN ("M", "F", "NB", "NP")),
