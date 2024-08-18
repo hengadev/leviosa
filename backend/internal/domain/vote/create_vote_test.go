@@ -12,25 +12,22 @@ import (
 
 func TestCreateVote(t *testing.T) {
 	now := time.Now().UTC()
-	userID := 45021934
-	days, month, year := setupDateComponent(now)
-	normalVote := &vote.Vote{
-		UserID: userID,
-		Day:    now.Day(),
-		Month:  month,
-		Year:   year,
-	}
+	days := []int{1, 8, 22}
+	day := now.Day()
+	month, year := setup(now)
+	userID, normalVote := generateValidVote(now, month, year)
 	key := MockDBKey{userID: userID, month: month, year: year}
-	votes := getVotes(days, *normalVote)
-	dayVote, monthVote, yearVote := getInvalidVotes(*normalVote)
+	votes := getVotesFromIntDaysArr(userID, days, month, year)
 	tests := []struct {
 		votes   []*vote.Vote
 		wantErr bool
 		name    string
 	}{
-		{votes: []*vote.Vote{dayVote, normalVote}, wantErr: true, name: "Invalid days"},
-		{votes: []*vote.Vote{monthVote, normalVote}, wantErr: true, name: "Invalid months"},
-		{votes: []*vote.Vote{yearVote, normalVote}, wantErr: true, name: "Invalid year"},
+		{votes: []*vote.Vote{{UserID: userID, Day: 54, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too small"},
+		{votes: []*vote.Vote{{UserID: userID, Day: -4, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too large"},
+		{votes: []*vote.Vote{{UserID: userID, Day: day, Month: -3, Year: year}}, wantErr: true, name: "Invalid month, too small"},
+		{votes: []*vote.Vote{{UserID: userID, Day: day, Month: 15, Year: year}}, wantErr: true, name: "Invalid month, too large"},
+		{votes: []*vote.Vote{{UserID: userID, Day: day, Month: month, Year: year - 5}}, wantErr: true, name: "Invalid year"},
 		{votes: votes, wantErr: false, name: "Nominal case"},
 	}
 	for _, tt := range tests {
@@ -49,7 +46,7 @@ func TestCreateVote(t *testing.T) {
 		ctx := context.Background()
 		repo := NewStubVoteRepository(ctx)
 		votes := []*vote.Vote{normalVote}
-		initialValue := "some value that should not be there"
+		initialValue := "12|6|37"
 		repo.votes[key] = initialValue
 		service := vote.NewService(repo)
 		err := service.CreateVote(ctx, votes)
@@ -98,36 +95,4 @@ func TestFormatVote(t *testing.T) {
 			assert.Equal(t, got, tt.expect)
 		})
 	}
-}
-
-func getVotes(days []int, normalVote vote.Vote) []*vote.Vote {
-	var votes []*vote.Vote
-	for _, day := range days {
-		cloneVote := normalVote
-		cloneVote.Day = day
-		votes = append(votes, &cloneVote)
-	}
-	return votes
-}
-
-func getInvalidVotes(normalVote vote.Vote) (*vote.Vote, *vote.Vote, *vote.Vote) {
-	dayVote := normalVote
-	monthVote := normalVote
-	yearVote := normalVote
-	dayVote.Day = 50
-	monthVote.Month = 13
-	yearVote.Year = normalVote.Year - 1
-	return &dayVote, &monthVote, &yearVote
-}
-
-func setupDateComponent(now time.Time) ([]int, int, int) {
-	days := []int{1, 8, 22}
-	var voteMonth int
-	if now.Month() == 12 {
-		voteMonth = 1
-	} else {
-		voteMonth = int(now.Month()) + 1
-	}
-	year := now.Year()
-	return days, voteMonth, year
 }

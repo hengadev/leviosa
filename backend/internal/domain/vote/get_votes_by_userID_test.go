@@ -2,7 +2,6 @@ package vote_test
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -14,28 +13,19 @@ import (
 func TestGetVotesByUserID(t *testing.T) {
 	userID := 94435302
 	now := time.Now().UTC()
-	month := int(now.Month() + 1)
+	month, year := setup(now)
+
 	monthStr := strconv.Itoa(month)
 	invalidMonthConvert := time.Month(12).String()
 	invalidYearConvert := "this year"
-	year := now.Year()
+
 	yearStr := strconv.Itoa(year)
 
 	days := []int{2, 13, 17, 26}
-	var formattedDays string
-	expectedVotes := make([]*vote.Vote, len(days))
-	for i, day := range days {
-		formattedDays += fmt.Sprintf("%d%s", day, vote.VoteSeparator)
-		expectedVotes[i] = &vote.Vote{
-			UserID: userID,
-			Day:    day,
-			Month:  month,
-			Year:   year,
-		}
-	}
-	formattedDays = formattedDays[:len(formattedDays)-1]
+	expectedVotes := getVotesFromIntDaysArr(userID, days, month, year)
+	formattedDays := getFormattedDayFromIntArr(days)
 
-	key := MockDBKey{userID: userID, month: int(now.Month()), year: now.Year()}
+	key := MockDBKey{userID: userID, month: month, year: year}
 	tests := []struct {
 		month         string
 		year          string
@@ -68,8 +58,7 @@ func TestGetVotesByUserID(t *testing.T) {
 
 func TestParseVotes(t *testing.T) {
 	now := time.Now().UTC()
-	month := int(now.Month()) + 1
-	year := now.Year()
+	month, year := setup(now)
 	days := "3|12|25"
 	tests := []struct {
 		days          string
