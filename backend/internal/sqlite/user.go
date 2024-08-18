@@ -124,11 +124,15 @@ func (u *UserRepository) ModifyAccount(ctx context.Context, user *user.User) err
 }
 
 func (u *UserRepository) DeleteUser(ctx context.Context, userID int) (int, error) {
-	_, err := u.DB.ExecContext(ctx, "DELETE FROM users WHERE id = ?", userID)
+	res, err := u.DB.ExecContext(ctx, "DELETE FROM users WHERE id = ?", userID)
 	if err != nil {
 		return 0, rp.NewRessourceDeleteErr(err)
 	}
-	return userID, nil
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return 0, rp.NewRessourceDeleteErr(err)
+	}
+	return int(rowsAffected), nil
 }
 
 func (u *UserRepository) UpdateUser(ctx context.Context, user *user.User) (int, error) {
