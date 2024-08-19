@@ -183,6 +183,7 @@ func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID strin
 // On part du principe que le beginAt est store comme "xx:xx:xx"
 
 func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
+	// TODO: use transaction for that function brother
 	var res event.EventUser
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
@@ -243,18 +244,30 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 }
 
 // helper function for the GetEventForUser function
-func convIntToStr(value int) string {
-	var res string
-	if value < 10 {
-		res = fmt.Sprintf("0%d", value)
+// func convIntToStr(value int) string {
+// 	var res string
+// 	if value < 10 {
+// 		res = fmt.Sprintf("0%d", value)
+// 	} else {
+// 		res = fmt.Sprintf("%d", value)
+// 	}
+// 	return res
+// }
+
+func convIntToStr(value int) (string, error) {
+	if value < 0 {
+		return "", fmt.Errorf("%d is invalid value", value)
+	} else if value < 10 {
+		return fmt.Sprintf("0%d", value), nil
+	} else if value < 100 {
+		return fmt.Sprintf("%d", value), nil
 	} else {
-		res = fmt.Sprintf("%d", value)
+		return "", fmt.Errorf("%d is invalid value", value)
 	}
-	return res
 }
 
 // helper function for the GetEventForUser function
-func stringifyHour(hour string) (string, error) {
+func formatTime(hour string) (string, error) {
 	res := hour
 	suffix := "AM"
 	timeHour, err := time.Parse(time.TimeOnly, hour)
@@ -263,7 +276,20 @@ func stringifyHour(hour string) (string, error) {
 	}
 	if timeHour.Hour() > 12 {
 		suffix = "PM"
-		res = fmt.Sprintf("%s:%s:%s", convIntToStr(timeHour.Hour()-12), convIntToStr(timeHour.Minute()), convIntToStr(timeHour.Second()))
+		hour, err := convIntToStr(timeHour.Hour() - 12)
+		if err != nil {
+			return "", fmt.Errorf("convert string to int: %w", err)
+		}
+		minute, err := convIntToStr(timeHour.Minute())
+		if err != nil {
+			return "", fmt.Errorf("convert string to int: %w", err)
+		}
+		second, err := convIntToStr(timeHour.Second())
+		if err != nil {
+			return "", fmt.Errorf("convert string to int: %w", err)
+		}
+
+		res = fmt.Sprintf("%s:%s:%s", hour, minute, second)
 	}
 	return res + suffix, nil
 }
@@ -271,11 +297,23 @@ func stringifyHour(hour string) (string, error) {
 // helper function for the GetEventForUser function
 func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 	var res time.Time
-	hourFormatted, err := stringifyHour(hour)
+	hourFormatted, err := formatTime(hour)
 	if err != nil {
 		return res, err
 	}
-	dateFormatted := fmt.Sprintf("%s/%s %s '%s -0700", convIntToStr(month), convIntToStr(day), hourFormatted, convIntToStr(year%100))
+	parsedDay, err := convIntToStr(day)
+	if err != nil {
+		return res, fmt.Errorf("convert string to int: %w", err)
+	}
+	parsedMonth, err := convIntToStr(month)
+	if err != nil {
+		return res, fmt.Errorf("convert string to int: %w", err)
+	}
+	parsedYear, err := convIntToStr(year % 100)
+	if err != nil {
+		return res, fmt.Errorf("convert string to int: %w", err)
+	}
+	dateFormatted := fmt.Sprintf("%s/%s %s '%s -0700", parsedMonth, parsedDay, hourFormatted, parsedYear)
 	res, err = time.Parse(time.Layout, dateFormatted)
 	if err != nil {
 		fmt.Println("got some error mate : ", err)
