@@ -272,7 +272,7 @@ func formatTime(hour string) (string, error) {
 	suffix := "AM"
 	timeHour, err := time.Parse(time.TimeOnly, hour)
 	if err != nil {
-		return "", fmt.Errorf("error parsing the time: %w", err)
+		return "", fmt.Errorf("error parsing time: %w", err)
 	}
 	if timeHour.Hour() > 12 {
 		suffix = "PM"
