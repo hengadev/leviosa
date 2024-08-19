@@ -25,7 +25,7 @@ func NewStubVoteRepository(context.Context) *StubVoteRepository {
 }
 
 func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userID int) (bool, error) {
-	for key, _ := range s.votes {
+	for key := range s.votes {
 		if key.userID == userID && key.month == month && key.year == year {
 			return true, nil
 		}
@@ -56,7 +56,7 @@ func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, 
 	return nil
 }
 
-func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month, year, userID int) (string, error) {
+func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
 	return "", nil
 }
 

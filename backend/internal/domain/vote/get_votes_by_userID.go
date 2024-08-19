@@ -19,7 +19,7 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string
 	if err != nil {
 		return nil, fmt.Errorf("fail to convert string year to int")
 	}
-	votesStr, err := s.Repo.FindVotesByUserID(ctx, monthInt, yearInt, userID)
+	votesStr, err := s.Repo.FindVotesByUserID(ctx, monthStr, yearInt, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get votes by userID: %w", err)
 	}
