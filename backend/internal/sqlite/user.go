@@ -3,6 +3,7 @@ package sqlite
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -114,13 +115,31 @@ func (u *UserRepository) AddAccount(ctx context.Context, usr *user.User) (int, e
 	return int(lastInsertID), nil
 }
 
-func (u *UserRepository) ModifyAccount(ctx context.Context, user *user.User) error {
-	query, fields := sqliteutil.WriteUpdateQuery(user)
-	_, err := u.DB.ExecContext(ctx, query, fields...)
-	if err != nil {
-		return rp.NewRessourceUpdateErr(err)
+func (u *UserRepository) ModifyAccount(
+	ctx context.Context,
+	user *user.User,
+	whereMap map[string]any,
+	prohibitedFields ...string,
+) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, rp.NewRessourceUpdateErr(err)
 	}
-	return nil
+	if user == nil {
+		return fail(fmt.Errorf("nil user"))
+	}
+	query, values, err := sqliteutil.WriteUpdateQuery(*user, whereMap, prohibitedFields...)
+	if err != nil {
+		return fail(err)
+	}
+	res, err := u.DB.ExecContext(ctx, query, values...)
+	if err != nil {
+		return fail(err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fail(err)
+	}
+	return int(rowsAffected), nil
 }
 
 func (u *UserRepository) DeleteUser(ctx context.Context, userID int) (int, error) {
@@ -135,16 +154,16 @@ func (u *UserRepository) DeleteUser(ctx context.Context, userID int) (int, error
 	return int(rowsAffected), nil
 }
 
-func (u *UserRepository) UpdateUser(ctx context.Context, user *user.User) (int, error) {
-	query, fields := sqliteutil.WriteUpdateQuery(user)
-	_, err := u.DB.ExecContext(
-		ctx,
-		query,
-		fields...,
-	)
-
-	if err != nil {
-		return 0, rp.NewRessourceUpdateErr(err)
-	}
-	return user.ID, nil
-}
+// func (u *UserRepository) UpdateUser(ctx context.Context, user *user.User) (int, error) {
+// 	query, fields := sqliteutil.WriteUpdateQuery(user)
+// 	_, err := u.DB.ExecContext(
+// 		ctx,
+// 		query,
+// 		fields...,
+// 	)
+//
+// 	if err != nil {
+// 		return 0, rp.NewRessourceUpdateErr(err)
+// 	}
+// 	return user.ID, nil
+// }

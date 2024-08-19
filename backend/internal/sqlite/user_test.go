@@ -101,3 +101,46 @@ func TestDeleteUser(t *testing.T) {
 		})
 	}
 }
+
+func TestModifyAccount(t *testing.T) {
+	t.Setenv("TEST_MIGRATION_PATH", "./migrations/tests")
+
+	changes := map[string]any{"FirstName": "Jane", "Gender": "F"}
+	whereMap := map[string]any{"id": johndoe.ID}
+	modifiedUser, err := createWithZeroFieldModifiedObject(*johndoe, changes)
+	if err != nil {
+		t.Error("Failed to create object with modified field")
+	}
+
+	tests := []struct {
+		userModified         *user.User
+		expectedRowsAffected int
+		wantErr              bool
+		version              int64
+		name                 string
+	}{
+		{userModified: nil, expectedRowsAffected: 0, wantErr: true, version: 20240811085134, name: "nil user"},
+		{userModified: johndoe, expectedRowsAffected: 0, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
+		{userModified: modifiedUser, expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			repo, err := setupRepo(ctx, tt.version, sqlite.NewUserRepository)
+			defer testdb.Teardown(repo.DB)
+			if err != nil {
+				t.Errorf("setup repo: %s", err)
+			}
+			rowsAffected, err := repo.ModifyAccount(
+				ctx, tt.userModified,
+				whereMap,
+				"Email",
+				"Password",
+			)
+			assert.Equal(t, err != nil, tt.wantErr)
+			assert.Equal(t, rowsAffected, tt.expectedRowsAffected)
+		})
+	}
+}

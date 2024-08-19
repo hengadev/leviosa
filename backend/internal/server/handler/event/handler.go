@@ -47,9 +47,6 @@ func (h *Handler) FindEventsForUser() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		userID := ctx.Value(mw.SessionIDKey).(string)
-		if userID == "" { // TODO: find better thing to do to check if the userID stored is valid.
-			// some error with the auth that did not sent the userID in the context.
-		}
 		resBody, err := h.Repos.Event.GetEventForUser(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the events for the user", "error", err)

@@ -127,7 +127,8 @@ func (h *Handler) UpdateUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		// get the user from this
+		userID := ctx.Value(mw.SessionIDKey).(string)
+
 		user, pbms, err := serverutil.DecodeValid[user.User](r)
 		if len(pbms) > 0 {
 			slog.ErrorContext(ctx, "failed to decode user", "error", err)
@@ -139,8 +140,8 @@ func (h *Handler) UpdateUser() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// modify the user
-		if err = h.Svcs.User.UpdateAccount(ctx, &user); err != nil {
+		// modify user
+		if err = h.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
 			slog.ErrorContext(ctx, "failed to modify the user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
