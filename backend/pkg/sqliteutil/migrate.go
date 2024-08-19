@@ -42,6 +42,10 @@ func MigrateFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 }
 
 func migrate(ctx context.Context, tx *sql.Tx, migrations []string) error {
+	defer tx.Rollback()
+	fail := func(err error) error {
+		return fmt.Errorf("migration: %w", err)
+	}
 	if len(migrations) == 0 {
 		return nil
 	}
@@ -50,8 +54,11 @@ func migrate(ctx context.Context, tx *sql.Tx, migrations []string) error {
 			continue
 		}
 		if _, err := tx.ExecContext(ctx, stmt); err != nil {
-			return fmt.Errorf("exec migration: %w", err)
+			return fail(err)
 		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fail(err)
 	}
 	return nil
 }
