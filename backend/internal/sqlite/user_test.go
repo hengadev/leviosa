@@ -2,7 +2,6 @@ package sqlite_test
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -67,15 +66,7 @@ func TestFindAccountByID(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 			if tt.expectedUser != nil {
 				fields := []string{"ID", "Email", "Role", "BirthDate", "LastName", "FirstName", "Gender", "Telephone", "Address", "City", "PostalCard"}
-				userDBValue := reflect.ValueOf(*user)
-				userRealValue := reflect.ValueOf(*johndoe)
-				for _, field := range fields {
-					dbValue := userDBValue.FieldByName(field).Interface()
-					realValue := userRealValue.FieldByName(field).Interface()
-					if dbValue != realValue {
-						t.Errorf("got %v, want %v", dbValue, realValue)
-					}
-				}
+				compareUser(t, fields, user, johndoe)
 			}
 		})
 	}

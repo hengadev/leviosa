@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
+	"testing"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -13,6 +15,23 @@ import (
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
 
+// general
+type RepoConstructor[T sqlite.Repository] func(context.Context, *sql.DB) T
+
+func setupRepo[T sqlite.Repository](ctx context.Context, version int64, constructor RepoConstructor[T]) (T, error) {
+	var repo T
+	db, err := testdb.NewDatabase(ctx)
+	if err != nil {
+		return repo, fmt.Errorf("database connection: %s", err)
+	}
+	repo = constructor(ctx, db)
+	if err := testdb.Setup(ctx, repo.GetDB(), version); err != nil {
+		return repo, fmt.Errorf("migration to the database: %s", err)
+	}
+	return repo, nil
+}
+
+// user
 var johndoe = &user.User{
 	ID:         1,
 	Email:      "john.doe@gmail.com",
@@ -28,21 +47,6 @@ var johndoe = &user.User{
 	Address:    "Impasse Inconnue",
 	City:       "Paris",
 	PostalCard: 12345,
-}
-
-type RepoConstructor[T sqlite.Repository] func(context.Context, *sql.DB) T
-
-func setupRepo[T sqlite.Repository](ctx context.Context, version int64, constructor RepoConstructor[T]) (T, error) {
-	var repo T
-	db, err := testdb.NewDatabase(ctx)
-	if err != nil {
-		return repo, fmt.Errorf("database connection: %s", err)
-	}
-	repo = constructor(ctx, db)
-	if err := testdb.Setup(ctx, repo.GetDB(), version); err != nil {
-		return repo, fmt.Errorf("migration to the database: %s", err)
-	}
-	return repo, nil
 }
 
 func getOnlyUser(ctx context.Context, db *sql.DB) (*user.User, error) {
@@ -66,4 +70,17 @@ func getOnlyUser(ctx context.Context, db *sql.DB) (*user.User, error) {
 		return nil, fmt.Errorf("user not found after addition to database: %s", err)
 	}
 	return &foundUser, nil
+}
+
+func compareUser(t testing.TB, fields []string, userDB *user.User, realUser *user.User) {
+	t.Helper()
+	userDBValue := reflect.ValueOf(*userDB)
+	userRealValue := reflect.ValueOf(*realUser)
+	for _, field := range fields {
+		dbValue := userDBValue.FieldByName(field).Interface()
+		realValue := userRealValue.FieldByName(field).Interface()
+		if dbValue != realValue {
+			t.Errorf("got %v, want %v", dbValue, realValue)
+		}
+	}
 }
