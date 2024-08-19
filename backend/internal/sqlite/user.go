@@ -26,7 +26,6 @@ func NewUserRepository(ctx context.Context, db *sql.DB) *UserRepository {
 }
 
 // reader
-// here put the function that you need to put brother
 func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.User, error) {
 	var user user.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE id = ?;", id).Scan(
@@ -51,16 +50,20 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.Use
 }
 
 func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (int, user.Role, error) {
+	fail := func(err error) (int, user.Role, error) {
+		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
+	}
+
 	var userRetrieved user.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT id, password, role from users where email = ?;", usr.Email).Scan(
 		&userRetrieved.ID,
 		&userRetrieved.Password,
 		&userRetrieved.Role,
 	); err != nil {
-		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
+		return fail(err)
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(userRetrieved.Password), []byte(usr.Password)); err != nil {
-		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
+		return fail(err)
 	}
 	return userRetrieved.ID, user.ConvertToRole(userRetrieved.Role), nil
 }
@@ -103,15 +106,12 @@ func (u *UserRepository) AddAccount(ctx context.Context, usr *user.User) (int, e
 	if err != nil {
 		return 0, err
 	}
-	_, err = u.DB.ExecContext(ctx, "INSERT INTO users (email, password, createdat, loggedinat, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", usr.Email, hashpassword, usr.CreatedAt, usr.LoggedInAt, usr.Role, usr.LastName, usr.FirstName, usr.Gender, usr.BirthDate, usr.Telephone, usr.Address, usr.City, usr.PostalCard)
+	res, err := u.DB.ExecContext(ctx, "INSERT INTO users (email, password, createdat, loggedinat, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);", usr.Email, hashpassword, usr.CreatedAt, usr.LoggedInAt, usr.Role, usr.LastName, usr.FirstName, usr.Gender, usr.BirthDate, usr.Telephone, usr.Address, usr.City, usr.PostalCard)
 	if err != nil {
 		return 0, rp.NewRessourceCreationErr(err)
 	}
-	var id int
-	if err = u.DB.QueryRowContext(ctx, "SELECT id FROM users ORDER BY id DESC LIMIT 1;").Scan(&id); err != nil {
-		return 0, rp.NewRessourceCreationErr(err)
-	}
-	return id, nil
+	lastInsertID, err := res.LastInsertId()
+	return int(lastInsertID), nil
 }
 
 func (u *UserRepository) ModifyAccount(ctx context.Context, user *user.User) error {

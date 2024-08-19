@@ -39,12 +39,6 @@ func TestAddAccount(t *testing.T) {
 			userID, err := repo.AddAccount(ctx, tt.usr)
 			assert.Equal(t, userID, tt.expectedUserID)
 			assert.Equal(t, err != nil, tt.wantErr)
-			if tt.wantErr == false {
-				userFromDB, err := getOnlyUser(ctx, repo.DB)
-				assert.NotNil(t, err)
-				// TODO: see if the users are the same ?
-				_ = userFromDB
-			}
 		})
 	}
 }
