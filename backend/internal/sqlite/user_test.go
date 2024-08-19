@@ -2,6 +2,7 @@ package sqlite_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -173,6 +174,47 @@ func TestGetAllUsers(t *testing.T) {
 			for i := range len(users) {
 				compareUser(t, fields, users[i], tt.expectedUsers[i])
 			}
+		})
+	}
+}
+
+func TestGetCredentials(t *testing.T) {
+	t.Setenv("TEST_MIGRATION_PATH", "./migrations/tests")
+	// TEST: cases:
+	// - no user
+	// - user in database
+
+	creds := &user.Credentials{
+		Email:    johndoe.Email,
+		Password: johndoe.Password,
+	}
+	tests := []struct {
+		expectedUserID   int
+		expectedPassword string
+		expectedRole     user.Role
+		wantErr          bool
+		version          int64
+		name             string
+	}{
+		{expectedUserID: 0, expectedPassword: "", expectedRole: user.UNKNOWN, wantErr: true, version: 20240811085134, name: "No users in database"},
+		{expectedUserID: 1, expectedPassword: creds.Password, expectedRole: user.BASIC, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			repo, err := setupRepo(ctx, tt.version, sqlite.NewUserRepository)
+			defer testdb.Teardown(repo.DB)
+			if err != nil {
+				t.Errorf("setup repo: %s", err)
+			}
+			userID, password, role, err := repo.GetCredentials(ctx, creds)
+			fmt.Println("got error:", err)
+			assert.Equal(t, err != nil, tt.wantErr)
+			assert.Equal(t, userID, tt.expectedUserID)
+			assert.Equal(t, role, tt.expectedRole)
+			// NOTE: I can do that because I did not hashed the password in migration (no need to test that dependency)
+			assert.Equal(t, password, tt.expectedPassword)
 		})
 	}
 }

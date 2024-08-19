@@ -8,7 +8,6 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
-	"golang.org/x/crypto/bcrypt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -48,25 +47,6 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.Use
 		return nil, rp.NewNotFoundError(err)
 	}
 	return &user, nil
-}
-
-// TEST: do the test for that if I am strong enough for this
-func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (int, user.Role, error) {
-	fail := func(err error) (int, user.Role, error) {
-		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
-	}
-	var userRetrieved user.User
-	if err := u.DB.QueryRowContext(ctx, "SELECT id, password, role from users where email = ?;", usr.Email).Scan(
-		&userRetrieved.ID,
-		&userRetrieved.Password,
-		&userRetrieved.Role,
-	); err != nil {
-		return fail(err)
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(userRetrieved.Password), []byte(usr.Password)); err != nil {
-		return fail(err)
-	}
-	return userRetrieved.ID, user.ConvertToRole(userRetrieved.Role), nil
 }
 
 func (u *UserRepository) GetCredentials(ctx context.Context, usr *user.Credentials) (int, string, user.Role, error) {
