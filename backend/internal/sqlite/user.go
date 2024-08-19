@@ -50,6 +50,7 @@ func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.Use
 	return &user, nil
 }
 
+// TEST: do the test for that if I am strong enough for this
 func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (int, user.Role, error) {
 	fail := func(err error) (int, user.Role, error) {
 		return 0, user.ConvertToRole(""), rp.NewNotFoundError(err)
@@ -70,8 +71,9 @@ func (u *UserRepository) ValidateCredentials(ctx context.Context, usr *user.Cred
 }
 
 func (u *UserRepository) GetAllUsers(ctx context.Context) ([]*user.User, error) {
-	users := make([]*user.User, 0)
-	rows, err := u.DB.QueryContext(ctx, "SELECT * FROM users;")
+	var users []*user.User
+	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users;"
+	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, rp.NewNotFoundError(err)
 	}
@@ -80,9 +82,7 @@ func (u *UserRepository) GetAllUsers(ctx context.Context) ([]*user.User, error) 
 	for rows.Next() {
 		user := &user.User{}
 		err := rows.Scan(
-			&user.ID,
 			&user.Email,
-			&user.Password,
 			&user.Role,
 			&user.LastName,
 			&user.FirstName,
@@ -153,17 +153,3 @@ func (u *UserRepository) DeleteUser(ctx context.Context, userID int) (int, error
 	}
 	return int(rowsAffected), nil
 }
-
-// func (u *UserRepository) UpdateUser(ctx context.Context, user *user.User) (int, error) {
-// 	query, fields := sqliteutil.WriteUpdateQuery(user)
-// 	_, err := u.DB.ExecContext(
-// 		ctx,
-// 		query,
-// 		fields...,
-// 	)
-//
-// 	if err != nil {
-// 		return 0, rp.NewRessourceUpdateErr(err)
-// 	}
-// 	return user.ID, nil
-// }
