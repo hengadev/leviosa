@@ -81,12 +81,7 @@ func (h *Handler) Signin() http.Handler {
 			return
 		}
 		// validate credentials
-		userID, role, err := h.Repos.User.ValidateCredentials(ctx, &input)
-		if userID == 0 || role == user.UNKNOWN {
-			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			return
-		}
+		userID, role, err := h.Svcs.User.ValidateCredentials(ctx, &input)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

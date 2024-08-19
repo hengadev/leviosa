@@ -19,8 +19,8 @@ func (s *StubUserRepository) FindAccountByID(ctx context.Context, id int) (*user
 	return nil, nil
 }
 
-func (s *StubUserRepository) ValidateCredentials(ctx context.Context, usr *user.Credentials) (int, user.Role, error) {
-	return 0, user.UNKNOWN, nil
+func (s *StubUserRepository) GetCredentials(ctx context.Context, usr *user.Credentials) (int, string, user.Role, error) {
+	return 0, "", user.UNKNOWN, nil
 }
 
 func (s *StubUserRepository) AddAccount(ctx context.Context, user *user.User) (int, error) {
@@ -33,6 +33,6 @@ func (s *StubUserRepository) AddAccount(ctx context.Context, user *user.User) (i
 	return user.ID, nil
 }
 
-func (s *StubUserRepository) ModifyAccount(ctx context.Context, user *user.User) error {
-	return nil
+func (s *StubUserRepository) ModifyAccount(ctx context.Context, user *user.User, whereMap map[string]any, prohibitedFields ...string) (int, error) {
+	return 0, nil
 }
