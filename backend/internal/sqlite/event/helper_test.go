@@ -89,3 +89,36 @@ func TestParseBeginAt(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatBeginAt(t *testing.T) {
+	now := time.Now().UTC()
+	// nowStr := now.Format(time.Layout)
+	// beginat, err := time.Parse(time.Layout, nowStr)
+	// if err != nil {
+	// 	t.Error("failed intial time for test")
+	// }
+
+	hour, _ := eventRepository.ExportedConvIntToStr(now.Hour())
+	minute, _ := eventRepository.ExportedConvIntToStr(now.Minute())
+	second, _ := eventRepository.ExportedConvIntToStr(now.Second())
+
+	expectedbeginat := fmt.Sprintf("%s:%s:%s", hour, minute, second)
+
+	tests := []struct {
+		beginAt         time.Time
+		expectedBeginat string
+		wantErr         bool
+		name            string
+	}{
+		// {beginAt: beginat, expectedBeginat: expectedbeginat, wantErr: false, name: "first test, ba mwen tan"},
+		{beginAt: now, expectedBeginat: expectedbeginat, wantErr: false, name: "first test, ba mwen tan"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			formatbeginat, err := eventRepository.ExportedFormatBeginAt(tt.beginAt)
+			assert.Equal(t, err != nil, tt.wantErr)
+			assert.Equal(t, formatbeginat, tt.expectedBeginat)
+		})
+	}
+}
