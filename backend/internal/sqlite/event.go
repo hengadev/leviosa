@@ -24,14 +24,6 @@ func NewEventRepository(ctx context.Context, db *sql.DB) *EventRepository {
 
 // NOTE: old functions
 
-func (e *EventRepository) RemoveEvent(ctx context.Context, eventID string) (string, error) {
-	_, err := e.DB.ExecContext(ctx, "DELETE from events where id=?;", eventID)
-	if err != nil {
-		return "", rp.NewRessourceDeleteErr(err)
-	}
-	return eventID, nil
-}
-
 // Function that returns true if an event with the ID "eventID" is in the database and if the number of place found in "placecount" is > 0.
 func (e *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool, error) {
 	var placecount int

@@ -7,8 +7,8 @@ import (
 )
 
 func (s *Service) ModifyEvent(ctx context.Context, event *Event) (string, error) {
-	ID, err := s.Repo.RemoveEvent(ctx, event.ID)
-	if err != nil || ID != event.ID {
+	eventID, err := s.Repo.RemoveEvent(ctx, event.ID)
+	if err != nil || eventID != event.ID {
 		repository.NewRessourceUpdateErr(err)
 	}
 	return "", nil
