@@ -6,8 +6,9 @@ import (
 )
 
 func (s *Service) DecreasePlacecount(ctx context.Context, eventID string) error {
-	if err := s.Repo.DecreaseFreeplace(ctx, eventID); err != nil {
-		return fmt.Errorf("decrease freeplace for event: %w", err)
+	rowsAffected, err := s.Repo.DecreaseFreeplace(ctx, eventID)
+	if err != nil || rowsAffected == 0 {
+		return fmt.Errorf("decrease freeplace for event %s: %w", eventID, err)
 	}
 	return nil
 }

@@ -114,15 +114,19 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, err
 	return events, nil
 }
 
-func (e *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
-	if _, err := e.DB.ExecContext(
-		ctx,
-		"UPDATE events SET freeplace = freeplace - 1 WHERE id=?;",
-		eventID,
-	); err != nil {
-		return rp.NewRessourceUpdateErr(err)
+func (e *EventRepository) DecreaseFreeplace(ctx context.Context, ID string) (int, error) {
+	res, err := e.DB.ExecContext(ctx, "UPDATE events SET freeplace = freeplace - 1 WHERE id=?;", ID)
+	if err != nil {
+		return 0, rp.NewRessourceUpdateErr(err)
 	}
-	return nil
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return 0, rp.NewRessourceUpdateErr(err)
+	}
+	if rowsAffected == 0 {
+		return 0, fmt.Errorf("rowsAffected = 0, ID not found")
+	}
+	return int(rowsAffected), nil
 }
 
 // old functions
