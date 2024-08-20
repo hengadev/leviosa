@@ -243,17 +243,6 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 	return &res, nil
 }
 
-// helper function for the GetEventForUser function
-// func convIntToStr(value int) string {
-// 	var res string
-// 	if value < 10 {
-// 		res = fmt.Sprintf("0%d", value)
-// 	} else {
-// 		res = fmt.Sprintf("%d", value)
-// 	}
-// 	return res
-// }
-
 func convIntToStr(value int) (string, error) {
 	if value < 0 {
 		return "", fmt.Errorf("%d is invalid value", value)
@@ -297,6 +286,7 @@ func formatTime(hour string) (string, error) {
 // helper function for the GetEventForUser function
 func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 	var res time.Time
+	fmt.Println("the res value when error is :", res)
 	hourFormatted, err := formatTime(hour)
 	if err != nil {
 		return res, err
@@ -316,7 +306,7 @@ func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 	dateFormatted := fmt.Sprintf("%s/%s %s '%s -0700", parsedMonth, parsedDay, hourFormatted, parsedYear)
 	res, err = time.Parse(time.Layout, dateFormatted)
 	if err != nil {
-		fmt.Println("got some error mate : ", err)
+		return res, fmt.Errorf("parsing formatted date: %w", err)
 	}
 	return res, nil
 }

@@ -4,7 +4,7 @@ import (
 	// "context"
 	"fmt"
 	"testing"
-	// "time"
+	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
@@ -56,6 +56,40 @@ func TestFormatTime(t *testing.T) {
 			fmt.Printf("the resulting string is : %q\n", res)
 			fmt.Println("the err is:", err)
 			assert.Equal(t, res, tt.expectedString)
+			assert.Equal(t, err != nil, tt.wantErr)
+		})
+	}
+}
+
+func TestParseBeginAt(t *testing.T) {
+	var zeroValue time.Time
+
+	v := "07/12 07:25:17AM '98 -0700"
+	vParsed, _ := time.Parse(time.Layout, v)
+	expectedTime := vParsed.String()
+
+	tests := []struct {
+		hour         string
+		day          int
+		month        int
+		year         int
+		expectedTime string
+		wantErr      bool
+		name         string
+	}{
+		{hour: "07:25:17", day: 45, month: 7, year: 1998, expectedTime: zeroValue.String(), wantErr: true, name: "day > 30"},
+		{hour: "07:25:17", day: -32, month: 7, year: 1998, expectedTime: zeroValue.String(), wantErr: true, name: "day < 0"},
+		{hour: "07:25:17", day: 12, month: 32, year: 1998, expectedTime: zeroValue.String(), wantErr: true, name: "month > 12"},
+		{hour: "07:25:17", day: 12, month: 0, year: 1998, expectedTime: zeroValue.String(), wantErr: true, name: "month < 1"},
+		{hour: "07:25:17", day: 12, month: 7, year: 1998, expectedTime: expectedTime, wantErr: false, name: "nominal case"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			res, err := sqlite.ExportedParseBeginAt(tt.hour, tt.day, tt.month, tt.year)
+			fmt.Printf("the resulting string is : %q\n", res)
+			fmt.Println("the err is:", err)
+			assert.Equal(t, res.String(), tt.expectedTime)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
