@@ -22,130 +22,7 @@ func NewEventRepository(ctx context.Context, db *sql.DB) *EventRepository {
 	return &EventRepository{db}
 }
 
-// the new functions
-func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
-	event := &event.Event{}
-	var beginat string
-	var minutes int
-	var err error
-	query := "SELECT id, location, placecount, freeplace, beginat, sessionduration, day, month, year FROM events WHERE id=?"
-	if err := e.DB.QueryRowContext(ctx, query, id).Scan(
-		&event.ID,
-		&event.Location,
-		&event.PlaceCount,
-		&event.FreePlace,
-		&beginat,
-		&minutes,
-		&event.Day,
-		&event.Month,
-		&event.Year,
-	); err != nil {
-		return nil, rp.NewNotFoundError(err)
-	}
-	event.SessionDuration = time.Minute * time.Duration(minutes)
-	event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "error parsing time", err)
-	}
-	return event, nil
-}
-
-func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
-	events := make([]*event.Event, 0)
-	query := `
-       SELECT * FROM events WHERE id IN
-       (SELECT eventid FROM votes WHERE userid=?)
-       ORDER BY rowid ASC;
-	   `
-	rows, err := e.DB.QueryContext(ctx, query, userID)
-	defer rows.Close()
-	if err != nil {
-		return nil, rp.NewErrRow(err)
-	}
-
-	for rows.Next() {
-		event := &event.Event{}
-		var dataTemp string
-		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
-			return nil, rp.NewErrScan(err)
-		}
-		event.BeginAt, err = time.Parse(time.RFC3339, dataTemp)
-		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "error parsing time", err)
-		}
-		events = append(events, event)
-	}
-	return events, nil
-}
-
-func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, error) {
-	var events []*event.Event
-	query := "SELECT id, location, placecount, freeplace, beginat, sessionduration, day, month, year FROM events;"
-
-	rows, err := e.DB.QueryContext(ctx, query)
-	if err != nil {
-		return nil, rp.NewErrRow(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var beginat string
-		var minutes int
-		event := &event.Event{}
-		if err := rows.Scan(
-			&event.ID,
-			&event.Location,
-			&event.PlaceCount,
-			&event.FreePlace,
-			&beginat,
-			&minutes,
-			&event.Day,
-			&event.Month,
-			&event.Year,
-		); err != nil {
-			return nil, rp.NewErrScan(err)
-		}
-		event.SessionDuration = time.Minute * time.Duration(minutes)
-		event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
-		if err != nil {
-			return nil, fmt.Errorf("parsing time: %w", err)
-		}
-		events = append(events, event)
-	}
-	return events, nil
-}
-
-func (e *EventRepository) DecreaseFreeplace(ctx context.Context, ID string) (int, error) {
-	res, err := e.DB.ExecContext(ctx, "UPDATE events SET freeplace = freeplace - 1 WHERE id=?;", ID)
-	if err != nil {
-		return 0, rp.NewRessourceUpdateErr(err)
-	}
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return 0, rp.NewRessourceUpdateErr(err)
-	}
-	if rowsAffected == 0 {
-		return 0, fmt.Errorf("rowsAffected = 0, ID not found")
-	}
-	return int(rowsAffected), nil
-}
-
-// old functions
-func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) (string, error) {
-	new_date := event.BeginAt.Format(time.RFC3339)
-	_, err := e.DB.ExecContext(
-		ctx,
-		"INSERT INTO events (id, location, placecount, date, priceid) VALUES (?, ?, ?, ?, ?)",
-		event.ID,
-		event.Location,
-		event.PlaceCount,
-		new_date,
-		event.PriceID,
-	)
-	if err != nil {
-		return "", rp.NewRessourceCreationErr(err)
-	}
-	return event.ID, nil
-}
+// NOTE: old functions
 
 func (e *EventRepository) ModifyEvent(ctx context.Context, event *event.Event) (*event.Event, error) {
 	_, err := e.DB.ExecContext(
@@ -331,4 +208,33 @@ func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 		return res, fmt.Errorf("parsing formatted date: %w", err)
 	}
 	return res, nil
+}
+
+// NOTE: votes do not include event id now
+func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
+	events := make([]*event.Event, 0)
+	query := `
+       SELECT * FROM events WHERE id IN
+       (SELECT eventid FROM votes WHERE userid=?)
+       ORDER BY rowid ASC;
+	   `
+	rows, err := e.DB.QueryContext(ctx, query, userID)
+	defer rows.Close()
+	if err != nil {
+		return nil, rp.NewErrRow(err)
+	}
+
+	for rows.Next() {
+		event := &event.Event{}
+		var dataTemp string
+		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
+			return nil, rp.NewErrScan(err)
+		}
+		event.BeginAt, err = time.Parse(time.RFC3339, dataTemp)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", "error parsing time", err)
+		}
+		events = append(events, event)
+	}
+	return events, nil
 }
