@@ -25,13 +25,27 @@ func NewEventRepository(ctx context.Context, db *sql.DB) *EventRepository {
 // the new functions
 func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
 	event := &event.Event{}
-	if err := e.DB.QueryRowContext(ctx, "SELECT * FROM events WHERE id=?;", id).Scan(
+	var beginat string
+	var minutes int
+	var err error
+	query := "SELECT id, location, placecount, freeplace, beginat, sessionduration, day, month, year FROM events WHERE id=?"
+	if err := e.DB.QueryRowContext(ctx, query, id).Scan(
 		&event.ID,
 		&event.Location,
 		&event.PlaceCount,
-		&event.BeginAt,
+		&event.FreePlace,
+		&beginat,
+		&minutes,
+		&event.Day,
+		&event.Month,
+		&event.Year,
 	); err != nil {
 		return nil, rp.NewNotFoundError(err)
+	}
+	event.SessionDuration = time.Minute * time.Duration(minutes)
+	event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", "error parsing time", err)
 	}
 	return event, nil
 }
@@ -286,7 +300,6 @@ func formatTime(hour string) (string, error) {
 // helper function for the GetEventForUser function
 func parseBeginAt(hour string, day, month, year int) (time.Time, error) {
 	var res time.Time
-	fmt.Println("the res value when error is :", res)
 	hourFormatted, err := formatTime(hour)
 	if err != nil {
 		return res, err
