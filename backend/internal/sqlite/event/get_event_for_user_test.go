@@ -10,8 +10,11 @@ import (
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
-func TestAddEvent(t *testing.T) {
+// NOTE: I should get the past event for those the user actually registered for
+
+func TestGetEventForUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+
 	tests := []struct {
 		event           *event.Event
 		expectedEventID string
@@ -19,9 +22,7 @@ func TestAddEvent(t *testing.T) {
 		version         int64
 		name            string
 	}{
-		{event: &event.Event{}, expectedEventID: "", wantErr: true, version: 20240820013106, name: "no event IDa specified"},
-		{event: baseEvent, expectedEventID: "", wantErr: true, version: 20240820013106, name: "No price id specified"},
-		{event: baseEventWithPriceID, expectedEventID: baseEvent.ID, wantErr: false, version: 20240820013106, name: "nominal case"},
+		{},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -32,9 +33,9 @@ func TestAddEvent(t *testing.T) {
 			if err != nil {
 				t.Errorf("setup event domain stub repository: %s", err)
 			}
-			eventID, err := repo.AddEvent(ctx, tt.event)
+			eventUser, err := repo.AddEvent(ctx, tt.event)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.Equal(t, eventID, tt.expectedEventID)
+			_ = eventUser
 		})
 	}
 }

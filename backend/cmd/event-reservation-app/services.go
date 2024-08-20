@@ -19,6 +19,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/s3"
 	// databases
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 
 	// external packages
@@ -40,7 +41,7 @@ func makeServices(
 	sessionRepo := redis.NewSessionRepository(ctx, redisdb)
 	sessionSvc := session.NewService(sessionRepo)
 	// event
-	eventRepo := sqlite.NewEventRepository(ctx, sqlitedb)
+	eventRepo := eventRepository.New(ctx, sqlitedb)
 	eventSvc := event.NewService(eventRepo)
 	// vote
 	voteRepo := sqlite.NewVoteRepository(ctx, sqlitedb)
