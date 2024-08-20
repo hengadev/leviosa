@@ -1,0 +1,37 @@
+package userRepository
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+)
+
+func (u *UserRepository) ModifyAccount(
+	ctx context.Context,
+	user *user.User,
+	whereMap map[string]any,
+	prohibitedFields ...string,
+) (int, error) {
+	fail := func(err error) (int, error) {
+		return 0, rp.NewRessourceUpdateErr(err)
+	}
+	if user == nil {
+		return fail(fmt.Errorf("nil user"))
+	}
+	query, values, err := sqliteutil.WriteUpdateQuery(*user, whereMap, prohibitedFields...)
+	if err != nil {
+		return fail(err)
+	}
+	res, err := u.DB.ExecContext(ctx, query, values...)
+	if err != nil {
+		return fail(err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fail(err)
+	}
+	return int(rowsAffected), nil
+}

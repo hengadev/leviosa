@@ -17,7 +17,9 @@ import (
 	// databases
 	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/internal/s3"
+	// databases
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 
 	// external packages
 	rd "github.com/redis/go-redis/v9"
@@ -32,7 +34,7 @@ func makeServices(
 	var appRepos handler.Repos
 
 	// user
-	userRepo := sqlite.NewUserRepository(ctx, sqlitedb)
+	userRepo := userRepository.New(ctx, sqlitedb)
 	userSvc := user.NewService(userRepo)
 	// session
 	sessionRepo := redis.NewSessionRepository(ctx, redisdb)
