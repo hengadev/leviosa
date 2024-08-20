@@ -24,21 +24,6 @@ func NewEventRepository(ctx context.Context, db *sql.DB) *EventRepository {
 
 // NOTE: old functions
 
-func (e *EventRepository) ModifyEvent(ctx context.Context, event *event.Event) (*event.Event, error) {
-	_, err := e.DB.ExecContext(
-		ctx,
-		"UPDATE events SET location=?, placecount=?, date=? WHERE id=?;",
-		event.Location,
-		event.PlaceCount,
-		event.BeginAt.Format(time.RFC3339),
-		event.ID,
-	)
-	if err != nil {
-		return nil, rp.NewRessourceUpdateErr(err)
-	}
-	return event, nil
-}
-
 func (e *EventRepository) RemoveEvent(ctx context.Context, eventID string) (string, error) {
 	_, err := e.DB.ExecContext(ctx, "DELETE from events where id=?;", eventID)
 	if err != nil {

@@ -4,12 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	userRepository "github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
-
-	"github.com/GaryHY/event-reservation-app/internal/domain"
 )
 
 func TestModifyAccount(t *testing.T) {
