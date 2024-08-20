@@ -53,18 +53,6 @@ func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID s
 	return nil
 }
 
-func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
-	var priceID string
-	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
-	if err == sql.ErrNoRows {
-		return "", rp.NewNotFoundError(err)
-	}
-	if err != nil {
-		return "", rp.NewBadQueryErr(err)
-	}
-	return priceID, nil
-}
-
 // On part du principe que le beginAt est store comme "xx:xx:xx"
 
 func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
