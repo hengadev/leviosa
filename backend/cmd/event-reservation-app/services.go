@@ -20,7 +20,9 @@ import (
 	// databases
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/register"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/vote"
 
 	// external packages
 	rd "github.com/redis/go-redis/v9"
@@ -44,10 +46,10 @@ func makeServices(
 	eventRepo := eventRepository.New(ctx, sqlitedb)
 	eventSvc := event.NewService(eventRepo)
 	// vote
-	voteRepo := sqlite.NewVoteRepository(ctx, sqlitedb)
+	voteRepo := voteRepository.New(ctx, sqlitedb)
 	voteSvc := vote.NewService(voteRepo)
 	// register
-	registerRepo := sqlite.NewRegisterRepository(ctx, sqlitedb)
+	registerRepo := registerRepository.New(ctx, sqlitedb)
 	registerSvc := register.NewService(registerRepo)
 	// photo
 	photoRepo, err := s3.NewPhotoRepository(ctx)

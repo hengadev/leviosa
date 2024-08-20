@@ -1,4 +1,4 @@
-package sqlite
+package registerRepository
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	// "github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type RegisterRepository struct {
@@ -19,7 +21,7 @@ func (r *RegisterRepository) GetDB() *sql.DB {
 	return r.DB
 }
 
-func NewRegisterRepository(ctx context.Context, db *sql.DB) *RegisterRepository {
+func New(ctx context.Context, db *sql.DB) *RegisterRepository {
 	return &RegisterRepository{db}
 }
 

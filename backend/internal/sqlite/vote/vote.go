@@ -1,4 +1,4 @@
-package sqlite
+package voteRepository
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type VoteRepository struct {
@@ -17,7 +19,7 @@ func (v *VoteRepository) GetDB() *sql.DB {
 	return v.DB
 }
 
-func NewVoteRepository(ctx context.Context, db *sql.DB) *VoteRepository {
+func New(ctx context.Context, db *sql.DB) *VoteRepository {
 	return &VoteRepository{db}
 }
 
