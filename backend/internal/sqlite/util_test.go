@@ -196,7 +196,7 @@ var (
 		ID:              "9a676c5d-c9ec-4266-a426-24e5d4983caf",
 		Location:        "Impasse Inconnue",
 		PlaceCount:      22,
-		FreePlace:       8,
+		FreePlace:       0,
 		BeginAt:         beginAt2,
 		SessionDuration: time.Minute * 30,
 		Day:             14,
