@@ -1,14 +1,44 @@
 package sqlite_test
 
 import (
-	// "context"
-	"fmt"
+	"context"
+	// "fmt"
 	"testing"
 	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
+
+	test "github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
+
+func TestGetEventByID(t *testing.T) {
+	t.Setenv("TEST_MIGRATION_PATH", "./migrations/tests")
+	tests := []struct {
+		id            string
+		expectedEvent *event.Event
+		wantErr       bool
+		version       int64
+		name          string
+	}{
+		{id: test.GenerateRandomString(12), expectedEvent: nil, wantErr: true, version: 20240820013106, name: "no event in database"},
+		{id: "ea1d74e2-1612-47ec-aee9-c6a46b65640f", expectedEvent: baseEvent, wantErr: false, version: 20240820023513, name: "nominal case"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+			repo, err := setupRepo(ctx, tt.version, sqlite.NewEventRepository)
+			if err != nil {
+				t.Errorf("setup event domain stub repository: %s", err)
+			}
+			event, err := repo.GetEventByID(ctx, tt.id)
+			assert.Equal(t, err != nil, tt.wantErr)
+			assert.ReflectEqual(t, event, tt.expectedEvent)
+		})
+	}
+}
 
 func TestConvIntToStr(t *testing.T) {
 	tests := []struct {
@@ -53,8 +83,6 @@ func TestFormatTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			res, err := sqlite.ExportedFormatTime(tt.value)
-			fmt.Printf("the resulting string is : %q\n", res)
-			fmt.Println("the err is:", err)
 			assert.Equal(t, res, tt.expectedString)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
@@ -87,8 +115,6 @@ func TestParseBeginAt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			res, err := sqlite.ExportedParseBeginAt(tt.hour, tt.day, tt.month, tt.year)
-			fmt.Printf("the resulting string is : %q\n", res)
-			fmt.Println("the err is:", err)
 			assert.Equal(t, res.String(), tt.expectedTime)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})

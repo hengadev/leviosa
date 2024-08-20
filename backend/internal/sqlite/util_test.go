@@ -1,7 +1,5 @@
 package sqlite_test
 
-// what I need to test in the sqlite_test package
-
 import (
 	"context"
 	"database/sql"
@@ -10,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
@@ -29,95 +28,6 @@ func setupRepo[T sqlite.Repository](ctx context.Context, version int64, construc
 		return repo, fmt.Errorf("migration to the database: %s", err)
 	}
 	return repo, nil
-}
-
-// users for tests
-var (
-	// ce sont des triplets
-	johndoe = &user.User{
-		ID:         1,
-		Email:      "john.doe@gmail.com",
-		Password:   "$a9rfNhA$N$A78#m",
-		CreatedAt:  time.Now().Add(-time.Hour * 4),
-		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
-		BirthDate:  "1998-07-12",
-		LastName:   "DOE",
-		FirstName:  "John",
-		Gender:     "M",
-		Telephone:  "0123456789",
-		Address:    "Impasse Inconnue",
-		City:       "Paris",
-		PostalCard: 12345,
-	}
-	janedoe = &user.User{
-		ID:         2,
-		Email:      "jane.doe@gmail.com",
-		Password:   "w4w3f09QF&h)#fwe",
-		CreatedAt:  time.Now().Add(-time.Hour * 4),
-		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
-		BirthDate:  "1998-07-12",
-		LastName:   "DOE",
-		FirstName:  "Jane",
-		Gender:     "F",
-		Telephone:  "0123456780",
-		Address:    "Impasse Inconnue",
-		City:       "Paris",
-		PostalCard: 12345,
-	}
-	jeandoe = &user.User{
-		ID:         1,
-		Email:      "jean.doe@gmail.com",
-		Password:   "wf0fT^9f2$$_aewa",
-		CreatedAt:  time.Now().Add(-time.Hour * 4),
-		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
-		BirthDate:  "1998-07-12",
-		LastName:   "DOE",
-		FirstName:  "Jean",
-		Gender:     "M",
-		Telephone:  "0123456781",
-		Address:    "Impasse Inconnue",
-		City:       "Paris",
-		PostalCard: 12345,
-	}
-)
-
-func getOnlyUser(ctx context.Context, db *sql.DB) (*user.User, error) {
-	var foundUser user.User
-	if err := db.QueryRowContext(ctx, "SELECT * FROM users WHERE id = 1").Scan(
-		&foundUser.ID,
-		&foundUser.Email,
-		&foundUser.Password,
-		&foundUser.CreatedAt,
-		&foundUser.LoggedInAt,
-		&foundUser.Role,
-		&foundUser.BirthDate,
-		&foundUser.LastName,
-		&foundUser.FirstName,
-		&foundUser.Gender,
-		&foundUser.Telephone,
-		&foundUser.Address,
-		&foundUser.City,
-		&foundUser.PostalCard,
-	); err != nil {
-		return nil, fmt.Errorf("user not found after addition to database: %s", err)
-	}
-	return &foundUser, nil
-}
-
-func compareUser(t testing.TB, fields []string, userDB *user.User, realUser *user.User) {
-	t.Helper()
-	userDBValue := reflect.ValueOf(*userDB)
-	userRealValue := reflect.ValueOf(*realUser)
-	for _, field := range fields {
-		dbValue := userDBValue.FieldByName(field).Interface()
-		realValue := userRealValue.FieldByName(field).Interface()
-		if dbValue != realValue {
-			t.Errorf("got %v, want %v", dbValue, realValue)
-		}
-	}
 }
 
 func createModifiedObject[T any](baseObject T, changeMap map[string]any) (*T, error) {
@@ -185,3 +95,99 @@ func createWithZeroFieldModifiedObject[T any](baseObject T, changeMap map[string
 	}
 	return newObjectPtr, nil
 }
+
+// users for tests
+var (
+	// ce sont des triplets
+	johndoe = &user.User{
+		ID:         1,
+		Email:      "john.doe@gmail.com",
+		Password:   "$a9rfNhA$N$A78#m",
+		CreatedAt:  time.Now().Add(-time.Hour * 4),
+		LoggedInAt: time.Now().Add(-time.Hour * 4),
+		Role:       user.BASIC.String(),
+		BirthDate:  "1998-07-12",
+		LastName:   "DOE",
+		FirstName:  "John",
+		Gender:     "M",
+		Telephone:  "0123456789",
+		Address:    "Impasse Inconnue",
+		City:       "Paris",
+		PostalCard: 12345,
+	}
+	janedoe = &user.User{
+		ID:         2,
+		Email:      "jane.doe@gmail.com",
+		Password:   "w4w3f09QF&h)#fwe",
+		CreatedAt:  time.Now().Add(-time.Hour * 4),
+		LoggedInAt: time.Now().Add(-time.Hour * 4),
+		Role:       user.BASIC.String(),
+		BirthDate:  "1998-07-12",
+		LastName:   "DOE",
+		FirstName:  "Jane",
+		Gender:     "F",
+		Telephone:  "0123456780",
+		Address:    "Impasse Inconnue",
+		City:       "Paris",
+		PostalCard: 12345,
+	}
+	jeandoe = &user.User{
+		ID:         1,
+		Email:      "jean.doe@gmail.com",
+		Password:   "wf0fT^9f2$$_aewa",
+		CreatedAt:  time.Now().Add(-time.Hour * 4),
+		LoggedInAt: time.Now().Add(-time.Hour * 4),
+		Role:       user.BASIC.String(),
+		BirthDate:  "1998-07-12",
+		LastName:   "DOE",
+		FirstName:  "Jean",
+		Gender:     "M",
+		Telephone:  "0123456781",
+		Address:    "Impasse Inconnue",
+		City:       "Paris",
+		PostalCard: 12345,
+	}
+)
+
+func compareUser(t testing.TB, fields []string, userDB *user.User, realUser *user.User) {
+	t.Helper()
+	userDBValue := reflect.ValueOf(*userDB)
+	userRealValue := reflect.ValueOf(*realUser)
+	for _, field := range fields {
+		dbValue := userDBValue.FieldByName(field).Interface()
+		realValue := userRealValue.FieldByName(field).Interface()
+		if dbValue != realValue {
+			t.Errorf("got %v, want %v", dbValue, realValue)
+		}
+	}
+}
+
+// events for tests
+var (
+	beginAt, _ = sqlite.ExportedParseBeginAt("08:00:00", 12, 7, 1998)
+
+	baseEvent = &event.Event{
+		ID:              "ea1d74e2-1612-47ec-aee9-c6a46b65640f",
+		Location:        "Impasse Inconnue",
+		PlaceCount:      16,
+		FreePlace:       14,
+		BeginAt:         beginAt,
+		SessionDuration: time.Minute * 30,
+		Day:             12,
+		Month:           7,
+		Year:            1998,
+	}
+
+	baseEventWithPriceID = &event.Event{
+		ID:              "ea1d74e2-1612-47ec-aee9-c6a46b65640f",
+		Location:        "Impasse Inconnue",
+		PlaceCount:      16,
+		FreePlace:       14,
+		BeginAt:         beginAt,
+		SessionDuration: time.Minute * 30,
+		PriceID:         "4fe0vuw3ef0223",
+		Day:             12,
+		Month:           7,
+		Year:            1998,
+	}
+)

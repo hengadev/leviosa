@@ -12,10 +12,6 @@ import (
 )
 
 func TestAddAccount(t *testing.T) {
-	// TODO: other cases ?
-	// - email unique
-	// - nom prenom unique
-	// - telephone unique
 	t.Setenv("TEST_MIGRATION_PATH", "./migrations/tests")
 	tests := []struct {
 		usr            *user.User
