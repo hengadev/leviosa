@@ -14,9 +14,9 @@ func (u *repository) ModifyAccount(
 	user *user.User,
 	whereMap map[string]any,
 	prohibitedFields ...string,
-) (int, error) {
-	fail := func(err error) (int, error) {
-		return 0, rp.NewRessourceUpdateErr(err)
+) error {
+	fail := func(err error) error {
+		return rp.NewRessourceUpdateErr(err)
 	}
 	if user == nil {
 		return fail(fmt.Errorf("nil user"))
@@ -33,5 +33,8 @@ func (u *repository) ModifyAccount(
 	if err != nil {
 		return fail(err)
 	}
-	return int(rowsAffected), nil
+	if rowsAffected == 0 {
+		return fmt.Errorf("user to modified not found")
+	}
+	return nil
 }

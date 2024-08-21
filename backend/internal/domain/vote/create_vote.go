@@ -21,18 +21,15 @@ func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
 
 	days := formatVote(votes)
 	// check if has vote
-	hasVote, err := s.Repo.HasVote(ctx, month, year, userID)
+	err := s.Repo.HasVote(ctx, month, year, userID)
 	if err != nil {
-		return fmt.Errorf("check if user votes %w", err)
-	}
-	// remove previous vote
-	if hasVote {
+		// remove previous vote
 		if err := s.Repo.RemoveVote(ctx, userID, month, year); err != nil {
 			return fmt.Errorf("remove existing vote: %w", err)
 		}
 	}
 	// create new vote with the new information
-	if lastInsertID, err := s.Repo.CreateVote(ctx, userID, days, month, year); err != nil || lastInsertID == 0 {
+	if err := s.Repo.CreateVote(ctx, userID, days, month, year); err != nil {
 		return fmt.Errorf("add vote: %w", err)
 	}
 	return nil

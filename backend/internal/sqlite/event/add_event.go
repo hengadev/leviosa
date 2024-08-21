@@ -8,9 +8,9 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) (string, error) {
-	fail := func(err error) (string, error) {
-		return "", rp.NewRessourceCreationErr(err)
+func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) error {
+	fail := func(err error) error {
+		return rp.NewRessourceCreationErr(err)
 	}
 	beginat, err := formatBeginAt(event.BeginAt)
 	if err != nil {
@@ -40,5 +40,5 @@ func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) (str
 	if lastInsertID == 0 {
 		return fail(errors.New("no insertion in database"))
 	}
-	return event.ID, nil
+	return nil
 }

@@ -16,8 +16,8 @@ func TestRemoveSession(t *testing.T) {
 		name      string
 	}{
 		{sessionID: baseSession.ID, initMap: nil, wantErr: true, name: "empty repository"},
-		{sessionID: test.GenerateRandomString(12), initMap: initSessionValues, wantErr: true, name: "id not in database"},
-		{sessionID: baseSession.ID, initMap: initSessionValues, wantErr: false, name: "nominal case"},
+		{sessionID: test.GenerateRandomString(12), initMap: initMap, wantErr: true, name: "id not in database"},
+		{sessionID: baseSession.ID, initMap: initMap, wantErr: false, name: "nominal case"},
 	}
 
 	for _, tt := range tests {

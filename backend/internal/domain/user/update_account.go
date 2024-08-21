@@ -11,14 +11,14 @@ func (s *Service) UpdateAccount(ctx context.Context, userCandidate *User, userID
 	if pbms := userCandidate.Valid(ctx); len(pbms) > 0 {
 		return serverutil.FormatError(pbms, "user")
 	}
-	rowsAffected, err := s.repo.ModifyAccount(
+	err := s.repo.ModifyAccount(
 		ctx,
 		userCandidate,
 		map[string]any{"id": userID},
 		"Email",
 		"Password",
 	)
-	if err != nil || rowsAffected == 0 {
+	if err != nil {
 		return fmt.Errorf("add account: %w", err)
 	}
 	return nil

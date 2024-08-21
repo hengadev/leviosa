@@ -34,9 +34,8 @@ func TestCreateVote(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
 			defer teardown()
-			days, err := repo.CreateVote(ctx, tt.userID, tt.days, tt.month, tt.year)
+			err := repo.CreateVote(ctx, tt.userID, tt.days, tt.month, tt.year)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.Equal(t, days, tt.expectedLastInsertID)
 		})
 	}
 }

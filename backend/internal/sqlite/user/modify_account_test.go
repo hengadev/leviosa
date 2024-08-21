@@ -22,15 +22,14 @@ func TestModifyAccount(t *testing.T) {
 	}
 
 	tests := []struct {
-		userModified         *user.User
-		expectedRowsAffected int
-		wantErr              bool
-		version              int64
-		name                 string
+		userModified *user.User
+		wantErr      bool
+		version      int64
+		name         string
 	}{
-		{userModified: nil, expectedRowsAffected: 0, wantErr: true, version: 20240811085134, name: "nil user"},
-		{userModified: johndoe, expectedRowsAffected: 0, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
-		{userModified: modifiedUser, expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
+		{userModified: nil, wantErr: true, version: 20240811085134, name: "nil user"},
+		{userModified: johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
+		{userModified: modifiedUser, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
 	}
 
 	for _, tt := range tests {
@@ -39,14 +38,13 @@ func TestModifyAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			rowsAffected, err := repo.ModifyAccount(
+			err := repo.ModifyAccount(
 				ctx, tt.userModified,
 				whereMap,
 				"Email",
 				"Password",
 			)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.Equal(t, rowsAffected, tt.expectedRowsAffected)
 		})
 	}
 }

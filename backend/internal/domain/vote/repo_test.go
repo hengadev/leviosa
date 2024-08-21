@@ -24,13 +24,13 @@ func NewStubVoteRepository(context.Context) *StubVoteRepository {
 	return &StubVoteRepository{votes: votes}
 }
 
-func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userID int) (bool, error) {
+func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userID int) error {
 	for key := range s.votes {
 		if key.userID == userID && key.month == month && key.year == year {
-			return true, nil
+			return fmt.Errorf("vote not found")
 		}
 	}
-	return false, nil
+	return nil
 }
 
 func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error) {

@@ -41,8 +41,8 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	)
 	user.Create()
 	user.Login()
-	userID, err := s.repo.AddAccount(ctx, user)
-	if err != nil && userID > 1 {
+	err := s.repo.AddAccount(ctx, user)
+	if err != nil {
 		return nil, fmt.Errorf("add account: %w", err)
 	}
 	return user, nil

@@ -40,14 +40,14 @@ func (r *repository) AddRegistration(ctx context.Context, reg *register.Registra
 	return nil
 }
 
-func (r *repository) HasRegistration(ctx context.Context, day, year int, month, userID string) (bool, error) {
-	var hasSession int
+func (r *repository) HasRegistration(ctx context.Context, day, year int, month, userID string) error {
+	var hasSession bool
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?", tablename)
 	if err := r.DB.QueryRowContext(ctx, query, userID).Scan(&hasSession); err != nil {
-		return false, rp.NewNotFoundError(err)
+		return rp.NewNotFoundError(err)
 	}
-	return hasSession > 0, nil
+	return nil
 }
 
 func (r *repository) RemoveRegistration(ctx context.Context, day, year int, month string) error {

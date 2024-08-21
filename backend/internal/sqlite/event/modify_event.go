@@ -14,9 +14,9 @@ func (e *EventRepository) ModifyEvent(
 	event *event.Event,
 	whereMap map[string]any,
 	prohibitedFields ...string,
-) (int, error) {
-	fail := func(err error) (int, error) {
-		return 0, rp.NewRessourceUpdateErr(err)
+) error {
+	fail := func(err error) error {
+		return rp.NewRessourceUpdateErr(err)
 	}
 	if event == nil {
 		return fail(fmt.Errorf("nil user"))
@@ -33,5 +33,8 @@ func (e *EventRepository) ModifyEvent(
 	if err != nil {
 		return fail(err)
 	}
-	return int(rowsAffected), nil
+	if rowsAffected == 0 {
+		return fmt.Errorf("event not found")
+	}
+	return nil
 }

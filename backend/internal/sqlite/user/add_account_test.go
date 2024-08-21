@@ -13,14 +13,13 @@ import (
 func TestAddAccount(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		usr            *user.User
-		wantErr        bool
-		expectedUserID int
-		version        int64
-		name           string
+		usr     *user.User
+		wantErr bool
+		version int64
+		name    string
 	}{
-		{usr: johndoe, expectedUserID: 0, wantErr: true, version: 20240811140841, name: "user already exists"},
-		{usr: johndoe, expectedUserID: 1, wantErr: false, version: 20240811085134, name: "add the user"},
+		{usr: johndoe, wantErr: true, version: 20240811140841, name: "user already exists"},
+		{usr: johndoe, wantErr: false, version: 20240811085134, name: "add the user"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -28,8 +27,7 @@ func TestAddAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			userID, err := repo.AddAccount(ctx, tt.usr)
-			assert.Equal(t, userID, tt.expectedUserID)
+			err := repo.AddAccount(ctx, tt.usr)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}

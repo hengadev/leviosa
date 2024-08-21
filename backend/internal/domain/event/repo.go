@@ -11,10 +11,10 @@ type Reader interface {
 }
 
 type Writer interface {
-	AddEvent(ctx context.Context, event *Event) (string, error)
-	RemoveEvent(ctx context.Context, eventID string) (string, error)
-	ModifyEvent(ctx context.Context, event *Event, whereMap map[string]any, prohibitedFields ...string) (int, error)
-	DecreaseFreeplace(ctx context.Context, eventID string) (int, error)
+	AddEvent(ctx context.Context, event *Event) error
+	RemoveEvent(ctx context.Context, eventID string) error
+	ModifyEvent(ctx context.Context, event *Event, whereMap map[string]any, prohibitedFields ...string) error
+	DecreaseFreeplace(ctx context.Context, eventID string) error
 }
 type ReadWriter interface {
 	Reader

@@ -3,7 +3,7 @@ package register
 import "context"
 
 type Reader interface {
-	HasRegistration(ctx context.Context, day, year int, month, userID string) (bool, error)
+	HasRegistration(ctx context.Context, day, year int, month, userID string) error
 }
 
 type Writer interface {

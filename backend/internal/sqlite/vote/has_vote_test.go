@@ -2,6 +2,7 @@ package voteRepository_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
@@ -30,9 +31,9 @@ func TestHasVote(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
 			defer teardown()
-			days, err := repo.HasVote(ctx, tt.month, tt.year, tt.userID)
+			err := repo.HasVote(ctx, tt.month, tt.year, tt.userID)
+			fmt.Println("ther error is:", err)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.Equal(t, days, tt.expectedVote)
 		})
 	}
 }
