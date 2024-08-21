@@ -15,6 +15,12 @@ type Vote struct {
 	Year   int `json:"year"`
 }
 
+type AvailableVote struct {
+	Day   int `json:"day,omitempty"`
+	Month int `json:"month"`
+	Year  int `json:"year"`
+}
+
 func NewVote(day, month, year int) *Vote {
 	return &Vote{
 		Day:   day,
