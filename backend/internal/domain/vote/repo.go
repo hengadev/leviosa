@@ -9,7 +9,7 @@ type Reader interface {
 	HasVote(ctx context.Context, month, year, userID int) (bool, error)
 }
 type Writer interface {
-	CreateVote(ctx context.Context, userID int, days string, month, year int) error
+	CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error)
 	RemoveVote(ctx context.Context, userID int, month, year int) error
 }
 

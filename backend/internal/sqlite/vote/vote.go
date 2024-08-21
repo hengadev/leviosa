@@ -53,17 +53,6 @@ func (v *VoteRepository) RemoveVote(ctx context.Context, userID, month, year int
 	return nil
 }
 
-// Function to create vote for a user in a specific month and year
-func (v *VoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) error {
-	tablename := fmt.Sprintf("votes_%d_%d", month, year)
-	query := fmt.Sprintf("INSERT INTO %s (userid, days) VALUES (?, ?);", tablename)
-	_, err := v.DB.ExecContext(ctx, query, userID, days)
-	if err != nil {
-		return rp.NewRessourceCreationErr(err)
-	}
-	return nil
-}
-
 func (s *VoteRepository) CheckVote(ctx context.Context, userId, eventId *string) (bool, error) {
 	var value int
 	err := s.DB.QueryRowContext(ctx, "SELECT 1 FROM votes WHERE userid=? AND eventid=?;", userId, eventId).Scan(&value)

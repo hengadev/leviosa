@@ -32,7 +32,7 @@ func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
 		}
 	}
 	// create new vote with the new information
-	if err := s.Repo.CreateVote(ctx, userID, days, month, year); err != nil {
+	if lastInsertID, err := s.Repo.CreateVote(ctx, userID, days, month, year); err != nil || lastInsertID == 0 {
 		return fmt.Errorf("add vote: %w", err)
 	}
 	return nil
