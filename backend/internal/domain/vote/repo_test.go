@@ -60,6 +60,10 @@ func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string
 	return "", nil
 }
 
+func (s *StubVoteRepository) FindVotes(ctx context.Context, month, year, userID int) (string, error) {
+	return "", nil
+}
+
 func (s *StubVoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.Vote, error) {
 	return nil, nil
 }

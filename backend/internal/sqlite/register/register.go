@@ -63,7 +63,7 @@ func (r *RegisterRepository) RemoveRegistration(ctx context.Context, day, year i
 // old api
 
 // Function that return if there is a registration for a certain user for a certain event at a certain time.
-func (r *VoteRepository) CheckRegistration(registration *register.Registration) (bool, error) {
+func (r *RegisterRepository) CheckRegistration(registration *register.Registration) (bool, error) {
 	var value int
 	query := "SELECT 1 FROM ? WHERE beginAt=?;"
 	err := r.DB.QueryRow(query, registration.EventID, registration.BeginAt.Format(time.RFC3339)).Scan(&value)

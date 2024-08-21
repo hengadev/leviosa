@@ -17,8 +17,8 @@ import (
 	// databases
 	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/internal/s3"
-	// databases
-	"github.com/GaryHY/event-reservation-app/internal/sqlite"
+
+	// repositories
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/register"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"

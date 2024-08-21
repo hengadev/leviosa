@@ -23,16 +23,6 @@ func New(ctx context.Context, db *sql.DB) *VoteRepository {
 	return &VoteRepository{db}
 }
 
-func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
-	var votes string
-	tableName := fmt.Sprintf("votes_%s_%d", month, year)
-	query := fmt.Sprintf("SELECT * FROM %s WHERE userid=?;", tableName)
-	if err := v.DB.QueryRowContext(ctx, query).Scan(&votes); err != nil {
-		return "", rp.NewNotFoundError(err)
-	}
-	return votes, nil
-}
-
 // TODO: I need the next votes, the past votes, the closest vote
 // get inspiration from some similar function in sqlite/event.go
 func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.Vote, error) {
