@@ -23,15 +23,14 @@ func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID s
 	if !ok {
 		return nil, fmt.Errorf("no session ID in database")
 	}
-	session := &session.Session{
+	return &session.Session{
 		ID:         sessionID,
 		UserID:     values.UserID,
 		Role:       values.Role,
 		LoggedInAt: values.LoggedInAt,
 		CreatedAt:  values.CreatedAt,
 		ExpiresAt:  values.ExpiresAt,
-	}
-	return session, nil
+	}, nil
 }
 
 func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *session.Session) error {

@@ -17,6 +17,6 @@ var baseSession = &session.Session{
 	ExpiresAt:  time.Now().Add(session.SessionDuration),
 }
 
-var initSessionValues = map[string]*session.Values{
+var initMap = map[string]*session.Values{
 	baseSession.ID: baseSession.Values(),
 }
