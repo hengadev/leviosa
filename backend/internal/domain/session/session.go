@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -27,6 +28,19 @@ type Values struct {
 	LoggedInAt time.Time `json:"loggedinat"`
 	CreatedAt  time.Time `json:"createdat"`
 	ExpiresAt  time.Time `json:"expiresat"`
+}
+
+func (s Session) IsZero() bool {
+	v := reflect.ValueOf(s)
+	t := reflect.TypeOf(s)
+	vf := reflect.VisibleFields(t)
+	for _, f := range vf {
+		value := v.FieldByName(f.Name)
+		if value.IsZero() && value.CanInterface() {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Session) Values() *Values {
