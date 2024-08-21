@@ -48,20 +48,6 @@ func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*
 	return votes, nil
 }
 
-func (v *VoteRepository) HasVote(ctx context.Context, month, year int, userID int) (bool, error) {
-	var res bool
-	tablename := fmt.Sprintf("votes_%d_%d", month, year)
-	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?;", tablename)
-	err := v.DB.QueryRowContext(ctx, query, userID).Scan(&res)
-	if err == sql.ErrNoRows {
-		return false, rp.NewNotFoundError(err)
-	}
-	if err != nil {
-		return false, rp.NewBadQueryErr(err)
-	}
-	return true, nil
-}
-
 // TODO: implement that function
 func (v *VoteRepository) RemoveVote(ctx context.Context, userID, month, year int) error {
 	return nil
