@@ -9,7 +9,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	CreateSession(ctx context.Context, session *Session) (string, error)
+	CreateSession(ctx context.Context, session *Session) error
 	RemoveSession(ctx context.Context, sessionID string) error
 }
 

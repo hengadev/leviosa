@@ -33,9 +33,9 @@ func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID s
 	return session, nil
 }
 
-func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *session.Session) (string, error) {
+func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *session.Session) error {
 	s.sessions[sess.ID] = sess.Values()
-	return sess.ID, nil
+	return nil
 }
 
 func (s *StubSessionRepository) RemoveSession(ctx context.Context, sessionID string) error {
