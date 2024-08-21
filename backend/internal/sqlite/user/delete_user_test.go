@@ -12,13 +12,15 @@ import (
 func TestDeleteUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
+		userID               int
 		expectedRowsAffected int
 		wantErr              bool
 		version              int64
 		name                 string
 	}{
-		{expectedRowsAffected: 0, wantErr: false, version: 20240811085134, name: "user not in the database"},
-		{expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case, user in database"},
+		{userID: 1, expectedRowsAffected: 0, wantErr: false, version: 20240811085134, name: "user not in the database"},
+		{userID: 95832, expectedRowsAffected: 0, wantErr: false, version: 20240811140841, name: "wrong query"},
+		{userID: 1, expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -29,7 +31,7 @@ func TestDeleteUser(t *testing.T) {
 			if err != nil {
 				t.Errorf("setup repo: %s", err)
 			}
-			rowsAffected, err := repo.DeleteUser(ctx, 1)
+			rowsAffected, err := repo.DeleteUser(ctx, tt.userID)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.Equal(t, rowsAffected, tt.expectedRowsAffected)
 		})
