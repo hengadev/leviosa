@@ -15,7 +15,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
 
 	// databases
-	"github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/redis/session"
 	"github.com/GaryHY/event-reservation-app/internal/s3"
 
 	// repositories
@@ -40,7 +40,7 @@ func makeServices(
 	userRepo := userRepository.New(ctx, sqlitedb)
 	userSvc := user.NewService(userRepo)
 	// session
-	sessionRepo := redis.NewSessionRepository(ctx, redisdb)
+	sessionRepo := sessionRepository.New(ctx, redisdb)
 	sessionSvc := session.NewService(sessionRepo)
 	// event
 	eventRepo := eventRepository.New(ctx, sqlitedb)

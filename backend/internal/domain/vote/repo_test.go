@@ -46,14 +46,14 @@ func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days st
 	return 0, nil
 }
 
-func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, year int) error {
+func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, year int) (int, error) {
 	key := MockDBKey{
 		userID: userID,
 		month:  month,
 		year:   year,
 	}
 	delete(s.votes, key)
-	return nil
+	return 0, nil
 }
 
 func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
@@ -64,6 +64,6 @@ func (s *StubVoteRepository) FindVotes(ctx context.Context, month, year, userID 
 	return "", nil
 }
 
-func (s *StubVoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.Vote, error) {
+func (s *StubVoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {
 	return nil, nil
 }
