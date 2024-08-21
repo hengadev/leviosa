@@ -12,17 +12,16 @@ import (
 func TestRemoveVote(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		userID               int
-		month                int
-		year                 int
-		expectedRowsAffected int
-		wantErr              bool
-		version              int64
-		name                 string
+		userID  int
+		month   int
+		year    int
+		wantErr bool
+		version int64
+		name    string
 	}{
-		{userID: 1, month: 4, year: 2025, expectedRowsAffected: 0, wantErr: false, version: 20240820223653, name: "no vote in database to remove"},
-		{userID: 447349, month: 4, year: 2025, expectedRowsAffected: 0, wantErr: false, version: 20240820225713, name: "wrong query"},
-		{userID: 1, month: 4, year: 2025, expectedRowsAffected: 1, wantErr: false, version: 20240820225713, name: "nominal case"},
+		{userID: 1, month: 4, year: 2025, wantErr: true, version: 20240820223653, name: "no vote in database to remove"},
+		{userID: 447349, month: 4, year: 2025, wantErr: true, version: 20240820225713, name: "wrong query"},
+		{userID: 1, month: 4, year: 2025, wantErr: false, version: 20240820225713, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -33,9 +32,8 @@ func TestRemoveVote(t *testing.T) {
 			if err != nil {
 				t.Errorf("setup repo: %s", err)
 			}
-			rowsAffected, err := repo.RemoveVote(ctx, tt.userID, tt.month, tt.year)
+			err = repo.RemoveVote(ctx, tt.userID, tt.month, tt.year)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.Equal(t, rowsAffected, tt.expectedRowsAffected)
 		})
 	}
 }

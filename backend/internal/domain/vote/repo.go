@@ -10,7 +10,7 @@ type Reader interface {
 }
 type Writer interface {
 	CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error)
-	RemoveVote(ctx context.Context, userID int, month, year int) (int, error)
+	RemoveVote(ctx context.Context, userID int, month, year int) error
 }
 
 type ReadWriter interface {
