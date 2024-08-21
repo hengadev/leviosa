@@ -2,6 +2,7 @@ package session_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -39,6 +40,9 @@ func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *session
 }
 
 func (s *StubSessionRepository) RemoveSession(ctx context.Context, sessionID string) error {
+	if _, ok := s.sessions[sessionID]; !ok {
+		return errors.New("id not in database")
+	}
 	delete(s.sessions, sessionID)
 	return nil
 }

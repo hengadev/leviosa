@@ -8,7 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/tests"
 )
 
-var sessionTest = &session.Session{
+var baseSession = &session.Session{
 	ID:         test.GenerateRandomString(16),
 	UserID:     1,
 	Role:       user.BASIC.String(),
@@ -17,4 +17,6 @@ var sessionTest = &session.Session{
 	ExpiresAt:  time.Now().Add(session.SessionDuration),
 }
 
-var initSessionValues = make(map[string]*session.Values)
+var initSessionValues = map[string]*session.Values{
+	baseSession.ID: baseSession.Values(),
+}

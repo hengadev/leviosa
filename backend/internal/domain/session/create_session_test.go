@@ -20,8 +20,8 @@ func TestCreateSession(t *testing.T) {
 		wantSessionID bool
 		name          string
 	}{
-		{sess: sessionTest, sessions: initSessionValues, wantErr: false, wantSessionID: true, name: "no session already"},
-		{sess: sessionTest, sessions: KVMap{sessionTest.ID: sessionTest.Values()}, wantErr: false, wantSessionID: true, name: "session already exists"},
+		{sess: baseSession, sessions: KVMap{}, wantErr: false, wantSessionID: true, name: "no session already"},
+		{sess: baseSession, sessions: KVMap{baseSession.ID: baseSession.Values()}, wantErr: false, wantSessionID: true, name: "session already exists"},
 	}
 
 	for _, tt := range tests {
