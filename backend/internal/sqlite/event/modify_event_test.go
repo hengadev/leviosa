@@ -6,8 +6,8 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -44,11 +44,8 @@ func TestModifyEvent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := testdb.SetupRepo(ctx, tt.version, eventRepository.New)
-			defer testdb.Teardown(repo.DB)
-			if err != nil {
-				t.Errorf("setup event domain stub repository: %s", err)
-			}
+			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
+			defer teardown()
 			rowsAffected, err := repo.ModifyEvent(
 				ctx, tt.eventModified,
 				whereMap,

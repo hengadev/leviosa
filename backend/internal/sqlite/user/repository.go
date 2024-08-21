@@ -7,14 +7,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type UserRepository struct {
+type repository struct {
 	DB *sql.DB
 }
 
-func (u *UserRepository) GetDB() *sql.DB {
+func (u *repository) GetDB() *sql.DB {
 	return u.DB
 }
 
-func New(ctx context.Context, db *sql.DB) *UserRepository {
-	return &UserRepository{db}
+func New(ctx context.Context, db *sql.DB) *repository {
+	return &repository{db}
 }

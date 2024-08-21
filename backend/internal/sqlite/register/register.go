@@ -6,26 +6,25 @@ import (
 	"fmt"
 	"time"
 
-	// "github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type RegisterRepository struct {
+type repository struct {
 	DB *sql.DB
 }
 
-func (r *RegisterRepository) GetDB() *sql.DB {
+func (r *repository) GetDB() *sql.DB {
 	return r.DB
 }
 
-func New(ctx context.Context, db *sql.DB) *RegisterRepository {
-	return &RegisterRepository{db}
+func New(ctx context.Context, db *sql.DB) *repository {
+	return &repository{db}
 }
 
-func (r *RegisterRepository) AddRegistration(ctx context.Context, reg *register.Registration, day, year int, month string) error {
+func (r *repository) AddRegistration(ctx context.Context, reg *register.Registration, day, year int, month string) error {
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("INSERT INTO %s (userid, eventid, beginat) values (?,?,?);", tablename)
 	_, err := r.DB.ExecContext(
@@ -41,7 +40,7 @@ func (r *RegisterRepository) AddRegistration(ctx context.Context, reg *register.
 	return nil
 }
 
-func (r *RegisterRepository) HasRegistration(ctx context.Context, day, year int, month, userID string) (bool, error) {
+func (r *repository) HasRegistration(ctx context.Context, day, year int, month, userID string) (bool, error) {
 	var hasSession int
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("SELECT 1 FROM %s WHERE userid=?", tablename)
@@ -51,7 +50,7 @@ func (r *RegisterRepository) HasRegistration(ctx context.Context, day, year int,
 	return hasSession > 0, nil
 }
 
-func (r *RegisterRepository) RemoveRegistration(ctx context.Context, day, year int, month string) error {
+func (r *repository) RemoveRegistration(ctx context.Context, day, year int, month string) error {
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("DELETE FROM %s WHERE userid=?", tablename)
 	if _, err := r.DB.ExecContext(ctx, query); err != nil {
@@ -63,7 +62,7 @@ func (r *RegisterRepository) RemoveRegistration(ctx context.Context, day, year i
 // old api
 
 // Function that return if there is a registration for a certain user for a certain event at a certain time.
-func (r *RegisterRepository) CheckRegistration(registration *register.Registration) (bool, error) {
+func (r *repository) CheckRegistration(registration *register.Registration) (bool, error) {
 	var value int
 	query := "SELECT 1 FROM ? WHERE beginAt=?;"
 	err := r.DB.QueryRow(query, registration.EventID, registration.BeginAt.Format(time.RFC3339)).Scan(&value)

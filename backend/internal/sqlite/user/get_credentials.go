@@ -7,7 +7,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *UserRepository) GetCredentials(ctx context.Context, usr *user.Credentials) (int, string, user.Role, error) {
+func (u *repository) GetCredentials(ctx context.Context, usr *user.Credentials) (int, string, user.Role, error) {
 	var userRetrieved user.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT id, password, role from users where email = ?;", usr.Email).Scan(
 		&userRetrieved.ID,

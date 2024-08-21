@@ -7,7 +7,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (v *VoteRepository) RemoveVote(ctx context.Context, userID, month, year int) error {
+func (v *repository) RemoveVote(ctx context.Context, userID, month, year int) error {
 	fail := func(err error) error {
 		return rp.NewRessourceDeleteErr(err)
 	}

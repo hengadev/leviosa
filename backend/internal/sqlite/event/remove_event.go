@@ -19,7 +19,6 @@ func (e *EventRepository) RemoveEvent(ctx context.Context, ID string) (string, e
 	if err != nil {
 		return fail(err)
 	}
-	fmt.Println("the rows aff is:", rowsAffected)
 	if rowsAffected == 0 {
 		return fail(fmt.Errorf("no row deleted"))
 	}

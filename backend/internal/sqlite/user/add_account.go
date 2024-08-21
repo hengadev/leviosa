@@ -8,7 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
-func (u *UserRepository) AddAccount(ctx context.Context, usr *user.User) (int, error) {
+func (u *repository) AddAccount(ctx context.Context, usr *user.User) (int, error) {
 	hashpassword, err := sqliteutil.HashPassword(usr.Password)
 	if err != nil {
 		return 0, err

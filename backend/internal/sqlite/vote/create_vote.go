@@ -7,7 +7,7 @@ import (
 )
 
 // Function to create vote for a user in a specific month and year
-func (v *VoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error) {
+func (v *repository) CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error) {
 	fail := func(err error) (int, error) {
 		return 0, rp.NewRessourceCreationErr(err)
 	}

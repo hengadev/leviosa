@@ -7,7 +7,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (v *VoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
+func (v *repository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
 	var votes string
 	tableName := fmt.Sprintf("votes_%s_%d", month, year)
 	query := fmt.Sprintf("SELECT * FROM %s WHERE userid=?;", tableName)

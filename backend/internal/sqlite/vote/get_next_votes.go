@@ -14,7 +14,7 @@ import (
 
 // days, month, year
 
-func (v *VoteRepository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {
+func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {
 	fail := func(err error) ([]*vote.AvailableVote, error) {
 		return nil, rp.NewNotFoundError(err)
 	}

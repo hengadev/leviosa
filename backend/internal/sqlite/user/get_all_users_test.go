@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	userRepository "github.com/GaryHY/event-reservation-app/internal/sqlite/user"
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -26,11 +26,8 @@ func TestGetAllUsers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := testdb.SetupRepo(ctx, tt.version, userRepository.New)
-			defer testdb.Teardown(repo.DB)
-			if err != nil {
-				t.Errorf("setup repo: %s", err)
-			}
+			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
+			defer teardown()
 			users, err := repo.GetAllUsers(ctx)
 			assert.Equal(t, err != nil, tt.wantErr)
 			fields := []string{}

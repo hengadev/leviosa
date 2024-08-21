@@ -8,7 +8,7 @@ import (
 )
 
 // reader
-func (u *UserRepository) FindAccountByID(ctx context.Context, id int) (*user.User, error) {
+func (u *repository) FindAccountByID(ctx context.Context, id int) (*user.User, error) {
 	var user user.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE id = ?;", id).Scan(
 		&user.ID,

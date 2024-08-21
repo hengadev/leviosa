@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	voteRepository "github.com/GaryHY/event-reservation-app/internal/sqlite/vote"
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -32,11 +32,8 @@ func TestCreateVote(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := testdb.SetupRepo(ctx, tt.version, voteRepository.New)
-			defer testdb.Teardown(repo.DB)
-			if err != nil {
-				t.Errorf("setup repo: %s", err)
-			}
+			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
+			defer teardown()
 			days, err := repo.CreateVote(ctx, tt.userID, tt.days, tt.month, tt.year)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.Equal(t, days, tt.expectedLastInsertID)

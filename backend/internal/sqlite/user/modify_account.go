@@ -9,7 +9,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
-func (u *UserRepository) ModifyAccount(
+func (u *repository) ModifyAccount(
 	ctx context.Context,
 	user *user.User,
 	whereMap map[string]any,
