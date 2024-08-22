@@ -7,6 +7,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	userRepository "github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -18,8 +19,8 @@ func TestAddAccount(t *testing.T) {
 		version int64
 		name    string
 	}{
-		{usr: johndoe, wantErr: true, version: 20240811140841, name: "user already exists"},
-		{usr: johndoe, wantErr: false, version: 20240811085134, name: "add the user"},
+		{usr: testutil.Johndoe, wantErr: true, version: 20240811140841, name: "user already exists"},
+		{usr: testutil.Johndoe, wantErr: false, version: 20240811085134, name: "add the user"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

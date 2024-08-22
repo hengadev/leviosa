@@ -7,12 +7,13 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestGetAllUsers(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-	usersList := []*userService.User{johndoe, janedoe, jeandoe}
+	usersList := []*userService.User{testutil.Johndoe, testutil.Janedoe, testutil.Jeandoe}
 	tests := []struct {
 		expectedUsers []*userService.User
 		wantErr       bool
@@ -32,7 +33,8 @@ func TestGetAllUsers(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 			fields := []string{}
 			for i := range len(users) {
-				compareUser(t, fields, users[i], tt.expectedUsers[i])
+				defer testutil.RecoverCompareUser()
+				testutil.CompareUser(t, fields, users[i], tt.expectedUsers[i])
 			}
 		})
 	}

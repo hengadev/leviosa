@@ -7,14 +7,15 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestGetCredentials(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	creds := &userService.Credentials{
-		Email:    johndoe.Email,
-		Password: johndoe.Password,
+		Email:    testutil.Johndoe.Email,
+		Password: testutil.Johndoe.Password,
 	}
 	tests := []struct {
 		expectedUserID   int
@@ -37,7 +38,7 @@ func TestGetCredentials(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.Equal(t, userID, tt.expectedUserID)
 			assert.Equal(t, role, tt.expectedRole)
-			// NOTE: I can do that because I did not hashed the password in migration (no need to test that dependency)
+			// NOTE: I can do that because I did not hashed the password in migrations (no need to test that dependency)
 			assert.Equal(t, password, tt.expectedPassword)
 		})
 	}

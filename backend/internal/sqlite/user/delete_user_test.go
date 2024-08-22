@@ -6,6 +6,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -18,9 +19,9 @@ func TestDeleteUser(t *testing.T) {
 		version              int64
 		name                 string
 	}{
-		{userID: 1, expectedRowsAffected: 0, wantErr: false, version: 20240811085134, name: "user not in the database"},
+		{userID: testutil.Johndoe.ID, expectedRowsAffected: 0, wantErr: false, version: 20240811085134, name: "user not in the database"},
 		{userID: 95832, expectedRowsAffected: 0, wantErr: false, version: 20240811140841, name: "wrong query"},
-		{userID: 1, expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case"},
+		{userID: testutil.Johndoe.ID, expectedRowsAffected: 1, wantErr: false, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

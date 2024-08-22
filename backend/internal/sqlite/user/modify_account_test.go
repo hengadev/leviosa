@@ -8,6 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -15,8 +16,8 @@ func TestModifyAccount(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 
 	changes := map[string]any{"FirstName": "Jane", "Gender": "F"}
-	whereMap := map[string]any{"id": johndoe.ID}
-	modifiedUser, err := app.CreateWithZeroFieldModifiedObject(*johndoe, changes)
+	whereMap := map[string]any{"id": testutil.Johndoe.ID}
+	modifiedUser, err := app.CreateWithZeroFieldModifiedObject(*testutil.Johndoe, changes)
 	if err != nil {
 		t.Error("Failed to create object with modified field")
 	}
@@ -28,7 +29,7 @@ func TestModifyAccount(t *testing.T) {
 		name         string
 	}{
 		{userModified: nil, wantErr: true, version: 20240811085134, name: "nil user"},
-		{userModified: johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
+		{userModified: testutil.Johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
 		{userModified: modifiedUser, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
 	}
 
