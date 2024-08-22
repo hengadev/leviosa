@@ -5,6 +5,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestString(t *testing.T) {
@@ -21,7 +22,7 @@ func TestString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.role.String()
-			test.Assert(t, got, tt.expected)
+			assert.Equal(t, got, tt.expected)
 		})
 	}
 }
@@ -41,7 +42,7 @@ func TestConvertToRole(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := user.ConvertToRole(tt.roleStr)
-			test.Assert(t, got, tt.expected)
+			assert.Equal(t, got, tt.expected)
 		})
 	}
 }
@@ -75,7 +76,7 @@ func TestIsSuperior(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := tt.comparing.IsSuperior(tt.compared)
-			test.Assert(t, got, tt.expected)
+			assert.Equal(t, got, tt.expected)
 		})
 	}
 }

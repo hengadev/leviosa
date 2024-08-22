@@ -22,6 +22,7 @@ func (h *Handler) GetUser() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
+		// userID := ctx.Value(mw.SessionIDKey).(int)
 		user, err := h.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get user", "error", err)

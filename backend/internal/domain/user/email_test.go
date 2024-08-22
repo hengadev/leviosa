@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestValidateEmail(t *testing.T) {
@@ -33,7 +33,7 @@ func TestValidateEmail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := ValidateEmail(tt.email)
-			test.Assert(t, got != nil, tt.wantErr)
+			assert.Equal(t, got != nil, tt.wantErr)
 		})
 	}
 }

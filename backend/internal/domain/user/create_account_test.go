@@ -7,6 +7,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -43,8 +44,8 @@ func TestCreateAccount(t *testing.T) {
 			repo := NewStubUserRepository()
 			service := user.NewService(repo)
 			gotUser, gotErr := service.CreateAccount(ctx, tt.usr)
-			test.Assert(t, gotUser != nil, tt.wantUser)
-			test.Assert(t, gotErr != nil, tt.wantErr)
+			assert.Equal(t, gotUser != nil, tt.wantUser)
+			assert.Equal(t, gotErr != nil, tt.wantErr)
 		})
 	}
 

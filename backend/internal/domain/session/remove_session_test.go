@@ -6,6 +6,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestRemoveSession(t *testing.T) {
@@ -27,7 +28,7 @@ func TestRemoveSession(t *testing.T) {
 			repo := NewStubSessionRepository(ctx, tt.initMap)
 			service := session.NewService(repo)
 			err := service.RemoveSession(ctx, tt.sessionID)
-			test.Assert(t, err != nil, tt.wantErr)
+			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
 }

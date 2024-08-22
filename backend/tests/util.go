@@ -1,27 +1,36 @@
 package test
 
 import (
+	"context"
+	"math/rand"
 	"testing"
 	"time"
 	"unsafe"
 
-	"math/rand"
+	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
 
-// the generic way to compare two values of the same type
-func Assert[T comparable](t testing.TB, got, want T) {
+// TODO: handle the different ways to import the different domain
+// - use the repoconstructor thing
+// return the repository interface that implements the GetDB() function
+func Setup(t testing.TB, ctx context.Context, version int64) *userhandler.Handler {
 	t.Helper()
-	if got != want {
-		t.Errorf("got %v, want %v", got, want)
+	sqlitedb, err := testdb.NewDatabase(ctx)
+	if err != nil {
+		t.Error(err)
 	}
-}
-
-// the generic way to compare two values of the same type
-func OK(t testing.TB, got error) {
-	t.Helper()
-	if got != nil {
-		t.Errorf("got %q, want nil error", got)
+	if err := testdb.Setup(ctx, sqlitedb, version); err != nil {
+		t.Error(err)
 	}
+	// readerRepo := userRepository.NewReaderRepository(ctx, db)
+	// userRepo := userRepository.New(ctx, readerRepo)
+	userRepo := userRepository.New(ctx, sqlitedb)
+	userService := domain.NewService(userRepo)
+	appsvc := handler.Services{User: userService}
+	// apprepo := handler.Repos{User: readerRepo}
+	apprepo := handler.Repos{User: userRepo}
+	h := handler.NewHandler(&appsvc, &apprepo)
+	return userhandler.NewHandler(h)
 }
 
 // NOTE: link for the number generator : https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go

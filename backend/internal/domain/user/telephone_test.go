@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestValidateTelephone(t *testing.T) {
@@ -24,7 +24,7 @@ func TestValidateTelephone(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := user.ValidateTelephone(tt.telephone)
-			test.Assert(t, got != nil, tt.wantErr)
+			assert.Equal(t, got != nil, tt.wantErr)
 		})
 	}
 }

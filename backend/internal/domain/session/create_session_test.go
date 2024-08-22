@@ -6,7 +6,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestCreateSession(t *testing.T) {
@@ -31,8 +31,8 @@ func TestCreateSession(t *testing.T) {
 			repo := NewStubSessionRepository(ctx, tt.sessions)
 			service := session.NewService(repo)
 			sessionID, err := service.CreateSession(ctx, 1, user.BASIC.String())
-			test.Assert(t, sessionID != "", tt.wantSessionID)
-			test.Assert(t, err != nil, tt.wantErr)
+			assert.Equal(t, sessionID != "", tt.wantSessionID)
+			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
 }
