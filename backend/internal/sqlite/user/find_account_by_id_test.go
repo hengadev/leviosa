@@ -13,7 +13,7 @@ import (
 func TestFindAccountByID(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		expectedUser *user.User
+		expectedUser *userService.User
 		wantErr      bool
 		version      int64
 		name         string

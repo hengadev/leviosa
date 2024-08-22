@@ -13,7 +13,7 @@ import (
 func TestAddAccount(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		usr     *user.User
+		usr     *userService.User
 		wantErr bool
 		version int64
 		name    string

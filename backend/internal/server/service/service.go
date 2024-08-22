@@ -12,7 +12,7 @@ import (
 )
 
 type Services struct {
-	User     *user.Service
+	User     *userService.Service
 	Session  *session.Service
 	Event    *event.Service
 	Payment  *payment.Service
@@ -23,7 +23,7 @@ type Services struct {
 }
 
 type Repos struct {
-	User     user.Reader
+	User     userService.Reader
 	Session  session.Reader
 	Event    event.Reader
 	Vote     vote.Reader

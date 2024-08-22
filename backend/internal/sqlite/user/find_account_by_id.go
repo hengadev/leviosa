@@ -8,8 +8,8 @@ import (
 )
 
 // reader
-func (u *repository) FindAccountByID(ctx context.Context, id int) (*user.User, error) {
-	var user user.User
+func (u *repository) FindAccountByID(ctx context.Context, id int) (*userService.User, error) {
+	var user userService.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE id = ?;", id).Scan(
 		&user.ID,
 		&user.Email,

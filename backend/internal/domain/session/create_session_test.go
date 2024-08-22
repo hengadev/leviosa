@@ -30,7 +30,7 @@ func TestCreateSession(t *testing.T) {
 			ctx := context.Background()
 			repo := NewStubSessionRepository(ctx, tt.sessions)
 			service := session.NewService(repo)
-			sessionID, err := service.CreateSession(ctx, 1, user.BASIC.String())
+			sessionID, err := service.CreateSession(ctx, 1, userService.BASIC.String())
 			assert.Equal(t, sessionID != "", tt.wantSessionID)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})

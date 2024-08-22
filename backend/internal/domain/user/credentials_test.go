@@ -1,11 +1,11 @@
-package user_test
+package userService_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/tests"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestValidCredentials(t *testing.T) {
@@ -25,12 +25,12 @@ func TestValidCredentials(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.TODO()
-			problems := user.Credentials{
+			problems := userService.Credentials{
 				Email:    tt.email,
 				Password: tt.password,
 			}.Valid(ctx)
 			got := len(problems)
-			test.Assert(t, got != 0, tt.wantErr)
+			assert.Equal(t, got != 0, tt.wantErr)
 		})
 	}
 }

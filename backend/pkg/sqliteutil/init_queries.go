@@ -16,7 +16,7 @@ func GetInitQueries() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to created hashpassword")
 	}
-	birthday, _ := time.Parse(user.BirthdayLayout, "1999-08-20")
+	birthday, _ := time.Parse(userService.BirthdayLayout, "1999-08-20")
 	queries := []string{
 		fmt.Sprintf(
 			`INSERT OR IGNORE INTO users 

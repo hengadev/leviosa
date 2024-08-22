@@ -7,13 +7,18 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
 
 // TODO: handle the different ways to import the different domain
 // - use the repoconstructor thing
-// return the repository interface that implements the GetDB() function
-func Setup(t testing.TB, ctx context.Context, version int64) *userhandler.Handler {
+// - return the repository interface that implements the GetDB() function
+func Setup(t testing.TB, ctx context.Context, version int64) *userHandler.Handler {
 	t.Helper()
 	sqlitedb, err := testdb.NewDatabase(ctx)
 	if err != nil {
@@ -25,12 +30,12 @@ func Setup(t testing.TB, ctx context.Context, version int64) *userhandler.Handle
 	// readerRepo := userRepository.NewReaderRepository(ctx, db)
 	// userRepo := userRepository.New(ctx, readerRepo)
 	userRepo := userRepository.New(ctx, sqlitedb)
-	userService := domain.NewService(userRepo)
+	userService := userService.New(userRepo)
 	appsvc := handler.Services{User: userService}
 	// apprepo := handler.Repos{User: readerRepo}
 	apprepo := handler.Repos{User: userRepo}
 	h := handler.NewHandler(&appsvc, &apprepo)
-	return userhandler.NewHandler(h)
+	return userHandler.New(h)
 }
 
 // NOTE: link for the number generator : https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go

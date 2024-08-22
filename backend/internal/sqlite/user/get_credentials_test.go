@@ -12,20 +12,20 @@ import (
 
 func TestGetCredentials(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-	creds := &user.Credentials{
+	creds := &userService.Credentials{
 		Email:    johndoe.Email,
 		Password: johndoe.Password,
 	}
 	tests := []struct {
 		expectedUserID   int
 		expectedPassword string
-		expectedRole     user.Role
+		expectedRole     userService.Role
 		wantErr          bool
 		version          int64
 		name             string
 	}{
-		{expectedUserID: 0, expectedPassword: "", expectedRole: user.UNKNOWN, wantErr: true, version: 20240811085134, name: "No users in database"},
-		{expectedUserID: 1, expectedPassword: creds.Password, expectedRole: user.BASIC, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
+		{expectedUserID: 0, expectedPassword: "", expectedRole: userService.UNKNOWN, wantErr: true, version: 20240811085134, name: "No users in database"},
+		{expectedUserID: 1, expectedPassword: creds.Password, expectedRole: userService.BASIC, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

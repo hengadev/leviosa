@@ -13,7 +13,7 @@ import (
 // TODO: use the right user type for this, you just have to use the struct tag better
 
 // Function that send an email to all users to specify that a new event has been created.
-func HandleNewEventMail(usersList []*user.User, eventTime string) {
+func HandleNewEventMail(usersList []*userService.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	for _, user := range usersList {
 		go func(firstname string) {
@@ -27,7 +27,7 @@ func HandleNewEventMail(usersList []*user.User, eventTime string) {
 }
 
 // Function that send an email to user after receiving payment.
-func SendNewVoteMail(user *user.User, eventTime string) {
+func SendNewVoteMail(user *userService.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	templData := struct {
 		Username string
@@ -36,11 +36,11 @@ func SendNewVoteMail(user *user.User, eventTime string) {
 	sendMail(companyMail, user.Email, "Bienvenue parmi nous !", "/internal/mail/newRegistry.html", password, templData)
 }
 
-func HandleNewPaymentMail(user *user.User, eventTime string) {
+func HandleNewPaymentMail(user *userService.User, eventTime string) {
 }
 
 // Function that send an email to user to remind them of an event incoming.
-func HandleRemainderEventMail(user *user.User, eventTime string, daysLeft int) {
+func HandleRemainderEventMail(user *userService.User, eventTime string, daysLeft int) {
 	// TODO: Add the call to a certain function to handle using that value
 	switch daysLeft {
 	case 2:
@@ -48,7 +48,7 @@ func HandleRemainderEventMail(user *user.User, eventTime string, daysLeft int) {
 	}
 }
 
-func HandleRemainderPaymentMail(user *user.User, eventTime string) {
+func HandleRemainderPaymentMail(user *userService.User, eventTime string) {
 	companyMail, password := getCompanyCredentials()
 	templData := struct {
 		Username string
@@ -56,7 +56,7 @@ func HandleRemainderPaymentMail(user *user.User, eventTime string) {
 	sendMail(companyMail, user.Email, "Bienvenue parmi nous !", "/internal/mail/welcomeUser.html", password, templData)
 }
 
-func SendWelcomeUserMail(user *user.User) {
+func SendWelcomeUserMail(user *userService.User) {
 }
 
 func sendMail(from, to, subject, templateFilename, password string, data any) {

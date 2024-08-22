@@ -1,10 +1,10 @@
-package user
+package userService
 
 type Service struct {
 	repo ReadWriter
 }
 
-func NewService(repo ReadWriter) *Service {
+func New(repo ReadWriter) *Service {
 	return &Service{
 		repo: repo,
 	}

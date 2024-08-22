@@ -1,4 +1,4 @@
-package user_test
+package userService_test
 
 import (
 	"testing"
@@ -23,7 +23,7 @@ func TestValidateTelephone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := user.ValidateTelephone(tt.telephone)
+			got := userService.ValidateTelephone(tt.telephone)
 			assert.Equal(t, got != nil, tt.wantErr)
 		})
 	}

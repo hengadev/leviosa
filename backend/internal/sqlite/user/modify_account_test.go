@@ -22,7 +22,7 @@ func TestModifyAccount(t *testing.T) {
 	}
 
 	tests := []struct {
-		userModified *user.User
+		userModified *userService.User
 		wantErr      bool
 		version      int64
 		name         string

@@ -20,7 +20,7 @@ func (s *Server) addRoutes(h *handler.Handler) {
 	// basic route to test things out
 	mux.Handle("GET /api/v1/hello", http.HandlerFunc(sayHello))
 	// handler declaration
-	userHandler := user.NewHandler(h)
+	userHandler := userHandler.New(h)
 	voteHandler := vote.NewHandler(h)
 	paymentHandler := payment.NewHandler(h)
 	checkoutHandler := checkout.NewHandler(h)

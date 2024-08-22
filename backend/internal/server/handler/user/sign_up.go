@@ -1,4 +1,4 @@
-package user
+package userHandler
 
 import (
 	"context"
@@ -15,7 +15,7 @@ func (h *Handler) CreateAccount() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// decode user sent and validate it.
-		input, pbms, err := serverutil.DecodeValid[user.User](r)
+		input, pbms, err := serverutil.DecodeValid[userService.User](r)
 		if len(pbms) > 0 {
 			slog.ErrorContext(ctx, "failed to decode user", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)

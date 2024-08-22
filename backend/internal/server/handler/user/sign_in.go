@@ -1,4 +1,4 @@
-package user
+package userHandler
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func (h *Handler) Signin() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// parse the request body
-		input, pbms, err := serverutil.DecodeValid[user.Credentials](r)
+		input, pbms, err := serverutil.DecodeValid[userService.Credentials](r)
 		if len(pbms) > 0 {
 			slog.ErrorContext(ctx, "failed to authenticate the user, bad request", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)

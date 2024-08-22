@@ -1,4 +1,4 @@
-package user_test
+package userService_test
 
 import (
 	"context"
@@ -19,12 +19,12 @@ func TestCreateAccount(t *testing.T) {
 	// - account alredy exists ?
 	// - valid user that actually creates an account
 	tests := []struct {
-		usr      *user.User
+		usr      *userService.User
 		name     string
 		wantUser bool
 		wantErr  bool
 	}{
-		{usr: &user.User{
+		{usr: &userService.User{
 			Email:      "john.doe@gmail.com",
 			Password:   test.GenerateRandomString(16),
 			BirthDate:  "1999-08-08",
@@ -42,7 +42,7 @@ func TestCreateAccount(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubUserRepository()
-			service := user.NewService(repo)
+			service := userService.New(repo)
 			gotUser, gotErr := service.CreateAccount(ctx, tt.usr)
 			assert.Equal(t, gotUser != nil, tt.wantUser)
 			assert.Equal(t, gotErr != nil, tt.wantErr)
@@ -55,7 +55,7 @@ func TestCreateAccount(t *testing.T) {
 			"LoggedInAt",
 			"CreatedAt",
 		}
-		u := &user.User{
+		u := &userService.User{
 			Email:      "john.doe@gmail.com",
 			Password:   test.GenerateRandomString(16),
 			BirthDate:  "1999-08-08",
@@ -69,7 +69,7 @@ func TestCreateAccount(t *testing.T) {
 		}
 		ctx := context.Background()
 		repo := NewStubUserRepository()
-		service := user.NewService(repo)
+		service := userService.New(repo)
 		gotUser, _ := service.CreateAccount(ctx, u)
 		v := reflect.ValueOf(*gotUser)
 		for _, field := range fields {

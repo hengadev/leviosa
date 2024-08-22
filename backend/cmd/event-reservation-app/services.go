@@ -38,7 +38,7 @@ func makeServices(
 
 	// user
 	userRepo := userRepository.New(ctx, sqlitedb)
-	userSvc := user.NewService(userRepo)
+	userSvc := userService.New(userRepo)
 	// session
 	sessionRepo := sessionRepository.New(ctx, redisdb)
 	sessionSvc := session.NewService(sessionRepo)

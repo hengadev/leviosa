@@ -12,14 +12,14 @@ import (
 
 func TestGetAllUsers(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-	usersList := []*user.User{johndoe, janedoe, jeandoe}
+	usersList := []*userService.User{johndoe, janedoe, jeandoe}
 	tests := []struct {
-		expectedUsers []*user.User
+		expectedUsers []*userService.User
 		wantErr       bool
 		version       int64
 		name          string
 	}{
-		{expectedUsers: []*user.User{}, wantErr: false, version: 20240811085134, name: "No users in database"},
+		{expectedUsers: []*userService.User{}, wantErr: false, version: 20240811085134, name: "No users in database"},
 		{expectedUsers: usersList, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
 	}
 	for _, tt := range tests {

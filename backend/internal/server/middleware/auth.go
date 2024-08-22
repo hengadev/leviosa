@@ -77,9 +77,9 @@ func getSessionIDFromRequest(r *http.Request) (string, error) {
 	return sessionID, nil
 }
 
-func getExpectedRoleFromRequest(r *http.Request) user.Role {
+func getExpectedRoleFromRequest(r *http.Request) userService.Role {
 	values := strings.Split(r.URL.Path, "/")
-	return user.ConvertToRole(values[3])
+	return userService.ConvertToRole(values[3])
 	// old api
 	// var role user.Role
 	// switch values[1] {

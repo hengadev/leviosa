@@ -11,7 +11,7 @@ import (
 
 func (u *repository) ModifyAccount(
 	ctx context.Context,
-	user *user.User,
+	user *userService.User,
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {

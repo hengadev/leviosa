@@ -11,7 +11,7 @@ import (
 var baseSession = &session.Session{
 	ID:         test.GenerateRandomString(16),
 	UserID:     1,
-	Role:       user.BASIC.String(),
+	Role:       userService.BASIC.String(),
 	LoggedInAt: time.Now(),
 	CreatedAt:  time.Now(),
 	ExpiresAt:  time.Now().Add(session.SessionDuration),

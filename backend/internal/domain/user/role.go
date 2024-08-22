@@ -1,4 +1,4 @@
-package user
+package userService
 
 type Role int8
 

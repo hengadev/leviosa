@@ -10,13 +10,13 @@ import (
 
 var (
 	// ce sont des triplets
-	johndoe = &user.User{
+	johndoe = &userService.User{
 		ID:         1,
 		Email:      "john.doe@gmail.com",
 		Password:   "$a9rfNhA$N$A78#m",
 		CreatedAt:  time.Now().Add(-time.Hour * 4),
 		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
+		Role:       userService.BASIC.String(),
 		BirthDate:  "1998-07-12",
 		LastName:   "DOE",
 		FirstName:  "John",
@@ -26,13 +26,13 @@ var (
 		City:       "Paris",
 		PostalCard: 12345,
 	}
-	janedoe = &user.User{
+	janedoe = &userService.User{
 		ID:         2,
 		Email:      "jane.doe@gmail.com",
 		Password:   "w4w3f09QF&h)#fwe",
 		CreatedAt:  time.Now().Add(-time.Hour * 4),
 		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
+		Role:       userService.BASIC.String(),
 		BirthDate:  "1998-07-12",
 		LastName:   "DOE",
 		FirstName:  "Jane",
@@ -42,13 +42,13 @@ var (
 		City:       "Paris",
 		PostalCard: 12345,
 	}
-	jeandoe = &user.User{
+	jeandoe = &userService.User{
 		ID:         1,
 		Email:      "jean.doe@gmail.com",
 		Password:   "wf0fT^9f2$$_aewa",
 		CreatedAt:  time.Now().Add(-time.Hour * 4),
 		LoggedInAt: time.Now().Add(-time.Hour * 4),
-		Role:       user.BASIC.String(),
+		Role:       userService.BASIC.String(),
 		BirthDate:  "1998-07-12",
 		LastName:   "DOE",
 		FirstName:  "Jean",
@@ -60,7 +60,7 @@ var (
 	}
 )
 
-func compareUser(t testing.TB, fields []string, userDB *user.User, realUser *user.User) {
+func compareUser(t testing.TB, fields []string, userDB *userService.User, realUser *userService.User) {
 	t.Helper()
 	userDBValue := reflect.ValueOf(*userDB)
 	userRealValue := reflect.ValueOf(*realUser)

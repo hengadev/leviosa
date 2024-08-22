@@ -7,8 +7,8 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *repository) GetAllUsers(ctx context.Context) ([]*user.User, error) {
-	var users []*user.User
+func (u *repository) GetAllUsers(ctx context.Context) ([]*userService.User, error) {
+	var users []*userService.User
 	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users;"
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -17,7 +17,7 @@ func (u *repository) GetAllUsers(ctx context.Context) ([]*user.User, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		user := &user.User{}
+		user := &userService.User{}
 		err := rows.Scan(
 			&user.Email,
 			&user.Role,

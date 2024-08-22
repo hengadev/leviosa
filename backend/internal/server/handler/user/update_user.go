@@ -1,4 +1,4 @@
-package user
+package userHandler
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func (h *Handler) UpdateUser() http.Handler {
 		defer cancel()
 		userID := ctx.Value(mw.SessionIDKey).(string)
 
-		user, pbms, err := serverutil.DecodeValid[user.User](r)
+		user, pbms, err := serverutil.DecodeValid[userService.User](r)
 		if len(pbms) > 0 {
 			slog.ErrorContext(ctx, "failed to decode user", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
