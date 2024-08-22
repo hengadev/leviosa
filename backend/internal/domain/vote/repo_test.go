@@ -33,27 +33,27 @@ func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userI
 	return nil
 }
 
-func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) (int, error) {
+func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) error {
 	key := MockDBKey{
 		userID: userID,
 		month:  month,
 		year:   year,
 	}
 	if _, ok := s.votes[key]; ok {
-		return 0, fmt.Errorf("value in database")
+		return fmt.Errorf("value in database")
 	}
 	s.votes[key] = days
-	return 0, nil
+	return nil
 }
 
-func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, year int) (int, error) {
+func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, year int) error {
 	key := MockDBKey{
 		userID: userID,
 		month:  month,
 		year:   year,
 	}
 	delete(s.votes, key)
-	return 0, nil
+	return nil
 }
 
 func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
