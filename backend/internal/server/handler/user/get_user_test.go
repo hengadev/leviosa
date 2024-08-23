@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -41,7 +43,15 @@ func TestGetUser(t *testing.T) {
 			r = r.WithContext(ctx)
 
 			// userhandler := Setup(t, ctx, tt.version)
-			userhandler := testutil.SetupUser(t, ctx, tt.version)
+
+			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+
+			appsvc := &handler.Services{User: usersvc}
+			apprepo := &handler.Repos{User: userrepo}
+
+			h := handler.New(appsvc, apprepo)
+			userhandler := userHandler.New(h)
+
 			getUser := userhandler.GetUser()
 			getUser.ServeHTTP(w, r)
 
