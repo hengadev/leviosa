@@ -14,7 +14,7 @@ func TestCreateSession(t *testing.T) {
 	tests := []struct {
 		session *sessionService.Session
 		wantErr bool
-		init    miniredis.InitMap
+		init    miniredis.InitMap[*sessionService.Values]
 		name    string
 	}{
 		{session: nil, wantErr: true, init: nil, name: "nil session"},

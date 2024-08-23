@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	sessionService "github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests"
@@ -14,7 +15,7 @@ func TestRemoveSession(t *testing.T) {
 	tests := []struct {
 		id      string
 		wantErr bool
-		init    miniredis.InitMap
+		init    miniredis.InitMap[*sessionService.Values]
 		name    string
 	}{
 		{id: testutil.BaseSession.ID, wantErr: true, init: nil, name: "empty database"},

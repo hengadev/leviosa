@@ -15,7 +15,7 @@ func TestFindSessionByID(t *testing.T) {
 	tests := []struct {
 		id              string
 		wantErr         bool
-		init            miniredis.InitMap
+		init            miniredis.InitMap[*sessionService.Values]
 		expectedSession *sessionService.Session
 		name            string
 	}{

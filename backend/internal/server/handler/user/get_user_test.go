@@ -37,12 +37,10 @@ func TestGetUser(t *testing.T) {
 			r, _ := http.NewRequest("GET", "/api/v1/me", nil)
 			w := httptest.NewRecorder()
 
-			// handler passing context value with userID
+			// pass userID to context
 			ctx := r.Context()
 			ctx = context.WithValue(ctx, mw.SessionIDKey, tt.userID)
 			r = r.WithContext(ctx)
-
-			// userhandler := Setup(t, ctx, tt.version)
 
 			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
 

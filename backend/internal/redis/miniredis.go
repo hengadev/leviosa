@@ -15,7 +15,7 @@ import (
 
 var redisServer *miniredis.Miniredis
 
-type InitMap map[string]any
+type InitMap[T any] map[string]T
 
 func Setup(t testing.TB, ctx context.Context) (*redis.Client, error) {
 	t.Helper()
@@ -28,7 +28,7 @@ func Setup(t testing.TB, ctx context.Context) (*redis.Client, error) {
 	}), nil
 }
 
-func Init(t testing.TB, ctx context.Context, client *redis.Client, initMap InitMap) error {
+func Init[T any](t testing.TB, ctx context.Context, client *redis.Client, initMap InitMap[T]) error {
 	t.Helper()
 	fail := func(err string) error {
 		return fmt.Errorf("init miniredis: %s,", err)
