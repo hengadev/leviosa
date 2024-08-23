@@ -8,6 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/redis/session"
 	// "github.com/GaryHY/event-reservation-app/internal/server/handler/session"
+	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 	redistest "github.com/GaryHY/event-reservation-app/pkg/redisutil/testdatabase"
 	sqlitetest "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
@@ -44,5 +45,31 @@ func SetupSession(t testing.TB, ctx context.Context, version int64) (*sessionSer
 	teardown := func() {
 		redisdb.TearDown()
 	}
+	return sessionService, sessionRepo, teardown
+}
+
+type otherRedisTeardownFunc func() error
+
+// NOTE: the version of the setup that uses miniredis
+func OtherSetupSession(t testing.TB, ctx context.Context, initMap miniredis.InitMap[*sessionService.Values]) (*sessionService.Service, *sessionRepository.Repository, redisTeardownFunc) {
+	t.Helper()
+	client, err := miniredis.Setup(t, ctx)
+	if err != nil {
+		t.Errorf("setup miniredis: %s", err)
+	}
+
+	if err := miniredis.Init(t, ctx, client, initMap); err != nil {
+		t.Errorf("init miniredis: %s", err)
+	}
+
+	sessionRepo := sessionRepository.New(ctx, client)
+	sessionService := sessionService.New(sessionRepo)
+
+	teardown := func() {
+		if err := client.Close(); err != nil {
+			t.Errorf("closing miniredis: %s", err)
+		}
+	}
+
 	return sessionService, sessionRepo, teardown
 }
