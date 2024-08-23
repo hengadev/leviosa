@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 INSERT INTO events (
     id,
     location,
@@ -28,6 +27,5 @@ INSERT INTO events (
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DELETE from events ORDER BY id DESC LIMIT 1;
 -- +goose StatementEnd

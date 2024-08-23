@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -22,6 +21,5 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DROP TABLE users;
 -- +goose StatementEnd

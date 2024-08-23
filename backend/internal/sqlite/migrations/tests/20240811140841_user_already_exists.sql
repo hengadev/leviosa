@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 INSERT INTO users (
     email,
     password,
@@ -36,6 +35,5 @@ INSERT INTO users (
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DELETE from users ORDER BY id DESC LIMIT 1;
 -- +goose StatementEnd

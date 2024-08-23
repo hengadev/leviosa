@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 INSERT INTO available_votes (days, month, year) VALUES
     ('23|12|3|9|17', 4, 2025),
     ('12|18|5', 5, 2025),
@@ -10,6 +9,5 @@ INSERT INTO available_votes (days, month, year) VALUES
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DELETE from available_votes ORDER BY id DESC LIMIT 4;
 -- +goose StatementEnd

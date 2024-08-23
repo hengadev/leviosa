@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 CREATE TABLE IF NOT EXISTS votes (
     userid INTEGER NOT NULL CHECK(userid > 0),
     days TEXT NOT NULL CHECK(length(days) > 0),
@@ -13,6 +12,5 @@ CREATE TABLE IF NOT EXISTS votes (
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DROP TABLE votes;
 -- +goose StatementEnd

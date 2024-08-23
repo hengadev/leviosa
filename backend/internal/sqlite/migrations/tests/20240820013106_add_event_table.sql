@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 -- TODO: add the check year >= 2024 on production database
 CREATE TABLE IF NOT EXISTS events (
     id TEXT NOT NULL PRIMARY KEY CHECK(length(id) > 0),
@@ -19,6 +18,5 @@ CREATE TABLE IF NOT EXISTS events (
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DROP TABLE events;
 -- +goose StatementEnd

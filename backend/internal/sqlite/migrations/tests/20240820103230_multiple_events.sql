@@ -1,6 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 INSERT INTO events (id, location, placecount, freeplace, beginat, sessionduration, priceid, day, month, year)
 VALUES
     ('b16a6f38-d2fb-428c-b97c-929b1010b951', 'Impasse Inconnue', 23, 19, '08:00:00', 30, 'v0ersgF_de_+wf', 13, 7, 1998),
@@ -9,6 +8,5 @@ VALUES
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
 DELETE from events ORDER BY id DESC LIMIT 3;
 -- +goose StatementEnd
