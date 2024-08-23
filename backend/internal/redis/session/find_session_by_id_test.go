@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	miniredis "github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -18,9 +19,9 @@ func TestFindSessionByID(t *testing.T) {
 		expectedSession *sessionService.Session
 		name            string
 	}{
-		{id: baseSession.ID, wantErr: true, init: nil, expectedSession: nil, name: "empty database"},
-		{id: test.GenerateRandomString(12), wantErr: true, init: initSession, expectedSession: nil, name: "ID is not in database"},
-		{id: baseSession.ID, wantErr: false, init: initSession, expectedSession: &baseSession, name: "nominal case"},
+		{id: testutil.BaseSession.ID, wantErr: true, init: nil, expectedSession: nil, name: "empty database"},
+		{id: test.GenerateRandomString(12), wantErr: true, init: testutil.InitSession, expectedSession: nil, name: "ID is not in database"},
+		{id: testutil.BaseSession.ID, wantErr: false, init: testutil.InitSession, expectedSession: &testutil.BaseSession, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
