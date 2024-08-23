@@ -43,9 +43,9 @@ func (h *Handler) Signin() http.Handler {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:     session.SessionName,
+			Name:     sessionService.SessionName,
 			Value:    sessionID,
-			Expires:  time.Now().Add(session.SessionDuration),
+			Expires:  time.Now().Add(sessionService.SessionDuration),
 			HttpOnly: true,
 		})
 	})
