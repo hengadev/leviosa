@@ -1,4 +1,4 @@
-package session_test
+package sessionService_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ func TestGetSession(t *testing.T) {
 	tests := []struct {
 		sessionID       string
 		initMap         KVMap
-		expectedSession *session.Session
+		expectedSession *sessionService.Session
 		wantErr         bool
 		name            string
 	}{
@@ -28,7 +28,7 @@ func TestGetSession(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubSessionRepository(ctx, tt.initMap)
-			service := session.NewService(repo)
+			service := sessionService.New(repo)
 			sess, err := service.GetSession(ctx, tt.sessionID)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.ReflectEqual(t, sess, tt.expectedSession)

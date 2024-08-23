@@ -34,7 +34,7 @@ func Setup(t testing.TB, ctx context.Context, version int64) *userHandler.Handle
 	appsvc := handler.Services{User: userService}
 	// apprepo := handler.Repos{User: readerRepo}
 	apprepo := handler.Repos{User: userRepo}
-	h := handler.NewHandler(&appsvc, &apprepo)
+	h := handler.New(&appsvc, &apprepo)
 	return userHandler.New(h)
 }
 

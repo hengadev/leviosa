@@ -1,4 +1,4 @@
-package session_test
+package sessionService_test
 
 import (
 	"testing"
@@ -11,12 +11,12 @@ import (
 
 func TestIsZero(t *testing.T) {
 	tests := []struct {
-		session      session.Session
+		session      sessionService.Session
 		name         string
 		expectIsZero bool
 	}{
-		{session: session.Session{}, expectIsZero: true, name: "zero session"},
-		{session: session.Session{
+		{session: sessionService.Session{}, expectIsZero: true, name: "zero session"},
+		{session: sessionService.Session{
 			ID:         "",
 			UserID:     1,
 			Role:       "",
@@ -25,7 +25,7 @@ func TestIsZero(t *testing.T) {
 			ExpiresAt:  time.Now().Add(time.Hour),
 		}, expectIsZero: true, name: "some field are zero in session"},
 		{
-			session: session.Session{
+			session: sessionService.Session{
 				ID:         test.GenerateRandomString(12),
 				UserID:     1,
 				Role:       "basic",

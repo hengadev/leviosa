@@ -41,7 +41,7 @@ func makeServices(
 	userSvc := userService.New(userRepo)
 	// session
 	sessionRepo := sessionRepository.New(ctx, redisdb)
-	sessionSvc := session.NewService(sessionRepo)
+	sessionSvc := sessionService.New(sessionRepo)
 	// event
 	eventRepo := eventRepository.New(ctx, sqlitedb)
 	eventSvc := event.NewService(eventRepo)

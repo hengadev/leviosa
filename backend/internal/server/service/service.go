@@ -13,7 +13,7 @@ import (
 
 type Services struct {
 	User     *userService.Service
-	Session  *session.Service
+	Session  *sessionService.Service
 	Event    *event.Service
 	Payment  *payment.Service
 	Vote     *vote.Service
@@ -24,7 +24,7 @@ type Services struct {
 
 type Repos struct {
 	User     userService.Reader
-	Session  session.Reader
+	Session  sessionService.Reader
 	Event    event.Reader
 	Vote     vote.Reader
 	Register register.Reader
@@ -37,7 +37,7 @@ type Handler struct {
 }
 
 // Function to use in the main, once all the services and repos are built.
-func NewHandler(svcs *Services, repos *Repos) *Handler {
+func New(svcs *Services, repos *Repos) *Handler {
 	return &Handler{
 		Svcs:  svcs,
 		Repos: repos,

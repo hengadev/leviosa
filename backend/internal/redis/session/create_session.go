@@ -9,7 +9,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (s *Repository) CreateSession(ctx context.Context, sess *session.Session) error {
+func (s *Repository) CreateSession(ctx context.Context, sess *sessionService.Session) error {
 	if sess == nil {
 		return fmt.Errorf("nil session")
 	}
@@ -20,7 +20,7 @@ func (s *Repository) CreateSession(ctx context.Context, sess *session.Session) e
 	if err != nil {
 		return err
 	}
-	err = s.Client.Set(ctx, sess.ID, sessionEncoded, session.SessionDuration).Err()
+	err = s.Client.Set(ctx, sess.ID, sessionEncoded, sessionService.SessionDuration).Err()
 	if err != nil {
 		return rp.NewRessourceCreationErr(err)
 	}

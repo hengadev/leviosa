@@ -1,4 +1,4 @@
-package session_test
+package sessionService_test
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func TestRemoveSession(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubSessionRepository(ctx, tt.initMap)
-			service := session.NewService(repo)
+			service := sessionService.New(repo)
 			err := service.RemoveSession(ctx, tt.sessionID)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})

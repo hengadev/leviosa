@@ -1,4 +1,4 @@
-package session_test
+package sessionService_test
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 )
 
-type KVMap map[string]*session.Values
+type KVMap map[string]*sessionService.Values
 
 type StubSessionRepository struct {
 	sessions KVMap
@@ -18,12 +18,12 @@ func NewStubSessionRepository(ctx context.Context, sessions KVMap) *StubSessionR
 	return &StubSessionRepository{sessions: sessions}
 }
 
-func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*session.Session, error) {
+func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*sessionService.Session, error) {
 	values, ok := s.sessions[sessionID]
 	if !ok {
 		return nil, fmt.Errorf("no session ID in database")
 	}
-	return &session.Session{
+	return &sessionService.Session{
 		ID:         sessionID,
 		UserID:     values.UserID,
 		Role:       values.Role,
@@ -33,7 +33,7 @@ func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID s
 	}, nil
 }
 
-func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *session.Session) error {
+func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *sessionService.Session) error {
 	s.sessions[sess.ID] = sess.Values()
 	return nil
 }

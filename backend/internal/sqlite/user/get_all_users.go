@@ -7,7 +7,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *repository) GetAllUsers(ctx context.Context) ([]*userService.User, error) {
+func (u *Repository) GetAllUsers(ctx context.Context) ([]*userService.User, error) {
 	var users []*userService.User
 	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users;"
 	rows, err := u.DB.QueryContext(ctx, query)

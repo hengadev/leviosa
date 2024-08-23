@@ -12,13 +12,13 @@ import (
 
 func TestCreateSession(t *testing.T) {
 	tests := []struct {
-		session *session.Session
+		session *sessionService.Session
 		wantErr bool
 		init    miniredis.InitMap
 		name    string
 	}{
 		{session: nil, wantErr: true, init: nil, name: "nil session"},
-		{session: &session.Session{}, wantErr: true, init: nil, name: "empty database"},
+		{session: &sessionService.Session{}, wantErr: true, init: nil, name: "empty database"},
 		{session: &baseSession, wantErr: false, init: nil, name: "nominal case"},
 		{session: &baseSession, wantErr: false, init: initSession, name: "session already exists"},
 	}

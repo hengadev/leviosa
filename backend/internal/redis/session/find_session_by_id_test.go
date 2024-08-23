@@ -15,7 +15,7 @@ func TestFindSessionByID(t *testing.T) {
 		id              string
 		wantErr         bool
 		init            miniredis.InitMap
-		expectedSession *session.Session
+		expectedSession *sessionService.Session
 		name            string
 	}{
 		{id: baseSession.ID, wantErr: true, init: nil, expectedSession: nil, name: "empty database"},

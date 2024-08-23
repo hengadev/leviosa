@@ -1,4 +1,4 @@
-package session_test
+package sessionService_test
 
 import (
 	"context"
@@ -14,7 +14,7 @@ func TestCreateSession(t *testing.T) {
 	// - no session : create the session
 	// - has valid session
 	tests := []struct {
-		sess          *session.Session
+		sess          *sessionService.Session
 		sessions      KVMap
 		wantErr       bool
 		wantSessionID bool
@@ -29,7 +29,7 @@ func TestCreateSession(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			repo := NewStubSessionRepository(ctx, tt.sessions)
-			service := session.NewService(repo)
+			service := sessionService.New(repo)
 			sessionID, err := service.CreateSession(ctx, 1, userService.BASIC.String())
 			assert.Equal(t, sessionID != "", tt.wantSessionID)
 			assert.Equal(t, err != nil, tt.wantErr)

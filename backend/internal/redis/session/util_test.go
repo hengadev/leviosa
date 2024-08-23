@@ -10,7 +10,7 @@ const sessionID = "a0rg34tWfQ33009_K"
 
 var sessionTime, _ = time.Parse(time.Layout, "07/12 11:00:00AM '98 -0700")
 
-var baseSession = session.Session{
+var baseSession = sessionService.Session{
 	ID:         sessionID,
 	UserID:     1,
 	Role:       "basic",

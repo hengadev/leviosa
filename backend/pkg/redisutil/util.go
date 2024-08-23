@@ -50,7 +50,7 @@ func Connect(ctx context.Context, opts ...RedisOption) (*redis.Client, error) {
 // TODO: find a value for the expiration of the value set
 func Init(ctx context.Context, client *redis.Client, queries map[string]interface{}) error {
 	for k, v := range queries {
-		err := client.Set(ctx, k, v, session.SessionDuration).Err()
+		err := client.Set(ctx, k, v, sessionService.SessionDuration).Err()
 		if err != nil {
 			return rp.NewRessourceCreationErr(err)
 		}
