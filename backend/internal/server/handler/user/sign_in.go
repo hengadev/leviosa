@@ -2,6 +2,7 @@ package userHandler
 
 import (
 	"context"
+	// "fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -19,26 +20,25 @@ func (h *Handler) Signin() http.Handler {
 		// parse the request body
 		input, pbms, err := serverutil.DecodeValid[userService.Credentials](r)
 		if len(pbms) > 0 {
-			slog.ErrorContext(ctx, "failed to authenticate the user, bad request", "error", err)
+			slog.ErrorContext(ctx, "user decoding:", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to authenticate the user", "error", err)
+			slog.ErrorContext(ctx, "user decoding:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// validate credentials
 		userID, role, err := h.Svcs.User.ValidateCredentials(ctx, &input)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to validate user credentials", "error", err)
+			slog.ErrorContext(ctx, "user credentials validation:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		// create session
 		sessionID, err := h.Svcs.Session.CreateSession(ctx, userID, role.String())
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to create session", "error", err)
+			slog.ErrorContext(ctx, "create session:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}

@@ -48,3 +48,13 @@ func SetupSession(t testing.TB, ctx context.Context, initMap miniredis.InitMap[*
 	}
 	return sessionService, sessionRepo, teardown
 }
+
+func EncodeForBody(t *testing.T, v any) *bytes.Buffer {
+	t.Helper()
+	encodedValue, err := json.Marshal(v)
+	if err != nil {
+		t.Errorf("encode creds: %s", err)
+	}
+	body := bytes.NewBuffer(encodedValue)
+	return body
+}

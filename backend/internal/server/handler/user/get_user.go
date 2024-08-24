@@ -18,18 +18,18 @@ func (h *Handler) GetUser() http.Handler {
 		userIDstr := ctx.Value(mw.SessionIDKey).(string)
 		userID, err := strconv.Atoi(userIDstr)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to convert string userID to int", "error", err)
+			slog.ErrorContext(ctx, "userID string conversion to int:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		user, err := h.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to get user", "error", err)
+			slog.ErrorContext(ctx, "find user:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		if err := serverutil.Encode(w, http.StatusFound, user); err != nil {
-			slog.ErrorContext(ctx, "failed to send the user", "error", err)
+			slog.ErrorContext(ctx, "send back user:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
