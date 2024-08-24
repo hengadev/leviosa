@@ -1,5 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
+-- TODO:
+-- - delete everything from the users table, insert with parameters
+-- - create the use with the hashedpassword
+DELETE FROM users;
+
+-- +goose ENVSUB ON
 INSERT INTO users (
     email,
     password,
@@ -16,7 +22,7 @@ INSERT INTO users (
     postalcard
     ) VALUES (
     'john.doe@gmail.com',
-    '$a9rfNhA$N$A78#m',
+    '${HASHED_PASSWORD}',
     '',
     '',
     'basic',
@@ -29,6 +35,7 @@ INSERT INTO users (
     'Paris',
     12345
     );
+-- +goose ENVSUB OFF
 -- +goose StatementEnd
 
 -- +goose Down

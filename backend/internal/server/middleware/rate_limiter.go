@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+
 	"golang.org/x/time/rate"
 )
 
