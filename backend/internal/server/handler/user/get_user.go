@@ -15,7 +15,7 @@ func (h *Handler) GetUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userIDstr := ctx.Value(mw.SessionIDKey).(string)
+		userIDstr := ctx.Value(mw.UserIDKey).(string)
 		userID, err := strconv.Atoi(userIDstr)
 		if err != nil {
 			slog.ErrorContext(ctx, "userID string conversion to int:", "error", err)

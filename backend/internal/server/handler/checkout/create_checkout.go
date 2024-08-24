@@ -17,7 +17,7 @@ func (h *Handler) CreateCheckoutSession() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userID := ctx.Value(mw.SessionIDKey).(string)
+		userID := ctx.Value(mw.UserIDKey).(string)
 		eventID := r.PathValue("id")
 		spot := r.PathValue("spot")
 		priceID, err := h.Repos.Event.GetPriceIDByEventID(ctx, eventID)

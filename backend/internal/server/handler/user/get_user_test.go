@@ -39,7 +39,7 @@ func TestGetUser(t *testing.T) {
 
 			// pass userID to context
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, mw.SessionIDKey, tt.userID)
+			ctx = context.WithValue(ctx, mw.UserIDKey, tt.userID)
 			r = r.WithContext(ctx)
 
 			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)

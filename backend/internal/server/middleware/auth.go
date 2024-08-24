@@ -14,9 +14,9 @@ import (
 	"github.com/google/uuid"
 )
 
-type Sessionkey int
+type ContextKey int
 
-const SessionIDKey = Sessionkey(23)
+const UserIDKey = ContextKey(23)
 
 // Function middleware to authenticate and authorize users.
 func Auth(s sessionService.Reader) Middleware {
@@ -63,7 +63,7 @@ func Auth(s sessionService.Reader) Middleware {
 				return
 			}
 			// add userID to context.
-			ctx = context.WithValue(ctx, SessionIDKey, session.UserID)
+			ctx = context.WithValue(ctx, UserIDKey, session.UserID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

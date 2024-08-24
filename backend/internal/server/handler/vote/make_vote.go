@@ -18,7 +18,7 @@ func (h *Handler) MakeVote() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// get userID from cookie
-		userID := ctx.Value(mw.SessionIDKey).(string)
+		userID := ctx.Value(mw.UserIDKey).(string)
 		// get votes from request
 		votes, err := serverutil.Decode[[]*vote.Vote](r)
 		if err != nil {

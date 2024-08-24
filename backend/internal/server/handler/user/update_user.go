@@ -15,7 +15,7 @@ func (h *Handler) UpdateUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userID := ctx.Value(mw.SessionIDKey).(string)
+		userID := ctx.Value(mw.UserIDKey).(string)
 
 		user, pbms, err := serverutil.DecodeValid[userService.User](r)
 		if len(pbms) > 0 {

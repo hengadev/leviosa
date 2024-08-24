@@ -19,7 +19,7 @@ func (h *Handler) GetVotesByUserID() http.Handler {
 		// get userID from context
 		// NOTE: the old way but it does not seem to work
 		// userID := ctx.Value(mw.SessionIDKey).(string)
-		userID := ctx.Value(mw.SessionIDKey).(int)
+		userID := ctx.Value(mw.UserIDKey).(int)
 		// use pathValues to get all values.
 		month := r.PathValue("month")
 		year := r.PathValue("year")
