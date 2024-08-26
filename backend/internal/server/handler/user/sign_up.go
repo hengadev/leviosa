@@ -4,7 +4,9 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
@@ -38,14 +40,12 @@ func (h *Handler) CreateAccount() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		if err = serverutil.Encode(w, http.StatusCreated, struct {
-			SessionID string `json:"sessionid"`
-		}{
-			SessionID: sessionID,
-		}); err != nil {
-			slog.ErrorContext(ctx, "failed to encode the votes from database", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     sessionService.SessionName,
+			Value:    sessionID,
+			Expires:  time.Now().Add(sessionService.SessionDuration),
+			HttpOnly: true,
+		})
+		w.WriteHeader(http.StatusCreated)
 	})
 }
