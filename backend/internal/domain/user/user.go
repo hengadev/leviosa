@@ -9,12 +9,12 @@ import (
 const BirthdayLayout = "2006-01-02"
 
 type User struct {
-	ID         int       `json:"-"`
+	ID         int       `json:"id"`
 	Email      string    `json:"email,omitempty" validate:"required,email"`
-	Password   string    `json:"-" validate:"required,min=6"`
-	CreatedAt  time.Time `json:"-"`
-	LoggedInAt time.Time `json:"-"`
-	Role       string    `json:"-"`
+	Password   string    `json:"password" validate:"required,min=6"`
+	CreatedAt  time.Time `json:"createdAt"`
+	LoggedInAt time.Time `json:"loggedinat"`
+	Role       string    `json:"role"`
 	BirthDate  string    `json:"birthdate,omitempty"`
 	LastName   string    `json:"lastname,omitempty"`
 	FirstName  string    `json:"firstname,omitempty"`
@@ -23,6 +23,18 @@ type User struct {
 	Address    string    `json:"address,omitempty"`
 	City       string    `json:"city,omitempty"`
 	PostalCard int       `json:"postalcard,omitempty"`
+}
+
+type UserResponse struct {
+	Email      string `json:"email,omitempty" validate:"required,email"`
+	BirthDate  string `json:"birthdate,omitempty"`
+	LastName   string `json:"lastname,omitempty"`
+	FirstName  string `json:"firstname,omitempty"`
+	Gender     string `json:"gender,omitempty"`
+	Telephone  string `json:"telephone,omitempty"`
+	Address    string `json:"address,omitempty"`
+	City       string `json:"city,omitempty"`
+	PostalCard int    `json:"postalcard,omitempty"`
 }
 
 func NewUser(
@@ -90,4 +102,18 @@ func (u User) Valid(ctx context.Context) map[string]string {
 		}
 	}
 	return pbms
+}
+
+func (u User) ToResponse() UserResponse {
+	return UserResponse{
+		Email:      u.Email,
+		BirthDate:  u.BirthDate,
+		LastName:   u.LastName,
+		FirstName:  u.FirstName,
+		Gender:     u.Gender,
+		Telephone:  u.Telephone,
+		Address:    u.Address,
+		City:       u.City,
+		PostalCard: u.PostalCard,
+	}
 }
