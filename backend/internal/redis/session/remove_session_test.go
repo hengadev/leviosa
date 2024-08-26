@@ -7,7 +7,6 @@ import (
 	sessionService "github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
-	"github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -19,7 +18,7 @@ func TestRemoveSession(t *testing.T) {
 		name    string
 	}{
 		{id: testutil.BaseSession.ID, wantErr: true, init: nil, name: "empty database"},
-		{id: test.GenerateRandomString(12), wantErr: true, init: testutil.InitSession, name: "id not in the database"},
+		{id: testutil.RandomSessionID, wantErr: true, init: testutil.InitSession, name: "id not in the database"},
 		{id: testutil.BaseSession.ID, wantErr: false, init: testutil.InitSession, name: "nominal case"},
 	}
 	for _, tt := range tests {

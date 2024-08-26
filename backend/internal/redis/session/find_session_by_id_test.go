@@ -7,7 +7,6 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
-	"github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -20,7 +19,7 @@ func TestFindSessionByID(t *testing.T) {
 		name            string
 	}{
 		{id: testutil.BaseSession.ID, wantErr: true, init: nil, expectedSession: nil, name: "empty database"},
-		{id: test.GenerateRandomString(12), wantErr: true, init: testutil.InitSession, expectedSession: nil, name: "ID is not in database"},
+		{id: testutil.RandomSessionID, wantErr: true, init: testutil.InitSession, expectedSession: nil, name: "ID is not in database"},
 		{id: testutil.BaseSession.ID, wantErr: false, init: testutil.InitSession, expectedSession: &testutil.BaseSession, name: "nominal case"},
 	}
 	for _, tt := range tests {
