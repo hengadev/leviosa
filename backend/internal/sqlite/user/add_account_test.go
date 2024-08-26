@@ -28,8 +28,11 @@ func TestAddAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			err := repo.AddAccount(ctx, tt.usr)
+			id, err := repo.AddAccount(ctx, tt.usr)
 			assert.Equal(t, err != nil, tt.wantErr)
+			if !tt.wantErr {
+				assert.Equal(t, int(id), testutil.Johndoe.ID)
+			}
 		})
 	}
 }

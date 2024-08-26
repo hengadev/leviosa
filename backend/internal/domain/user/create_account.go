@@ -41,9 +41,10 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	)
 	user.Create()
 	user.Login()
-	err := s.repo.AddAccount(ctx, user)
+	id, err := s.repo.AddAccount(ctx, user)
 	if err != nil {
 		return nil, fmt.Errorf("add account: %w", err)
 	}
+	user.ID = int(id)
 	return user, nil
 }
