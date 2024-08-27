@@ -21,6 +21,12 @@ COPY --from=builder /app/myapp .
 COPY --from=builder /app/internal/sqlite/migrations ./internal/sqlite/migrations
 COPY --from=builder /app/*.env ./
 
+# Create the appuser
+RUN adduser -D appuser
+
+# Set appuser as the default user
+USER appuser
+
 EXPOSE 3500
 
 CMD ["./myapp"]

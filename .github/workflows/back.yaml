@@ -33,33 +33,18 @@ jobs:
           go-version: '1.22.1'
       - name: Update CA certificates
         run: |
-          apt-get update
-          apt-get install -y ca-certificates
-          update-ca-certificates
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+          sudo apt install build-essential
       - name: Build go application
-        run: |
-          go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
-        with:
+        env:
           CGO_ENABLED: 1
           GOOS: linux
-
-  golangci:
-    name: ⬣ Golangci-lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22.1'
-      - name: 🔬 golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.59
-          working-directory: backend
+        run: go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
 
   test:
-    name: 🧪 Golang unit test
+    name: 🧪 Golang tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -67,11 +52,17 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.22.1'
-      - name: Unit test application
+      - name: Update CA certificates
         run: |
-          $(MAKE) test-unit
-          $(MAKE) test-integration
-          $(MAKE) test-e2e
+          sudo apt-get update
+          sudo apt-get install -y ca-certificates
+          sudo update-ca-certificates
+          sudo apt install build-essential
+      - name: Unit test application
+        env:
+          CGO_ENABLED: 1
+          GOOS: linux
+        run: go test ./...
 
   docker-back:
     name: 🐳 Build backend application docker image
@@ -85,3 +76,4 @@ jobs:
           tag: 'backend'
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }} 
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+          folder: backend

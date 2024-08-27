@@ -11,6 +11,9 @@ inputs:
   dockerhub_token: 
     description: The token for my docker account.
     required: true
+  folder: 
+    description: The folder where resides the dockerfile.
+    required: true
 
 runs:
   using: 'composite'
@@ -36,7 +39,8 @@ runs:
       if: ${{ github.ref == 'refs/heads/main' }}
       uses: docker/build-push-action@v3
       with:
-        context: .
+        context: ${{ inputs.FOLDER }}
+        file: ./${{ inputs.FOLDER }}/Dockerfile
         push: true
         tags: henga/event-reservation-app:${{ inputs.tag }}
         build-args: |
