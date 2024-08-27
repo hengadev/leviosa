@@ -3,6 +3,16 @@ import { cookieName } from '$lib/types/cookie';
 import { API_URL } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
+    // NOTE: for the moment redirect everything to the coming soon page
+    const comingSoonPath = "/wait"
+    if (event.url.pathname === comingSoonPath) {
+        return resolve(event)
+    }
+    throw redirect(307, comingSoonPath);
+    // The solution from chatGPT, but I like that one better
+    // return Response.redirect(comingSoonPath, 307)
+
+    // NOTE: the older version with the real production code
     // get cookies from browser
     console.log('the url that is going to be used for the backend is :', API_URL);
     const sessionID = event.cookies.get(cookieName);
