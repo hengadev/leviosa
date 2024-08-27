@@ -23,7 +23,7 @@ func (s *StubUserRepository) GetCredentials(ctx context.Context, usr *userServic
 	return 0, "", userService.UNKNOWN, nil
 }
 
-func (s *StubUserRepository) AddAccount(ctx context.Context, user *userService.User) (int, error) {
+func (s *StubUserRepository) AddAccount(ctx context.Context, user *userService.User) (int64, error) {
 	for _, usr := range s.users {
 		if usr == user {
 			return 0, fmt.Errorf("user already exists")
@@ -34,5 +34,9 @@ func (s *StubUserRepository) AddAccount(ctx context.Context, user *userService.U
 }
 
 func (s *StubUserRepository) ModifyAccount(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+	return nil
+}
+
+func (s *StubUserRepository) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }

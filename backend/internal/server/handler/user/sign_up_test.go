@@ -9,7 +9,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	miniredis "github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/redis"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"

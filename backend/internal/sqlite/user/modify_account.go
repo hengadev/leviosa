@@ -25,8 +25,6 @@ func (u *Repository) ModifyAccount(
 	if err != nil {
 		return fail(err)
 	}
-	fmt.Println("the query is:", query)
-	fmt.Println("the values are:", values)
 	res, err := u.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		return fail(err)

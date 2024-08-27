@@ -11,6 +11,7 @@ type Reader interface {
 type Writer interface {
 	AddAccount(ctx context.Context, user *User) (int64, error)
 	ModifyAccount(ctx context.Context, user *User, whereMap map[string]any, prohibitedFields ...string) error
+	DeleteUser(ctx context.Context, id int) error
 }
 
 type ReadWriter interface {
