@@ -45,19 +45,26 @@ const register: Action = async ({ request, cookies }) => {
         });
         // redirect to home page.
         throw redirect(302, '/app');
-    } catch (error) {
-        console.error(error.message);
+    } catch (error: unknown) {
+        if (error instanceof Error) {
+            console.error(error.message);
+        } else if (typeof (error) == "string") {
+            throw new CustomError("some error happened")
+        }
     }
 };
-
-describe("register User", () => {
-    it.todo("should register user with the right credentials")
-})
 
 export const load: PageServerLoad = ({ locals }) => {
     if (locals.user) {
         throw redirect(301, '/app');
     }
 };
+
+class CustomError extends Error {
+    constructor(message: string) {
+        super(message)
+        this.name = "CustomError"
+    }
+}
 
 export const actions: Actions = { register };

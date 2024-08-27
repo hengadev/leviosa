@@ -5,21 +5,26 @@
 
 
 // TODO: make a better email validation
-function isValidEmail(email: string) bool {
+function isValidEmail(email: string): boolean {
+    if (email) return true
     return false
 }
 
-function isValidPassword(email: string) bool {
+function isValidPassword(password: string): boolean {
+    if (password) return true
     return false
 }
 
-function validate(email: string, password: string) {
+function validate(email: string, password: string): boolean {
     if (!isValidEmail(email)) {
         // TODO: find which one of these options is the best
-        throw new Error("email invalid")
-        return fail(400, { invalid: true });
+        // throw new Error("email invalid")
+        // return fail(400, { invalid: true });
     }
-    // TODO: add the password validation
+    if (!isValidPassword(password)) {
+        // TODO: find which one of these options is the best
+        throw new Error("email invalid")
+    }
     return true;
 }
 
