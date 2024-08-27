@@ -1,5 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-import { cookieName } from '$lib/types';
 // import { API_URL } from "$env/static/private"
 
 type Month =
@@ -50,7 +49,7 @@ async function getNextVotes() {
 	return nextVotes;
 }
 
-export async function load({ locals, cookies }) {
+export async function load({ locals }) {
 	if (!locals.user) {
 		console.log('redirect user');
 		throw redirect(301, '/');
@@ -64,7 +63,7 @@ export async function load({ locals, cookies }) {
 		const nextVotes = await getNextVotes();
 		console.log('the next votes are :', nextVotes);
 		return { nextVotes, eventId };
-	} catch (error) {
-		console.error('error loading home page', error.message);
+	} catch (err) {
+		if (err instanceof Error) console.error('error loading home page', err.message);
 	}
 }

@@ -11,14 +11,16 @@ export const load: PageServerLoad = ({ locals }) => {
 	// TODO: return the last result for event recently open for votings.
 };
 
-const viewMonth: Action = ({ request }) => {
-	const formData = request.formData();
+const viewMonth: Action = async ({ request }) => {
+	const formData = await request.formData();
 	const date = formData.get('date');
+	console.log('the date:', date);
 };
 
-const viewDayInMonth: Action = ({ request }) => {
-	const formData = request.formData();
+const viewDayInMonth: Action = async ({ request }) => {
+	const formData = await request.formData();
 	const date = formData.get('date');
+	console.log('the date:', date);
 };
 
 // I want to select month or a specific data in a month

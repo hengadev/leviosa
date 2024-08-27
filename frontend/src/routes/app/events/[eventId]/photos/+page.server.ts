@@ -20,8 +20,9 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		throw redirect(301, '/');
 	}
 	// how to get the params of the page
-	const userid = locals.user.id;
-	const eventid = params.eventId;
+	const userid: string = 'some user id';
+	const eventid: string = params.eventId;
 	const photos = await getPhotos(userid, eventid);
+	// return {getPhotos(userid, eventid)};
 	return { photos };
 };

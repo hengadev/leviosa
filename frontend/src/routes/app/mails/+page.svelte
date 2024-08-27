@@ -25,6 +25,7 @@
 									<p><span class="mail__sender">Equipe MyApp </span> vous envoie un rappel.</p>
 									<p>2 hours ago</p>
 								</div>
+								<div>{mail.content}</div>
 							</div>
 						{/each}
 					</div>
@@ -42,6 +43,7 @@
 									<!-- <p>{notification.content}</p> -->
 								</div>
 							</div>
+							<div>{notification.content}</div>
 						{/each}
 					</div>
 				</Tabs.Content>

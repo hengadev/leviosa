@@ -1,8 +1,11 @@
-<script>
+<script lang="ts">
 	import * as Table from '$lib/components/ui/table';
 	import type { PageData } from './$types';
 	export let data: PageData;
 	$: ({ pastevents, futurevents } = data);
+	function formatDate(date: Date) {
+		return new Intl.DateTimeFormat('fr', { dateStyle: 'long' }).format(date);
+	}
 </script>
 
 <form method="POST" action="">

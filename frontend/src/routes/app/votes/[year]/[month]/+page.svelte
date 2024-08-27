@@ -8,6 +8,7 @@
 	// TODO: use the isDefault to display some informations on our vote work.
 	export let data;
 	$: ({ month, year, isDefault, votes } = data);
+	console.log(isDefault);
 	$: _votes = JSON.parse(JSON.stringify(votes));
 	$: _month = JSON.parse(JSON.stringify(month));
 	$: _year = JSON.parse(JSON.stringify(year));

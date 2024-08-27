@@ -12,7 +12,7 @@ import { API_URL } from '$env/static/private';
 
 export const actions = {
 	default: async ({ request }) => {
-		const formData = request.formData();
+		const formData = await request.formData();
 		const year = formData.get('year');
 		const month = formData.get('month');
 		throw redirect(302, `/app/votes/${year}/${month}`);

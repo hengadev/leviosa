@@ -24,9 +24,10 @@ export const load: PageServerLoad = ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, fetch }) => {
-		const formData = request.formData();
+	default: async ({ request }) => {
+		const formData = await request.formData();
 		const fieldName = formData.get('fieldName');
+		console.log(fieldName);
 		// TODO: Use that to make the put request to update the field if the user change it.
 	}
 };

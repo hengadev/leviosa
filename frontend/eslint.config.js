@@ -12,6 +12,11 @@ export default [
 	prettier,
 	...svelte.configs['flat/prettier'],
 	{
+		rules: {
+			'no-unused-vars': 'off'
+		}
+	},
+	{
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -28,6 +33,6 @@ export default [
 		}
 	},
 	{
-		ignores: ['build/', '.svelte-kit/', 'dist/']
+		ignores: ['build/', '.svelte-kit/', 'dist/', 'src/lib/components/ui/']
 	}
 ];

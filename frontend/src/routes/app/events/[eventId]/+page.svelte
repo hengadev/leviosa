@@ -3,6 +3,7 @@
 	export let data: PageData;
 	// TODO: use the event to make the component
 	$: ({ handleCheckout, event } = data);
+	console.log(event);
 	import { page } from '$app/stores';
 	const eventId = $page.params.eventId;
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';

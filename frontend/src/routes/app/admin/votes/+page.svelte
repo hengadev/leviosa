@@ -26,7 +26,7 @@
 <div class="container">
 	<div class="content">
 		<h2 class="title">Choisis une date</h2>
-		<h2 class="subtitle">Pour le mois de {month}.</h2>
+		<h2 class="subtitle">Pour le mois de {month}{year}.</h2>
 		<form class="grid" method="POST">
 			<Popover.Root>
 				<Popover.Trigger asChild let:builder>

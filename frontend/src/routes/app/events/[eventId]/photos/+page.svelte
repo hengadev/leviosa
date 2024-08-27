@@ -1,17 +1,14 @@
 <script lang="ts">
-	import type { PageData } from './$types';
-	export let data: PageData;
-	$: ({ getPhotos } = data);
+	import type { PageServerData } from './$types';
+	export let data: PageServerData;
+	$: ({ photos } = data);
 </script>
 
 <div class="content">
-	{#await getPhotos()}
-		<div>Do some loading UI for the waiting</div>
-	{:then photos}
-		{#each photos as photo}
-			<div>{photo}</div>
-		{/each}
-	{/await}
+	<div>Do some loading UI for the waiting</div>
+	{#each photos as photo}
+		<div>{photo}</div>
+	{/each}
 </div>
 
 <style>

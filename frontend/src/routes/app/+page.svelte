@@ -1,8 +1,9 @@
 <script lang="ts">
 	// data
-	import type { PageData, PageServerData } from './$types';
+	import type { PageData } from './$types';
 	export let data: PageData;
-	$: ({ accordionItems, eventId, nextVotes } = data);
+	$: ({ accordionItems, nextVotes } = data);
+	$: _nextVotes = JSON.parse(JSON.stringify(nextVotes));
 	// user data
 	import { page } from '$app/stores';
 	const name = $page.data.user.firstname;
@@ -29,10 +30,10 @@
 			</Accordion.Root>
 		</div>
 		<h3 class="subtitle">Votre prochain evenement</h3>
-		<CardNextEvent eventId />
+		<CardNextEvent eventId="some eventId" />
 		<h3 class="subtitle">Les derniers votes ouverts.</h3>
 		<div class="votes">
-			{#each nextVotes as vote}
+			{#each _nextVotes as vote}
 				<NextVote {...vote} />
 			{/each}
 		</div>

@@ -30,6 +30,4 @@
 	.month {
 		color: #f67373;
 	}
-	.places {
-	}
 </style>
