@@ -25,6 +25,8 @@ func (u *Repository) ModifyAccount(
 	if err != nil {
 		return fail(err)
 	}
+	fmt.Println("the query is:", query)
+	fmt.Println("the values are:", values)
 	res, err := u.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		return fail(err)
@@ -34,7 +36,7 @@ func (u *Repository) ModifyAccount(
 		return fail(err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("user to modified not found")
+		return fmt.Errorf("user to modify not found")
 	}
 	return nil
 }

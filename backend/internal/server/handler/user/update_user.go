@@ -15,14 +15,10 @@ func (h *Handler) UpdateUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userID := ctx.Value(mw.UserIDKey).(string)
+		userID := ctx.Value(mw.UserIDKey).(int)
 
-		user, pbms, err := serverutil.DecodeValid[userService.User](r)
-		if len(pbms) > 0 {
-			slog.ErrorContext(ctx, "failed to decode user", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			return
-		}
+		// use a custom valid for the updtate thing
+		user, err := serverutil.Decode[userService.User](r)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
