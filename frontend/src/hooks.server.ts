@@ -4,7 +4,7 @@ import { API_URL } from '$env/static/private';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// NOTE: for the moment redirect everything to the coming soon page
-	const comingSoonPath = '/wait';
+	const comingSoonPath = '/soon';
 	if (event.url.pathname === comingSoonPath) {
 		return resolve(event);
 	}

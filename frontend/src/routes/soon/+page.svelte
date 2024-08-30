@@ -1,19 +1,34 @@
 <script lang="ts">
+	import Instagram from 'lucide-svelte/icons/instagram';
+
+	function redirectInstagram() {
+		window.location.href = 'https://www.instagram.com/leviosa_care/';
+	}
 </script>
 
 <div class="container">
 	<!-- <div class="content"> -->
-	<h1 class="title">Coming soon...</h1>
+	<h1 class="title">Bientôt, un nouveau souffle pour votre bien-être.</h1>
 	<h2 class="subtitle">
-		SereniMeet Team are working very hard to bring something amazing. Stay tuned!
+		Découvrez une nouvelle façon de prendre soin de vous et de partager des moments uniques avec
+		d'autres.<br />Rejoignez nous sur Instagram dès maintenant.
 	</h2>
 	<!-- </div> -->
+	<button class="btn" on:click={redirectInstagram}>
+		<Instagram size="40" />
+	</button>
 </div>
 
 <style>
+	.btn {
+		display: grid;
+		place-content: center;
+		margin-top: 2rem;
+	}
 	.container {
 		display: grid;
 		place-content: center;
+		text-align: center;
 		padding: 2rem;
 		height: 100vh;
 		width: 90%;
@@ -37,13 +52,13 @@
 
 	.title {
 		color: #f67373;
-		font-size: clamp(1.15rem, 4vw, 2rem);
+		font-size: clamp(1.15rem, 4vw, 2.5rem);
 		font-weight: 800;
 	}
 	.subtitle {
 		color: #3c3c43;
 		color: rgba(255, 255, 245, 0.86);
-		margin-top: 1rem;
+		margin-top: 2rem;
 		font-size: clamp(1rem, 1.5vw, 1.5rem);
 	}
 
