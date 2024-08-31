@@ -26,10 +26,13 @@ func ConvertToRole(role string) Role {
 		return ADMINISTRATOR
 	case "guest":
 		return GUEST
-	case "basic":
-		return BASIC
 	default:
-		return UNKNOWN
+		return BASIC
+
+		// case "basic":
+		// 	return BASIC
+		// default:
+		// 	return UNKNOWN
 	}
 }
 

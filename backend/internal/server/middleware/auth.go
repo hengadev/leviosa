@@ -53,13 +53,9 @@ func Auth(s sessionService.Reader) Middleware {
 			}
 			// validate session
 			if pbms := session.Valid(ctx, expectedRole); len(pbms) > 0 {
-				errors := "session error: ["
-				for field, err := range pbms {
-					errors += fmt.Sprintf("%s: %s, ", field, err)
-				}
-				errors += "]"
-				slog.ErrorContext(ctx, "failed to validate session", "error", errors)
-				http.Error(w, errors, http.StatusUnauthorized)
+				err := serverutil.FormatError(pbms, "session")
+				slog.ErrorContext(ctx, "failed to validate session", "error", err)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 			// add userID to context.
@@ -77,20 +73,25 @@ func getSessionIDFromRequest(r *http.Request) (string, error) {
 	return sessionID, nil
 }
 
+var knownBasicEndpoints = []string{
+	"me",
+	serverutil.SIGNINENDPOINT,
+	serverutil.SIGNUPENDPOINT,
+	serverutil.SIGNOUTENDPOINT,
+	"auth",
+	"logout",
+	"vote",
+	"checkout",
+	"register",
+	"event",
+}
+
 func getExpectedRoleFromRequest(r *http.Request) userService.Role {
-	values := strings.Split(r.URL.Path, "/")
-	return userService.ConvertToRole(values[3])
-	// old api
-	// var role user.Role
-	// switch values[1] {
-	// case user.ADMINISTRATOR.String():
-	// 	role = user.ADMINISTRATOR
-	// case user.GUEST.String():
-	// 	role = user.GUEST
-	// case user.BASIC.String():
-	// 	role = user.BASIC
-	// default:
-	// 	role = user.UNKNOWN
-	// }
-	// return role
+	segment := strings.Split(r.URL.Path, "/")[3]
+	for _, endpoint := range knownBasicEndpoints {
+		if segment == endpoint {
+			return userService.ConvertToRole("basic")
+		}
+	}
+	return userService.ConvertToRole(segment)
 }

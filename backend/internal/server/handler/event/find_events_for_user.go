@@ -15,7 +15,7 @@ func (h *Handler) FindEventsForUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		userID := ctx.Value(mw.UserIDKey).(string)
+		userID := ctx.Value(mw.UserIDKey).(int)
 		resBody, err := h.Repos.Event.GetEventForUser(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the events for the user", "error", err)

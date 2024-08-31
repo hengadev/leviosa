@@ -26,7 +26,7 @@ func GetInitQueries() ([]string, error) {
 			string(hashedpassword),
 			time.Now(),
 			time.Now(),
-			"guest",
+			"admin",
 			birthday,
 			"admin lastname",
 			"admin firstname",

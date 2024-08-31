@@ -10,6 +10,7 @@ import (
 
 const SIGNINENDPOINT = "signin"
 const SIGNUPENDPOINT = "signup"
+const SIGNOUTENDPOINT = "signout"
 
 type Validator interface {
 	Valid(ctx context.Context) (problems map[string]string)

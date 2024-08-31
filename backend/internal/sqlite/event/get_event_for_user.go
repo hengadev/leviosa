@@ -9,7 +9,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*event.EventUser, error) {
+func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*event.EventUser, error) {
 	// TODO: use transaction for that function brother
 	var res event.EventUser
 	now := time.Now()

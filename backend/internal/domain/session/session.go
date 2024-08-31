@@ -2,6 +2,7 @@ package sessionService
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -81,7 +82,7 @@ func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems
 	}
 	sessionRole := userService.ConvertToRole(s.Role)
 	if !sessionRole.IsSuperior(minRole) {
-		pbms["role"] = "unauthorized, user does not have the right priviledge"
+		pbms["role"] = fmt.Sprintf("unauthorized, user role %s is not superior to %s", sessionRole, minRole)
 	}
 	return pbms
 }
