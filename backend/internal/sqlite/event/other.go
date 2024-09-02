@@ -39,8 +39,8 @@ func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID s
 // On part du principe que le beginAt est store comme "xx:xx:xx"
 
 // NOTE: votes do not include event id now
-func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*event.Event, error) {
-	events := make([]*event.Event, 0)
+func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*eventService.Event, error) {
+	events := make([]*eventService.Event, 0)
 	query := `
        SELECT * FROM events WHERE id IN
        (SELECT eventid FROM votes WHERE userid=?)
@@ -53,7 +53,7 @@ func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) (
 	}
 
 	for rows.Next() {
-		event := &event.Event{}
+		event := &eventService.Event{}
 		var dataTemp string
 		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
 			return nil, rp.NewErrScan(err)

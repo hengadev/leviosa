@@ -15,7 +15,7 @@ func TestGetEventByID(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
 		id            string
-		expectedEvent *event.Event
+		expectedEvent *eventService.Event
 		wantErr       bool
 		version       int64
 		name          string

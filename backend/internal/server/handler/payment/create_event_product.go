@@ -22,7 +22,7 @@ func (h *Handler) CreateEventProduct() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", stripe.Key))
-		event, err := serverutil.Decode[event.Event](r)
+		event, err := serverutil.Decode[eventService.Event](r)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

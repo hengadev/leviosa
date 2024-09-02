@@ -9,8 +9,8 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*event.Event, error) {
-	event := &event.Event{}
+func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventService.Event, error) {
+	event := &eventService.Event{}
 	var beginat string
 	var minutes int
 	var err error

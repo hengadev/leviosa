@@ -14,7 +14,7 @@ import (
 type Services struct {
 	User     *userService.Service
 	Session  *sessionService.Service
-	Event    *event.Service
+	Event    *eventService.Service
 	Payment  *payment.Service
 	Vote     *vote.Service
 	Checkout *checkout.Service
@@ -25,7 +25,7 @@ type Services struct {
 type Repos struct {
 	User     userService.Reader
 	Session  sessionService.Reader
-	Event    event.Reader
+	Event    eventService.Reader
 	Vote     vote.Reader
 	Register register.Reader
 	Photo    photo.Reader

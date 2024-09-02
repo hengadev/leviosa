@@ -16,7 +16,7 @@ func (h *Handler) CreateEvent() http.Handler {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// get the event from the body
-		event, err := serverutil.Decode[event.Event](r)
+		event, err := serverutil.Decode[eventService.Event](r)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode the event", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)

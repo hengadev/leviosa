@@ -12,7 +12,7 @@ var (
 	beginAt1, _ = eventRepository.ExportedParseBeginAt("08:00:00", 13, 7, 1998)
 	beginAt2, _ = eventRepository.ExportedParseBeginAt("08:00:00", 14, 7, 1998)
 
-	baseEvent = &event.Event{
+	baseEvent = &eventService.Event{
 		ID:              "ea1d74e2-1612-47ec-aee9-c6a46b65640f",
 		Location:        "Impasse Inconnue",
 		PlaceCount:      16,
@@ -24,7 +24,7 @@ var (
 		Year:            1998,
 	}
 
-	baseEvent1 = &event.Event{
+	baseEvent1 = &eventService.Event{
 		ID:              "b16a6f38-d2fb-428c-b97c-929b1010b951",
 		Location:        "Impasse Inconnue",
 		PlaceCount:      23,
@@ -36,7 +36,7 @@ var (
 		Year:            1998,
 	}
 
-	baseEvent2 = &event.Event{
+	baseEvent2 = &eventService.Event{
 		ID:              "9a676c5d-c9ec-4266-a426-24e5d4983caf",
 		Location:        "Impasse Inconnue",
 		PlaceCount:      22,
@@ -48,7 +48,7 @@ var (
 		Year:            1998,
 	}
 
-	baseEventWithPriceID = &event.Event{
+	baseEventWithPriceID = &eventService.Event{
 		ID:              "ea1d74e2-1612-47ec-aee9-c6a46b65640f",
 		Location:        "Impasse Inconnue",
 		PlaceCount:      16,

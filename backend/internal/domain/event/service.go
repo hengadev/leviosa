@@ -1,10 +1,10 @@
-package event
+package eventService
 
 type Service struct {
 	Repo ReadWriter
 }
 
-func NewService(repo ReadWriter) *Service {
+func New(repo ReadWriter) *Service {
 	return &Service{
 		Repo: repo,
 	}

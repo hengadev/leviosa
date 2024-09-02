@@ -13,12 +13,12 @@ import (
 func TestAddEvent(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		event   *event.Event
+		event   *eventService.Event
 		wantErr bool
 		version int64
 		name    string
 	}{
-		{event: &event.Event{}, wantErr: true, version: 20240820013106, name: "no event IDa specified"},
+		{event: &eventService.Event{}, wantErr: true, version: 20240820013106, name: "no event IDa specified"},
 		{event: baseEvent, wantErr: true, version: 20240820013106, name: "No price id specified"},
 		{event: baseEventWithPriceID, wantErr: false, version: 20240820013106, name: "nominal case"},
 	}

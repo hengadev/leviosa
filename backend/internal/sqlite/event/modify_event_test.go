@@ -29,7 +29,7 @@ func TestModifyEvent(t *testing.T) {
 	}
 
 	tests := []struct {
-		eventModified *event.Event
+		eventModified *eventService.Event
 		wantErr       bool
 		version       int64
 		name          string

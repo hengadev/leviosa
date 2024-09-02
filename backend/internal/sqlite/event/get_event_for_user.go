@@ -9,9 +9,9 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*event.EventUser, error) {
+func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eventService.EventUser, error) {
 	// TODO: use transaction for that function brother
-	var res event.EventUser
+	var res eventService.EventUser
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
 	statements := []struct {
@@ -33,7 +33,7 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 		for rows.Next() {
 			var priceID string
 			var beginAt string
-			event := &event.Event{}
+			event := &eventService.Event{}
 			if err := rows.Scan(
 				&event.ID,
 				&event.Location,

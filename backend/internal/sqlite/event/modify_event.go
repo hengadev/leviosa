@@ -11,7 +11,7 @@ import (
 
 func (e *EventRepository) ModifyEvent(
 	ctx context.Context,
-	event *event.Event,
+	event *eventService.Event,
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {

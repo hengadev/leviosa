@@ -9,8 +9,8 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, error) {
-	var events []*event.Event
+func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Event, error) {
+	var events []*eventService.Event
 	query := "SELECT id, location, placecount, freeplace, beginat, sessionduration, day, month, year FROM events;"
 	rows, err := e.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -20,7 +20,7 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*event.Event, err
 	for rows.Next() {
 		var beginat string
 		var minutes int
-		event := &event.Event{}
+		event := &eventService.Event{}
 		if err := rows.Scan(
 			&event.ID,
 			&event.Location,

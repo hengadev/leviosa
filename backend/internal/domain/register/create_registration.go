@@ -10,7 +10,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 )
 
-func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *event.Event) error {
+func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *eventService.Event) error {
 	day, month, year := parseEventTimeForRegistration(event)
 	// check if there is a registration for the user for that specific event
 	err := s.Repo.HasRegistration(ctx, day, year, month, userID)
@@ -33,7 +33,7 @@ func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string
 	return nil
 }
 
-func parseEventTimeForRegistration(e *event.Event) (int, string, int) {
+func parseEventTimeForRegistration(e *eventService.Event) (int, string, int) {
 	month := strings.ToLower(time.Month(e.Month).String())
 	return e.Day, month, e.Year
 }

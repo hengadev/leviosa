@@ -8,7 +8,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) AddEvent(ctx context.Context, event *event.Event) error {
+func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Event) error {
 	fail := func(err error) error {
 		return rp.NewRessourceCreationErr(err)
 	}
