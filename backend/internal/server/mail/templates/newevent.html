@@ -6,28 +6,38 @@
     <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sending my first html email</title>
+    <title>[Leviosa] Nouvel Évènement disponible</title>
 </head>
 
-<body style="font-size:1.2rem">
-    <center>
-        <table style="width:600px; border:1px solid black; padding:1rem 3rem; border-radius:2rem;" align="center">
-            <h2 style="margin-bottom:3rem;">Nouvel evenement LiviOsteo</h2>
-            <div style="margin-bottom:1rem;" class="paragraph space-y">Salut {{ .Username }}, je suis ravi de t'annoncer
+<body style="padding:2rem; background-color:#F2F2F2; font-size:1.2rem;">
+    <div align="center">
+        <div style="width:600px; box-shadow: rgba(60, 60, 67, 0.78) 0px 1px 3px 0px, rgba(60, 60, 67, 0.78) 0px 0px 0px 1px; padding:1rem 3rem; border-radius:0.5rem; background-color:white;" align="center">
+		
+            <img src="cid:logo" alt="company logo" style="max-width:100%; height:auto;" />
+            <h2 style="margin-bottom:3rem;">Nouvel evenement Leviosa</h2>
+            <div style="margin-bottom:1rem;" >Salut {{ .Firstname }}, je suis ravi de t'annoncer
                 qu'un nouvel evenement vient d'etre annoncer.
             </div>
             <hr style="margin-bottom:1rem;">
-            <div style="margin-bottom:1rem;" class="paragraph space-y">Nous t'attendons le <b>{{ .Heure }}</b> a une
+            <div style="margin-bottom:1rem;" >Nous t'attendons le <b>{{ .Heure }}</b> a une
                 adresse que tu peux trouver sur ton compte.</div>
             <center>
                 <button
                     style="margin-bottom:1rem; border:none; padding:0.8rem 2.4rem; padding:1rem 3rem; font-size:1.2rem; background:none; border:1px solid #89888e; border-radius:0.5rem; background-color:#89888e; color:white; font-weight:600; margin-inline:auto;"
-                    class="space-y">Decouvre l'evenement</button>
+                    >Decouvre l'evenement
+                </button>
             </center>
-            <div style="margin-bottom:1rem;" class="paragraph space-y">
+            <div style="color:blue;">Some text to try to style things better</div>
+            <div style="color:red;">Some text to try to style things better</div>
+            <div style="background-color:yellow;">Some text to try to style things better</div>
+            <a href="https://www.instagram.com/leviosa_care/">Lien vers le instagram avec la balise <a></a>
+            <div style="margin-bottom:1rem;" >
                 blablablablablablablablablablablablablablablablablabla</div>
-        </table>
-    </center>
+            <a href="https://www.instagram.com/leviosa_care/">
+                <img src="cid:instagram" alt="instagram logo" style="max-width:40px; height:auto;"/>
+            </a>
+        </div>
+    </div>
 </body>
 
 </html>
