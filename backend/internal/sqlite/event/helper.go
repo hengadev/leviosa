@@ -17,6 +17,26 @@ func convIntToStr(value int) (string, error) {
 	}
 }
 
+// TODO: change the API so that I can have better function like this one to restrict the API for better use.
+// func convIntToStr(value, maxValue int) (string, error) {
+// 	if value < 0 {
+// 		return "", fmt.Errorf("%d is invalid value", value)
+// 	} else if value < 10 {
+// 		return fmt.Sprintf("0%d", value), nil
+// 	} else if value < maxValue {
+// 		return fmt.Sprintf("%d", value), nil
+// 	} else {
+// 		return "", fmt.Errorf("%d is invalid value", value)
+// 	}
+// }
+// func convIntToHour(value int) (string, error) {
+// 	return convIntToStr(value, 24)
+// }
+//
+// func convIntToMinuteOrSecond(value int) (string, error) {
+// 	return convIntToStr(value, 60)
+// }
+
 // helper function for the GetEventForUser function
 func formatTime(hour string) (string, error) {
 	res := hour
