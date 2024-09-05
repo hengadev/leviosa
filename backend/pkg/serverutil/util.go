@@ -2,6 +2,8 @@ package serverutil
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,4 +67,11 @@ func FormatError(pbms map[string]string, name string) error {
 		temp += fmt.Sprintf("invalid %s: %s, ", field, pbm)
 	}
 	return errors.New(fmt.Sprintf("%s error : [%s]", name, temp))
+}
+
+func CreateOTP() string {
+	bytes := make([]byte, 4)
+	rand.Read(bytes)
+	num := int(binary.BigEndian.Uint32(bytes) % 100000000)
+	return fmt.Sprintf("%08d", num)
 }
