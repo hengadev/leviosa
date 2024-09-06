@@ -10,8 +10,8 @@
 	<!-- <div class="content"> -->
 	<h1 class="title">Bientôt, un nouveau souffle pour votre bien-être.</h1>
 	<h2 class="subtitle">
-		Découvrez une nouvelle façon de prendre soin de vous et de partager des moments uniques avec
-		d'autres.<br />Rejoignez nous sur Instagram dès maintenant.
+		Découvrez une nouvelle façon de prendre soin de vous et de partager des moments uniques.
+		<br /><br />Rejoignez nous sur Instagram dès maintenant.
 	</h2>
 	<!-- </div> -->
 	<button class="btn" on:click={redirectInstagram}>
