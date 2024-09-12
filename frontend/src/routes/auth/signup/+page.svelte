@@ -8,8 +8,7 @@
 	$: console.log('change in the form : ', form);
 	// TODO: add link to get back to sign in page
 	// TODO: do the email is taken error.
-	// TODO: Add the possibility to connect using Outh google + apple
-	// TODO: add the possibility to do OAuth
+	// TODO: Add the possibility to connect using Oauth google + apple
 </script>
 
 <div class="container">

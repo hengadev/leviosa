@@ -4,6 +4,7 @@ import { API_URL } from '$env/static/private';
 
 import { parseCookie } from '$lib/scripts/parseCookie';
 import { validate } from '$lib/scripts/credentials';
+import { cookieName } from '$lib/types/cookie';
 
 export const actions: Action = {
 	default: async ({ request, cookies }) => {
@@ -26,7 +27,7 @@ export const actions: Action = {
 		});
 		if (res.ok) {
 			const cookieParsed = parseCookie(res.headers.getSetCookie()[0]);
-			cookies.set('sessionId', cookieParsed.sessionId, {
+			cookies.set(cookieName, cookieParsed.Value, {
 				path: '/'
 			});
 			// redirect to the auth home page.
@@ -38,9 +39,7 @@ export const actions: Action = {
 };
 
 export const load: PageServerLoad = ({ locals }) => {
-	if (locals.user.role === 'admin') {
-		throw redirect(301, '/app/admin');
-	} else if (locals.user) {
+	if (locals.user) {
 		throw redirect(301, '/app');
 	}
 };
