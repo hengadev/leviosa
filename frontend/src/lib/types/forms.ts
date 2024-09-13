@@ -26,3 +26,9 @@ export type FormControl = {
 	type: FormControlInput;
 	placeholder?: FormControlPlaceholder | string;
 };
+
+export type OAuthButtons = {
+	name: string;
+	providerName: string;
+	IconComponent: typeof Apple;
+};
