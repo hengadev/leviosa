@@ -13,8 +13,8 @@ Thumbs.db
 # Env
 .env
 .env.*
-!.env.production
-!.env.development
+!.env.production.example
+!.env.development.example
 
 # Vite
 vite.config.js.timestamp-*
@@ -24,3 +24,5 @@ vite.config.ts.timestamp-*
 
 test-results
 notes
+
+certs
