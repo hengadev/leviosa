@@ -1,6 +1,6 @@
 import { redirect, type Handle } from '@sveltejs/kit';
 // import { cookieName } from '$lib/types/cookie';
-// import { API_URL } from '$env/static/private';
+// import { API_URL } from '$lib/envVariables';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// NOTE: for the moment redirect everything to the coming soon page

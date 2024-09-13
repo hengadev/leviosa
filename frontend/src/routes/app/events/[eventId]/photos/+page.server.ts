@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 async function getPhotos(userId: string, eventId: string) {
 	// TODO: fetch the photos from S3 bucket via the backend golang

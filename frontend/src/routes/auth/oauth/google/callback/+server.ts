@@ -1,6 +1,6 @@
 import { type RequestHandler } from '@sveltejs/kit';
 import { googleOAuth } from '$lib/auth/lucia.server';
-import { API_URL, INTERNAL_API_KEY } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 import { route } from '$lib/ROUTES';
 
 import { parseCookie } from '$lib/scripts/parseCookie';
@@ -76,7 +76,6 @@ export const GET: RequestHandler = async ({ url, cookies }) => {
 		const dbUserResponse = await fetch(`${API_URL}/api/v1/oauth/google/user`, {
 			method: 'POST',
 			headers: {
-				'X-API-KEY': INTERNAL_API_KEY,
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({ ...googleUser, ...values })

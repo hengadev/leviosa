@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 // TODO:
 // - how many dates for the month (pick the x most ranked)

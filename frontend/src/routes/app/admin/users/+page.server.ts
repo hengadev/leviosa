@@ -1,6 +1,6 @@
 import type { PageServerLoad, Action, Actions } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 // TODO: complete the user type so that it is easy.
 type User = {

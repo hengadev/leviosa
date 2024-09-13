@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 // TODO: make the right type based on the backend
 // type Event = {

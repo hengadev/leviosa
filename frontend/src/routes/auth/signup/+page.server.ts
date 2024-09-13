@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { Action, PageServerLoad } from './$types';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 import { parseCookie } from '$lib/scripts/parseCookie';
 import { validate } from '$lib/scripts/credentials';

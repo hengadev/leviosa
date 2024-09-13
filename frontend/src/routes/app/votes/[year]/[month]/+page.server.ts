@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { Action } from './$types.js';
-import { API_URL } from '$env/static/private';
+import { API_URL } from '$lib/envVariables';
 
 type Vote = {
 	day: number;

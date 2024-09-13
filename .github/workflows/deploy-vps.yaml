@@ -36,6 +36,8 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
           GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
           docker pull henga/event-reservation-app:frontend
           docker pull henga/event-reservation-app:backend
