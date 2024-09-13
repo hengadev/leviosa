@@ -8,21 +8,24 @@ import (
 
 const BirthdayLayout = "2006-01-02"
 
+// TODO: remove the address field ?
 type User struct {
-	ID         int       `json:"id"`
-	Email      string    `json:"email,omitempty" validate:"required,email"`
-	Password   string    `json:"password" validate:"required,min=6"`
-	CreatedAt  time.Time `json:"createdAt"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	Role       string    `json:"role"`
-	BirthDate  string    `json:"birthdate,omitempty"`
-	LastName   string    `json:"lastname,omitempty"`
-	FirstName  string    `json:"firstname,omitempty"`
-	Gender     string    `json:"gender,omitempty"`
-	Telephone  string    `json:"telephone,omitempty"`
-	Address    string    `json:"address,omitempty"`
-	City       string    `json:"city,omitempty"`
-	PostalCard int       `json:"postalcard,omitempty"`
+	ID            int       `json:"id"`
+	Email         string    `json:"email,omitempty" validate:"required,email"`
+	Password      string    `json:"password" validate:"required,min=6"`
+	CreatedAt     time.Time `json:"createdAt"`
+	LoggedInAt    time.Time `json:"loggedinat"`
+	Role          string    `json:"role"`
+	BirthDate     string    `json:"birthdate,omitempty"`
+	LastName      string    `json:"lastname,omitempty"`
+	FirstName     string    `json:"firstname,omitempty"`
+	Gender        string    `json:"gender,omitempty"`
+	Telephone     string    `json:"telephone,omitempty"`
+	Address       string    `json:"address,omitempty"`
+	City          string    `json:"city,omitempty"`
+	PostalCard    int       `json:"postalcard,omitempty"`
+	OAuthProvider string    `json:"oauthProvider"`
+	OAuthID       string    `json:"oauthId"`
 }
 
 type UserResponse struct {
@@ -65,7 +68,6 @@ func NewUser(
 }
 
 func (a *User) Create() {
-	// a.ID = uuid.NewString()
 	a.CreatedAt = time.Now().UTC()
 }
 

@@ -40,3 +40,12 @@ func (s *StubUserRepository) ModifyAccount(ctx context.Context, user *userServic
 func (s *StubUserRepository) DeleteUser(ctx context.Context, id int) error {
 	return nil
 }
+
+func (s *StubUserRepository) GetUser(ctx context.Context, email string) (*userService.User, error) {
+	for _, usr := range s.users {
+		if usr.Email != "" {
+			return usr, nil
+		}
+	}
+	return nil, fmt.Errorf("no user found")
+}

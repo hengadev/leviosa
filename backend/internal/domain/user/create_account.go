@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
-	// "github.com/GaryHY/event-reservation-app/internal/domain/user/validator"
 )
 
 // TODO: Do the validation for the rest of the fields.
