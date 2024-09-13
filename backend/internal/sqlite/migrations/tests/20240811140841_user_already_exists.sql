@@ -13,7 +13,9 @@ INSERT INTO users (
     telephone,
     address,
     city,
-    postalcard
+    postalcard,
+    oauth_providers,
+    oauth_ids
     ) VALUES (
     'john.doe@gmail.com',
     '$a9rfNhA$N$A78#m',
@@ -27,7 +29,9 @@ INSERT INTO users (
     '0123456789',
     'Impasse Inconnue',
     'Paris',
-    12345
+    12345,
+    NULL,
+    NULL
     );
 -- +goose StatementEnd
 

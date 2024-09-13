@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
+    password TEXT,
 	createdat  DATETIME,
 	loggedinat DATETIME,
     role TEXT NOT NULL,
@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
 	address TEXT NOT NULL,
 	city TEXT NOT NULL,
 	postalcard INTEGER NOT NULL,
+    oauth_providers TEXT,
+    oauth_ids TEXT,
     UNIQUE(lastname, firstname)
 );
 -- +goose StatementEnd
