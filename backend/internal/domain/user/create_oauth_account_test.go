@@ -15,9 +15,7 @@ func TestCreateOAuthAccount(t *testing.T) {
 		wantUser bool
 		wantErr  bool
 		name     string
-	}{
-		{},
-	}
+	}{}
 	for _, tt := range tests {
 		t.Parallel()
 		t.Run(tt.name, func(t *testing.T) {

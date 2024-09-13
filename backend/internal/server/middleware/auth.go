@@ -26,16 +26,24 @@ func Auth(s sessionService.Reader) Middleware {
 			noAuthEndpoints := []string{
 				serverutil.SIGNINENDPOINT,
 				serverutil.SIGNUPENDPOINT,
+				"hello",
+				"oauth/google/user",
 			}
-			url := strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-			for _, endpoint := range noAuthEndpoints {
-				if url == endpoint {
-					next.ServeHTTP(w, r)
-					return
+			var url string
+			if r.URL.Path == "/favicon.ico" {
+				fmt.Println("here in the favicon thing brother.")
+				next.ServeHTTP(w, r)
+				return
+			} else {
+				url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
+				for _, endpoint := range noAuthEndpoints {
+					if url == endpoint {
+						next.ServeHTTP(w, r)
+						return
+					}
 				}
 			}
 			ctx := r.Context()
-			// get expected role from url path
 			expectedRole := getExpectedRoleFromRequest(r)
 			// get sessionID from request
 			sessionID, err := getSessionIDFromRequest(r)
@@ -73,6 +81,7 @@ func getSessionIDFromRequest(r *http.Request) (string, error) {
 	return sessionID, nil
 }
 
+// TODO: find a way to get all the routes from an instance of server.
 var knownBasicEndpoints = []string{
 	"me",
 	serverutil.SIGNINENDPOINT,

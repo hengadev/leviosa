@@ -45,7 +45,7 @@ func NewEvent(users []*userService.User, eventTime string) []error {
 				Firstname string
 				Heure     string
 			}{
-				Firstname: user.Firstname,
+				Firstname: user.FirstName,
 				Heure:     eventTime,
 			}
 			for _, email := range emails {

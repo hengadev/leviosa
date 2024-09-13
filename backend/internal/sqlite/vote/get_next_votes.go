@@ -27,7 +27,6 @@ func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote
 	}
 	defer rows.Close()
 	for rows.Next() {
-		fmt.Println("in the loop brother")
 		var days string
 		var month_db int
 		var year_db int

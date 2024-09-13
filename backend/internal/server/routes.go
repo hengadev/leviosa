@@ -35,9 +35,13 @@ func (s *Server) addRoutes(h *handler.Handler) {
 	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNUPENDPOINT), userHandler.CreateAccount())
 	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNINENDPOINT), userHandler.Signin())
 	mux.Handle("POST /api/v1/signout", userHandler.Signout())
+
+	mux.Handle("POST /api/v1/oauth/{provider}/user", userHandler.HandleOAuth())
+
 	// payment
 	mux.Handle("POST /api/v1/admin/payment", paymentHandler.CreateEventProduct())
 	mux.Handle("DELETE /api/v1/admin/payment", paymentHandler.DeleteEventProduct())
+
 	// vote
 	mux.Handle("GET /api/v1/vote/{month}/{year}", voteHandler.GetVotesByUserID())
 	// checkout

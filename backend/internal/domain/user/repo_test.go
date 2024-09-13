@@ -23,7 +23,7 @@ func (s *StubUserRepository) GetCredentials(ctx context.Context, usr *userServic
 	return 0, "", userService.UNKNOWN, nil
 }
 
-func (s *StubUserRepository) AddAccount(ctx context.Context, user *userService.User) (int64, error) {
+func (s *StubUserRepository) AddAccount(ctx context.Context, user *userService.User, provider ...string) (int64, error) {
 	for _, usr := range s.users {
 		if usr == user {
 			return 0, fmt.Errorf("user already exists")
@@ -48,4 +48,7 @@ func (s *StubUserRepository) GetUser(ctx context.Context, email string) (*userSe
 		}
 	}
 	return nil, fmt.Errorf("no user found")
+}
+func (s *StubUserRepository) GetOAuthUser(ctx context.Context, email, provider string) (*userService.User, error) {
+	return nil, nil
 }

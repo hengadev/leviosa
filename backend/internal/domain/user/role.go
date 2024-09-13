@@ -26,14 +26,17 @@ func ConvertToRole(role string) Role {
 		return ADMINISTRATOR
 	case "guest":
 		return GUEST
-	default:
+	case "basic":
 		return BASIC
-
-		// case "basic":
-		// 	return BASIC
-		// default:
-		// 	return UNKNOWN
+	default:
+		return UNKNOWN
 	}
+
+	// case "":
+	// 	return UNKNOWN
+	// default:
+	// 	return BASIC
+
 }
 
 // Function qui retourne si un role est superieur (ou egal a un autre role).
