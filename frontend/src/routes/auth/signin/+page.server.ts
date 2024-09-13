@@ -56,6 +56,7 @@ export const load: PageServerLoad = ({ locals }) => {
 	if (locals.user) {
 		throw redirect(301, '/app');
 	}
+	return { API_URL };
 };
 
 export const actions: Actions = { register };
