@@ -41,7 +41,7 @@ func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, prov
 	providerList := parseProviders(providers)
 	addIfNotExist(providerList, usr.OAuthProvider)
 
-	query := "INSERT INTO users (email, password, createdat, loggedinat, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard, oauth_providers, oauth_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+	query := "INSERT INTO users (email, password, createdat, loggedinat, role, lastname, firstname, gender, birthdate, telephone, oauth_providers, oauth_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
 	// res, err := u.DB.ExecContext(
 	res, err := tx.ExecContext(
 		ctx,
@@ -56,9 +56,6 @@ func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, prov
 		usr.Gender,
 		usr.BirthDate,
 		usr.Telephone,
-		usr.Address,
-		usr.City,
-		usr.PostalCard,
 		formatProvider(providerList),
 		usr.OAuthID,
 	)

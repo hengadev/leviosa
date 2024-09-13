@@ -25,9 +25,6 @@ func (u *Repository) FindAccountByID(ctx context.Context, id int) (*userService.
 		&user.FirstName,
 		&user.Gender,
 		&user.Telephone,
-		&user.Address,
-		&user.City,
-		&user.PostalCard,
 		&nullOAuthProvider,
 		&nullOAuthID,
 	); err != nil {

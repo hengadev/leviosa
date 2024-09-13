@@ -11,9 +11,6 @@ INSERT INTO users (
     firstname,
     gender,
     telephone,
-    address,
-    city,
-    postalcard,
     oauth_providers,
     oauth_ids
     ) VALUES (
@@ -27,9 +24,6 @@ INSERT INTO users (
     'John',
     'M',
     '0123456789',
-    'Impasse Inconnue',
-    'Paris',
-    12345,
     NULL,
     NULL
     );

@@ -48,21 +48,6 @@ type PhoneNumber struct {
 	FormattedType string   `json:"formattedType"`
 }
 
-type Address struct {
-	Metadata        Metadata `json:"metadata"`
-	FormattedValue  string   `json:"formattedValue"`
-	Type            string   `json:"type"`
-	FormattedType   string   `json:"formattedType"`
-	PoBox           string   `json:"poBox"`
-	StreetAddress   string   `json:"streetAddress"`
-	ExtendedAddress string   `json:"extendedAddress"`
-	City            string   `json:"city"`
-	Region          string   `json:"region"`
-	PostalCode      string   `json:"postalCode"`
-	Country         string   `json:"country"`
-	CountryCode     string   `json:"countryCode"`
-}
-
 type OAuthUser interface {
 	ToUser() (*User, error)
 	GetEmail() string
@@ -95,7 +80,6 @@ type GoogleUser struct {
 	Etag          string        `json:"etag"`
 	Genders       []Gender      `json:"genders"`
 	Birthdays     []Birthday    `json:"birthdays"`
-	Addresses     []Address     `json:"addresses"`
 	PhoneNumbers  []PhoneNumber `json:"phoneNumbers"`
 }
 
@@ -162,7 +146,6 @@ type Response struct {
 	Birthdays     []Birthday    `json:"birthdays"`
 	Genders       []Gender      `json:"genders"`
 	PhoneNumbers  []PhoneNumber `json:"phoneNumbers"`
-	Addresses     []Address     `json:"addresses"`
 	RessourceName string        `json:"ressourceName"`
 	Etag          string        `json:"etag"`
 }

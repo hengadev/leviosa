@@ -9,7 +9,7 @@ import (
 
 func (u *Repository) GetAllUsers(ctx context.Context) ([]*userService.User, error) {
 	var users []*userService.User
-	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone, address, city, postalcard FROM users;"
+	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone FROM users;"
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, rp.NewNotFoundError(err)
@@ -26,9 +26,6 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*userService.User, erro
 			&user.Gender,
 			&user.BirthDate,
 			&user.Telephone,
-			&user.Address,
-			&user.City,
-			&user.PostalCard,
 		)
 		if err != nil {
 			return nil, rp.NewNotFoundError(err)

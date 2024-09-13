@@ -17,9 +17,8 @@ INSERT INTO users (
     firstname,
     gender,
     telephone,
-    address,
-    city,
-    postalcard
+    oauth_providers,
+    oauth_ids
     ) VALUES (
     'john.doe@gmail.com',
     '${HASHED_PASSWORD}',
@@ -31,9 +30,8 @@ INSERT INTO users (
     'John',
     'M',
     '0123456789',
-    'Impasse Inconnue',
-    'Paris',
-    12345
+    NULL,
+    NULL
     );
 -- +goose ENVSUB OFF
 -- +goose StatementEnd

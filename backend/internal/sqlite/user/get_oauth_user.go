@@ -24,9 +24,6 @@ func (u *Repository) GetOAuthUser(ctx context.Context, email, provider string) (
 		&user.FirstName,
 		&user.Gender,
 		&user.Telephone,
-		&user.Address,
-		&user.City,
-		&user.PostalCard,
 		&providers,
 		&ids,
 	)

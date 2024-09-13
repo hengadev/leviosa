@@ -14,9 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
     firstname TEXT NOT NULL,
 	gender TEXT NOT NULL CHECK (GENDER IN ("M", "F", "NB", "NP")),
 	telephone TEXT NOT NULL UNIQUE,
-	address TEXT NOT NULL,
-	city TEXT NOT NULL,
-	postalcard INTEGER NOT NULL,
     oauth_providers TEXT,
     oauth_ids TEXT,
     UNIQUE(lastname, firstname)

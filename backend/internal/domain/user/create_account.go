@@ -34,9 +34,6 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 		userCandidate.FirstName,
 		userCandidate.Gender,
 		input.Telephone,
-		userCandidate.Address,
-		userCandidate.City,
-		userCandidate.PostalCard,
 	)
 	user.Create()
 	user.Login()

@@ -18,7 +18,6 @@ import (
 func TestUpdateUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
 	userToModify := *testutil.Johndoe
-	userToModify.City = "Paris"
 	userToModify.Telephone = "0234567890"
 	var zerotime time.Time
 	tests := []struct {

@@ -20,8 +20,8 @@ func GetInitQueries() ([]string, error) {
 	queries := []string{
 		fmt.Sprintf(
 			`INSERT OR IGNORE INTO users 
-            (email, password, createdat, loggedinat, role, birthdate, lastname, firstname, gender, telephone, address, city, postalcard)
-            VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', %d);`,
+            (email, password, createdat, loggedinat, role, birthdate, lastname, firstname, gender, telephone)
+            VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s');`,
 			"admin-livio@outlook.fr",
 			string(hashedpassword),
 			time.Now(),
@@ -32,9 +32,6 @@ func GetInitQueries() ([]string, error) {
 			"admin firstname",
 			"M",
 			"0000000000",
-			"admin address",
-			"admin city",
-			94200,
 		),
 	}
 	return queries, nil

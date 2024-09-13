@@ -25,16 +25,13 @@ func TestCreateAccount(t *testing.T) {
 		wantErr  bool
 	}{
 		{usr: &userService.User{
-			Email:      "john.doe@gmail.com",
-			Password:   test.GenerateRandomString(16),
-			BirthDate:  "1999-08-08",
-			LastName:   "DOE",
-			FirstName:  "John",
-			Gender:     "M",
-			Telephone:  "0123456789",
-			Address:    "Impasse Inconnue",
-			City:       "Paris",
-			PostalCard: 12345,
+			Email:     "john.doe@gmail.com",
+			Password:  test.GenerateRandomString(16),
+			BirthDate: "1999-08-08",
+			LastName:  "DOE",
+			FirstName: "John",
+			Gender:    "M",
+			Telephone: "0123456789",
 		}, name: "Valid user", wantUser: true, wantErr: false},
 	}
 	for _, tt := range tests {
@@ -56,16 +53,13 @@ func TestCreateAccount(t *testing.T) {
 			"CreatedAt",
 		}
 		u := &userService.User{
-			Email:      "john.doe@gmail.com",
-			Password:   test.GenerateRandomString(16),
-			BirthDate:  "1999-08-08",
-			LastName:   "DOE",
-			FirstName:  "John",
-			Gender:     "M",
-			Telephone:  "0123456789",
-			Address:    "Impasse Inconnue",
-			City:       "Paris",
-			PostalCard: 12345,
+			Email:     "john.doe@gmail.com",
+			Password:  test.GenerateRandomString(16),
+			BirthDate: "1999-08-08",
+			LastName:  "DOE",
+			FirstName: "John",
+			Gender:    "M",
+			Telephone: "0123456789",
 		}
 		ctx := context.Background()
 		repo := NewStubUserRepository()
