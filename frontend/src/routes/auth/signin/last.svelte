@@ -1,47 +1,39 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	export let data: PageData;
-	$: ({ formControls} = data);
+	$: ({ formControls, oauthButtons } = data);
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { route } from '$lib/ROUTES';
-    import Google from '../../../assets/google.svelte';
-    import Apple from '../../../assets/apple.svelte';
 
 	import FormInput from '$lib/components/FormInput.svelte';
+
+    // TODO: Here I make all the modification on this new page brother
 
 	export let form: ActionData;
 	if (form?.success) {
 		console.log('the success status  : ', form.success);
 	}
 	const action = route('GET /auth/oauth/google');
-    // TODO: change the value of flow-space to make it responsive maybe use some vh units ?
 </script>
 
-<div class="container grid" style="--gap: 1rem;">
-	<!-- <div class="content flow" style="--flow-space: var(--h1);">  -->
-	<div class="content flow" style="--flow-space: 3rem;"> 
-        <div class="header grid" style="--gap: 1rem;">
-            <h1 class="fs-h1 fw-800 dark-primary-content">👋 Content de te revoir</h1>
-            <p class="subtitle fs-h3 dark-ternary-content">Rejoins notre communaute bien etre physique et mental et blablabla</p>
+<div class="container grid" style="--gap: 0rem;">
+	<div class="content flow stroke" style="--flow-space: 4rem;">
+		<!-- <div class="logo"></div> -->
+        <div class="header">
+            <h1 class="fs-h1 dark-primary-content">👋 Content de te revoir</h1>
+            <p class="subtitle fs-paragraph dark-ternary-content">Rejoins notre communaute bien etre physique et mental et blablabla</p>
         </div>
 		<form class="oauths" method="GET" use:enhance {action}>
-            <button type="submit" class="oauth oauth-full">
-                <div class="oauth-icon google-icon">
-                    <svelte:component this={Google} />
-                </div>
-                <p class="fs-paragraph oauth-cta">Se connecter avec Google</p>
-            </button>
-            <button type="submit" class="oauth">
-                <div class="oauth-icon apple-icon">
-                    <svelte:component this={Apple} />
-                </div>
-            </button>
-            <button type="submit" class="oauth">
-                <div class="oauth-icon apple-icon">
-                    <svelte:component this={Apple} />
-                </div>
-            </button>
+			{#each oauthButtons as btn}
+				{@const specificClass = `${btn.providerName}-icon`}
+				<button type="submit" class="oauth">
+					<div class="oauth-icon {specificClass}">
+						<svelte:component this={btn.IconComponent} />
+					</div>
+                    <p class="fs-paragraph oauth-cta">Se connecter avec <span class="capitalize">{btn.providerName}</span></p>
+				</button>
+			{/each}
 		</form>
 		<div class="separator-block">
 			<div class="separator"></div>
@@ -60,7 +52,7 @@
 		>
 			<div class="grid flow" style="--flow-space: 4rem;">
 				{#each formControls as formcontrol}
-                    <div class="grid flow" style="--flow-space: 0rem;">
+                    <div class="grid flow" style="--flow-space: 0.5rem;">
 						<div class="field">
 							{#if formcontrol.name === 'password'}
 								<button
@@ -90,35 +82,40 @@
 			</div>
 		</form>
 	</div>
-    <div class="image stroke"></div>
-</div>
+    <div class="image stroke"></div> </div>
 
 <style>
-    .container {
-        border: 4px solid green;
+	.logo {
+		width: 80px;
+		background-color: hsl(var(--clr-dark-secondary));
+		border-radius: 100%;
+		margin-bottom: 0.75rem;
+		aspect-ratio: 1;
+		margin-inline: auto;
+	}
+	.container {
+        outline: 5px solid limegreen;
         place-content: center;
         height: 100vh;
-        min-width: 100vw;
-        /* padding-block: var(--p); */
+        width: 100vw;
+        align-items: center;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(1, 100%);
         /* padding-block: 4rem; */
-        box-sizing: border-box;
-    }
+	}
 
 	.content {
-        max-width: 700px;
-        grid-column: 1 / 3;
-        /* TODO: add that part on the big screen when there is the stroke brother */
-		/* padding: clamp(1rem, 3vw, 3rem); */
-        /* TODO: change that value of height to min-height so that it does not go past the screen */
-        /* height: calc(100vh - 4rem); */
-        /* height: 100%; */
+        border: 2px solid orangered;
+        grid-column: 1;
+		padding: clamp(1rem, 3vw, 3rem);
+		border-radius: 0.5rem;
+        height: 100%;
         border-top-right-radius: 0;
         border-bottom-right-radius: 0;
         background-color: hsl(var(--clr-light-primary));
 	}
 
     .image {
-        display: none;
         grid-column: 2;
 		border-radius: 0.5rem;
         height: 100%;
@@ -147,34 +144,38 @@
     }
 
 	.oauths {
-        outline: 2px solid orangered;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: var(--p);
+		gap: 1.5rem;
 	}
 
 	.oauth {
+        padding: 1rem;
+        padding: calc(var(--p) - 0.5rem);
         padding: var(--p);
 		display: flex;
 		align-items: center;
-        justify-content: center;
         border-radius: 0.5rem;
-		gap: calc(var(--p) / 2 );
+        margin-inline: auto;
+		gap: 1rem;
+		width: 100%;
 		background-color: hsl(var(--clr-dark-primary));
 		font-weight: 400;
 	}
-
 	.oauth:is(:focus, :hover) { opacity: 0.9; }
 
-    .oauth-full { width: 100%; }
-	.oauth-icon { width: calc(var(--p) * 1.2); }
+	.oauth-icon {
+        width: calc(var(--p) + 0.2rem);
+		aspect-ratio: 1;
+	}
 
     .oauth-cta {
-        padding: 0;
         text-wrap: nowrap;
         color: hsl(var(--clr-light-primary));
     }
+
+	.apple-icon { margin-top: -0.2rem; }
 
 	.separator-block {
 		--or-width: 3.6ch;
@@ -189,6 +190,7 @@
 	}
 
 	.or {
+		font-size: 0.8rem;
         color: hsl(var(--clr-stroke));
 		width: var(--or-width);
 		aspect-ratio: 1;
@@ -229,7 +231,6 @@
 	.signin {
         /* padding: 1rem; */
         padding: calc(var(--p) - 0.5rem);
-        padding: var(--p);
         border-radius: 0.5rem;
 		font-weight: 500;
         background-color: hsl(var(--clr-dark-primary));

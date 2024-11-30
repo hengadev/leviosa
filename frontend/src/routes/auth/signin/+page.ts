@@ -27,14 +27,14 @@ const formControls: TestingFormControl[] = [
 	}
 ];
 
-// NOTE: for the moment I cannot use the appli button and instagram does not provide oauth
+// NOTE: for the moment I cannot use the apple button and instagram does not provide oauth
 const oauthButtons: OAuthButtons[] = [
 	{
 		name: 'Apple',
 		providerName: 'apple',
 		IconComponent: Apple
 	},
-	{
+{
 		name: 'Google',
 		providerName: 'google',
 		IconComponent: Google
