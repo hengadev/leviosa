@@ -1,13 +1,27 @@
 <script lang="ts">
-    export let placeholder: string | undefined;
-    export let label: string;
-    // TODO: change the type so that it can be a enum
-    export let id: string;
-    export let name: string;
-    export let forInput: string;
-    export let type: string;
-    // TODO: remove that when the app goes to production
-    export let value: string
+    
+    
+    interface Props {
+        placeholder: string | undefined;
+        label: string;
+        // TODO: change the type so that it can be a enum
+        id: string;
+        name: string;
+        forInput: string;
+        type: string;
+        // TODO: remove that when the app goes to production
+        value: string;
+    }
+
+    let {
+        placeholder,
+        label,
+        id,
+        name,
+        forInput,
+        type,
+        value
+    }: Props = $props();
     console.log("the type is:", type)
 </script>
 

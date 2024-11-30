@@ -2,16 +2,31 @@
 	import CalendarDays from 'lucide-svelte/icons/calendar-days';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 
-	// TODO: add all the right component in here based on the formatting of the event type.
-	export let beginat: Date;
-	export let day: number;
-	export let month: number;
-	export let year: number;
-	export let freeplace: number;
-	export let sessionduration: number;
-	export let id: string;
-	export let location: string;
-	export let placecount: number;
+	
+	interface Props {
+		// TODO: add all the right component in here based on the formatting of the event type.
+		beginat: Date;
+		day: number;
+		month: number;
+		year: number;
+		freeplace: number;
+		sessionduration: number;
+		id: string;
+		location: string;
+		placecount: number;
+	}
+
+	let {
+		beginat,
+		day,
+		month,
+		year,
+		freeplace,
+		sessionduration,
+		id,
+		location,
+		placecount
+	}: Props = $props();
 
 	function formatDate(date: Date) {
 		return new Intl.DateTimeFormat('fr', { dateStyle: 'long' }).format(date);
@@ -60,7 +75,7 @@
 		padding: 1rem;
 	}
 
-	.event:is(:hover, :focus) {
+	.event:is(:global(:hover, :focus)) {
 		cursor: pointer;
 	}
 

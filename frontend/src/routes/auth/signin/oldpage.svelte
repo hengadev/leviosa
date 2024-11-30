@@ -1,16 +1,20 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
-	export let data: PageData;
-	$: ({ formControls, oauthButtons } = data);
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { route } from '$lib/ROUTES';
 
-	export let form: ActionData;
+	interface Props {
+		data: PageData;
+		form: ActionData;
+	}
+
+	let { data, form }: Props = $props();
 	if (form?.success) {
 		console.log('the success status  : ', form.success);
 	}
 	const action = route('GET /auth/oauth/google');
+	let { formControls, oauthButtons } = $derived(data);
 </script>
 
 <div class="container">
@@ -22,7 +26,7 @@
 				{@const specificClass = `${btn.providerName}-icon`}
 				<button type="submit" class="oauth">
 					<div class="oauth-icon {specificClass}">
-						<svelte:component this={btn.IconComponent} />
+						<btn.IconComponent />
 					</div>
 				</button>
 			{/each}
@@ -50,7 +54,7 @@
 							{#if formcontrol.name === 'password'}
 								<button
 									class="forgotten__password"
-									on:click={() => console.log('go to the forgotten password thing')}
+									onclick={() => console.log('go to the forgotten password thing')}
 								>
 									<a class="link" href="/recoverpassword"> Mot de passe oublie ? </a>
 								</button>
@@ -123,7 +127,7 @@
 		font-weight: 300;
 		background-color: #26272c;
 	}
-	.oauth:is(:focus, :hover) {
+	.oauth:is(:global(:focus, :hover)) {
 		/* opacity: 0.9; */
 		/* outline: 1px solid #bdbdbd; */
 		background-color: rgba(255, 255, 255, 0.16);
@@ -227,7 +231,7 @@
 		font-weight: 200;
 	}
 
-	input:is(:focus, :hover) {
+	input:is(:global(:focus, :hover)) {
 		outline: 1px solid #bdbdbd;
 	}
 
@@ -243,7 +247,7 @@
 		text-align: right;
 	}
 
-	.forgotten__password:is(:hover, :focus) {
+	.forgotten__password:is(:global(:hover, :focus)) {
 		cursor: pointer;
 	}
 
@@ -260,7 +264,7 @@
 		color: #171717;
 	}
 
-	.signin:is(:hover, :focus) {
+	.signin:is(:global(:hover, :focus)) {
 		opacity: 0.9;
 	}
 
@@ -293,7 +297,7 @@
 		text-decoration: none;
 		color: #f67373;
 	}
-	.link:is(:hover, :focus) {
+	.link:is(:global(:hover, :focus)) {
 		text-decoration: underline;
 	}
 </style>

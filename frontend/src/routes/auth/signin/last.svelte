@@ -1,20 +1,25 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
-	export let data: PageData;
-	$: ({ formControls, oauthButtons } = data);
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { route } from '$lib/ROUTES';
 
 	import FormInput from '$lib/components/FormInput.svelte';
 
-    // TODO: Here I make all the modification on this new page brother
+    
 
-	export let form: ActionData;
+	interface Props {
+		data: PageData;
+		// TODO: Here I make all the modification on this new page brother
+		form: ActionData;
+	}
+
+	let { data, form }: Props = $props();
 	if (form?.success) {
 		console.log('the success status  : ', form.success);
 	}
 	const action = route('GET /auth/oauth/google');
+	let { formControls, oauthButtons } = $derived(data);
 </script>
 
 <div class="container grid" style="--gap: 0rem;">
@@ -29,7 +34,7 @@
 				{@const specificClass = `${btn.providerName}-icon`}
 				<button type="submit" class="oauth">
 					<div class="oauth-icon {specificClass}">
-						<svelte:component this={btn.IconComponent} />
+						<btn.IconComponent />
 					</div>
                     <p class="fs-paragraph oauth-cta">Se connecter avec <span class="capitalize">{btn.providerName}</span></p>
 				</button>
@@ -57,7 +62,7 @@
 							{#if formcontrol.name === 'password'}
 								<button
 									class="forgotten__password"
-									on:click={() => console.log('go to the forgotten password thing')}
+									onclick={() => console.log('go to the forgotten password thing')}
 								>
 									<a class="link" href="/recoverpassword"> Mot de passe oublie ? </a>
 								</button>
@@ -163,7 +168,7 @@
 		background-color: hsl(var(--clr-dark-primary));
 		font-weight: 400;
 	}
-	.oauth:is(:focus, :hover) { opacity: 0.9; }
+	.oauth:is(:global(:focus, :hover)) { opacity: 0.9; }
 
 	.oauth-icon {
         width: calc(var(--p) + 0.2rem);
@@ -224,7 +229,7 @@
 		text-align: right;
 	}
 
-	.forgotten__password:is(:hover, :focus) {
+	.forgotten__password:is(:global(:hover, :focus)) {
 		cursor: pointer;
 	}
 
@@ -237,7 +242,7 @@
         color: hsl(var(--clr-light-primary));
 	}
 
-	.signin:is(:hover, :focus) {
+	.signin:is(:global(:hover, :focus)) {
 		opacity: 0.9;
 	}
 
@@ -253,7 +258,7 @@
 		text-decoration: none;
         color: hsl(var(--clr-accent));
 	}
-	.link:is(:hover, :focus) {
+	.link:is(:global(:hover, :focus)) {
 		text-decoration: underline;
 	}
 </style>

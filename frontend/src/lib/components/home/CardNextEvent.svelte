@@ -3,8 +3,12 @@
 	import Clock from 'lucide-svelte/icons/clock';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 
-	export let eventId: string;
-	// TODO: get the user id for the next event for the user
+	interface Props {
+		eventId: string; // TODO: get the user id for the next event for the user
+	}
+
+	let { eventId }: Props = $props();
+	
 </script>
 
 <div class="block">

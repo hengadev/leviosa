@@ -16,7 +16,7 @@
 		dateStyle: 'long'
 	});
 
-	let value: DateValue | undefined = undefined;
+	let value: DateValue | undefined = $state(undefined);
 	import { page } from '$app/stores';
 	const year: string = $page.params.year.toUpperCase();
 	const month: string = $page.params.month.toUpperCase();
@@ -29,19 +29,21 @@
 		<h2 class="subtitle">Pour le mois de {month}{year}.</h2>
 		<form class="grid" method="POST">
 			<Popover.Root>
-				<Popover.Trigger asChild let:builder>
-					<Button
-						variant="outline"
-						class={cn(
-							'w-[100%] justify-start text-right font-normal',
-							!value && 'text-muted-foreground'
-						)}
-						builders={[builder]}
-					>
-						<CalendarIcon class="mr-2 h-4 w-4" />
-						{value ? df.format(value.toDate(getLocalTimeZone())) : 'Choisis une date'}
-					</Button>
-				</Popover.Trigger>
+				<Popover.Trigger asChild >
+					{#snippet children({ builder })}
+										<Button
+							variant="outline"
+							class={cn(
+								'w-[100%] justify-start text-right font-normal',
+								!value && 'text-muted-foreground'
+							)}
+							builders={[builder]}
+						>
+							<CalendarIcon class="mr-2 h-4 w-4" />
+							{value ? df.format(value.toDate(getLocalTimeZone())) : 'Choisis une date'}
+						</Button>
+														{/snippet}
+								</Popover.Trigger>
 				<Popover.Content class="w-auto p-0">
 					<Calendar bind:value initialFocus />
 				</Popover.Content>

@@ -1,8 +1,13 @@
 <script lang="ts">
 	// import ArrowUp from 'lucide-svelte/icons/arrow-up';
-	// import ArrowDown from 'lucide-svelte/icons/arrow-down';
+	
 
-	export let votes;
+	interface Props {
+		// import ArrowDown from 'lucide-svelte/icons/arrow-down';
+		votes: any;
+	}
+
+	let { votes }: Props = $props();
 	// $: _votes = votes;
 	// $: _votes = JSON.parse(JSON.stringify(votes));
 
@@ -26,7 +31,7 @@
 
 	// TODO: how to handle the selection to send the form?
 	// -> I am going to toggle a checkbox or sth
-	let active: string[] = [];
+	let active: string[] = $state([]);
 	function toggleActive(event: MouseEvent) {
 		console.log('click');
 		let targetEl = event.currentTarget as HTMLButtonElement;
@@ -43,7 +48,7 @@
 	{@const i_str = String(i)}
 	<div class="vote" id={i_str} style:background-color={active.includes(i_str) ? '#202127' : 'none'}>
 		<input type="hidden" name={i_str} value={vote.day} />
-		<button type="button" class="vote__content" on:click={toggleActive}>
+		<button type="button" class="vote__content" onclick={toggleActive}>
 			the vote is for the day {vote.day}
 		</button>
 	</div>

@@ -58,6 +58,11 @@
 
 	import Dock from 'lucide-svelte/icons/dock';
 	import MapPin from 'lucide-svelte/icons/map-pin';
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
+
+	let { children }: Props = $props();
 	const opacityStrength = 0.4;
 </script>
 
@@ -71,14 +76,14 @@
 		<p>Paris</p>
 	</div>
 </div>
-<slot />
+{@render children?.()}
 <nav>
 	<ul>
 		{#each NavItems as item}
 			<li class="">
-				<button id={item.id} on:click={setState}>
+				<button id={item.id} onclick={setState}>
 					<a href={item.href} style:opacity={$navstate === item.id ? 1 : opacityStrength}>
-						<svelte:component this={item.icon} />
+						<item.icon />
 						<p>{item.name}</p>
 					</a>
 				</button>

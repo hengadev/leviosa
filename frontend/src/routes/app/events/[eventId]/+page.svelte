@@ -1,12 +1,16 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	export let data: PageData;
-	// TODO: use the event to make the component
-	$: ({ handleCheckout, event } = data);
 	console.log(event);
 	import { page } from '$app/stores';
 	const eventId = $page.params.eventId;
 	import ShoppingCart from 'lucide-svelte/icons/shopping-cart';
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
+	// TODO: use the event to make the component
+	let { handleCheckout, event } = $derived(data);
 </script>
 
 <div class="container mb-12">
@@ -27,7 +31,7 @@
 			<li>De l'eau</li>
 			<li>De la bonne humeur teehee X)</li>
 		</ul>
-		<button class="mt-8" on:click={() => handleCheckout(eventId)}>
+		<button class="mt-8" onclick={() => handleCheckout(eventId)}>
 			<ShoppingCart />
 			Checkout
 		</button>
@@ -96,7 +100,7 @@
 		gap: 1rem;
 	}
 
-	button:is(:hover, :focus) {
+	button:is(:global(:hover, :focus)) {
 		opacity: 0.9;
 	}
 </style>

@@ -1,6 +1,10 @@
 <script lang="ts">
-	export let eventCount: number;
-	export let month;
+	interface Props {
+		eventCount: number;
+		month: any;
+	}
+
+	let { eventCount, month }: Props = $props();
 </script>
 
 <div class="vote">

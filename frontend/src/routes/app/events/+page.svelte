@@ -1,12 +1,16 @@
 <script lang="ts">
 	import EventComponent from '$lib/components/events/EventComponent.svelte';
 	import type { PageData } from './$types';
-	export let data: PageData;
-	$: ({ pastEvents, nextEvents, incomingEvents } = data);
 	import { page } from '$app/stores';
-	$: _pastEvents = JSON.parse(JSON.stringify(pastEvents));
-	$: _nextEvents = JSON.parse(JSON.stringify(nextEvents));
-	$: _incomingEvents = JSON.parse(JSON.stringify(incomingEvents));
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
+	let { pastEvents, nextEvents, incomingEvents } = $derived(data);
+	let _pastEvents = $derived(JSON.parse(JSON.stringify(pastEvents)));
+	let _nextEvents = $derived(JSON.parse(JSON.stringify(nextEvents)));
+	let _incomingEvents = $derived(JSON.parse(JSON.stringify(incomingEvents)));
 </script>
 
 {#if $page.data.user}

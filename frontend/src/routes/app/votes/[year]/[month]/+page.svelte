@@ -1,17 +1,27 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	// NOTE: Use one of these two options for the voting system.
 	import VoteOrdering from '$lib/components/votes/VoteOrdering.svelte';
 	// import VoteSelect from '$lib/components/votes/VoteSelect.svelte';
 
-	// TODO: use the isDefault to display some informations on our vote work.
-	export let data;
-	$: ({ month, year, isDefault, votes } = data);
+	
+	interface Props {
+		// TODO: use the isDefault to display some informations on our vote work.
+		data: any;
+	}
+
+	let { data }: Props = $props();
+	let { month, year, isDefault, votes } = $derived(data);
 	console.log(isDefault);
-	$: _votes = JSON.parse(JSON.stringify(votes));
-	$: _month = JSON.parse(JSON.stringify(month));
-	$: _year = JSON.parse(JSON.stringify(year));
+	let _votes;
+	run(() => {
+		_votes = JSON.parse(JSON.stringify(votes));
+	});
+	let _month = $derived(JSON.parse(JSON.stringify(month)));
+	let _year = $derived(JSON.parse(JSON.stringify(year)));
 
 	const reset = () => (_votes = JSON.parse(JSON.stringify(votes)));
 </script>
@@ -41,7 +51,7 @@
 			};
 		}}
 	>
-		<button type="button" class="" on:click={reset}>Reinitialiser</button>
+		<button type="button" class="" onclick={reset}>Reinitialiser</button>
 		<input type="hidden" name="count" value={_votes.length} />
 		<VoteOrdering votes={_votes} />
 		<button class="submit" type="submit">Enregistrer</button>
@@ -103,7 +113,7 @@
 		font-weight: 500;
 	}
 
-	.submit:is(:hover, :focus) {
+	.submit:is(:global(:hover, :focus)) {
 		cursor: pointer;
 		opacity: 0.9;
 	}

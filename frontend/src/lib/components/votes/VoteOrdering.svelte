@@ -2,8 +2,8 @@
 	import ArrowUp from 'lucide-svelte/icons/arrow-up';
 	import ArrowDown from 'lucide-svelte/icons/arrow-down';
 
-	export let votes;
-	$: _votes = JSON.parse(JSON.stringify(votes));
+	let { votes } = $props();
+	let _votes = $derived(JSON.parse(JSON.stringify(votes)));
 
 	const moveUp = (event: MouseEvent) => {
 		let targetEl = event.currentTarget as HTMLDivElement;
@@ -27,13 +27,13 @@
 	<div class="vote">
 		<div class="indice">{indice}</div>
 		<div class="vote__content">
-			<button type="button" class="arrowBtn" id={i_str} on:click={moveDown}>
+			<button type="button" class="arrowBtn" id={i_str} onclick={moveDown}>
 				<ArrowDown />
 			</button>
 			<div>
 				the vote is for the day {vote.day}
 			</div>
-			<button type="button" class="arrowBtn" id={i_str} on:click={moveUp}>
+			<button type="button" class="arrowBtn" id={i_str} onclick={moveUp}>
 				<ArrowUp />
 			</button>
 		</div>

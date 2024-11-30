@@ -1,11 +1,19 @@
 <script lang="ts">
+	import { run } from 'svelte/legacy';
+
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import type { ActionData, PageData } from './$types';
-	export let data: PageData;
-	$: ({ general, address } = data);
-	export let form: ActionData;
-	$: console.log('change in the form : ', form);
+	interface Props {
+		data: PageData;
+		form: ActionData;
+	}
+
+	let { data, form }: Props = $props();
+	let { general, address } = $derived(data);
+	run(() => {
+		console.log('change in the form : ', form);
+	});
 	// TODO: add link to get back to sign in page
 	// TODO: do the email is taken error.
 	// TODO: Add the possibility to connect using Oauth google + apple

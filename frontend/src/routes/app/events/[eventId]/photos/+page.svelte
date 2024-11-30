@@ -1,7 +1,11 @@
 <script lang="ts">
 	import type { PageServerData } from './$types';
-	export let data: PageServerData;
-	$: ({ photos } = data);
+	interface Props {
+		data: PageServerData;
+	}
+
+	let { data }: Props = $props();
+	let { photos } = $derived(data);
 </script>
 
 <div class="content">

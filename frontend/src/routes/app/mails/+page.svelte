@@ -1,8 +1,8 @@
-<script>
-	export let data;
-	$: ({ mails, notifications } = data);
+<script lang="ts">
 	import * as Tabs from '$lib/components/ui/tabs';
 	import Bell from 'lucide-svelte/icons/bell';
+	let { data } = $props();
+	let { mails, notifications } = $derived(data);
 </script>
 
 <div class="content">

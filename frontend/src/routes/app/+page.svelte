@@ -1,9 +1,6 @@
 <script lang="ts">
 	// data
 	import type { PageData } from './$types';
-	export let data: PageData;
-	$: ({ accordionItems, nextVotes } = data);
-	$: _nextVotes = JSON.parse(JSON.stringify(nextVotes));
 	// user data
 	import { page } from '$app/stores';
 	const name = $page.data.user.firstname;
@@ -12,7 +9,14 @@
 	import CardNextEvent from '$lib/components/home/CardNextEvent.svelte';
 	import NextVote from '$lib/components/home/NextVote.svelte';
 	import { navstate } from '$lib/stores/navbar';
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
 	navstate.set('home'); // just to forget the value stored in localstore when reconecting and I had the page to another link.
+	let { accordionItems, nextVotes } = $derived(data);
+	let _nextVotes = $derived(JSON.parse(JSON.stringify(nextVotes)));
 </script>
 
 {#if $page.data.user}

@@ -4,9 +4,14 @@
 	import Vote from '../../../assets/Vote.svg';
 	import ChevronRight from 'lucide-svelte/icons/chevron-right';
 	import { months, vowelRegex } from '$lib/types';
-	export let year: number;
-	// NOTE: use the - 1 since months is indexed at 0 but I indexed the month in my backend at 1.
-	export let month: number;
+	
+	interface Props {
+		year: number;
+		// NOTE: use the - 1 since months is indexed at 0 but I indexed the month in my backend at 1.
+		month: number;
+	}
+
+	let { year, month }: Props = $props();
 	// NOTE: Do I need the location thing ?
 	// export let location: string | null;
 	let location = '01 Impasse Hoche, 94200 Ivry-Sur-Seine';
@@ -43,7 +48,7 @@
 		border: 1px solid rgba(60, 60, 67, 0.78);
 	}
 
-	.event:is(:hover, :focus) {
+	.event:is(:global(:hover, :focus)) {
 		cursor: pointer;
 	}
 

@@ -14,7 +14,7 @@
 		<br /><br />Rejoignez nous sur Instagram dès maintenant.
 	</h2>
 	<!-- </div> -->
-	<button class="btn" on:click={redirectInstagram}>
+	<button class="btn" onclick={redirectInstagram}>
 		<Instagram size="40" />
 	</button>
 </div>

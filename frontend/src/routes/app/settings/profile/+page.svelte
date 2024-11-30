@@ -6,8 +6,8 @@
 	const profileIconSize = '200';
 	const iconSize = '24';
 
-	export let data;
-	$: ({ name, fields } = data);
+	let { data } = $props();
+	let { name, fields } = $derived(data);
 </script>
 
 <div class="container py-4 pb-24">

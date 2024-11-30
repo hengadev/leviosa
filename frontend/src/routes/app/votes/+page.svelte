@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
 	import VoteComponent from '$lib/components/votes/VoteComponent.svelte';
-	export let data;
 	import { months } from '$lib/types';
-	$: ({ futurVotes } = data);
-	$: _futurVotes = JSON.parse(JSON.stringify(futurVotes));
+	let { data } = $props();
+	let { futurVotes } = $derived(data);
+	let _futurVotes = $derived(JSON.parse(JSON.stringify(futurVotes)));
 	// $: console.log('the year', futurVotes[0].year);
 	// $: console.log('the month : ', months[futurVotes[0].month]);
 </script>

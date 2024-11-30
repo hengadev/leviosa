@@ -3,18 +3,29 @@
 	import type { Icon } from 'lucide-svelte';
 	import type { ComponentType } from 'svelte';
 
-	export let name: string;
-	export let icon: ComponentType<Icon>;
-	export let value: string;
-	export let missingText: string;
+	interface Props {
+		name: string;
+		icon: ComponentType<Icon>;
+		value: string;
+		missingText: string;
+	}
+
+	let {
+		name,
+		icon,
+		value,
+		missingText
+	}: Props = $props();
 	const iconSize = '24';
+
+	const SvelteComponent = $derived(icon);
 </script>
 
 <div>
 	<input type="hidden" name="fieldName" value="fieldName" />
 	<button type="submit" class="content mb-8">
 		<div class="left">
-			<svelte:component this={icon} size={iconSize} />
+			<SvelteComponent size={iconSize} />
 			<div class="text flex flex-col gap-1 text-left">
 				<p class="field">{name}</p>
 				<p class="value">{value || missingText}</p>

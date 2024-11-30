@@ -1,7 +1,5 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
-	export let data: PageData;
-	$: ({ formControls} = data);
 	import { applyAction, enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { route } from '$lib/ROUTES';
@@ -10,12 +8,18 @@
 
 	import FormInput from '$lib/components/FormInput.svelte';
 
-	export let form: ActionData;
+	interface Props {
+		data: PageData;
+		form: ActionData;
+	}
+
+	let { data, form }: Props = $props();
 	if (form?.success) {
 		console.log('the success status  : ', form.success);
 	}
 	const action = route('GET /auth/oauth/google');
     // TODO: change the value of flow-space to make it responsive maybe use some vh units ?
+	let { formControls} = $derived(data);
 </script>
 
 <div class="container grid" style="--gap: 1rem;">
@@ -28,18 +32,18 @@
 		<form class="oauths" method="GET" use:enhance {action}>
             <button type="submit" class="oauth oauth-full">
                 <div class="oauth-icon google-icon">
-                    <svelte:component this={Google} />
+                    <Google />
                 </div>
                 <p class="fs-paragraph oauth-cta">Se connecter avec Google</p>
             </button>
             <button type="submit" class="oauth">
                 <div class="oauth-icon apple-icon">
-                    <svelte:component this={Apple} />
+                    <Apple />
                 </div>
             </button>
             <button type="submit" class="oauth">
                 <div class="oauth-icon apple-icon">
-                    <svelte:component this={Apple} />
+                    <Apple />
                 </div>
             </button>
 		</form>
@@ -65,7 +69,7 @@
 							{#if formcontrol.name === 'password'}
 								<button
 									class="forgotten__password"
-									on:click={() => console.log('go to the forgotten password thing')}
+									onclick={() => console.log('go to the forgotten password thing')}
 								>
 									<a class="link" href="/recoverpassword"> Mot de passe oublie ? </a>
 								</button>
@@ -165,7 +169,7 @@
 		font-weight: 400;
 	}
 
-	.oauth:is(:focus, :hover) { opacity: 0.9; }
+	.oauth:is(:global(:focus, :hover)) { opacity: 0.9; }
 
     .oauth-full { width: 100%; }
 	.oauth-icon { width: calc(var(--p) * 1.2); }
@@ -222,7 +226,7 @@
 		text-align: right;
 	}
 
-	.forgotten__password:is(:hover, :focus) {
+	.forgotten__password:is(:global(:hover, :focus)) {
 		cursor: pointer;
 	}
 
@@ -236,7 +240,7 @@
         color: hsl(var(--clr-light-primary));
 	}
 
-	.signin:is(:hover, :focus) {
+	.signin:is(:global(:hover, :focus)) {
 		opacity: 0.9;
 	}
 
@@ -252,7 +256,7 @@
 		text-decoration: none;
         color: hsl(var(--clr-accent));
 	}
-	.link:is(:hover, :focus) {
+	.link:is(:global(:hover, :focus)) {
 		text-decoration: underline;
 	}
 </style>
