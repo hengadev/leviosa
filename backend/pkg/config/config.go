@@ -14,6 +14,7 @@ type Config struct {
 	sqlite *sqliteCreds
 	redis  *redisCreds
 	s3     *s3Creds
+	auth0  *Authenticator
 }
 
 // TODO: Add the other creds needed
@@ -53,6 +54,12 @@ func (c *Config) Load(ctx context.Context) error {
 		"AWS_REGION":            {required: true, key: "aws.region"},
 		"AWS_ACCESS_KEY_ID":     {required: true, key: "aws.access.key.id"},
 		"AWS_SECRET_ACCESS_KEY": {required: true, key: "aws.secret.access.key"},
+
+		// TODO: change the key brother
+		"AUTH0_DOMAIN":        {required: true, key: "aws.secret.access.key"},
+		"AUTH0_CLIENT_ID":     {required: true, key: "aws.secret.access.key"},
+		"AUTH0_CLIENT_SECRET": {required: true, key: "aws.secret.access.key"},
+		"AUTH0_CALLBACK_URL":  {required: true, key: "aws.secret.access.key"},
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {
