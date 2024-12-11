@@ -1,47 +1,33 @@
 package middleware
 
 import (
-	"fmt"
-	"log"
 	"log/slog"
-	"time"
-
-	// "log/slog"
 	"net/http"
+	"time"
 )
 
-// NOTE: I get this thing from this parameter in the routes.go file
-// I get it also from this video : https://www.youtube.com/watch?v=a2hWCvaAA80
-
-// I think I should use the logger thing from the slog package.
-type Logger struct {
-	handler http.Handler
-}
-
-// from the samvcodes video
-var loggerLevels = map[string]slog.Level{
-	"info":  slog.LevelInfo,
-	"debug": slog.LevelDebug,
-	"error": slog.LevelError,
-	"warn":  slog.LevelWarn,
-}
-
-// a very simple logger
-func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	l.handler.ServeHTTP(w, r)
-	log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
-}
-
-// this function comes from the handler addes to all the endpoints in the NewServer constructor
-func NewLogger(handlerToWrap http.Handler) *Logger {
-	return &Logger{handlerToWrap}
-	// NOTE: I get that from the page : https://drstearns.github.io/tutorials/gomiddleware/
-}
-
-// this function comes from the handler addes to all the endpoints in the NewServer constructor
-func NewLoggingMiddleware(logger Logger, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Just to test the logging thing")
-	})
+func RequestLogging(logger *slog.Logger) Middleware {
+	// TODO: old format for logging
+	// logger.InfoContext(ctx, "[INFO] Request started - Method: %s, URL: %s, IP: %s, requestID: %s", r.Method, r.URL.String(), r.RemoteAddr, requestID)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			ctx := r.Context()
+			requestID, ok := ctx.Value(requestIDKey).(int64)
+			if !ok {
+				logger.ErrorContext(ctx, "no request ID found for the logger")
+			}
+			logger = logger.With(
+				"method", r.Method,
+				"URL", r.URL.String(),
+				// TODO: make sure to use the right IP address that should be found in some headers depending on the provider that I use
+				"IP", r.RemoteAddr,
+				"requestID", requestID,
+			)
+			logger.InfoContext(ctx, "Request started")
+			next.ServeHTTP(w, r)
+			duration := time.Since(start)
+			logger.InfoContext(ctx, "Request completed", "duration", duration)
+		})
+	}
 }
