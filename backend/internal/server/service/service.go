@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"log/slog"
+
 	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
@@ -32,14 +34,17 @@ type Repos struct {
 }
 
 type Handler struct {
-	Svcs  *Services
-	Repos *Repos
+	Svcs   *Services
+	Repos  *Repos
+	Logger *slog.Logger
 }
 
 // Function to use in the main, once all the services and repos are built.
-func New(svcs *Services, repos *Repos) *Handler {
+func New(svcs *Services, repos *Repos, logger *slog.Logger) *Handler {
+	// TODO: work on the logger to make it specific for handler brother
 	return &Handler{
-		Svcs:  svcs,
-		Repos: repos,
+		Svcs:   svcs,
+		Repos:  repos,
+		Logger: logger,
 	}
 }

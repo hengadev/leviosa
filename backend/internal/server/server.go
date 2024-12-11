@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -13,7 +14,7 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(handler *handler.Handler, opts ...ServerOption) *Server {
+func New(handler *handler.Handler, logger *slog.Logger, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
@@ -33,9 +34,7 @@ func New(handler *handler.Handler, opts ...ServerOption) *Server {
 	server.addRoutes(handler)
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.Auth(handler.Repos.Session),
-		mw.EnableApplicationJSON,
-		mw.Cors,
+		mw.RequestLogging(logger),
 		mw.AddRequestID,
 	)
 	return server

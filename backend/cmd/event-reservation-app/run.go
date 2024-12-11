@@ -27,6 +27,10 @@ var opts struct {
 	server struct {
 		port int
 	}
+	logger struct {
+		style string
+		level string
+	}
 }
 
 func run(ctx context.Context, w io.Writer) error {
@@ -42,6 +46,12 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := setupEnvVars(); err != nil {
 		return fmt.Errorf("failed to get env variables: %w", err)
 	}
+	// set basic logger
+	logger, err := setLogger()
+	if err != nil {
+		return fmt.Errorf("failed to setup logger: %w", err)
+	}
+
 	// set environment file
 	if opts.mode != mode.ModeProd {
 		if err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String())); err != nil {
@@ -62,9 +72,11 @@ func run(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("create services: %w", err)
 	}
-	handler := handler.New(&appSvcs, &appRepos)
+	handler := handler.New(&appSvcs, &appRepos, logger)
 	srv := server.New(
 		handler,
+		// auth,
+		logger,
 		server.WithPort(opts.server.port),
 	)
 	var srvErrCh = make(chan error)
@@ -76,7 +88,7 @@ func run(ctx context.Context, w io.Writer) error {
 	// }()
 
 	go func() {
-		fmt.Fprintf(w, "Running server on port %d...\n", opts.server.port)
+		logger.Info(fmt.Sprintf("Running server on port %d...\n", opts.server.port))
 		if err := srv.ListenAndServe(); err != nil {
 			srvErrCh <- fmt.Errorf("launch server: %w", err)
 
