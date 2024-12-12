@@ -24,12 +24,10 @@ func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID s
 		return nil, fmt.Errorf("no session ID in database")
 	}
 	return &sessionService.Session{
-		ID:         sessionID,
-		UserID:     values.UserID,
-		Role:       values.Role,
-		LoggedInAt: values.LoggedInAt,
-		CreatedAt:  values.CreatedAt,
-		ExpiresAt:  values.ExpiresAt,
+		ID:        sessionID,
+		UserID:    values.UserID,
+		Role:      values.Role,
+		ExpiresAt: values.ExpiresAt,
 	}, nil
 }
 

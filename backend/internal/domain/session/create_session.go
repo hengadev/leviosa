@@ -4,21 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 )
 
-// that is basically the sign up of that function
-func (s *Service) CreateSession(ctx context.Context, userID int, role string) (string, error) {
+func (s *Service) CreateSession(ctx context.Context, userID string, role userService.Role) (*Session, error) {
 	session, err := NewSession(userID, role)
 	if err != nil {
-		return "", app.NewInvalidUserErr(err)
+		return nil, fmt.Errorf("create session object: %w", err)
 	}
-	session.Create()
-	session.Login()
-
 	if err := s.Repo.CreateSession(ctx, session); err != nil {
-		return "", fmt.Errorf("create session: %w", err)
+		return nil, fmt.Errorf("create session in redis: %w", err)
 	}
-
-	return session.ID, nil
+	return session, nil
 }

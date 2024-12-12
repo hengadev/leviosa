@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	userService "github.com/GaryHY/event-reservation-app/internal/domain/user"
 	test "github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -17,21 +18,17 @@ func TestIsZero(t *testing.T) {
 	}{
 		{session: sessionService.Session{}, expectIsZero: true, name: "zero session"},
 		{session: sessionService.Session{
-			ID:         "",
-			UserID:     1,
-			Role:       "",
-			LoggedInAt: time.Now(),
-			CreatedAt:  time.Now(),
-			ExpiresAt:  time.Now().Add(time.Hour),
+			ID:        "",
+			UserID:    "1",
+			Role:      userService.BASIC,
+			ExpiresAt: time.Now().Add(time.Hour),
 		}, expectIsZero: true, name: "some field are zero in session"},
 		{
 			session: sessionService.Session{
-				ID:         test.GenerateRandomString(12),
-				UserID:     1,
-				Role:       "basic",
-				LoggedInAt: time.Now(),
-				CreatedAt:  time.Now(),
-				ExpiresAt:  time.Now().Add(time.Hour),
+				ID:        test.GenerateRandomString(12),
+				UserID:    "1",
+				Role:      userService.BASIC,
+				ExpiresAt: time.Now().Add(time.Hour),
 			}, expectIsZero: false, name: "nominal case"},
 	}
 	for _, tt := range tests {

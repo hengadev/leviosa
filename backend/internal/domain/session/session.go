@@ -15,20 +15,20 @@ const SessionDuration = 30 * 24 * time.Hour
 const SessionName = "session_token"
 
 type Session struct {
-	ID         string    `json:"id"`
-	UserID     int       `json:"userid"`
-	Role       string    `json:"userrole"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	CreatedAt  time.Time `json:"createdat"`
-	ExpiresAt  time.Time `json:"expiresat"`
+	ID         string           `json:"id"`
+	UserID     string           `json:"userid"`
+	Role       userService.Role `json:"userrole"`
+	LoggedInAt time.Time        `json:"loggedinat"`
+	CreatedAt  time.Time        `json:"createdat"`
+	ExpiresAt  time.Time        `json:"expiresat"`
 }
 
 type Values struct {
-	UserID     int       `json:"userid"`
-	Role       string    `json:"userrole"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	CreatedAt  time.Time `json:"createdat"`
-	ExpiresAt  time.Time `json:"expiresat"`
+	UserID     string           `json:"userid"`
+	Role       userService.Role `json:"userrole"`
+	LoggedInAt time.Time        `json:"loggedinat"`
+	CreatedAt  time.Time        `json:"createdat"`
+	ExpiresAt  time.Time        `json:"expiresat"`
 }
 
 func (s Session) IsZero() bool {
@@ -54,22 +54,16 @@ func (s *Session) Values() *Values {
 	}
 }
 
-func NewSession(userID int, role string) (*Session, error) {
+func NewSession(userID string, role userService.Role) (*Session, error) {
+	id := uuid.NewString()
 	return &Session{
-		UserID: userID,
-		Role:   role,
+		ID:         id,
+		UserID:     userID,
+		Role:       role,
+		LoggedInAt: time.Now(),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().Add(SessionDuration),
 	}, nil
-}
-
-// change the value of the field created at
-func (s *Session) Create() {
-	s.ID = uuid.NewString()
-	s.CreatedAt = time.Now().UTC()
-	s.ExpiresAt = time.Now().UTC().Add(SessionDuration)
-}
-
-func (s *Session) Login() {
-	s.LoggedInAt = time.Now().UTC()
 }
 
 func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems map[string]string) {
@@ -80,9 +74,8 @@ func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems
 	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
 		pbms["expiredat"] = "session expired"
 	}
-	sessionRole := userService.ConvertToRole(s.Role)
-	if !sessionRole.IsSuperior(minRole) {
-		pbms["role"] = fmt.Sprintf("unauthorized, user role %s is not superior to %s", sessionRole, minRole)
+	if !s.Role.IsSuperior(minRole) {
+		pbms["role"] = fmt.Sprintf("unauthorized, user role %s is not superior to %s", s.Role, minRole)
 	}
 	return pbms
 }
