@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	// "fmt"
+	// "log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -8,30 +10,41 @@ import (
 
 // NOTE: find inspiration with this : https://github.com/rs/cors/blob/master/cors.go
 
-func Cors(next http.Handler) http.Handler {
+// NOTE: the headers that I need to set
+// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+// w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+func SetOrigin(next http.Handler) http.Handler {
+	allowedOrigins := map[string]bool{
+		os.Getenv("FRONTEND_ORIGIN"): true,
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// url := os.Getenv("HOST")
-		url := os.Getenv("FRONTEND_ORIGIN")
-
-		w.Header().Set("Access-Control-Allow-Origin", url)
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
+		origin := r.Header.Get("origin")
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
 		next.ServeHTTP(w, r)
 	})
 }
 
 func EnableMethods(next http.Handler, methods ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		(w).Header().Set("Access-Control-Allow-Methods", strings.Join(methods, " "))
+		w.Header().Set("Access-Control-Allow-Methods", strings.Join(methods, " "))
 		next.ServeHTTP(w, r)
 	})
 }
 
 func EnableHeaders(next http.Handler, headers ...string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		(w).Header().Set("Access-Control-Allow-Headers", strings.Join(headers, " "))
+		w.Header().Set("Access-Control-Allow-Headers", strings.Join(headers, " "))
+		next.ServeHTTP(w, r)
+	})
+}
+
+func EnableCredentials(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		next.ServeHTTP(w, r)
 	})
 }
