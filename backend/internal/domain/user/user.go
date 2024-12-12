@@ -8,7 +8,6 @@ import (
 
 const BirthdayLayout = "2006-01-02"
 
-// TODO: remove the address field ?
 type User struct {
 	ID            int       `json:"id"`
 	Email         string    `json:"email,omitempty" validate:"required,email"`
