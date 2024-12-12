@@ -10,7 +10,7 @@ import (
 
 func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) (*sessionService.Session, error) {
 	var res sessionService.Session
-	val, err := s.Client.Get(ctx, sessionID).Bytes()
+	val, err := s.Client.Get(ctx, SESSIONPREFIX+sessionID).Bytes()
 	if err != nil {
 		return nil, rp.NewNotFoundError(err)
 	}

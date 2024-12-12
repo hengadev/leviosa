@@ -6,6 +6,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const SESSIONPREFIX = "session:"
+
 type Repository struct {
 	Client *redis.Client
 }
