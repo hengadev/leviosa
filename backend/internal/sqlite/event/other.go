@@ -16,7 +16,7 @@ func (e *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool,
 	var placecount int
 	err := e.DB.QueryRowContext(ctx, "SELECT placecount FROM events WHERE id=?;", eventID).Scan(&placecount)
 	if err != nil {
-		return false, rp.NewBadQueryErr(err)
+		return false, rp.NewQueryErr(err)
 	}
 	return placecount > 0, nil
 }
@@ -49,7 +49,7 @@ func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) (
 	rows, err := e.DB.QueryContext(ctx, query, userID)
 	defer rows.Close()
 	if err != nil {
-		return nil, rp.NewErrRow(err)
+		return nil, rp.NewDatabaseErr(err)
 	}
 
 	for rows.Next() {

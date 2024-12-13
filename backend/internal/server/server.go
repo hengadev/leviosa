@@ -8,6 +8,7 @@ import (
 
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	// "github.com/GaryHY/event-reservation-app/pkg/config"
 )
 
 type Server struct {
@@ -30,12 +31,18 @@ func New(handler *handler.Handler, logger *slog.Logger, opts ...ServerOption) *S
 	for _, opt := range opts {
 		opt(server)
 	}
+	// TODO: I can  add the logger in here right ?
 	// create router and add routes
 	server.addRoutes(handler)
 	// add middlewares common to all routes. [Order important]
+	// TODO: remove this auth middleware here
 	server.Use(
 		mw.RequestLogging(logger),
 		mw.AddRequestID,
+		mw.Auth(handler.Repos.Session),
+		// TODO: add that part later
+		// mw.SetRoleInContext(handler.Repos.Session),
+		mw.SetOrigin,
 	)
 	return server
 }

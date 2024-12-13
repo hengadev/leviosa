@@ -33,7 +33,7 @@ type Repos struct {
 	Vote      vote.Reader
 	Register  register.Reader
 	Photo     photo.Reader
-	Throttler throttler.Reader
+	Throttler throttlerService.Reader
 }
 
 type Handler struct {

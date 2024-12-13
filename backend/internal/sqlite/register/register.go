@@ -70,7 +70,7 @@ func (r *repository) CheckRegistration(registration *register.Registration) (boo
 		return false, rp.NewNotFoundError(err)
 	}
 	if err != nil {
-		return false, rp.NewBadQueryErr(err)
+		return false, rp.NewQueryErr(err)
 	}
 	return true, nil
 }

@@ -26,7 +26,17 @@ func Auth(s sessionService.Reader) Middleware {
 			noAuthEndpoints := []string{
 				serverutil.SIGNINENDPOINT,
 				serverutil.SIGNUPENDPOINT,
+				"basic",
 				"hello",
+
+				"first-step",
+
+				"login",
+				"test-login",
+				"logout",
+				"register",
+				"login/callback",
+
 				"oauth/google/user",
 			}
 			var url string

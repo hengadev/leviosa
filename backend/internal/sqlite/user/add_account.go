@@ -27,7 +27,7 @@ func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, prov
 	if usr.Password != "" {
 		hashpassword, err := sqliteutil.HashPassword(usr.Password)
 		if err != nil {
-			return 0, rp.NewBadQueryErr(err)
+			return 0, rp.NewQueryErr(err)
 		}
 		nullString.Valid = true //NOTE: Do I need that ?j
 		nullString.String = hashpassword

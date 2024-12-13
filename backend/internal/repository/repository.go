@@ -6,7 +6,7 @@ import (
 )
 
 var (
-	ErrNotFound          = errors.New("not found")
+	ErrNotFound          = errors.New("ressource not found")
 	ErrRessourceCreation = errors.New("ressource not created")
 	ErrRessourceUpdate   = errors.New("ressource not updated")
 	ErrRessourceDelete   = errors.New("ressource not deleted")

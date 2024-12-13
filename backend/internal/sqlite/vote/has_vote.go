@@ -11,7 +11,7 @@ func (v *repository) HasVote(ctx context.Context, month, year, userID int) error
 	query := "SELECT 1 FROM votes WHERE userid=? AND month=? AND year=?;"
 	err := v.DB.QueryRowContext(ctx, query, userID, month, year).Scan(&res)
 	if err != nil {
-		return rp.NewBadQueryErr(err)
+		return rp.NewQueryErr(err)
 	}
 	return nil
 }

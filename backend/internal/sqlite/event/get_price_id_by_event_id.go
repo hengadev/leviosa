@@ -10,7 +10,7 @@ func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, ID string) (s
 	var priceID string
 	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", ID).Scan(&priceID)
 	if err != nil {
-		return "", rp.NewBadQueryErr(err)
+		return "", rp.NewQueryErr(err)
 	}
 	return priceID, nil
 }
