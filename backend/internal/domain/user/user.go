@@ -4,12 +4,14 @@ import (
 	"context"
 	"reflect"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const BirthdayLayout = "2006-01-02"
 
 type User struct {
-	ID            int       `json:"id"`
+	ID            string    `json:"id"`
 	Email         string    `json:"email,omitempty" validate:"required,email"`
 	Password      string    `json:"password" validate:"required,min=6"`
 	CreatedAt     time.Time `json:"createdAt"`
@@ -43,6 +45,7 @@ func NewUser(
 	telephone Telephone,
 ) *User {
 	return &User{
+		ID:        uuid.NewString(),
 		Email:     email.String(),
 		Password:  password.String(),
 		Role:      BASIC.String(),

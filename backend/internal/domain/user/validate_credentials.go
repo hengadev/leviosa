@@ -2,29 +2,30 @@ package userService
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	app "github.com/GaryHY/event-reservation-app/internal/domain"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *Service) ValidateCredentials(ctx context.Context, creds *Credentials) (int, Role, error) {
-	fail := func(err error) (int, Role, error) {
-		return 0, UNKNOWN, app.NewAuthErr(err)
+func (s *Service) ValidateCredentials(ctx context.Context, creds *Credentials) error {
+	hashedPassword, err := s.repo.GetHashedPasswordByEmail(ctx, creds.Email)
+	switch {
+	case errors.Is(err, rp.ErrNotFound):
+		return app.NewUserNotFoundErr(err)
+	case err != nil:
+		return app.NewQueryFailedErr(err)
 	}
-	// get credential from database
-	userID, password, role, err := s.repo.GetCredentials(ctx, creds)
-	if err != nil {
-		fail(err)
+	if err = CompareHashAndPassword(hashedPassword, creds.Password); err != nil {
+		return fmt.Errorf("password comparison failed: provided password does not match the stored hash: %w", err)
 	}
-	// check if userID and role are valid
-	if userID == 0 || role == UNKNOWN {
-		fail(fmt.Errorf("invalid userID and role from database"))
-	}
-	// check if same password
-	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(creds.Password)); err != nil {
-		return fail(err)
-	}
-	return userID, role, nil
+	return nil
+}
+
+// ValidatePassword is a helper function that implements the logic behind verifying if the hashed password corresponds to thee password value sent
+func CompareHashAndPassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }

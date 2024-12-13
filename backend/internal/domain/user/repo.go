@@ -6,8 +6,10 @@ import (
 
 type Reader interface {
 	FindAccountByID(ctx context.Context, id int) (*User, error)
-	GetCredentials(ctx context.Context, usr *Credentials) (int, string, Role, error)
+	GetCredentials(ctx context.Context, usr *Credentials) (string, string, Role, error)
+	GetHashedPasswordByEmail(ctx context.Context, email string) (string, error)
 	GetOAuthUser(ctx context.Context, email, provider string) (*User, error)
+	GetUserSessionData(ctx context.Context, email string) (string, Role, error)
 }
 type Writer interface {
 	AddAccount(ctx context.Context, user *User, provider ...string) (int64, error)
