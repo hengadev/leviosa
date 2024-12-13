@@ -9,28 +9,31 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 )
 
 type Services struct {
-	User     *userService.Service
-	Session  *sessionService.Service
-	Event    *eventService.Service
-	Payment  *payment.Service
-	Vote     *vote.Service
-	Checkout *checkout.Service
-	Register *register.Service
-	Photo    *photo.Service
+	User      *userService.Service
+	Session   *sessionService.Service
+	Event     *eventService.Service
+	Payment   *payment.Service
+	Vote      *vote.Service
+	Checkout  *checkout.Service
+	Register  *register.Service
+	Photo     *photo.Service
+	Throttler *throttler.Service
 }
 
 type Repos struct {
-	User     userService.Reader
-	Session  sessionService.Reader
-	Event    eventService.Reader
-	Vote     vote.Reader
-	Register register.Reader
-	Photo    photo.Reader
+	User      userService.Reader
+	Session   sessionService.Reader
+	Event     eventService.Reader
+	Vote      vote.Reader
+	Register  register.Reader
+	Photo     photo.Reader
+	Throttler throttler.Reader
 }
 
 type Handler struct {

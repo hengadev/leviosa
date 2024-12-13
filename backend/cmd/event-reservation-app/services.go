@@ -5,20 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 
-	// api
+	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
 
-	// databases
-	"github.com/GaryHY/event-reservation-app/internal/redis/session"
-	"github.com/GaryHY/event-reservation-app/internal/s3"
-
 	// repositories
+	"github.com/GaryHY/event-reservation-app/internal/redis/session"
+	"github.com/GaryHY/event-reservation-app/internal/redis/throttler"
+	"github.com/GaryHY/event-reservation-app/internal/s3"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/register"
 	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
@@ -58,23 +58,28 @@ func makeServices(
 	}
 	photoSvc := photo.NewService(photoRepo)
 
+	throttlerRepo := throttlerRepository.New(ctx, redisdb)
+	throttlerSvc := throttlerService.New(throttlerRepo)
+
 	// services
 	appSvcs = handler.Services{
-		User:     userSvc,
-		Event:    eventSvc,
-		Vote:     voteSvc,
-		Register: registerSvc,
-		Photo:    photoSvc,
-		Session:  sessionSvc,
+		User:      userSvc,
+		Event:     eventSvc,
+		Vote:      voteSvc,
+		Register:  registerSvc,
+		Photo:     photoSvc,
+		Session:   sessionSvc,
+		Throttler: throttlerSvc,
 	}
 	// repos
 	appRepos = handler.Repos{
-		User:     userRepo,
-		Event:    eventRepo,
-		Vote:     voteRepo,
-		Register: registerRepo,
-		Photo:    photoRepo,
-		Session:  sessionRepo,
+		User:      userRepo,
+		Event:     eventRepo,
+		Vote:      voteRepo,
+		Register:  registerRepo,
+		Photo:     photoRepo,
+		Session:   sessionRepo,
+		Throttler: throttlerRepo,
 	}
 	return appSvcs, appRepos, nil
 }

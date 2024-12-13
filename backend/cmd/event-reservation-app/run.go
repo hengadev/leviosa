@@ -63,6 +63,12 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := conf.Load(ctx); err != nil {
 		return fmt.Errorf("load configuration: %w", err)
 	}
+
+	// auth, err := conf.NewAuthenticator()
+	// if err != nil {
+	// 	return fmt.Errorf("setup authenticator: %w", err)
+	// }
+
 	sqlitedb, redisdb, err := setupDatabases(ctx, conf)
 	if err != nil {
 		return fmt.Errorf("setup databases: %w", err)
