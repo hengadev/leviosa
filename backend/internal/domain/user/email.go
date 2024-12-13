@@ -73,8 +73,7 @@ func ValidateEmail(email string) error {
 }
 
 func NewEmail(email string) (Email, error) {
-	err := ValidateEmail(email)
-	if err != nil {
+	if err := ValidateEmail(email); err != nil {
 		return "", err
 	}
 	return Email(email), nil
