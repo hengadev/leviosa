@@ -10,9 +10,7 @@ var (
 	ErrRessourceCreation = errors.New("ressource not created")
 	ErrRessourceUpdate   = errors.New("ressource not updated")
 	ErrRessourceDelete   = errors.New("ressource not deleted")
-	ErrBadQuery          = errors.New("bad query")
-	ErrRows              = errors.New("rows error")
-	ErrScan              = errors.New("scan error")
+	ErrDatabase          = errors.New("database error")
 )
 
 func NewNotFoundError(err error) error {
@@ -31,14 +29,6 @@ func NewRessourceDeleteErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrRessourceDelete, err)
 }
 
-func NewBadQueryErr(err error) error {
-	return fmt.Errorf("%w: %w", ErrBadQuery, err)
-}
-
-func NewErrRow(err error) error {
-	return fmt.Errorf("%w: %w", ErrRows, err)
-}
-
-func NewErrScan(err error) error {
-	return fmt.Errorf("%w: %w", ErrScan, err)
+func NewDatabaseErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrDatabase, err)
 }
