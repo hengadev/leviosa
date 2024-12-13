@@ -23,7 +23,7 @@ type Services struct {
 	Checkout  *checkout.Service
 	Register  *register.Service
 	Photo     *photo.Service
-	Throttler *throttler.Service
+	Throttler *throttlerService.Service
 }
 
 type Repos struct {

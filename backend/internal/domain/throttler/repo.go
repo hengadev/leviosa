@@ -11,7 +11,7 @@ type Reader interface {
 
 type Writer interface {
 	MakeAttempt(ctx context.Context, email string, now time.Time) error
-	Reset(ctx context.Context) error
+	Reset(ctx context.Context, email string) error
 }
 
 type ReadWriter interface {
