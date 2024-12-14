@@ -11,7 +11,12 @@ var (
 	ErrRessourceUpdate   = errors.New("ressource not updated")
 	ErrRessourceDelete   = errors.New("ressource not deleted")
 	ErrDatabase          = errors.New("database error")
+	ErrInternal          = errors.New("internal error")
 )
+
+func NewInternalError(err error) error {
+	return fmt.Errorf("%w: %w", ErrNotFound, err)
+}
 
 func NewNotFoundError(err error) error {
 	return fmt.Errorf("%w: %w", ErrNotFound, err)
