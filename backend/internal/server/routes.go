@@ -12,6 +12,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/vote"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
@@ -41,7 +42,7 @@ func (s *Server) addRoutes(h *handler.Handler) {
 	mux.Handle("PUT /api/v1/me", userHandler.UpdateUser())
 	mux.Handle("DELETE /api/v1/me", userHandler.DeleteUser())
 	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNUPENDPOINT), userHandler.CreateAccount())
-	rateLimit := mw.PerIPRateLimit(h.Logger, 1, 1)
+	rateLimit := mw.PerIPRateLimit(1, 1)
 	mux.Handle(fmt.Sprintf("POST /api/v1/%s", serverutil.SIGNINENDPOINT), rateLimit(userHandler.Signin()))
 	mux.Handle("POST /api/v1/signout", userHandler.Signout())
 
@@ -67,8 +68,14 @@ func sayHello(h *handler.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// fmt.Fprintln(w, "here I am in the basic thing brother")
 		// here use the logger to do  the things that you want to do brother
-		h.Logger.Debug("a debug message for the first use")
-		h.Logger.Info("here is the first message from the logger inside the handler ")
+		ctx := r.Context()
+		logger, err := contextutil.GetLoggerFromContext(ctx)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.DebugContext(ctx, "a debug message for the first use")
+		logger.InfoContext(ctx, "here is the first message from the logger inside the handler ")
 		fmt.Fprintln(w, "hello world!")
 	})
 }

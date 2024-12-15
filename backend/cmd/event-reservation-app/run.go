@@ -78,7 +78,7 @@ func run(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("create services: %w", err)
 	}
-	handler := handler.New(&appSvcs, &appRepos, logger)
+	handler := handler.New(&appSvcs, &appRepos)
 	srv := server.New(
 		handler,
 		// auth,

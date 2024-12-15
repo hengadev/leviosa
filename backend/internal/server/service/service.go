@@ -37,17 +37,15 @@ type Repos struct {
 }
 
 type Handler struct {
-	Svcs   *Services
-	Repos  *Repos
-	Logger *slog.Logger
+	Svcs  *Services
+	Repos *Repos
 }
 
 // Function to use in the main, once all the services and repos are built.
-func New(svcs *Services, repos *Repos, logger *slog.Logger) *Handler {
+func New(svcs *Services, repos *Repos) *Handler {
 	// TODO: work on the logger to make it specific for handler brother
 	return &Handler{
-		Svcs:   svcs,
-		Repos:  repos,
-		Logger: logger,
+		Svcs:  svcs,
+		Repos: repos,
 	}
 }

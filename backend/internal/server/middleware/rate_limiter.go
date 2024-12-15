@@ -2,10 +2,12 @@ package middleware
 
 import (
 	"fmt"
-	"log/slog"
 	"net"
 	"net/http"
+	"os"
 
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
+	"github.com/GaryHY/event-reservation-app/pkg/domainutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 
 	"golang.org/x/time/rate"
@@ -15,17 +17,19 @@ import (
 var ipLimiters = map[string]*rate.Limiter{}
 
 // PerIPRateLimit rates limit an endpoint at the rate of r attempt per ID per second. Client can allow up to b attempts at most.
-func PerIPRateLimit(logger *slog.Logger, lim, burst int) Middleware {
-	// TODO: use the logger, I want to get the information of users accesing rate limits in their use of the application
+func PerIPRateLimit(lim, burst int) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// TODO: make sur that this part is pseudo anonymised so that I can make sure that this is safe in my database while protecting the app.
-			// ie hash the IP address when stored
 			// TODO: need a system to remove keys after a certain time
 			ctx := r.Context()
+			logger, err := contextutil.GetLoggerFromContext(ctx)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			IP := getClientIP(r)
 			if IP == "" || IP == "unknown" {
-				logger.ErrorContext(ctx, "Invalid IP address")
+				logger.WarnContext(ctx, "Invalid IP address in per IP rate limiter")
 				http.Error(w, "Invalid IP address", http.StatusBadRequest)
 				return
 			}
@@ -48,8 +52,8 @@ func PerIPRateLimit(logger *slog.Logger, lim, burst int) Middleware {
 					Body:   "The API is at capacity, try again later",
 				}
 				if err := serverutil.Encode(w, http.StatusTooManyRequests, message); err != nil {
-					// TODO: need to hash that IP address for the logs
-					logger.ErrorContext(ctx, fmt.Sprintf("Rate limited %q for %s to %s", IP, r.Method, r.URL.String()))
+					rateLimitSalt := os.Getenv("RATE_LIMIT_SALT")
+					logger.WarnContext(ctx, fmt.Sprintf("Rate limited %q for %s to %s", domainutil.HashWithSalt(IP, rateLimitSalt), r.Method, r.URL.String()))
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
