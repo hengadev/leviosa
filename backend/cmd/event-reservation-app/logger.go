@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil/logger"
 )
 
 func setLogger() (*slog.Logger, error) {
-	if err := serverutil.SetLoggerOptions(opts.mode, &opts.logger.level, &opts.logger.style); err != nil {
+	if err := logger.SetOptions(opts.mode, &opts.logger.level, &opts.logger.style); err != nil {
 		return nil, fmt.Errorf("set logger options: %w", err)
 	}
-	slogHandler, err := serverutil.SetLoggerHandler(opts.logger.level, opts.logger.style)
+	slogHandler, err := logger.SetHandler(opts.logger.level, opts.logger.style)
 	if err != nil {
 		return nil, fmt.Errorf("create logger handler: %w", err)
 	}

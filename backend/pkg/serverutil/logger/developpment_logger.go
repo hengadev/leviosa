@@ -1,4 +1,4 @@
-package serverutil
+package logger
 
 import (
 	"context"
