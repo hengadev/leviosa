@@ -37,11 +37,10 @@ func New(handler *handler.Handler, logger *slog.Logger, opts ...ServerOption) *S
 	// add middlewares common to all routes. [Order important]
 	// TODO: remove this auth middleware here
 	server.Use(
-		mw.RequestLogging(logger),
-		mw.AddRequestID,
+		mw.AttachLogger(logger),
 		mw.Auth(handler.Repos.Session),
 		// TODO: add that part later
-		// mw.SetRoleInContext(handler.Repos.Session),
+		// mw.SetUserContext(handler.Repos.Session),
 		mw.SetOrigin,
 	)
 	return server
