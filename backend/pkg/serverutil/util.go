@@ -2,12 +2,13 @@ package serverutil
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+
+	errsx "github.com/GaryHY/event-reservation-app/pkg/errorMap"
 )
 
 const SIGNINENDPOINT = "signin"
@@ -15,29 +16,34 @@ const SIGNUPENDPOINT = "signup"
 const SIGNOUTENDPOINT = "signout"
 
 type Validator interface {
-	Valid(ctx context.Context) (problems map[string]string)
+	Valid(ctx context.Context) (problems errsx.Map)
 }
 
-func Decode[T any](r *http.Request) (T, error) {
+var ErrDecodeJSON = errors.New("decoding json")
+
+func NewDecodeJSONErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrDecodeJSON, err)
+}
+
+func Decode[T any](body io.ReadCloser) (T, error) {
 	var res T
-	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(&res); err != nil {
-		return res, fmt.Errorf("decode json: %w", err)
+	defer body.Close()
+	if err := json.NewDecoder(body).Decode(&res); err != nil {
+		return res, NewDecodeJSONErr(err)
 	}
 	return res, nil
 }
 
-func DecodeValid[T Validator](r *http.Request) (T, map[string]string, error) {
+func DecodeValid[T Validator](ctx context.Context, body io.ReadCloser) (T, error) {
 	var v T
-	v, err := Decode[T](r)
+	v, err := Decode[T](body)
 	if err != nil {
-		return v, nil, fmt.Errorf("decode json: %w", err)
+		return v, err
 	}
-	if pbms := v.Valid(r.Context()); len(pbms) > 0 {
-		err := FormatError(pbms, fmt.Sprintf("%T", v))
-		return v, pbms, fmt.Errorf("invalid %T with %d problems : %w", v, len(pbms), err)
+	if pbms := v.Valid(ctx); len(pbms) > 0 {
+		return v, pbms
 	}
-	return v, nil, nil
+	return v, nil
 }
 
 func Encode[T any](w http.ResponseWriter, status int, v T) error {
@@ -59,19 +65,4 @@ func WriteResponse(w http.ResponseWriter, message string, status int) error {
 		return err
 	}
 	return nil
-}
-
-func FormatError(pbms map[string]string, name string) error {
-	var temp string
-	for field, pbm := range pbms {
-		temp += fmt.Sprintf("invalid %s: %s, ", field, pbm)
-	}
-	return errors.New(fmt.Sprintf("%s error : [%s]", name, temp))
-}
-
-func CreateOTP() string {
-	bytes := make([]byte, 4)
-	rand.Read(bytes)
-	num := int(binary.BigEndian.Uint32(bytes) % 100000000)
-	return fmt.Sprintf("%08d", num)
 }

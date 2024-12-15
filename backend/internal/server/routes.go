@@ -33,7 +33,7 @@ func (s *Server) addRoutes(h *handler.Handler) {
 	eventHandler := event.NewHandler(h)
 
 	// TODO: now use the auth in the different handler here
-	mux.Handle("POST /api/v1/first-step", userHandler.FirstStep())
+	mux.Handle("POST /api/v1/register", userHandler.Register())
 
 	// assign to multiplexer
 	// user
