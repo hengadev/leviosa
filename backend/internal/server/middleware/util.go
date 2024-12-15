@@ -1,18 +1,20 @@
 package middleware
 
 import (
-	"context"
-	"fmt"
+	"net/http"
+	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	app "github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/google/uuid"
 )
 
-func ValidateRoleInContext(ctx context.Context, expectedRole userService.Role) error {
-	role, ok := ctx.Value(RoleKey).(userService.Role)
-	if !ok {
-		return fmt.Errorf("extract role from context")
-	} else if role != expectedRole {
-		return fmt.Errorf("expected role %q, got %q", expectedRole, role)
+func getSessionIDFromRequest(r *http.Request) (string, error) {
+	sessionID := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if sessionID == "" {
+		return "", app.NewSessionNotFoundErr(nil)
 	}
-	return nil
+	if err := uuid.Validate(sessionID); err != nil {
+		return "", app.NewInvalidSessionErr(err)
+	}
+	return sessionID, nil
 }
