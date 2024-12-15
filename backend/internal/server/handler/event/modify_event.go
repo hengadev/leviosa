@@ -14,7 +14,7 @@ func (h *Handler) ModifyEvent() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
-		event, err := serverutil.Decode[eventService.Event](r)
+		event, err := serverutil.Decode[eventService.Event](r.Body)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode the event", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)

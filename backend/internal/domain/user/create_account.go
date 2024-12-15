@@ -41,6 +41,6 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	if err != nil {
 		return nil, fmt.Errorf("add account: %w", err)
 	}
-	user.ID = int(id)
+	user.ID = id
 	return user, nil
 }

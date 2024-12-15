@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 	"github.com/google/uuid"
 )
 
@@ -65,29 +66,28 @@ func (a *User) Login() {
 	a.LoggedInAt = time.Now().UTC()
 }
 
-func (u User) Valid(ctx context.Context) map[string]string {
-	var pbms = make(map[string]string)
+func (u User) Valid(ctx context.Context) errsx.Map {
+	var pbms = make(errsx.Map)
 	vf := reflect.VisibleFields(reflect.TypeOf(u))
 	for _, f := range vf {
 		switch f.Name {
 		case "Email":
 			if err := ValidateEmail(u.Email); err != nil {
-				pbms["email"] = err.Error()
+				pbms.Set("email", err)
 			}
 		case "Password":
 			if err := ValidatePassword(u.Password); err != nil {
-				pbms["password"] = err.Error()
+				pbms.Set("password", err)
 			}
 		case "Telephone":
-			// do the validation using the rule that follows :
-			// if len(u.Telephone) < 10 && strings.HasPrefix(u.Telephone) {
-			// 	pbms["telephone"] = ""
-			// }
+			if len(u.Telephone) < 10 {
+				pbms.Set("telephone", "telephne number should have at leat 10 digits")
+			}
 		case "Birthday":
 			parsedDate, err := time.Parse(BirthdayLayout, u.BirthDate)
 			nonValidDate, _ := time.Parse(BirthdayLayout, "01-01-01")
 			if err != nil && parsedDate != nonValidDate {
-				pbms["birthday"] = err.Error()
+				pbms.Set("birthday", err)
 			}
 		default:
 			continue

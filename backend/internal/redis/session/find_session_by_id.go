@@ -14,7 +14,9 @@ func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) (*se
 	if err != nil {
 		return nil, rp.NewNotFoundError(err)
 	}
-	json.Unmarshal(val, &res)
+	if err = json.Unmarshal(val, &res); err != nil {
+		return nil, rp.NewInternalError(err)
+	}
 	res.ID = sessionID
 	return &res, nil
 }

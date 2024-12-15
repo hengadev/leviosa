@@ -20,7 +20,7 @@ func (h *Handler) MakeVote() http.Handler {
 		// get userID from cookie
 		userID := ctx.Value(mw.UserIDKey).(string)
 		// get votes from request
-		votes, err := serverutil.Decode[[]*vote.Vote](r)
+		votes, err := serverutil.Decode[[]*vote.Vote](r.Body)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode vote", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

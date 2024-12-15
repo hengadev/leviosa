@@ -7,6 +7,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+
 	"github.com/redis/go-redis/v9"
 )
 

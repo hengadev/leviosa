@@ -18,7 +18,7 @@ func (h *Handler) UpdateUser() http.Handler {
 		userID := ctx.Value(mw.UserIDKey).(int)
 
 		// use a custom valid for the updtate thing
-		user, err := serverutil.Decode[userService.User](r)
+		user, err := serverutil.Decode[userService.User](r.Body)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to decode user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
