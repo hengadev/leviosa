@@ -13,7 +13,12 @@ var (
 	ErrDatabase          = errors.New("database error")
 	ErrInternal          = errors.New("internal error")
 	ErrExpiredToken      = errors.New("expired token")
+	ErrMarshalJSON       = errors.New("json marshalling")
 )
+
+func NewJSONMarshalErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrMarshalJSON, err)
+}
 
 func NewExpiredTokenError(name string, err error) error {
 	return fmt.Errorf("%w: %w - %s", ErrNotFound, err, name)
