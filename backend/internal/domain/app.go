@@ -27,13 +27,12 @@ var (
 	ErrInvalidSession = errors.New("invalid session")
 )
 
-// user errors
-func NewInvalidInputErr(err error) error {
-	return fmt.Errorf("%w: %w", ErrInvalidInput, err)
-}
+	//general
+	ErrMarshalJSON = errors.New("json marshalling")
+)
 
-func NewAuthErr(err error) error {
-	return fmt.Errorf("%w: %w", ErrAuth, err)
+func NewJSONMarshalErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrMarshalJSON, err)
 }
 
 func NewQueryFailedErr(err error) error {
@@ -44,8 +43,9 @@ func NewUserNotFoundErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrUserNotFound, err)
 }
 
-// user errors
 func NewInvalidUserErr(err error) error {
+// user errors
+// user errors
 	return fmt.Errorf("%w: %w", ErrInvalidUser, err)
 }
 
