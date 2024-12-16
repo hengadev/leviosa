@@ -4,36 +4,37 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 // TODO: Do the validation for the rest of the fields.
 func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User, error) {
-	var input struct {
-		Email     Email
-		Password  Password
-		Telephone Telephone
+	var pbms errsx.Map
+	email, err := NewEmail(userCandidate.Email)
+	if err != nil {
+		pbms.Set("email", err)
 	}
-	{
-		var err error
-		if input.Email, err = NewEmail(userCandidate.Email); err != nil {
-			return nil, app.NewInvalidInputErr(err)
-		}
-		if input.Password, err = NewPassword(userCandidate.Password); err != nil {
-			return nil, app.NewInvalidInputErr(err)
-		}
-		if input.Telephone, err = NewTelephone(userCandidate.Telephone); err != nil {
-			return nil, app.NewInvalidInputErr(err)
-		}
+	password, err := NewPassword(userCandidate.Password)
+	if err != nil {
+		pbms.Set("password", err)
 	}
+	telephone, err := NewTelephone(userCandidate.Telephone)
+	if err != nil {
+		pbms.Set("telephone", err)
+	}
+
+	if pbms != nil {
+		return nil, pbms
+	}
+
 	user := NewUser(
-		input.Email,
-		input.Password,
+		email,
+		password,
 		userCandidate.BirthDate,
 		userCandidate.LastName,
 		userCandidate.FirstName,
 		userCandidate.Gender,
-		input.Telephone,
+		telephone,
 	)
 	user.Create()
 	user.Login()
@@ -41,6 +42,6 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	if err != nil {
 		return nil, fmt.Errorf("add account: %w", err)
 	}
-	user.ID = id
+	user.ID = string(id)
 	return user, nil
 }

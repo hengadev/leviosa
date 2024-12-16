@@ -19,7 +19,7 @@ type Validator interface {
 	Valid(ctx context.Context) (problems errsx.Map)
 }
 
-var ErrDecodeJSON = errors.New("decoding json")
+var ErrDecodeJSON = errors.New("Failed to decode JSON payload")
 
 func NewDecodeJSONErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrDecodeJSON, err)
