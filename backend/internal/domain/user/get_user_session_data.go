@@ -13,8 +13,10 @@ func (s *Service) GetUserSessionData(ctx context.Context, email string) (string,
 	switch {
 	case errors.Is(err, rp.ErrNotFound):
 		return "", UNKNOWN, app.NewUserNotFoundErr(err)
-	case err != nil:
+	case errors.Is(err, rp.ErrDatabase):
 		return "", UNKNOWN, app.NewQueryFailedErr(err)
+	case err != nil:
+		return "", UNKNOWN, app.NewUnexpectTypeErr(err)
 	}
 
 	return ID, role, nil
