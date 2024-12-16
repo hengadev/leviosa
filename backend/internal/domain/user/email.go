@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 const emailMaxLength = 100
@@ -19,19 +21,21 @@ var (
 type Email string
 
 func ValidateEmail(email string) error {
+	var pbms errsx.Map
 	if strings.TrimSpace(email) == "" {
-		return errors.New("cannot be empty")
+		pbms.Set("emptiness", "cannot be empty")
+		// return errors.New("cannot be empty")
 	}
 
 	if strings.ContainsAny(email, " \t\n\r") {
-		return errors.New("cannot contain whitespace")
+		pbms.Set("whitespace", "cannot contain whitespace")
 	}
 	if strings.ContainsAny(email, `"'`) {
-		return errors.New("cannot contain quotes")
+		pbms.Set("quotes", "cannot contain quotes")
 	}
 
 	if rc := utf8.RuneCountInString(email); rc > emailMaxLength {
-		return fmt.Errorf("cannot be a over %v characters in length", emailMaxLength)
+		pbms.Set("max length", fmt.Sprintf("cannot be a over %v characters in length", emailMaxLength))
 	}
 
 	addr, err := mail.ParseAddress(email)
@@ -41,35 +45,33 @@ func ValidateEmail(email string) error {
 
 		switch {
 		case strings.Contains(msg, "missing '@'"):
-			return errors.New("missing the @ sign")
+			pbms.Set("@ sign", "missing the @ sign")
 
 		case strings.HasPrefix(email, "@"):
-			return errors.New("missing part before the @ sign")
+			pbms.Set("@ sign", "missing part before the @ sign")
 
 		case strings.HasSuffix(email, "@"):
-			return errors.New("missing part after the @ sign")
+			pbms.Set("@ sign", "missing part after the @ sign")
 		}
-
-		return errors.New(msg)
 	}
 
 	if addr.Name != "" {
-		return errors.New("cannot not include a name")
+		pbms.Set("include name", "cannot not include a name")
 	}
 
 	if matches := invalidEmailChars.FindAllString(addr.Address, -1); len(matches) != 0 {
-		return fmt.Errorf("cannot contain: %v", matches)
+		pbms.Set("invalid characters", fmt.Sprintf("cannot contain: %v", matches))
 	}
 
 	if !validEmailSeq.MatchString(addr.Address) {
 		_, end, _ := strings.Cut(addr.Address, "@")
 		if !strings.Contains(end, ".") {
-			return errors.New("missing top-level domain, e.g. .com, .co.uk, etc.")
+			pbms.Set("top level domain", "missing top-level domain, e.g. .com, .co.uk, etc.")
 		}
 
-		return errors.New("must be an email address, e.g. email@example.com")
+		pbms.Set("not email address", "must be an email address, e.g. email@example.com")
 	}
-	return nil
+	return pbms
 }
 
 func NewEmail(email string) (Email, error) {
