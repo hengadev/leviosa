@@ -13,12 +13,12 @@ import (
 // MakeAttempt is called when there is sign in error and adds an attempt for the provided email.
 func (t *Repository) MakeAttempt(ctx context.Context, key string, now time.Time) error {
 	var info throttlerService.Info
-	val, err := t.Client.Get(ctx, THROTTLERPREFIX+key).Bytes()
+	val, err := t.client.Get(ctx, THROTTLERPREFIX+key).Bytes()
 	switch {
 	case err == redis.Nil:
 		// create an entry for that email
 		info := throttlerService.NewInfo(key)
-		err = t.Client.Set(ctx, THROTTLERPREFIX+info.Email, info, throttlerService.THROTTLERSESSIONDURATION).Err()
+		err = t.client.Set(ctx, THROTTLERPREFIX+info.Email, info, throttlerService.THROTTLERSESSIONDURATION).Err()
 		if err != nil {
 			return rp.NewRessourceUpdateErr(err)
 		}
@@ -40,7 +40,7 @@ func (t *Repository) MakeAttempt(ctx context.Context, key string, now time.Time)
 	if err != nil {
 		return rp.NewDatabaseErr(err)
 	}
-	err = t.Client.Set(ctx, THROTTLERPREFIX+info.Email, encoded, throttlerService.THROTTLERSESSIONDURATION).Err()
+	err = t.client.Set(ctx, THROTTLERPREFIX+info.Email, encoded, throttlerService.THROTTLERSESSIONDURATION).Err()
 	if err != nil {
 		return rp.NewRessourceUpdateErr(err)
 	}

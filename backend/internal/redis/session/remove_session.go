@@ -8,14 +8,14 @@ import (
 )
 
 func (s *Repository) RemoveSession(ctx context.Context, ID string) error {
-	res, err := s.Client.Exists(ctx, SESSIONPREFIX+ID).Result()
+	res, err := s.client.Exists(ctx, SESSIONPREFIX+ID).Result()
 	if err != nil {
 		return rp.NewNotFoundError(err)
 	}
 	if res == 0 {
 		return fmt.Errorf("non existing key")
 	}
-	if err := s.Client.Del(ctx, SESSIONPREFIX+ID).Err(); err != nil {
+	if err := s.client.Del(ctx, SESSIONPREFIX+ID).Err(); err != nil {
 		return rp.NewRessourceDeleteErr(err)
 	}
 	return nil

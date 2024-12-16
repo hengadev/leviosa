@@ -14,7 +14,7 @@ import (
 // TODO: do the implementation for that function
 func (t *Repository) IsLocked(ctx context.Context, key string) (bool, error) {
 	var res throttlerService.Info
-	val, err := t.Client.Get(ctx, THROTTLERPREFIX+key).Bytes()
+	val, err := t.client.Get(ctx, THROTTLERPREFIX+key).Bytes()
 	switch {
 	case err == redis.Nil:
 		return false, rp.NewNotFoundError(err)
@@ -23,7 +23,6 @@ func (t *Repository) IsLocked(ctx context.Context, key string) (bool, error) {
 	}
 
 	json.Unmarshal(val, &res)
-	res.Email = key
 
 	return time.Now().Before(res.LockedUntil), nil
 }

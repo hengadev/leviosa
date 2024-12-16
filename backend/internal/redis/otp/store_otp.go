@@ -13,7 +13,7 @@ import (
 func (o *Repository) StoreOTP(ctx context.Context, otp *otpService.OTP) error {
 	// check if otp exists
 	// forget the value got, we do not care
-	_, err := o.Client.Get(ctx, OTPPREFIX+otp.Email).Bytes()
+	_, err := o.client.Get(ctx, OTPPREFIX+otp.Email).Bytes()
 	if err != redis.Nil {
 		return rp.NewDatabaseErr(err)
 	}
@@ -21,7 +21,7 @@ func (o *Repository) StoreOTP(ctx context.Context, otp *otpService.OTP) error {
 	if err != nil {
 		return rp.NewDatabaseErr(err)
 	}
-	err = o.Client.Set(ctx, OTPPREFIX+otp.Email, encoded, otpService.OTPDURATION).Err()
+	err = o.client.Set(ctx, OTPPREFIX+otp.Email, encoded, otpService.OTPDURATION).Err()
 	if err != nil {
 		return rp.NewRessourceUpdateErr(err)
 	}

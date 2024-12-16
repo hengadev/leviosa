@@ -13,7 +13,7 @@ import (
 
 func (o *Repository) GetOTP(ctx context.Context, email string) (*otpService.OTP, error) {
 	var res otpService.OTP
-	val, err := o.Client.Get(ctx, OTPPREFIX+email).Bytes()
+	val, err := o.client.Get(ctx, OTPPREFIX+email).Bytes()
 	switch {
 	case err == redis.Nil:
 		return nil, rp.NewNotFoundError(err)

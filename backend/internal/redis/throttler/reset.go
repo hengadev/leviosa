@@ -12,7 +12,7 @@ import (
 // Reset is called with a successful sign in to reset the throtlting associated with the provided email.
 func (t *Repository) Reset(ctx context.Context, key string) error {
 	var info throttlerService.Info
-	val, err := t.Client.Get(ctx, THROTTLERPREFIX+key).Bytes()
+	val, err := t.client.Get(ctx, THROTTLERPREFIX+key).Bytes()
 	if err != nil {
 		return rp.NewNotFoundError(err)
 	}
@@ -25,7 +25,7 @@ func (t *Repository) Reset(ctx context.Context, key string) error {
 	if err != nil {
 		return rp.NewDatabaseErr(err)
 	}
-	err = t.Client.Set(ctx, THROTTLERPREFIX+info.Email, encoded, throttlerService.THROTTLERSESSIONDURATION).Err()
+	err = t.client.Set(ctx, THROTTLERPREFIX+info.Email, encoded, throttlerService.THROTTLERSESSIONDURATION).Err()
 	if err != nil {
 		return rp.NewRessourceUpdateErr(err)
 	}

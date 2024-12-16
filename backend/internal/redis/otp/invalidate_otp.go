@@ -9,7 +9,7 @@ import (
 )
 
 func (o *Repository) InvalidateOTP(ctx context.Context, email string) error {
-	err := o.Client.Del(ctx, OTPPREFIX+email).Err()
+	err := o.client.Del(ctx, OTPPREFIX+email).Err()
 	switch {
 	case err == redis.Nil:
 		return rp.NewNotFoundError(err)
