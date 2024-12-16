@@ -2,14 +2,14 @@ package sessionRepository
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (s *Repository) CreateSession(ctx context.Context, session *sessionService.Session) error {
-	sessionEncoded, err := json.Marshal(session)
+func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessionEncoded []byte) error {
+	err := s.client.Set(ctx, SESSIONPREFIX+sessionID, sessionEncoded, sessionService.SessionDuration).Err()
 	if err != nil {
 		return err
 	}

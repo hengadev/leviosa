@@ -8,12 +8,14 @@ import (
 )
 
 func (s *Service) CreateSession(ctx context.Context, userID string, role userService.Role) (*Session, error) {
-	session, err := NewSession(userID, role)
+	session := NewSession(userID, role)
+	sessionEncoded, err := json.Marshal(session)
 	if err != nil {
-		return nil, fmt.Errorf("create session object: %w", err)
+		return "", app.NewJSONMarshalErr(err)
 	}
 	if err := s.Repo.CreateSession(ctx, session); err != nil {
 		return nil, fmt.Errorf("create session in redis: %w", err)
+	err = s.Repo.CreateSession(ctx, session.ID, sessionEncoded)
 	}
 	return session, nil
 }
