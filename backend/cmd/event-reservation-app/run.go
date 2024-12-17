@@ -10,7 +10,7 @@ import (
 
 	// api
 	"github.com/GaryHY/event-reservation-app/internal/server"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 
 	// utils
 	"github.com/GaryHY/event-reservation-app/pkg/config"
@@ -78,10 +78,9 @@ func run(ctx context.Context, w io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("create services: %w", err)
 	}
-	handler := handler.New(&appSvcs, &appRepos)
+	appCtx := app.New(&appSvcs, &appRepos)
 	srv := server.New(
-		handler,
-		// auth,
+		appCtx,
 		logger,
 		server.WithPort(opts.server.port),
 	)

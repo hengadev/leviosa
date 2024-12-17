@@ -1,8 +1,6 @@
-package handler
+package app
 
 import (
-	"log/slog"
-
 	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
@@ -24,28 +22,4 @@ type Services struct {
 	Register  *register.Service
 	Photo     *photo.Service
 	Throttler *throttlerService.Service
-}
-
-type Repos struct {
-	User      userService.Reader
-	Session   sessionService.Reader
-	Event     eventService.Reader
-	Vote      vote.Reader
-	Register  register.Reader
-	Photo     photo.Reader
-	Throttler throttlerService.Reader
-}
-
-type Handler struct {
-	Svcs  *Services
-	Repos *Repos
-}
-
-// Function to use in the main, once all the services and repos are built.
-func New(svcs *Services, repos *Repos) *Handler {
-	// TODO: work on the logger to make it specific for handler brother
-	return &Handler{
-		Svcs:  svcs,
-		Repos: repos,
-	}
 }

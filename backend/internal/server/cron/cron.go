@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 
 	"github.com/robfig/cron"
 )
 
 type Handler struct {
-	*handler.Handler
+	*app.App
 }
 
-func NewHandler(handler *handler.Handler) *Handler {
+func NewHandler(handler *app.App) *Handler {
 	return &Handler{handler}
 }
 

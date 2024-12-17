@@ -8,16 +8,16 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/event"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/payment"
 	// "github.com/GaryHY/event-reservation-app/internal/server/handler/register"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/vote"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 // make all the routes start with "/api/v1"
-func (s *Server) addRoutes(h *handler.Handler) {
+func (s *Server) addRoutes(h *app.App) {
 	mux := http.NewServeMux()
 	// basic route to test things out
 	mux.Handle("GET /api/v1/hello", sayHello(h))
@@ -64,7 +64,7 @@ func (s *Server) addRoutes(h *handler.Handler) {
 	s.srv.Handler = mux
 }
 
-func sayHello(h *handler.Handler) http.Handler {
+func sayHello(h *app.App) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// fmt.Fprintln(w, "here I am in the basic thing brother")
 		// here use the logger to do  the things that you want to do brother

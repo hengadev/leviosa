@@ -11,7 +11,7 @@ import (
 )
 
 // TODO: add the fact that creating an event, should also create a vote and a table with the style votes_month_year.
-func (h *Handler) CreateEvent() http.Handler {
+func (a *AppInstance) CreateEvent() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -23,7 +23,7 @@ func (h *Handler) CreateEvent() http.Handler {
 			return
 		}
 		// use the service to make that event
-		eventID, err := h.Svcs.Event.CreateEvent(ctx, &event)
+		eventID, err := a.Svcs.Event.CreateEvent(ctx, &event)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create the event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

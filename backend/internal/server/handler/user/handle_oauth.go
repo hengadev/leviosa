@@ -6,15 +6,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
+	// "time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	// "github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 )
 
-func (h *Handler) HandleOAuth() http.Handler {
+func (a *AppInstance) HandleOAuth() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -29,11 +29,12 @@ func (h *Handler) HandleOAuth() http.Handler {
 		}
 		// decode user sent and validate it.
 		oauthUser := userService.DecodeOAuthUser(r, provider)
-		user, err := h.Repos.User.GetOAuthUser(ctx, oauthUser.GetEmail(), provider)
+		user, err := a.Repos.User.GetOAuthUser(ctx, oauthUser.GetEmail(), provider)
+		_ = user
 		// TODO: find right status to send back with this because I do not know
 		if errors.Is(err, rp.ErrNotFound) {
 			fmt.Println("this is a not found error")
-			user, err = h.Svcs.User.CreateOAuthAccount(ctx, oauthUser)
+			user, err = a.Svcs.User.CreateOAuthAccount(ctx, oauthUser)
 			if err != nil {
 				slog.ErrorContext(ctx, "create oauth account", "error", err)
 				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
@@ -45,18 +46,18 @@ func (h *Handler) HandleOAuth() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusBadRequest)
 			return
 		}
-		sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to create session", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     sessionService.SessionName,
-			Value:    sessionID,
-			Expires:  time.Now().Add(sessionService.SessionDuration),
-			HttpOnly: true,
-		})
+		// sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
+		// if err != nil {
+		// 	slog.ErrorContext(ctx, "failed to create session", "error", err)
+		// 	http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		// 	return
+		// }
+		// http.SetCookie(w, &http.Cookie{
+		// 	Name:     sessionService.SessionName,
+		// 	Value:    sessionID,
+		// 	Expires:  time.Now().Add(sessionService.SessionDuration),
+		// 	HttpOnly: true,
+		// })
 		w.WriteHeader(http.StatusCreated)
 	})
 }

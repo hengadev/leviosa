@@ -17,7 +17,7 @@ func TestModifyAccount(t *testing.T) {
 
 	changes := map[string]any{"FirstName": "Jane", "Gender": "F"}
 	whereMap := map[string]any{"id": testutil.Johndoe.ID}
-	modifiedUser, err := app.CreateWithZeroFieldModifiedObject(*testutil.Johndoe, changes)
+	modifiedUser, err := domain.CreateWithZeroFieldModifiedObject(*testutil.Johndoe, changes)
 	if err != nil {
 		t.Error("Failed to create object with modified field")
 	}

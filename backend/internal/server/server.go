@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	// "github.com/GaryHY/event-reservation-app/pkg/config"
 )
 
@@ -15,7 +15,7 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(handler *handler.Handler, logger *slog.Logger, opts ...ServerOption) *Server {
+func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
@@ -33,12 +33,12 @@ func New(handler *handler.Handler, logger *slog.Logger, opts ...ServerOption) *S
 	}
 	// TODO: I can  add the logger in here right ?
 	// create router and add routes
-	server.addRoutes(handler)
+	server.addRoutes(appCtx)
 	// add middlewares common to all routes. [Order important]
 	// TODO: remove this auth middleware here
 	server.Use(
 		mw.AttachLogger(logger),
-		mw.Auth(handler.Repos.Session),
+		mw.Auth(appCtx.Repos.Session),
 		// TODO: add that part later
 		// mw.SetUserContext(handler.Repos.Session),
 		mw.SetOrigin,

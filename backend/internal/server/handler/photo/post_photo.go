@@ -10,7 +10,7 @@ import (
 )
 
 // func PostPhoto(ph *photo.Service) http.Handler {
-func (h *Handler) PostPhoto() http.Handler {
+func (a *AppInstance) PostPhoto() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -22,7 +22,7 @@ func (h *Handler) PostPhoto() http.Handler {
 			return
 		}
 		// post file to bucket
-		url, err := h.Svcs.Photo.PostFile(ctx, file, fileheader.Filename, eventID)
+		url, err := a.Svcs.Photo.PostFile(ctx, file, fileheader.Filename, eventID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to post file", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

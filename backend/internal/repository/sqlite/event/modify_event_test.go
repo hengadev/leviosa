@@ -17,13 +17,13 @@ func TestModifyEvent(t *testing.T) {
 	whereMap := map[string]any{"id": baseEventWithPriceID.ID}
 
 	changes := map[string]any{"Location": "Changed location", "PriceID": "a new price id"}
-	modifiedEventProhibitedField, err := app.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes)
+	modifiedEventProhibitedField, err := domain.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes)
 	if err != nil {
 		t.Error("Failed to create object with modified field")
 	}
 
 	changes2 := map[string]any{"Location": "Changed location"}
-	modifiedEvent, err := app.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes2)
+	modifiedEvent, err := domain.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes2)
 	if err != nil {
 		t.Error("Failed to create object with modified field")
 	}

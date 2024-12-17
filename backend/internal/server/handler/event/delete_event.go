@@ -9,14 +9,14 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (h *Handler) DeleteEvent() http.Handler {
+func (a *AppInstance) DeleteEvent() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		// get the event id from the url path
 		eventID := r.PathValue("id")
 		// use the service to delete that event
-		resEventID, err := h.Svcs.Event.RemoveEvent(ctx, eventID)
+		resEventID, err := a.Svcs.Event.RemoveEvent(ctx, eventID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to delete the event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

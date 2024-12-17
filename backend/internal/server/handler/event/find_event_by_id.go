@@ -11,12 +11,12 @@ import (
 )
 
 // handler
-func (h *Handler) FindEventByID() http.Handler {
+func (a *AppInstance) FindEventByID() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		eventID := r.PathValue("id")
-		event, err := h.Repos.Event.GetEventByID(ctx, eventID)
+		event, err := a.Repos.Event.GetEventByID(ctx, eventID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)

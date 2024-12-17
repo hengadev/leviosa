@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -58,10 +58,10 @@ func TestUpdateUser(t *testing.T) {
 			// setup session service and repo
 			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
 
-			appsvc := &handler.Services{User: usersvc}
-			apprepo := &handler.Repos{User: userrepo}
+			appsvc := &app.Services{User: usersvc}
+			apprepo := &app.Repos{User: userrepo}
 
-			h := handler.New(appsvc, apprepo)
+			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
 			updateUser := userhandler.UpdateUser()

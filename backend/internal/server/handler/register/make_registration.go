@@ -13,7 +13,7 @@ import (
 	"github.com/stripe/stripe-go/webhook"
 )
 
-func (h *Handler) MakeRegistration() http.Handler {
+func (a *AppInstance) MakeRegistration() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -49,18 +49,18 @@ func (h *Handler) MakeRegistration() http.Handler {
 		_ = metadata
 		// fmt.Println("the metadata", metadata)
 
-		event, err := h.Repos.Event.GetEventByID(ctx, metadata["eventID"])
+		event, err := a.Repos.Event.GetEventByID(ctx, metadata["eventID"])
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get event with given ID", "error", err)
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		if err := h.Svcs.Register.CreateRegistration(ctx, metadata["userID"], metadata["spot"], event); err != nil {
+		if err := a.Svcs.Register.CreateRegistration(ctx, metadata["userID"], metadata["spot"], event); err != nil {
 			slog.ErrorContext(ctx, "failed creating registration for user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		if err = h.Svcs.Event.DecreasePlacecount(ctx, metadata["eventID"]); err != nil {
+		if err = a.Svcs.Event.DecreasePlacecount(ctx, metadata["eventID"]); err != nil {
 			slog.ErrorContext(ctx, "failed decreasing placecount for event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return

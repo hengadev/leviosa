@@ -16,7 +16,7 @@ import (
 )
 
 // func CreateEventProduct(p *payment.Service, e *event.Service) http.Handler {
-func (h *Handler) CreateEventProduct() http.Handler {
+func (a *AppInstance) CreateEventProduct() http.Handler {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
@@ -29,7 +29,7 @@ func (h *Handler) CreateEventProduct() http.Handler {
 			return
 		}
 		// use service to make request
-		priceID, err := h.Svcs.Payment.CreateProduct(&event)
+		priceID, err := a.Svcs.Payment.CreateProduct(&event)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create product", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
@@ -38,7 +38,7 @@ func (h *Handler) CreateEventProduct() http.Handler {
 		// use priceID to update corresponding field of event
 		event.PriceID = priceID
 		// TODO: finish the implementation for the
-		_, err = h.Svcs.Event.ModifyEvent(ctx, &event)
+		_, err = a.Svcs.Event.ModifyEvent(ctx, &event)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to update the priceID for event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

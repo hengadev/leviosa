@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -51,10 +51,10 @@ func TestSignOut(t *testing.T) {
 			// setup session service and repo
 			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, r.Context(), tt.initMap)
 			defer sessionteardown()
-			appsvc := &handler.Services{Session: sessionsvc}
-			apprepo := &handler.Repos{Session: sessionrepo}
+			appsvc := &app.Services{Session: sessionsvc}
+			apprepo := &app.Repos{Session: sessionrepo}
 
-			h := handler.New(appsvc, apprepo)
+			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
 			signOut := userhandler.Signout()

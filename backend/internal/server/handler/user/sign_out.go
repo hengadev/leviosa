@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (h *Handler) Signout() http.Handler {
+func (a *AppInstance) Signout() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -23,7 +23,7 @@ func (h *Handler) Signout() http.Handler {
 			return
 		}
 		// remove session with sessionID
-		if err := h.Svcs.Session.RemoveSession(ctx, sessionID); err != nil {
+		if err := a.Svcs.Session.RemoveSession(ctx, sessionID); err != nil {
 			slog.ErrorContext(ctx, "remove session:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return

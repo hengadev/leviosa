@@ -12,7 +12,7 @@ import (
 )
 
 // Function that get all the votes for a user.
-func (h *Handler) GetVotesByUserID() http.Handler {
+func (a *AppInstance) GetVotesByUserID() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -30,7 +30,7 @@ func (h *Handler) GetVotesByUserID() http.Handler {
 			return
 		}
 		// get votes
-		votes, err := h.Svcs.Vote.GetVotesByUserID(ctx, month, year, userID)
+		votes, err := a.Svcs.Vote.GetVotesByUserID(ctx, month, year, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the votes from database", "error", err)
 			http.Error(w, fmt.Sprintf("Failed to get the data from the database - %s", err), http.StatusInternalServerError)

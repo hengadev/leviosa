@@ -12,9 +12,9 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -59,10 +59,10 @@ func TestDeleteUser(t *testing.T) {
 			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, ctx, tt.initMap)
 			defer sessionteardown()
 
-			appsvc := &handler.Services{User: usersvc, Session: sessionsvc}
-			apprepo := &handler.Repos{User: userrepo, Session: sessionrepo}
+			appsvc := &app.Services{User: usersvc, Session: sessionsvc}
+			apprepo := &app.Repos{User: userrepo, Session: sessionrepo}
 
-			h := handler.New(appsvc, apprepo)
+			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
 			deleteUser := userhandler.DeleteUser()

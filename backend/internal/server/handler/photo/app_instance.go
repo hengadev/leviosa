@@ -3,26 +3,26 @@ package photohandler
 import (
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 )
 
-type Handler struct {
-	*handler.Handler
+type AppInstance struct {
+	*app.App
 }
 
-func (h *Handler) DeletePhoto() http.Handler {
+func (a *AppInstance) DeletePhoto() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	})
 }
 
-func (h *Handler) UpdatePhoto() http.Handler {
+func (a *AppInstance) UpdatePhoto() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	})
 }
 
-func (h *Handler) ShowAllPhotosByUser() http.Handler {
+func (a *AppInstance) ShowAllPhotosByUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 	})

@@ -11,12 +11,12 @@ import (
 )
 
 // func FindEventsForUser(eventRepo event.Reader) http.Handler {
-func (h *Handler) FindEventsForUser() http.Handler {
+func (a *AppInstance) FindEventsForUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		userID := ctx.Value(mw.UserIDKey).(int)
-		resBody, err := h.Repos.Event.GetEventForUser(ctx, userID)
+		resBody, err := a.Repos.Event.GetEventForUser(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get the events for the user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

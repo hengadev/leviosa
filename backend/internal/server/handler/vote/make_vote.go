@@ -13,7 +13,7 @@ import (
 )
 
 // Function that create or update vote
-func (h *Handler) MakeVote() http.Handler {
+func (a *AppInstance) MakeVote() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -36,7 +36,7 @@ func (h *Handler) MakeVote() http.Handler {
 			vote.UserID = userIDInt
 		}
 		// create vote
-		if err := h.Svcs.Vote.CreateVote(ctx, votes); err != nil {
+		if err := a.Svcs.Vote.CreateVote(ctx, votes); err != nil {
 			slog.ErrorContext(ctx, "failed to create vote", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return

@@ -35,46 +35,23 @@ func (h *Handler) Signin() http.Handler {
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
+
+		input, err := a.decodeAndValidateCredentials(ctx, w, r, logger)
 		if err != nil {
 			logger.ErrorContext(ctx, "check if user is locked")
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 
-		// validate credentials
-		err = h.Svcs.User.ValidateCredentials(ctx, &input)
-		switch {
-		case errors.Is(err, app.ErrUserNotFound):
-			logger.ErrorContext(ctx, "invalid email", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			return
-		case errors.Is(err, app.ErrQueryFailed):
-			logger.ErrorContext(ctx, "database error", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		case err != nil:
-			attemptErr := h.Svcs.Throttler.RegisterAttempt(ctx, input.Email)
-			logger.ErrorContext(ctx, "invalid password", "error", errors.Join(err, attemptErr))
-			http.Error(w, errsrv.NewBadRequestErr(errors.Join(err, attemptErr)), http.StatusBadRequest)
+		if err = a.checkThrottling(ctx, w, input.Email, logger); err != nil {
 			return
 		}
 
-		userID, role, err := h.Svcs.User.GetUserSessionData(ctx, input.Email)
-		if err != nil {
-			logger.ErrorContext(ctx, "get session related user data", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		session, err := h.Svcs.Session.CreateSession(ctx, userID, role)
-		if err != nil {
-			logger.ErrorContext(ctx, "create session:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		if err = a.validateUserCredentials(ctx, w, input, logger); err != nil {
 			return
 		}
 
-		if err := h.Svcs.Throttler.Reset(ctx, input.Email); err != nil {
-			logger.ErrorContext(ctx, "reset throttler", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		if err = a.createAndSetSession(ctx, w, input.Email, logger); err != nil {
 			return
 		}
 

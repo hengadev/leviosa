@@ -12,7 +12,7 @@ import (
 	"github.com/stripe/stripe-go/v79"
 )
 
-func (h *Handler) CreateCheckoutSession() http.Handler {
+func (a *AppInstance) CreateCheckoutSession() http.Handler {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
@@ -20,7 +20,7 @@ func (h *Handler) CreateCheckoutSession() http.Handler {
 		userID := ctx.Value(mw.UserIDKey).(string)
 		eventID := r.PathValue("id")
 		spot := r.PathValue("spot")
-		priceID, err := h.Repos.Event.GetPriceIDByEventID(ctx, eventID)
+		priceID, err := a.Repos.Event.GetPriceIDByEventID(ctx, eventID)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to get priceID for event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
@@ -30,7 +30,7 @@ func (h *Handler) CreateCheckoutSession() http.Handler {
 		// just to test things out, I created a product with a priceID to do thing with it.
 		price_temp := "price_1OsTQfHwHXlEm0ohh1sSBXJa"
 		domain := os.Getenv("BASE_URL")
-		sessionURL, err := h.Svcs.Checkout.CreateCheckoutSession(ctx, domain, price_temp, eventID, userID, spot)
+		sessionURL, err := a.Svcs.Checkout.CreateCheckoutSession(ctx, domain, price_temp, eventID, userID, spot)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to create checkout session", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

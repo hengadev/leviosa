@@ -10,13 +10,13 @@ import (
 )
 
 // func ShowAllPhotos(ph *photo.Service) http.Handler {
-func (h *Handler) ShowAllPhotos() http.Handler {
+func (a *AppInstance) ShowAllPhotos() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
 		eventID := r.PathValue("id")
 		// get the object from repository
-		objects, err := h.Repos.Photo.GetAllObjects(ctx, eventID)
+		objects, err := a.Repos.Photo.GetAllObjects(ctx, eventID)
 		if err != nil {
 
 		}

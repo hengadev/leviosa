@@ -12,7 +12,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (h *Handler) GetUser() http.Handler {
+func (a *AppInstance) GetUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -24,7 +24,7 @@ func (h *Handler) GetUser() http.Handler {
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
-		user, err := h.Repos.User.FindAccountByID(ctx, userID)
+		user, err := a.Repos.User.FindAccountByID(ctx, userID)
 		if err != nil {
 			slog.ErrorContext(ctx, "find user:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

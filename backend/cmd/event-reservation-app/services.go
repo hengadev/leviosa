@@ -8,12 +8,12 @@ import (
 	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
+	// "github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 
 	// repositories
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
@@ -32,9 +32,9 @@ func makeServices(
 	ctx context.Context,
 	sqlitedb *sql.DB,
 	redisdb *rd.Client,
-) (handler.Services, handler.Repos, error) {
-	var appSvcs handler.Services
-	var appRepos handler.Repos
+) (app.Services, app.Repos, error) {
+	var appSvcs app.Services
+	var appRepos app.Repos
 
 	// user
 	userRepo := userRepository.New(ctx, sqlitedb)
@@ -62,7 +62,7 @@ func makeServices(
 	throttlerSvc := throttlerService.New(throttlerRepo)
 
 	// services
-	appSvcs = handler.Services{
+	appSvcs = app.Services{
 		User:      userSvc,
 		Event:     eventSvc,
 		Vote:      voteSvc,
@@ -72,7 +72,7 @@ func makeServices(
 		Throttler: throttlerSvc,
 	}
 	// repos
-	appRepos = handler.Repos{
+	appRepos = app.Repos{
 		User:      userRepo,
 		Event:     eventRepo,
 		Vote:      voteRepo,

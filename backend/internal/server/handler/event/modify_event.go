@@ -10,7 +10,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (h *Handler) ModifyEvent() http.Handler {
+func (a *AppInstance) ModifyEvent() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -20,7 +20,7 @@ func (h *Handler) ModifyEvent() http.Handler {
 			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		eventID, err := h.Svcs.Event.ModifyEvent(ctx, &event)
+		eventID, err := a.Svcs.Event.ModifyEvent(ctx, &event)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to update the event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

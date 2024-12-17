@@ -11,7 +11,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (h *Handler) UpdateUser() http.Handler {
+func (a *AppInstance) UpdateUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithCancel(r.Context())
 		defer cancel()
@@ -25,7 +25,7 @@ func (h *Handler) UpdateUser() http.Handler {
 			return
 		}
 		// modify user
-		if err = h.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
+		if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
 			slog.ErrorContext(ctx, "failed to modify the user", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return

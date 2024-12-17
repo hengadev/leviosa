@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 )
 
@@ -49,10 +49,10 @@ func TestHandleOAuth(t *testing.T) {
 			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, ctx, nil)
 			defer sessionteardown()
 
-			appsvc := &handler.Services{User: usersvc, Session: sessionsvc}
-			apprepo := &handler.Repos{User: userrepo, Session: sessionrepo}
+			appsvc := &app.Services{User: usersvc, Session: sessionsvc}
+			apprepo := &app.Repos{User: userrepo, Session: sessionrepo}
 
-			h := handler.New(appsvc, apprepo)
+			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
 			handleOAuth := userhandler.HandleOAuth()

@@ -1,15 +1,15 @@
 package vote
 
 import (
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/event-reservation-app/internal/server/app"
 )
 
-type Handler struct {
-	*handler.Handler
+type AppInstance struct {
+	*app.App
 }
 
-func NewHandler(handler *handler.Handler) *Handler {
-	return &Handler{handler}
+func NewHandler(appCtx *app.App) *AppInstance {
+	return &AppInstance{appCtx}
 }
 
 // old api
