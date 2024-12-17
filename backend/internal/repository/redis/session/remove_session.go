@@ -2,21 +2,25 @@ package sessionRepository
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"net"
 
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+
+	"github.com/redis/go-redis/v9"
 )
 
 func (s *Repository) RemoveSession(ctx context.Context, ID string) error {
-	res, err := s.client.Exists(ctx, SESSIONPREFIX+ID).Result()
+	err := s.client.Del(ctx, SESSIONPREFIX+ID).Err()
 	if err != nil {
-		return rp.NewNotFoundError(err)
-	}
-	if res == 0 {
-		return fmt.Errorf("non existing key")
-	}
-	if err := s.client.Del(ctx, SESSIONPREFIX+ID).Err(); err != nil {
-		return rp.NewRessourceDeleteErr(err)
+		switch {
+		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
+			return rp.NewDatabaseErr(err)
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
 	return nil
 }

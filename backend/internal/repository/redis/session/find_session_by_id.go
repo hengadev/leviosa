@@ -2,21 +2,23 @@ package sessionRepository
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/redis/go-redis/v9"
 )
 
-func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) (*sessionService.Session, error) {
-	var res sessionService.Session
+func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) ([]byte, error) {
 	val, err := s.client.Get(ctx, SESSIONPREFIX+sessionID).Bytes()
 	if err != nil {
-		return nil, rp.NewNotFoundError(err)
+		switch {
+		case errors.Is(err, redis.Nil):
+			return nil, rp.NewNotFoundError(err, "session")
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			fallthrough
+		default:
+			return nil, rp.NewDatabaseErr(err)
+		}
 	}
-	if err = json.Unmarshal(val, &res); err != nil {
-		return nil, rp.NewInternalError(err)
-	}
-	res.ID = sessionID
-	return &res, nil
+	return val, nil
 }
