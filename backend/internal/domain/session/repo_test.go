@@ -2,44 +2,31 @@ package sessionService_test
 
 import (
 	"context"
-	"errors"
-	"fmt"
-
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 )
 
-type KVMap map[string]*sessionService.Values
-
-type StubSessionRepository struct {
-	sessions KVMap
+type MockRepo struct {
+	FindSessionByIDFunc func(ctx context.Context, sessionID string) ([]byte, error)
+	CreateSessionFunc   func(ctx context.Context, sessionID string, sessionEncoded []byte) error
+	RemoveSessionFunc   func(ctx context.Context, sessionID string) error
 }
 
-func NewStubSessionRepository(ctx context.Context, sessions KVMap) *StubSessionRepository {
-	return &StubSessionRepository{sessions: sessions}
-}
-
-func (s *StubSessionRepository) FindSessionByID(ctx context.Context, sessionID string) (*sessionService.Session, error) {
-	values, ok := s.sessions[sessionID]
-	if !ok {
-		return nil, fmt.Errorf("no session ID in database")
+func (m *MockRepo) FindSessionByID(ctx context.Context, sessionID string) ([]byte, error) {
+	if m.FindSessionByIDFunc != nil {
+		return m.FindSessionByIDFunc(ctx, sessionID)
 	}
-	return &sessionService.Session{
-		ID:        sessionID,
-		UserID:    values.UserID,
-		Role:      values.Role,
-		ExpiresAt: values.ExpiresAt,
-	}, nil
+	return nil, nil
 }
 
-func (s *StubSessionRepository) CreateSession(ctx context.Context, sess *sessionService.Session) error {
-	s.sessions[sess.ID] = sess.Values()
+func (m *MockRepo) CreateSession(ctx context.Context, sessionID string, sessionEncoded []byte) error {
+	if m.CreateSessionFunc != nil {
+		return m.CreateSessionFunc(ctx, sessionID, sessionEncoded)
+	}
 	return nil
 }
 
-func (s *StubSessionRepository) RemoveSession(ctx context.Context, sessionID string) error {
-	if _, ok := s.sessions[sessionID]; !ok {
-		return errors.New("id not in database")
+func (m *MockRepo) RemoveSession(ctx context.Context, sessionID string) error {
+	if m.RemoveSessionFunc != nil {
+		return m.RemoveSessionFunc(ctx, sessionID)
 	}
-	delete(s.sessions, sessionID)
 	return nil
 }
