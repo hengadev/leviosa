@@ -5,7 +5,7 @@ import (
 )
 
 type Reader interface {
-	FindSessionByID(ctx context.Context, sessionID string) (*Session, error)
+	FindSessionByID(ctx context.Context, sessionID string) ([]byte, error)
 }
 
 type Writer interface {

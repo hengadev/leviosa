@@ -54,7 +54,7 @@ func (s *Session) Values() *Values {
 	}
 }
 
-func NewSession(userID string, role userService.Role) (*Session, error) {
+func NewSession(userID string, role userService.Role) *Session {
 	id := uuid.NewString()
 	return &Session{
 		ID:         id,
@@ -63,7 +63,7 @@ func NewSession(userID string, role userService.Role) (*Session, error) {
 		LoggedInAt: time.Now(),
 		CreatedAt:  time.Now(),
 		ExpiresAt:  time.Now().Add(SessionDuration),
-	}, nil
+	}
 }
 
 func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems map[string]string) {
