@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/GaryHY/event-reservation-app/internal/domain"
 )
 
 type Source struct {

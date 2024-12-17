@@ -8,9 +8,9 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/redis"
-	"github.com/GaryHY/event-reservation-app/internal/redis/session"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
 

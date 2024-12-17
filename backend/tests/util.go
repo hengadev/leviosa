@@ -8,9 +8,9 @@ import (
 	"unsafe"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
 
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )

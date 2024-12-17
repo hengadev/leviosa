@@ -16,13 +16,13 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
 
 	// repositories
-	"github.com/GaryHY/event-reservation-app/internal/redis/session"
-	"github.com/GaryHY/event-reservation-app/internal/redis/throttler"
-	"github.com/GaryHY/event-reservation-app/internal/s3"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/event"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/register"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/user"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite/vote"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis/throttler"
+	"github.com/GaryHY/event-reservation-app/internal/repository/s3"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/register"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/vote"
 
 	// external packages
 	rd "github.com/redis/go-redis/v9"

@@ -11,7 +11,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/redis"
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
 	"github.com/GaryHY/event-reservation-app/internal/server/service"
