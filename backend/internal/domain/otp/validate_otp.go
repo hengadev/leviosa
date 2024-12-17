@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
