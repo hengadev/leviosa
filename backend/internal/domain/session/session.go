@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 
 	"github.com/google/uuid"
 )
@@ -66,16 +67,16 @@ func NewSession(userID string, role userService.Role) *Session {
 	}
 }
 
-func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems map[string]string) {
-	var pbms = make(map[string]string)
+func (s *Session) Valid(ctx context.Context, minRole userService.Role) error {
+	var pbms = make(errsx.Map)
 	if err := uuid.Validate(s.ID); err != nil {
-		pbms["id"] = "session ID is not of type UUID"
+		pbms.Set("id", "session ID is not of type UUID")
 	}
 	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
-		pbms["expiredat"] = "session expired"
+		pbms.Set("expiredat", "session expired")
 	}
 	if !s.Role.IsSuperior(minRole) {
-		pbms["role"] = fmt.Sprintf("unauthorized, user role %s is not superior to %s", s.Role, minRole)
+		pbms.Set("role", fmt.Sprintf("unauthorized, user role %s is not superior to %s", s.Role, minRole))
 	}
 	return pbms
 }
