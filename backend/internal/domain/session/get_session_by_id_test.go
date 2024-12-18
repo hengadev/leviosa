@@ -2,37 +2,64 @@ package sessionService_test
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"testing"
+	"time"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	test "github.com/GaryHY/event-reservation-app/tests"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestGetSession(t *testing.T) {
-	// TEST:
 	tests := []struct {
-		sessionID       string
-		initMap         KVMap
-		expectedSession *sessionService.Session
-		wantErr         bool
-		name            string
+		name          string
+		sessionID     string
+		mockRepo      func() *MockRepo
+		expectedError error
+		expectedValue *sessionService.Session
 	}{
-		{sessionID: baseSession.ID, initMap: nil, expectedSession: nil, wantErr: true, name: "no session in database"},
-		{sessionID: test.GenerateRandomString(12), initMap: initMap, expectedSession: nil, wantErr: true, name: "id not in database"},
-		{sessionID: baseSession.ID, initMap: initMap, expectedSession: baseSession, wantErr: false, name: "nominal case"},
+		{name: "empty string ID", sessionID: "", mockRepo: func() *MockRepo { return &MockRepo{} }, expectedValue: nil, expectedError: domain.ErrNotFound},
+		{name: "session ID not found", sessionID: "nonexistent", mockRepo: func() *MockRepo {
+			return &MockRepo{FindSessionByIDFunc: func(ctx context.Context, sessionID string) ([]byte, error) { return nil, rp.ErrNotFound }}
+		}, expectedValue: nil, expectedError: domain.ErrNotFound},
+		{name: "database error", sessionID: "session123", mockRepo: func() *MockRepo {
+			return &MockRepo{FindSessionByIDFunc: func(ctx context.Context, sessionID string) ([]byte, error) { return nil, rp.ErrDatabase }}
+		}, expectedValue: nil, expectedError: domain.ErrQueryFailed},
+		{name: "unexpected error", sessionID: "session123", mockRepo: func() *MockRepo {
+			return &MockRepo{FindSessionByIDFunc: func(ctx context.Context, sessionID string) ([]byte, error) {
+				return nil, errors.New("unexpected error")
+			}}
+		}, expectedValue: nil, expectedError: domain.ErrUnexpectedType},
+		{name: "JSON unmarshal error", sessionID: "session123", mockRepo: func() *MockRepo {
+			return &MockRepo{FindSessionByIDFunc: func(ctx context.Context, sessionID string) ([]byte, error) { return nil, domain.ErrUnmarshalJSON }}
+		}, expectedValue: nil, expectedError: domain.ErrUnmarshalJSON},
+		{name: "successful case", sessionID: "session123", mockRepo: func() *MockRepo {
+			return &MockRepo{
+				FindSessionByIDFunc: func(ctx context.Context, sessionID string) ([]byte, error) {
+					session := &sessionService.Session{ID: "session123", UserID: "user123", LoggedInAt: time.Now(), CreatedAt: time.Now(), ExpiresAt: time.Now().Add(sessionService.SessionDuration)}
+					data, _ := json.Marshal(session)
+					return data, domain.ErrUnmarshalJSON
+				},
+			}
+		}, expectedValue: nil, expectedError: domain.ErrUnmarshalJSON,
+		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo := NewStubSessionRepository(ctx, tt.initMap)
-			service := sessionService.New(repo)
-			sess, err := service.GetSession(ctx, tt.sessionID)
-			assert.Equal(t, err != nil, tt.wantErr)
-			assert.ReflectEqual(t, sess, tt.expectedSession)
-
+			mockRepo := tt.mockRepo()
+			service := sessionService.New(mockRepo)
+			session, err := service.GetSession(ctx, tt.sessionID)
+			assert.EqualError(t, err, tt.expectedError)
+			if tt.expectedValue == nil {
+				assert.Equal(t, session, tt.expectedValue)
+			} else {
+				assert.ReflectEqual(t, session, tt.expectedValue)
+			}
 		})
 	}
 }
