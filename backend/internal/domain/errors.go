@@ -21,7 +21,7 @@ var (
 )
 
 func NewInvalidValueErr(description string) error {
-	return fmt.Errorf("%w: %s", ErrAccountLocked, description)
+	return fmt.Errorf("%w: %s", ErrInvalidValue, description)
 }
 
 func NewLockedAccountErr(err error, name string) error {

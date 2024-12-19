@@ -12,8 +12,8 @@ import (
 )
 
 func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessionEncoded []byte) error {
-	err := s.client.Set(ctx, SESSIONPREFIX+sessionID, sessionEncoded, sessionService.SessionDuration).Err()
-	if err != nil {
+	result := s.client.Set(ctx, SESSIONPREFIX+sessionID, sessionEncoded, sessionService.SessionDuration)
+	if err := result.Err(); err != nil {
 		switch {
 		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
 			return rp.NewDatabaseErr(err)
@@ -22,6 +22,11 @@ func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessio
 		default:
 			return rp.NewDatabaseErr(err)
 		}
+	}
+
+	// TODO: Should I check for the insertion like so?
+	if result.Val() == "" {
+		return rp.NewNotCreatedErr(nil, "session")
 	}
 	return nil
 }

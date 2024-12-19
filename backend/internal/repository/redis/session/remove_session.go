@@ -3,7 +3,7 @@ package sessionRepository
 import (
 	"context"
 	"errors"
-	"net"
+	"fmt"
 
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 
@@ -11,16 +11,20 @@ import (
 )
 
 func (s *Repository) RemoveSession(ctx context.Context, ID string) error {
-	err := s.client.Del(ctx, SESSIONPREFIX+ID).Err()
-	if err != nil {
+	result := s.client.Del(ctx, SESSIONPREFIX+ID)
+
+	if err := result.Err(); err != nil {
 		switch {
-		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
+		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return rp.NewContextError(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}
+	}
+	if result.Val() == 0 {
+		return rp.NewNotFoundError(fmt.Errorf("key does not exist"), "session")
 	}
 	return nil
 }

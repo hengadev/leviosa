@@ -11,7 +11,13 @@ import (
 )
 
 func (s *Service) CreateSession(ctx context.Context, userID string, role userService.Role) (string, error) {
-	session := NewSession(userID, role)
+	session, err := NewSession(userID, role)
+	if err != nil {
+		return "", domain.NewInvalidValueErr("invalid user ID")
+	}
+	if role == userService.UNKNOWN {
+		return "", domain.NewInvalidValueErr("invalid role: role must be different than 'UNKNOWN'")
+	}
 	sessionEncoded, err := json.Marshal(session)
 	if err != nil {
 		return "", domain.NewJSONMarshalErr(err)
@@ -21,7 +27,7 @@ func (s *Service) CreateSession(ctx context.Context, userID string, role userSer
 		switch {
 		case errors.Is(err, rp.ErrDatabase):
 			return "", domain.NewQueryFailedErr(err)
-		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+		case errors.Is(err, rp.ErrContext):
 			return "", err
 		default:
 			return "", domain.NewUnexpectTypeErr(err)

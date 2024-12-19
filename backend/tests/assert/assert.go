@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -20,6 +21,13 @@ func NotEqual[T comparable](t testing.TB, got, want T) {
 	t.Helper()
 	if got == want {
 		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
+func EqualError(t testing.TB, got, want error) {
+	t.Helper()
+	if !errors.Is(got, want) {
+		t.Errorf("got %q, want %q", got.Error(), want.Error())
 	}
 }
 
