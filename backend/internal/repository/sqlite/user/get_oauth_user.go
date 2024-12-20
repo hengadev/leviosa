@@ -3,6 +3,7 @@ package userRepository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -27,17 +28,21 @@ func (u *Repository) GetOAuthUser(ctx context.Context, email, provider string) (
 		&providers,
 		&ids,
 	)
-	if err == sql.ErrNoRows {
-		return nil, rp.NewNotFoundError(err)
-	}
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, rp.NewNotFoundError(err, "oauth user")
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return nil, rp.NewContextError(err)
+		default:
+			return nil, rp.NewDatabaseErr(err)
+		}
 	}
 	formattedProviders := parseProviders(providers)
 	if !providerExists(formattedProviders, provider) {
-		return nil, rp.NewNotFoundError(fmt.Errorf("provider %s not found in providers list", provider))
+		return nil, rp.NewNotFoundError(fmt.Errorf("provider %s not found in providers list", provider), "provider")
 	}
-	fmt.Println("the list of providers that I get is :", formattedProviders)
+
 	return &user, nil
 }
 

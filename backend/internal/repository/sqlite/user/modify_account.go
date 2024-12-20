@@ -2,6 +2,7 @@ package userRepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -15,26 +16,25 @@ func (u *Repository) ModifyAccount(
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {
-	fail := func(err error) error {
-		return rp.NewRessourceUpdateErr(err)
-	}
-	if user == nil {
-		return fail(fmt.Errorf("nil user"))
-	}
 	query, values, err := sqliteutil.WriteUpdateQuery(*user, whereMap, prohibitedFields...)
 	if err != nil {
-		return fail(err)
+		return rp.NewInternalError(err)
 	}
-	res, err := u.DB.ExecContext(ctx, query, values...)
+	result, err := u.DB.ExecContext(ctx, query, values...)
 	if err != nil {
-		return fail(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
-	rowsAffected, err := res.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fail(err)
+		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("user to modify not found")
+		return rp.NewNotUpdatedErr(err, fmt.Sprintf("user with ID %s", user.ID))
 	}
 	return nil
 }

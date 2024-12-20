@@ -12,38 +12,44 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
-func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, provider ...string) (int64, error) {
+func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, provider ...string) error {
 	tx, err := u.DB.BeginTx(ctx, &sql.TxOptions{})
-	// TODO: better handling for the rollback case
+	// TODO: better handling for the rollback case, using some panic recovery
 	defer func() {
 		if err := tx.Rollback(); err != nil && errors.Is(err, sql.ErrTxDone) {
 			// do some log thing if need be
 		}
 	}()
 	if err != nil {
-		return 0, fmt.Errorf("start transaction")
+		return rp.NewDatabaseErr(fmt.Errorf("start transaction: %w", err))
 	}
 	var nullString sql.NullString
 	if usr.Password != "" {
 		hashpassword, err := sqliteutil.HashPassword(usr.Password)
 		if err != nil {
-			return 0, rp.NewQueryErr(err)
+			return rp.NewInternalError(err)
 		}
-		nullString.Valid = true //NOTE: Do I need that ?j
+		nullString.Valid = true
 		nullString.String = hashpassword
 	}
 
 	var providers string
-	// if err := u.DB.QueryRowContext(ctx, "SELECT oauth_providers from users where email = ?;", usr.Email).Scan(providers); err != sql.ErrNoRows {
-	if err := tx.QueryRowContext(ctx, "SELECT oauth_providers from users where email = ?;", usr.Email).Scan(providers); err != sql.ErrNoRows {
-		return 0, rp.NewNotFoundError(err)
+	err = tx.QueryRowContext(ctx, "SELECT oauth_providers from users where email = ?;", usr.Email).Scan(providers)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return rp.NewNotFoundError(err, "user")
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
 	providerList := parseProviders(providers)
 	addIfNotExist(providerList, usr.OAuthProvider)
 
 	query := "INSERT INTO users (email, password, createdat, loggedinat, role, lastname, firstname, gender, birthdate, telephone, oauth_providers, oauth_ids) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
-	// res, err := u.DB.ExecContext(
-	res, err := tx.ExecContext(
+	result, err := tx.ExecContext(
 		ctx,
 		query,
 		usr.Email,
@@ -60,16 +66,26 @@ func (u *Repository) AddAccount(ctx context.Context, usr *userService.User, prov
 		usr.OAuthID,
 	)
 	if err != nil {
-		return 0, rp.NewNotCreatedErr(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
+
 	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return rp.NewDatabaseErr(err)
+	}
+	if rowsAffected == 0 {
+		return rp.NewNotCreatedErr(errors.New("no rows affected by insertion statement"), "user")
+	}
+
 	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("commit: %w", err)
+		return rp.NewDatabaseErr(fmt.Errorf("commit transaction: %w", err))
 	}
-	lastInsertID, err := res.LastInsertId()
-	if lastInsertID == 0 {
-		return 0, rp.NewNotCreatedErr(fmt.Errorf("no user added"))
-	}
-	return lastInsertID, nil
+	return nil
 }
 
 // function that given a list of string providers returns a formatted string of providers "providerA | providerB | providerC".
