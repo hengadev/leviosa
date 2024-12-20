@@ -8,7 +8,7 @@ import (
 	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
-	// "github.com/GaryHY/event-reservation-app/internal/domain/register"
+	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -52,7 +52,7 @@ func makeServices(
 	registerRepo := registerRepository.New(ctx, sqlitedb)
 	registerSvc := register.NewService(registerRepo)
 	// photo
-	photoRepo, err := s3.NewPhotoRepository(ctx)
+	photoRepo, err := mediaRepository.NewPhotoRepository(ctx)
 	if err != nil {
 		return appSvcs, appRepos, fmt.Errorf("create photo repository: %w", err)
 	}
