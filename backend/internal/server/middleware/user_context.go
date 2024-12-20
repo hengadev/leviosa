@@ -9,13 +9,18 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 )
 
+type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionService.Session, error)
+
 // this is an authentication middleware, authorization is handle on a per route basis
 
+// TODO:
+// - handle what to do if there is nothing in the session because returning the function might not be ideal
+// -> add non allowed endpoints
+
 // get the role for the user in question
-func SetUserContext(s sessionService.Reader) Middleware {
+func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// get session id from request
 			ctx, cancel := context.WithCancel(r.Context())
 			defer cancel()
 
@@ -25,6 +30,7 @@ func SetUserContext(s sessionService.Reader) Middleware {
 				return
 			}
 
+			// get session ID from request
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
 				logger.ErrorContext(ctx, "get sessionID from request header", "error", err)
@@ -32,17 +38,17 @@ func SetUserContext(s sessionService.Reader) Middleware {
 				return
 			}
 
-			session, err := s.FindSessionByID(ctx, sessionID)
+			// get session object from database
+			session, err := sessionGetter(ctx, sessionID)
 			if err != nil {
-				// do better error handling with the right error value
-				logger.ErrorContext(ctx, "get sessionID from request", "error", err)
+				logger.ErrorContext(ctx, "get session from database", "error", err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
 			// set the role in the context using the session
 			ctx = context.WithValue(r.Context(), contextutil.RoleKey, session.Role.String())
-			// TODO:set the userID in the context
+			ctx = context.WithValue(r.Context(), contextutil.UserIDKey, session.UserID)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})

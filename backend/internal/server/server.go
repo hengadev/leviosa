@@ -31,16 +31,16 @@ func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 	for _, opt := range opts {
 		opt(server)
 	}
-	// TODO: I can  add the logger in here right ?
+
 	// create router and add routes
 	server.addRoutes(appCtx)
+
 	// add middlewares common to all routes. [Order important]
-	// TODO: remove this auth middleware here
 	server.Use(
 		mw.AttachLogger(logger),
-		mw.Auth(appCtx.Repos.Session),
-		// TODO: add that part later
-		// mw.SetUserContext(handler.Repos.Session),
+		// TODO: remove this auth middleware here
+		mw.Auth(appCtx.Svcs.Session.GetSession),
+		mw.SetUserContext(appCtx.Svcs.Session.GetSession),
 		mw.SetOrigin,
 	)
 	return server
