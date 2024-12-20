@@ -60,8 +60,8 @@ func run(ctx context.Context, w io.Writer) error {
 	}
 	// config
 	conf := config.New(ctx, opts.mode.String(), "env")
-	if err := conf.Load(ctx); err != nil {
-		return fmt.Errorf("load configuration: %w", err)
+	if errs := conf.Load(ctx); len(errs) > 0 {
+		return fmt.Errorf("load configuration: %s", errs.Error())
 	}
 
 	// auth, err := conf.NewAuthenticator()

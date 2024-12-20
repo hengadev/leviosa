@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+
 	"github.com/spf13/viper"
 )
 
@@ -33,7 +35,9 @@ func New(ctx context.Context, envFilename, envFileType string) *Config {
 	}
 }
 
-func (c *Config) Load(ctx context.Context) error {
+func (c *Config) Load(ctx context.Context) errsx.Map {
+	var errs errsx.Map
+
 	envVarsToKeys := map[string]struct {
 		required bool
 		key      string
@@ -55,17 +59,18 @@ func (c *Config) Load(ctx context.Context) error {
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {
-			return fmt.Errorf("missing required env variables: %s", envVar)
+			errs.Set("get environment variable", fmt.Errorf("missing required env variables: %s", envVar))
 		}
 		if err := c.viper.BindEnv(requiredKey.key, envVar); err != nil {
-			return fmt.Errorf("bind env: %w", err)
+			errs.Set("bind environment variable", fmt.Errorf("bind env: %w", err))
 		}
 	}
 	if err := c.setSQLITE(ctx); err != nil {
-		return fmt.Errorf("set SQLITE: %w", err)
+		errs.Set("sqlite", fmt.Errorf("set SQLITE: %w", err))
 	}
 	if err := c.setRedis(ctx); err != nil {
-		return fmt.Errorf("set Redis: %w", err)
+		errs.Set("redis", fmt.Errorf("set Redis: %w", err))
 	}
-	return nil
+	}
+	return errs
 }
