@@ -12,6 +12,7 @@ func TestCreateOAuthAccount(t *testing.T) {
 	// TEST: test case
 	tests := []struct {
 		usr      userService.OAuthUser
+		mockRepo func() *MockRepo
 		wantUser bool
 		wantErr  bool
 		name     string
@@ -20,7 +21,7 @@ func TestCreateOAuthAccount(t *testing.T) {
 		t.Parallel()
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			repo := NewStubUserRepository()
+			repo := tt.mockRepo()
 			service := userService.New(repo)
 			got, err := service.CreateOAuthAccount(ctx, tt.usr)
 			assert.Equal(t, err != nil, tt.wantErr)

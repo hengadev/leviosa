@@ -27,7 +27,7 @@ func NotEqual[T comparable](t testing.TB, got, want T) {
 func EqualError(t testing.TB, got, want error) {
 	t.Helper()
 	if !errors.Is(got, want) {
-		t.Errorf("got %q, want %q", got.Error(), want.Error())
+		t.Errorf("got %v, want %v", got.Error(), want.Error())
 	}
 }
 

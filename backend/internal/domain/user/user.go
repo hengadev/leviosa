@@ -11,6 +11,8 @@ import (
 
 const BirthdayLayout = "2006-01-02"
 
+var prohibitedFields = []string{"ID", "Email", "Password", "CreatedAt", "LoggedInAt", "Role"}
+
 type User struct {
 	ID            string    `json:"id"`
 	Email         string    `json:"email,omitempty" validate:"required,email"`

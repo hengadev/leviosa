@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	app "github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 
 	"golang.org/x/crypto/bcrypt"
@@ -15,9 +15,11 @@ func (s *Service) ValidateCredentials(ctx context.Context, creds *Credentials) e
 	hashedPassword, err := s.repo.GetHashedPasswordByEmail(ctx, creds.Email)
 	switch {
 	case errors.Is(err, rp.ErrNotFound):
-		return app.NewUserNotFoundErr(err)
+		return domain.NewNotFoundErr(err)
+	case errors.Is(err, rp.ErrDatabase):
+		return err
 	case err != nil:
-		return app.NewQueryFailedErr(err)
+		return domain.NewUnexpectTypeErr(err)
 	}
 	if err = CompareHashAndPassword(hashedPassword, creds.Password); err != nil {
 		return fmt.Errorf("password comparison failed: provided password does not match the stored hash: %w", err)

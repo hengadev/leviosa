@@ -2,17 +2,17 @@ package userService
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 // TODO: Do the validation for the rest of the fields.
 func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User, error) {
 	var pbms errsx.Map
-	email, err := NewEmail(userCandidate.Email)
-	if err != nil {
-		pbms.Set("email", err)
+	email, emailPbms := NewEmail(userCandidate.Email)
+	if len(emailPbms) > 0 {
+		pbms.Set("email", emailPbms)
 	}
 	password, err := NewPassword(userCandidate.Password)
 	if err != nil {
@@ -38,10 +38,8 @@ func (s *Service) CreateAccount(ctx context.Context, userCandidate *User) (*User
 	)
 	user.Create()
 	user.Login()
-	id, err := s.repo.AddAccount(ctx, user)
-	if err != nil {
-		return nil, fmt.Errorf("add account: %w", err)
+	if err = s.repo.AddAccount(ctx, user); err != nil {
+		return nil, domain.NewNotCreatedErr(err)
 	}
-	user.ID = string(id)
 	return user, nil
 }

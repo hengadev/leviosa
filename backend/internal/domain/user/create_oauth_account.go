@@ -16,12 +16,11 @@ func (s *Service) CreateOAuthAccount(
 	}
 	fmt.Println("convert googleUser to User")
 	// NOTE: We use the same function as the email-password one but we need to make the function better to do account linking.
-	lastInsertID, err := s.repo.AddAccount(ctx, user)
+	err = s.repo.AddAccount(ctx, user)
 	if err != nil {
-		return nil, fmt.Errorf("add oauth account: %w", err)
+		return nil, fmt.Errorf("add oauth account %w", err)
 	}
 	fmt.Println("user inserted in database")
-	user.ID = int(lastInsertID)
 	user.Role = BASIC.String()
 	user.Create()
 	user.Login()

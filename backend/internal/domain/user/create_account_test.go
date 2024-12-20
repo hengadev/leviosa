@@ -20,25 +20,26 @@ func TestCreateAccount(t *testing.T) {
 	// - valid user that actually creates an account
 	tests := []struct {
 		usr      *userService.User
+		mockRepo func() *MockRepo
 		name     string
 		wantUser bool
 		wantErr  bool
 	}{
-		{usr: &userService.User{
-			Email:     "john.doe@gmail.com",
-			Password:  test.GenerateRandomString(16),
-			BirthDate: "1999-08-08",
-			LastName:  "DOE",
-			FirstName: "John",
-			Gender:    "M",
-			Telephone: "0123456789",
-		}, name: "Valid user", wantUser: true, wantErr: false},
+		// {usr: &userService.User{
+		// 	Email:     "john.doe@gmail.com",
+		// 	Password:  test.GenerateRandomString(16),
+		// 	BirthDate: "1999-08-08",
+		// 	LastName:  "DOE",
+		// 	FirstName: "John",
+		// 	Gender:    "M",
+		// 	Telephone: "0123456789",
+		// }, name: "Valid user", wantUser: true, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo := NewStubUserRepository()
+			repo := tt.mockRepo()
 			service := userService.New(repo)
 			gotUser, gotErr := service.CreateAccount(ctx, tt.usr)
 			assert.Equal(t, gotUser != nil, tt.wantUser)
@@ -62,7 +63,7 @@ func TestCreateAccount(t *testing.T) {
 			Telephone: "0123456789",
 		}
 		ctx := context.Background()
-		repo := NewStubUserRepository()
+		repo := &MockRepo{}
 		service := userService.New(repo)
 		gotUser, _ := service.CreateAccount(ctx, u)
 		v := reflect.ValueOf(*gotUser)

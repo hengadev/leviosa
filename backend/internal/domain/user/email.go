@@ -1,7 +1,6 @@
 package userService
 
 import (
-	"errors"
 	"fmt"
 	"net/mail"
 	"regexp"
@@ -20,24 +19,20 @@ var (
 
 type Email string
 
-func ValidateEmail(email string) error {
+func ValidateEmail(email string) errsx.Map {
 	var pbms errsx.Map
 	if strings.TrimSpace(email) == "" {
 		pbms.Set("emptiness", "cannot be empty")
-		// return errors.New("cannot be empty")
 	}
-
 	if strings.ContainsAny(email, " \t\n\r") {
 		pbms.Set("whitespace", "cannot contain whitespace")
 	}
 	if strings.ContainsAny(email, `"'`) {
 		pbms.Set("quotes", "cannot contain quotes")
 	}
-
 	if rc := utf8.RuneCountInString(email); rc > emailMaxLength {
 		pbms.Set("max length", fmt.Sprintf("cannot be a over %v characters in length", emailMaxLength))
 	}
-
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
 		email = strings.TrimSpace(email)
@@ -54,29 +49,28 @@ func ValidateEmail(email string) error {
 			pbms.Set("@ sign", "missing part after the @ sign")
 		}
 	}
-
-	if addr.Name != "" {
-		pbms.Set("include name", "cannot not include a name")
-	}
-
-	if matches := invalidEmailChars.FindAllString(addr.Address, -1); len(matches) != 0 {
-		pbms.Set("invalid characters", fmt.Sprintf("cannot contain: %v", matches))
-	}
-
-	if !validEmailSeq.MatchString(addr.Address) {
-		_, end, _ := strings.Cut(addr.Address, "@")
-		if !strings.Contains(end, ".") {
-			pbms.Set("top level domain", "missing top-level domain, e.g. .com, .co.uk, etc.")
+	if addr != nil {
+		if addr.Name != "" {
+			pbms.Set("include name", "cannot not include a name")
 		}
+		if matches := invalidEmailChars.FindAllString(addr.Address, -1); len(matches) != 0 {
+			pbms.Set("invalid characters", fmt.Sprintf("cannot contain: %v", matches))
+		}
+		if !validEmailSeq.MatchString(addr.Address) {
+			_, end, _ := strings.Cut(addr.Address, "@")
+			if !strings.Contains(end, ".") {
+				pbms.Set("top level domain", "missing top-level domain, e.g. .com, .co.uk, etc.")
+			}
 
-		pbms.Set("not email address", "must be an email address, e.g. email@example.com")
+			pbms.Set("not email address", "must be an email address, e.g. email@example.com")
+		}
 	}
 	return pbms
 }
 
-func NewEmail(email string) (Email, error) {
-	if err := ValidateEmail(email); err != nil {
-		return "", err
+func NewEmail(email string) (Email, errsx.Map) {
+	if pbms := ValidateEmail(email); len(pbms) > 0 {
+		return "", pbms
 	}
 	return Email(email), nil
 }

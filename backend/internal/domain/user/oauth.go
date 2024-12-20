@@ -83,16 +83,13 @@ type GoogleUser struct {
 
 func (g *GoogleUser) ToUser() (*User, error) {
 	var user User
-	var input Email
-	{
-		var err error
-		if input, err = NewEmail(g.Email); err != nil {
-			return nil, app.NewInvalidInputErr(err)
-		}
+	email, pbms := NewEmail(g.Email)
+	if len(pbms) > 0 {
+		return nil, pbms
 	}
 	user.LastName = g.FamilyName
 	user.FirstName = g.GivenName
-	user.Email = input.String()
+	user.Email = email.String()
 	date := g.Birthdays[0].Date
 	year := date.Year
 	month, err := convIntToMonth(date.Month)
