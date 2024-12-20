@@ -2,6 +2,7 @@ package sessionRepository_test
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -30,7 +31,8 @@ func TestCreateSession(t *testing.T) {
 			if err != nil {
 				t.Errorf("setup repository: %s", err)
 			}
-			err = repo.CreateSession(ctx, tt.session)
+			sessionEncoded, _ := json.Marshal(tt.session)
+			err = repo.CreateSession(ctx, tt.session.ID, sessionEncoded)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}

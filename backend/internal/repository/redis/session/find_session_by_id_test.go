@@ -18,6 +18,7 @@ func TestFindSessionByID(t *testing.T) {
 		expectedSession *sessionService.Session
 		name            string
 	}{
+		// NOTE: how to handle mock data when doing testing brother
 		{id: testutil.BaseSession.ID, wantErr: true, init: nil, expectedSession: nil, name: "empty database"},
 		{id: testutil.RandomSessionID, wantErr: true, init: testutil.InitSession, expectedSession: nil, name: "ID is not in database"},
 		{id: testutil.BaseSession.ID, wantErr: false, init: testutil.InitSession, expectedSession: &testutil.BaseSession, name: "nominal case"},
@@ -26,13 +27,11 @@ func TestFindSessionByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			repo, err := newTestRepository(t, ctx, tt.init)
-			if err != nil {
-				t.Errorf("setup repository: %s", err)
-			}
-			res, err := repo.FindSessionByID(ctx, tt.id)
+			repo, _ := newTestRepository(t, ctx, tt.init)
+			service := sessionService.New(repo)
+			session, err := service.GetSession(ctx, tt.id)
 			assert.Equal(t, err != nil, tt.wantErr)
-			assert.ReflectEqual(t, res, tt.expectedSession)
+			assert.ReflectEqual(t, session, tt.expectedSession)
 		})
 	}
 }
