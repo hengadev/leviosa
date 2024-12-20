@@ -2,6 +2,7 @@ package voteRepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -15,15 +16,17 @@ import (
 // days, month, year
 
 func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {
-	fail := func(err error) ([]*vote.AvailableVote, error) {
-		return nil, rp.NewNotFoundError(err)
-	}
 	var votes []*vote.AvailableVote
 	condition := fmt.Sprintf("(year=%d AND month>%d) OR year=%d", year, month, year+1)
 	query := fmt.Sprintf("SELECT days, month, year from available_votes where %s LIMIT 3;", condition)
 	rows, err := v.DB.QueryContext(ctx, query)
 	if err != nil {
-		return fail(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return nil, rp.NewContextError(err)
+		default:
+			return nil, rp.NewDatabaseErr(err)
+		}
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -36,12 +39,11 @@ func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote
 			&year_db,
 		)
 		if err != nil {
-
-			return fail(err)
+			return nil, rp.NewDatabaseErr(err)
 		}
 		availableDays, err := parseDays(days)
 		if err != nil {
-			return fail(err)
+			return nil, rp.NewInternalError(err)
 		}
 		for _, day := range availableDays {
 			votes = append(votes, &vote.AvailableVote{

@@ -2,6 +2,8 @@ package voteRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
@@ -12,7 +14,14 @@ func (v *repository) FindVotesByUserID(ctx context.Context, month string, year, 
 	tableName := fmt.Sprintf("votes_%s_%d", month, year)
 	query := fmt.Sprintf("SELECT * FROM %s WHERE userid=?;", tableName)
 	if err := v.DB.QueryRowContext(ctx, query).Scan(&votes); err != nil {
-		return "", rp.NewNotFoundError(err)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return "", rp.NewNotFoundError(err, "votes")
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return "", rp.NewContextError(err)
+		default:
+			return "", rp.NewDatabaseErr(err)
+		}
 	}
 	return votes, nil
 }
