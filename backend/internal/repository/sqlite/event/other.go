@@ -2,6 +2,8 @@ package eventRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -16,22 +18,34 @@ func (e *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool,
 	var placecount int
 	err := e.DB.QueryRowContext(ctx, "SELECT placecount FROM events WHERE id=?;", eventID).Scan(&placecount)
 	if err != nil {
-		return false, rp.NewQueryErr(err)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return false, rp.NewNotFoundError(err, "event")
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return false, rp.NewContextError(err)
+		default:
+			return false, rp.NewDatabaseErr(err)
+		}
 	}
 	return placecount > 0, nil
 }
 
 func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID string) error {
-	res, err := e.DB.ExecContext(ctx, "UPDATE events SET placecount = placecount-1 WHERE id=?", eventID)
+	result, err := e.DB.ExecContext(ctx, "UPDATE events SET placecount = placecount-1 WHERE id=?", eventID)
 	if err != nil {
-		return rp.NewRessourceUpdateErr(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
-	rowsAffected, err := res.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return rp.NewRessourceUpdateErr(err)
+		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no row updated")
+		return rp.NewNotFoundError(fmt.Errorf("no rows affected"), "event")
 	}
 	return nil
 }
@@ -40,27 +54,32 @@ func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID s
 
 // NOTE: votes do not include event id now
 func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) ([]*eventService.Event, error) {
-	events := make([]*eventService.Event, 0)
 	query := `
        SELECT * FROM events WHERE id IN
        (SELECT eventid FROM votes WHERE userid=?)
        ORDER BY rowid ASC;
 	   `
 	rows, err := e.DB.QueryContext(ctx, query, userID)
-	defer rows.Close()
 	if err != nil {
-		return nil, rp.NewDatabaseErr(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return nil, rp.NewContextError(err)
+		default:
+			return nil, rp.NewDatabaseErr(err)
+		}
 	}
+	defer rows.Close()
 
+	var events []*eventService.Event
 	for rows.Next() {
 		event := &eventService.Event{}
 		var dataTemp string
 		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
-			return nil, rp.NewErrScan(err)
+			return nil, rp.NewNotFoundError(err, "event")
 		}
 		event.BeginAt, err = time.Parse(time.RFC3339, dataTemp)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", "error parsing time", err)
+			return nil, rp.NewInternalError(fmt.Errorf("%s: %w", "error parsing time", err))
 		}
 		events = append(events, event)
 	}

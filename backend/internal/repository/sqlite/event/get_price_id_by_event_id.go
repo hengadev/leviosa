@@ -2,15 +2,25 @@ package eventRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"fmt"
 
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, ID string) (string, error) {
+func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
 	var priceID string
-	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", ID).Scan(&priceID)
+	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
 	if err != nil {
-		return "", rp.NewQueryErr(err)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return "", rp.NewNotFoundError(err, fmt.Sprintf("price ID for event with ID %s", eventID))
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return "", rp.NewContextError(err)
+		default:
+			return "", rp.NewDatabaseErr(err)
+		}
 	}
 	return priceID, nil
 }

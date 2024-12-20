@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
-	"github.com/GaryHY/event-reservation-app/internal/sqlite"
 	"github.com/GaryHY/event-reservation-app/tests"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )

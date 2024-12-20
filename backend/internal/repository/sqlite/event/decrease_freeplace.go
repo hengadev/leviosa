@@ -2,25 +2,28 @@ package eventRepository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) DecreaseFreeplace(ctx context.Context, ID string) error {
-	fail := func(err error) error {
-		return rp.NewRessourceUpdateErr(err)
-	}
-	res, err := e.DB.ExecContext(ctx, "UPDATE events SET freeplace = freeplace - 1 WHERE id=?;", ID)
+func (e *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
+	res, err := e.DB.ExecContext(ctx, "UPDATE events SET freeplace = freeplace - 1 WHERE id=?;", eventID)
 	if err != nil {
-		return fail(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return fail(err)
+		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("event not found")
+		return rp.NewNotUpdatedErr(err, fmt.Sprintf("decrease freeplace count for event with ID %s", eventID))
 	}
 	return nil
 }

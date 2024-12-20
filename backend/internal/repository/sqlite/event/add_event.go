@@ -9,16 +9,13 @@ import (
 )
 
 func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Event) error {
-	fail := func(err error) error {
-		return rp.NewNotCreatedErr(err)
-	}
 	beginat, err := formatBeginAt(event.BeginAt)
 	if err != nil {
-		fail(err)
+		rp.NewInternalError(err)
 	}
 	minutes := int(event.SessionDuration)
 	query := "INSERT INTO events (id, location, placecount, freeplace, beginat, sessionduration, priceid, day, month, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
-	res, err := e.DB.ExecContext(ctx, query,
+	result, err := e.DB.ExecContext(ctx, query,
 		event.ID,
 		event.Location,
 		event.PlaceCount,
@@ -31,14 +28,20 @@ func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Even
 		event.Year,
 	)
 	if err != nil {
-		return fail(err)
+		switch {
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return rp.NewContextError(err)
+		default:
+			return rp.NewDatabaseErr(err)
+		}
 	}
-	lastInsertID, err := res.LastInsertId()
+
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fail(err)
+		return rp.NewDatabaseErr(err)
 	}
-	if lastInsertID == 0 {
-		return fail(errors.New("no insertion in database"))
+	if rowsAffected == 0 {
+		return rp.NewNotCreatedErr(errors.New("no rows affected by insertion statement"), "event")
 	}
 	return nil
 }

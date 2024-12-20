@@ -2,6 +2,8 @@ package eventRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,12 +28,19 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventSe
 		&event.Month,
 		&event.Year,
 	); err != nil {
-		return nil, rp.NewNotFoundError(err)
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, rp.NewNotFoundError(err, "user")
+		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+			return nil, rp.NewContextError(err)
+		default:
+			return nil, rp.NewDatabaseErr(err)
+		}
 	}
 	event.SessionDuration = time.Minute * time.Duration(minutes)
 	event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", "error parsing time", err)
+		return nil, rp.NewInternalError(fmt.Errorf("%s: %w", "error parsing time", err))
 	}
 	return event, nil
 }

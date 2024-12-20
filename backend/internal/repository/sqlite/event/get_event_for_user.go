@@ -2,6 +2,8 @@ package eventRepository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -10,8 +12,15 @@ import (
 )
 
 func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eventService.EventUser, error) {
-	// TODO: use transaction for that function brother
-	var res eventService.EventUser
+	tx, err := e.DB.BeginTx(ctx, &sql.TxOptions{})
+	defer func() {
+		if err := tx.Rollback(); err != nil && errors.Is(err, sql.ErrTxDone) {
+			// do some log thing if need be
+		}
+	}()
+	if err != nil {
+		return nil, rp.NewDatabaseErr(fmt.Errorf("start transaction: %w", err))
+	}
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
 	statements := []struct {
@@ -23,13 +32,20 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 		{condition: fmt.Sprintf("(day > %d AND month = %d AND year = %d) OR (month = %d + 1 AND year = %d) OR (month = 1 AND year = %d + 1) LIMIT 1", day, month, year, year, month, year), field: "incoming"},
 	}
 
+	var res eventService.EventUser
 	for _, statement := range statements {
 		query := fmt.Sprintf("SELECT * FROM events WHERE %s;", statement.condition)
-		rows, err := e.DB.QueryContext(ctx, query, userID)
-		defer rows.Close()
+		rows, err := tx.QueryContext(ctx, query, userID)
 		if err != nil {
-			return &res, err
+			switch {
+			case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+				return nil, rp.NewContextError(err)
+			default:
+				return nil, rp.NewDatabaseErr(err)
+			}
 		}
+		defer rows.Close()
+
 		for rows.Next() {
 			var priceID string
 			var beginAt string
@@ -45,7 +61,7 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 				&event.Month,
 				&event.Year,
 			); err != nil {
-				return &res, rp.NewErrScan(err)
+				return &res, rp.NewDatabaseErr(err)
 			}
 			event.BeginAt, err = parseBeginAt(beginAt, event.Day, event.Month, event.Year)
 			if err != nil {
@@ -53,8 +69,15 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 			}
 			var usedCount int
 			query := fmt.Sprintf("SELECT COUNT(userid) from event_%s;", event.ID)
-			if err := e.DB.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
-				return &res, rp.NewNotFoundError(err)
+			if err := tx.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
+				switch {
+				case errors.Is(err, sql.ErrNoRows):
+					return &res, rp.NewNotFoundError(err, "user")
+				case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
+					return &res, rp.NewContextError(err)
+				default:
+					return &res, rp.NewDatabaseErr(err)
+				}
 			}
 			event.FreePlace = event.PlaceCount - usedCount
 			switch statement.field {
@@ -67,5 +90,10 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 			}
 		}
 	}
+
+	if err := tx.Commit(); err != nil {
+		return &res, rp.NewDatabaseErr(fmt.Errorf("commit transaction: %w", err))
+	}
+
 	return &res, nil
 }
