@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 // Function that returns the votes (order is important) for a specific user
@@ -23,9 +23,9 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string
 	if err != nil {
 		return nil, fmt.Errorf("get votes by userID: %w", err)
 	}
-	votes, err := parseVotes(ctx, votesStr, monthInt, yearInt)
-	if err != nil {
-		return nil, fmt.Errorf("parse votes by userID: %w", err)
+	votes, pbms := parseVotes(ctx, votesStr, monthInt, yearInt)
+	if len(pbms) > 0 {
+		return nil, fmt.Errorf("parse votes by userID: %w", pbms)
 	}
 	return votes, nil
 }
@@ -37,8 +37,9 @@ func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string
 // votes [month-year-availabledates]
 // votes_april_2024
 
-// Function that parse string stored in repository into votes.
-func parseVotes(ctx context.Context, daysStr string, month, year int) ([]*Vote, error) {
+// parseVotes parses string stored in database into votes.
+func parseVotes(ctx context.Context, daysStr string, month, year int) ([]*Vote, errsx.Map) {
+	var pbms errsx.Map
 	if daysStr == "" {
 		return nil, nil
 	}
@@ -47,13 +48,13 @@ func parseVotes(ctx context.Context, daysStr string, month, year int) ([]*Vote, 
 	for i, day := range days {
 		day, err := strconv.Atoi(day)
 		if err != nil {
-			return nil, fmt.Errorf("cannot convert string day to int")
+			pbms.Set("convert string day to int", err)
 		}
 		vote := &Vote{Day: day, Month: month, Year: year}
-		if pbms := vote.Valid(ctx); len(pbms) > 0 {
-			return nil, serverutil.FormatError(pbms, "vote")
+		if validPbms := vote.Valid(ctx); len(validPbms) > 0 {
+			pbms.Set("vote validation", validPbms.Error())
 		}
 		votes[i] = vote
 	}
-	return votes, nil
+	return votes, pbms
 }
