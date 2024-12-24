@@ -7,6 +7,7 @@ import (
 
 	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -58,6 +59,8 @@ func makeServices(
 	}
 	photoSvc := photo.NewService(photoRepo)
 
+	mailSvc := mailService.New()
+
 	throttlerRepo := throttlerRepository.New(ctx, redisdb)
 	throttlerSvc := throttlerService.New(throttlerRepo)
 
@@ -70,6 +73,7 @@ func makeServices(
 		Photo:     photoSvc,
 		Session:   sessionSvc,
 		Throttler: throttlerSvc,
+		Mail:      mailSvc,
 	}
 	// repos
 	appRepos = app.Repos{

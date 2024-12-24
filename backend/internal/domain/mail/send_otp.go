@@ -1,35 +1,40 @@
 package mailService
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	otpService "github.com/GaryHY/event-reservation-app/internal/domain/otp"
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
-// Function that send an email to user after receiving payment.
-func (s *Service) NewVote(user *models.User, eventTime string) errsx.Map {
+// TODO: make the right email template for that mail domain service
+func (s *Service) SendOTP(ctx context.Context, email string, otp *otpService.OTP) errsx.Map {
 	var errs errsx.Map
 	companyMail, password := getCompanyCredentials()
-	templData := struct {
-		Username string
-		Heure    string
-	}{Username: user.FirstName, Heure: eventTime}
 
-	// handle image
 	wd, err := os.Getwd()
 	if err != nil {
-		errs.Set("get working directory", err)
+		errs.Set("get working directory: %s", err)
 	}
+
 	logoPath := filepath.Join(wd, "internal", "mail", "assets", "logo.jpg")
 	instaPath := filepath.Join(wd, "internal", "mail", "assets", "instagram.png")
 
+	// data used in the email
+	templData := struct {
+		Email string
+		Value string
+	}{
+		Email: email,
+		Value: otp.Code,
+	}
 	if err := sendMail(
 		companyMail,
-		user.Email,
-		"[Leviosa] Nouveau votes disponibles",
-		"/internal/mail/newRegistry.html",
+		email,
+		"[Leviosa] Confirmation d'addresse email",
+		"/internal/mail/templates/otp.html",
 		password,
 		templData,
 		map[string]string{
@@ -38,7 +43,7 @@ func (s *Service) NewVote(user *models.User, eventTime string) errsx.Map {
 			instaPath: "instagram",
 		},
 	); err != nil {
-		errs.Set("send mail", err)
+		errs.Set("send email:", err)
 	}
 	return errs
 }

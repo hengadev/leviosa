@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/checkout"
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
 	"github.com/GaryHY/event-reservation-app/internal/domain/payment"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
@@ -22,4 +23,5 @@ type Services struct {
 	Register  *register.Service
 	Photo     *photo.Service
 	Throttler *throttlerService.Service
+	Mail      *mail.Service
 }

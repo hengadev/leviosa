@@ -1,4 +1,4 @@
-package mail
+package mailService
 
 import (
 	"fmt"
@@ -6,20 +6,21 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 // Send an email to all users notifying new event creation.
-func NewEvent(users []*userService.User, eventTime string) []error {
+func (s *Service) NewEvent(users []*models.User, eventTime string) errsx.Map {
+	var errs errsx.Map
 	companyMail, password := getCompanyCredentials()
 	var wg sync.WaitGroup
-	var errList []error
 	var errMutex sync.Mutex
 
 	// handle image
 	wd, err := os.Getwd()
 	if err != nil {
-		errList = append(errList, fmt.Errorf("get working directory: %s", err))
+		errs.Set("get working directory", err)
 	}
 
 	logoPath := filepath.Join(wd, "internal", "mail", "assets", "logo.jpg")
@@ -64,7 +65,7 @@ func NewEvent(users []*userService.User, eventTime string) []error {
 				); err != nil {
 					fmt.Printf("error occured sending email to user %s: %s\n", user.Email, err)
 					errMutex.Lock()
-					errList = append(errList, fmt.Errorf("send mail: %s", err))
+					errs.Set("send mail", err)
 					errMutex.Unlock()
 				}
 			}
@@ -72,10 +73,7 @@ func NewEvent(users []*userService.User, eventTime string) []error {
 	}
 	fmt.Println("waiting for emails to be sent to users")
 	wg.Wait()
-	if len(errList) > 0 {
-		return errList
-	}
-	return nil
+	return errs
 }
 
 // Take an array of type with the name of that type and return the plural is the array has a length > 1.
