@@ -11,10 +11,11 @@ import (
 )
 
 type Config struct {
-	viper  *viper.Viper
-	sqlite *sqliteCreds
-	redis  *redisCreds
-	s3     *s3Creds
+	viper    *viper.Viper
+	sqlite   *sqliteCreds
+	redis    *redisCreds
+	s3       *s3Creds
+	security *SecurityConfig
 }
 
 // TODO: Add the other creds needed
@@ -56,6 +57,8 @@ func (c *Config) Load(ctx context.Context) errsx.Map {
 		"AWS_REGION":            {required: true, key: "aws.region"},
 		"AWS_ACCESS_KEY_ID":     {required: true, key: "aws.access.key.id"},
 		"AWS_SECRET_ACCESS_KEY": {required: true, key: "aws.secret.access.key"},
+
+		"USER_ENCRYPTION_KEY": {required: true, key: "user.encryption.key"},
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {
@@ -71,6 +74,8 @@ func (c *Config) Load(ctx context.Context) errsx.Map {
 	if err := c.setRedis(ctx); err != nil {
 		errs.Set("redis", fmt.Errorf("set Redis: %w", err))
 	}
+	if err := c.setSecurityConfig(ctx); err != nil {
+		errs.Set("user security config", fmt.Errorf("set user security config: %w", err))
 	}
 	return errs
 }
