@@ -1,4 +1,4 @@
-package checkout
+package stripeService
 
 import (
 	"context"
@@ -36,6 +36,5 @@ func (s *Service) CreateCheckoutSession(ctx context.Context, domain, priceID, ev
 	if err != nil {
 		return "", fmt.Errorf("Error with creating the new session Stripe : %v", err)
 	}
-	// TODO: en fonction ce que je recois de l'event triggered par le webhook je peux retourner plus d'infos ou utiliser d'autres infos pour une db et tout.
 	return checkoutSession.URL, nil
 }

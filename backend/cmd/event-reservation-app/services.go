@@ -11,6 +11,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	"github.com/GaryHY/event-reservation-app/internal/domain/stripe"
 	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
@@ -56,6 +57,8 @@ func makeServices(
 	// register
 	registerRepo := registerRepository.New(ctx, sqlitedb)
 	registerSvc := register.NewService(registerRepo)
+	// stripe
+	stripeSvc := stripeService.New()
 	// photo
 	photoRepo, err := mediaRepository.NewPhotoRepository(ctx)
 	if err != nil {
@@ -78,6 +81,7 @@ func makeServices(
 		Session:   sessionSvc,
 		Throttler: throttlerSvc,
 		Mail:      mailSvc,
+		Stripe:    stripeSvc,
 	}
 	// repos
 	appRepos = app.Repos{
