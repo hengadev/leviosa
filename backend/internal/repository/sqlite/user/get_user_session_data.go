@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *Repository) GetUserSessionData(ctx context.Context, email string) (string, userService.Role, error) {
+func (u *Repository) GetUserSessionData(ctx context.Context, email string) (string, models.Role, error) {
 	var id, role string
 	query := "SELECT id, role from users where email = ?;"
 	err := u.DB.QueryRowContext(ctx, query, email).Scan(
@@ -19,12 +19,12 @@ func (u *Repository) GetUserSessionData(ctx context.Context, email string) (stri
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return "", userService.UNKNOWN, rp.NewNotFoundError(err, "user session data")
+			return "", models.UNKNOWN, rp.NewNotFoundErr(err, "user session data")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return "", userService.UNKNOWN, rp.NewContextError(err)
+			return "", models.UNKNOWN, rp.NewContextErr(err)
 		default:
-			return "", userService.UNKNOWN, rp.NewDatabaseErr(err)
+			return "", models.UNKNOWN, rp.NewDatabaseErr(err)
 		}
 	}
-	return id, userService.ConvertToRole(role), nil
+	return id, models.ConvertToRole(role), nil
 }

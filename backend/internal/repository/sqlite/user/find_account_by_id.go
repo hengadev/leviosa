@@ -4,18 +4,16 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *Repository) FindAccountByID(ctx context.Context, id int) (*userService.User, error) {
+func (u *Repository) FindAccountByID(ctx context.Context, id string) (*models.User, error) {
 	var nullPassword sql.NullString
-	var nullOAuthProvider sql.NullString
-	var nullOAuthID sql.NullString
-	var user userService.User
+	var user models.User
 	if err := u.DB.QueryRowContext(ctx, "SELECT * FROM users WHERE id = ?;", id).Scan(
 		&user.ID,
-		&user.Email,
+		&user.EmailHash,
 		&nullPassword,
 		&user.CreatedAt,
 		&user.LoggedInAt,
@@ -25,20 +23,14 @@ func (u *Repository) FindAccountByID(ctx context.Context, id int) (*userService.
 		&user.FirstName,
 		&user.Gender,
 		&user.Telephone,
-		&nullOAuthProvider,
-		&nullOAuthID,
+		&user.GoogleID,
+		&user.AppleID,
 	); err != nil {
-		return nil, rp.NewNotFoundError(err, "user by ID")
+		return nil, rp.NewNotFoundErr(err, "user by ID")
 	}
 	// get the passowrd in the user instance if not null
 	if nullPassword.Valid {
-		user.Password = nullPassword.String
-	}
-	if nullOAuthProvider.Valid {
-		user.OAuthProvider = nullOAuthProvider.String
-	}
-	if nullOAuthID.Valid {
-		user.OAuthID = nullOAuthID.String
+		user.PasswordHash = nullPassword.String
 	}
 	return &user, nil
 }

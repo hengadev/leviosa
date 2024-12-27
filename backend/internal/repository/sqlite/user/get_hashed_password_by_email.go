@@ -15,9 +15,9 @@ func (u *Repository) GetHashedPasswordByEmail(ctx context.Context, email string)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return "", rp.NewNotFoundError(err, "user")
+			return "", rp.NewNotFoundErr(err, "user")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return "", rp.NewContextError(err)
+			return "", rp.NewContextErr(err)
 		default:
 			return "", rp.NewDatabaseErr(err)
 		}

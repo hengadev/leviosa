@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
@@ -14,7 +14,7 @@ import (
 func TestFindAccountByID(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		expectedUser *userService.User
+		expectedUser *models.User
 		wantErr      bool
 		version      int64
 		name         string
@@ -28,7 +28,7 @@ func TestFindAccountByID(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			user, err := repo.FindAccountByID(ctx, 1)
+			user, err := repo.FindAccountByID(ctx, "1")
 			assert.Equal(t, err != nil, tt.wantErr)
 			if tt.expectedUser != nil {
 				fields := []string{"ID", "Email", "Role", "BirthDate", "LastName", "FirstName", "Gender", "Telephone", "Address", "City", "PostalCard"}

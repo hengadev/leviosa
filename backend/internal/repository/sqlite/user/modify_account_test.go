@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
@@ -23,7 +23,7 @@ func TestModifyAccount(t *testing.T) {
 	}
 
 	tests := []struct {
-		userModified *userService.User
+		userModified *models.User
 		wantErr      bool
 		version      int64
 		name         string

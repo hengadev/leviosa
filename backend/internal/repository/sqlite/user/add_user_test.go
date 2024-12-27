@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
@@ -14,7 +14,7 @@ import (
 func TestAddAccount(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		usr     *userService.User
+		usr     *models.User
 		wantErr bool
 		version int64
 		name    string
@@ -28,7 +28,7 @@ func TestAddAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			err := repo.AddAccount(ctx, tt.usr)
+			err := repo.AddUser(ctx, tt.usr, models.Mail)
 			assert.Equal(t, err != nil, tt.wantErr)
 			// if !tt.wantErr {
 			// 	assert.Equal(t, int(id), testutil.Johndoe.ID)

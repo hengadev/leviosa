@@ -5,26 +5,26 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 )
 
 func (u *Repository) ModifyAccount(
 	ctx context.Context,
-	user *userService.User,
+	user *models.User,
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {
 	query, values, err := sqliteutil.WriteUpdateQuery(*user, whereMap, prohibitedFields...)
 	if err != nil {
-		return rp.NewInternalError(err)
+		return rp.NewInternalErr(err)
 	}
 	result, err := u.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

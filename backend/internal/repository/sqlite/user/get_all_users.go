@@ -4,28 +4,28 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (u *Repository) GetAllUsers(ctx context.Context) ([]*userService.User, error) {
+func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone FROM users;"
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
 	}
 	defer rows.Close()
 
-	var users []*userService.User
+	var users []*models.User
 	for rows.Next() {
-		var user *userService.User
+		var user *models.User
 		err := rows.Scan(
-			&user.Email,
+			&user.EmailHash,
 			&user.Role,
 			&user.LastName,
 			&user.FirstName,
@@ -42,7 +42,7 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*userService.User, erro
 		return nil, rp.NewDatabaseErr(err)
 	}
 	if len(users) == 0 {
-		return []*userService.User{}, nil
+		return []*models.User{}, nil
 	}
 	return users, nil
 }

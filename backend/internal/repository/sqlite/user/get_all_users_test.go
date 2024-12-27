@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
@@ -13,14 +13,14 @@ import (
 
 func TestGetAllUsers(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-	usersList := []*userService.User{testutil.Johndoe, testutil.Janedoe, testutil.Jeandoe}
+	usersList := []*models.User{testutil.Johndoe, testutil.Janedoe, testutil.Jeandoe}
 	tests := []struct {
-		expectedUsers []*userService.User
+		expectedUsers []*models.User
 		wantErr       bool
 		version       int64
 		name          string
 	}{
-		{expectedUsers: []*userService.User{}, wantErr: false, version: 20240811085134, name: "No users in database"},
+		{expectedUsers: []*models.User{}, wantErr: false, version: 20240811085134, name: "No users in database"},
 		{expectedUsers: usersList, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
 	}
 	for _, tt := range tests {
