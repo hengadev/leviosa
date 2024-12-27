@@ -8,22 +8,22 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestGetUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
-	baseID := strconv.Itoa(testutil.Johndoe.ID)
+	baseID := testutil.Johndoe.ID
 	wrongID := strconv.Itoa(593857835)
 	tests := []struct {
 		userID             string
 		expectedStatusCode int
-		expectedUser       *userService.User
+		expectedUser       *models.User
 		version            int64
 		name               string
 	}{
@@ -40,8 +40,7 @@ func TestGetUser(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// pass userID to context
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, mw.UserIDKey, tt.userID)
+			ctx := context.WithValue(r.Context(), contextutil.UserIDKey, tt.userID)
 			r = r.WithContext(ctx)
 
 			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
@@ -56,7 +55,7 @@ func TestGetUser(t *testing.T) {
 			getUser.ServeHTTP(w, r)
 
 			// parse the body for the user
-			var user *userService.User
+			var user *models.User
 			json.NewDecoder(w.Body).Decode(user)
 
 			assert.Equal(t, w.Code, tt.expectedStatusCode)

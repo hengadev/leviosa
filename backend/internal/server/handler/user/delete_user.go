@@ -1,43 +1,47 @@
 package userHandler
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	errsrv "github.com/GaryHY/event-reservation-app/internal/server/handler"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 )
 
 func (a *AppInstance) DeleteUser() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-		// TODO:
-		// - get the userID
-		userIDstr := ctx.Value(mw.UserIDKey).(string)
-		userID, err := strconv.Atoi(userIDstr)
+		ctx := r.Context()
+
+		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
-			slog.ErrorContext(ctx, "userID string conversion to int:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			slog.ErrorContext(ctx, "logger not found in context", "error", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		userID, ok := ctx.Value(contextutil.UserIDKey).(string)
+		if !ok {
+			logger.ErrorContext(ctx, "user ID not found in context")
+			http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+			return
+		}
+
 		// get the sessionID from the cookie
 		sessionID := r.Cookies()[0].Value
 		// - call the user repo to delete the user account from the user repository
 		err = a.Svcs.User.DeleteUser(ctx, userID)
 		if err != nil {
 			fmt.Println("error in deleting the user")
-			slog.ErrorContext(ctx, "delete user:", "error", err)
+			logger.ErrorContext(ctx, "delete user:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// - call the service repo to delete all user's session
 		err = a.Svcs.Session.RemoveSession(ctx, sessionID)
 		if err != nil {
-			slog.ErrorContext(ctx, "delete user session:", "error", err)
+			logger.ErrorContext(ctx, "delete user session:", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}

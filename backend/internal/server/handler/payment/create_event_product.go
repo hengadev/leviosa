@@ -1,7 +1,6 @@
 package payment
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 
 	"github.com/stripe/stripe-go/v79"
@@ -19,28 +19,34 @@ import (
 func (a *AppInstance) CreateEventProduct() http.Handler {
 	stripe.Key = os.Getenv("STRIPE_SECRET_KEY")
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
+		ctx := r.Context()
+		logger, err := contextutil.GetLoggerFromContext(ctx)
+		if err != nil {
+			slog.ErrorContext(ctx, "logger not found in context", "error", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", stripe.Key))
 		event, err := serverutil.Decode[eventService.Event](r.Body)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to decode event", "error", err)
+			logger.ErrorContext(ctx, "failed to decode event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// use service to make request
-		priceID, err := a.Svcs.Payment.CreateProduct(&event)
+		priceID, err := a.Svcs.Stripe.CreateProduct(ctx, &event)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to create product", "error", err)
+			logger.ErrorContext(ctx, "failed to create product", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// use priceID to update corresponding field of event
 		event.PriceID = priceID
 		// TODO: finish the implementation for the
-		_, err = a.Svcs.Event.ModifyEvent(ctx, &event)
+		err = a.Svcs.Event.ModifyEvent(ctx, &event)
 		if err != nil {
-			slog.ErrorContext(ctx, "failed to update the priceID for event", "error", err)
+			logger.ErrorContext(ctx, "failed to update the priceID for event", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
@@ -50,7 +56,7 @@ func (a *AppInstance) CreateEventProduct() http.Handler {
 		}{
 			EventID: event.ID,
 		}); err != nil {
-			slog.ErrorContext(ctx, "failed to encode eventID for product registered", "error", err)
+			logger.ErrorContext(ctx, "failed to encode eventID for product registered", "error", err)
 			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}

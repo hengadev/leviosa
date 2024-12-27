@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
+	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
@@ -26,17 +26,17 @@ func TestSignIn(t *testing.T) {
 	pwd := hashPassword(t, testutil.Johndoe.Password)
 	t.Setenv("HASHED_PASSWORD", pwd)
 	tests := []struct {
-		creds              userService.Credentials
+		creds              models.UserSignIn
 		wantCookie         bool
 		expectedStatusCode int
 		expectedCookieName string
 		version            int64
 		name               string
 	}{
-		{creds: userService.Credentials{Email: "", Password: testutil.Janedoe.Password}, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", version: 20240811140841, name: "invalid email"},
-		{creds: userService.Credentials{Email: testutil.Johndoe.Email, Password: ""}, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", version: 20240811140841, name: "invalid password"},
-		{creds: userService.Credentials{Email: testutil.Johndoe.Email, Password: testutil.Johndoe.Password}, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", version: 20240811085134, name: "credentials not in database"},
-		{creds: userService.Credentials{Email: testutil.Johndoe.Email, Password: testutil.Johndoe.Password}, wantCookie: true, expectedStatusCode: 200, expectedCookieName: sessionService.SessionName, version: 20240824092110, name: "nominal case"},
+		{creds: models.UserSignIn{Email: "", Password: testutil.Janedoe.Password}, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", version: 20240811140841, name: "invalid email"},
+		{creds: models.UserSignIn{Email: testutil.Johndoe.Email, Password: ""}, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", version: 20240811140841, name: "invalid password"},
+		{creds: models.UserSignIn{Email: testutil.Johndoe.Email, Password: testutil.Johndoe.Password}, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", version: 20240811085134, name: "credentials not in database"},
+		{creds: models.UserSignIn{Email: testutil.Johndoe.Email, Password: testutil.Johndoe.Password}, wantCookie: true, expectedStatusCode: 200, expectedCookieName: sessionService.SessionName, version: 20240824092110, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

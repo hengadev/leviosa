@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
@@ -21,7 +21,7 @@ func TestUpdateUser(t *testing.T) {
 	userToModify.Telephone = "0234567890"
 	var zerotime time.Time
 	tests := []struct {
-		user               userService.User
+		user               models.User
 		expectedStatusCode int
 		version            int64
 		name               string
@@ -37,7 +37,7 @@ func TestUpdateUser(t *testing.T) {
 
 			userID := tt.user.ID
 			// remove forbidden field
-			tt.user.ID = 0
+			tt.user.ID = "0"
 			tt.user.Email = ""
 			tt.user.Password = ""
 			tt.user.CreatedAt = zerotime
@@ -52,7 +52,7 @@ func TestUpdateUser(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, mw.UserIDKey, userID)
+			ctx = context.WithValue(ctx, contextutil.UserIDKey, userID)
 			r = r.WithContext(ctx)
 
 			// setup session service and repo
