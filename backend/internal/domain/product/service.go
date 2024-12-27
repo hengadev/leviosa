@@ -1,4 +1,4 @@
-package offerService
+package productService
 
 type Service struct {
 	repo ReadWriter

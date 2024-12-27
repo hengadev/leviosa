@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
+	"github.com/GaryHY/event-reservation-app/internal/domain/product"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
@@ -18,4 +19,5 @@ type Repos struct {
 	Register  register.Reader
 	Photo     photo.Reader
 	Throttler throttlerService.Reader
+	Product   productService.Reader
 }

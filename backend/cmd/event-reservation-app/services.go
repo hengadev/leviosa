@@ -9,6 +9,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
+	"github.com/GaryHY/event-reservation-app/internal/domain/product"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/internal/domain/stripe"
@@ -22,6 +23,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/repository/s3"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
+	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/product"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/register"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/vote"
@@ -68,6 +70,9 @@ func makeServices(
 
 	mailSvc := mailService.New()
 
+	productRepo := productRepository.New(ctx, sqlitedb)
+	productSvc := productService.New(productRepo)
+
 	throttlerRepo := throttlerRepository.New(ctx, redisdb)
 	throttlerSvc := throttlerService.New(throttlerRepo)
 
@@ -82,6 +87,7 @@ func makeServices(
 		Throttler: throttlerSvc,
 		Mail:      mailSvc,
 		Stripe:    stripeSvc,
+		Product:   productSvc,
 	}
 	// repos
 	appRepos = app.Repos{
@@ -92,6 +98,7 @@ func makeServices(
 		Photo:     photoRepo,
 		Session:   sessionRepo,
 		Throttler: throttlerRepo,
+		Product:   productRepo,
 	}
 	return appSvcs, appRepos, nil
 }
