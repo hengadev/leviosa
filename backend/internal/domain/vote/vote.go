@@ -11,10 +11,10 @@ import (
 const VoteSeparator = "|"
 
 type Vote struct {
-	UserID int `json:"userid,omitempty"`
-	Day    int `json:"day,omitempty"`
-	Month  int `json:"month"`
-	Year   int `json:"year"`
+	UserID string `json:"userid,omitempty"`
+	Day    int    `json:"day,omitempty"`
+	Month  int    `json:"month"`
+	Year   int    `json:"year"`
 }
 
 type AvailableVote struct {

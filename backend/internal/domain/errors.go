@@ -18,7 +18,17 @@ var (
 	ErrMarshalJSON    = errors.New("json marshalling")
 	ErrUnmarshalJSON  = errors.New("json unmarshalling")
 	ErrInvalidValue   = errors.New("invalid value")
+	ErrNotEncrypted   = errors.New("ressource not encrypted")
+	ErrRateLimit      = errors.New("rate limit error")
 )
+
+func NewRateLimitErr(err error, domainName string) error {
+	return fmt.Errorf("%s %w: %w", domainName, ErrRateLimit, err)
+}
+
+func NewNotEncryptedErr(err error) error {
+	return fmt.Errorf("%w: %w", ErrNotEncrypted, err)
+}
 
 func NewInvalidValueErr(description string) error {
 	return fmt.Errorf("%w: %s", ErrInvalidValue, description)

@@ -2,20 +2,40 @@ package throttlerService
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"errors"
+	"time"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
 func (s *Service) Reset(ctx context.Context, email string) error {
-	// TODO: make better error handling for this function
-	isLocked, err := s.repo.IsLocked(ctx, email)
+	throttlerEncoded, err := s.repo.IsLocked(ctx, email)
 	if err != nil {
-		return fmt.Errorf("locked for the current email")
+		switch {
+		case errors.Is(err, rp.ErrNotFound):
+			return domain.NewNotFoundErr(err)
+		case errors.Is(err, rp.ErrDatabase):
+			return domain.NewQueryFailedErr(err)
+		}
 	}
-	if isLocked {
-		return fmt.Errorf("user locked, too many request: %w", err)
+	var res Info
+	if err = json.Unmarshal(throttlerEncoded, &res); err != nil {
+		return domain.NewJSONUnmarshalErr(err)
 	}
+
+	if time.Now().Before(res.LockedUntil) {
+		return domain.NewLockedAccountErr(err, "throttler")
+	}
+
 	if err := s.repo.Reset(ctx, email); err != nil {
-		return fmt.Errorf("reset attempt: %w", err)
+		switch {
+		case errors.Is(err, rp.ErrNotFound):
+			return domain.NewNotFoundErr(err)
+		default:
+			return domain.NewQueryFailedErr(err)
+		}
 	}
 	return nil
 }

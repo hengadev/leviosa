@@ -61,7 +61,7 @@ func TestFormatVote(t *testing.T) {
 	now := time.Now()
 	days := []int{12, 4, 5, 30}
 	randVote := &vote.Vote{
-		UserID: 23323543,
+		UserID: "23323543",
 		Day:    now.Day(),
 		Month:  int(now.Month()),
 		Year:   now.Year(),

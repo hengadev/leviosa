@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 
 	"github.com/google/uuid"
@@ -16,20 +16,21 @@ const SessionDuration = 30 * 24 * time.Hour
 const SessionName = "session_token"
 
 type Session struct {
-	ID         string           `json:"id"`
-	UserID     string           `json:"userid"`
-	Role       userService.Role `json:"userrole"`
-	LoggedInAt time.Time        `json:"loggedinat"`
-	CreatedAt  time.Time        `json:"createdat"`
-	ExpiresAt  time.Time        `json:"expiresat"`
+	ID         string      `json:"id"`
+	UserID     string      `json:"userid"`
+	Role       models.Role `json:"userrole"`
+	LoggedInAt time.Time   `json:"loggedinat"`
+	CreatedAt  time.Time   `json:"createdat"`
+	ExpiresAt  time.Time   `json:"expiresat"`
 }
 
+// TODO: change that name for session stored
 type Values struct {
-	UserID     string           `json:"userid"`
-	Role       userService.Role `json:"userrole"`
-	LoggedInAt time.Time        `json:"loggedinat"`
-	CreatedAt  time.Time        `json:"createdat"`
-	ExpiresAt  time.Time        `json:"expiresat"`
+	UserID     string      `json:"userid"`
+	Role       models.Role `json:"userrole"`
+	LoggedInAt time.Time   `json:"loggedinat"`
+	CreatedAt  time.Time   `json:"createdat"`
+	ExpiresAt  time.Time   `json:"expiresat"`
 }
 
 func (s Session) IsZero() bool {
@@ -55,7 +56,7 @@ func (s *Session) Values() *Values {
 	}
 }
 
-func NewSession(userID string, role userService.Role) (*Session, error) {
+func NewSession(userID string, role models.Role) (*Session, error) {
 	if err := uuid.Validate(userID); err != nil {
 		return nil, err
 	}
@@ -70,7 +71,7 @@ func NewSession(userID string, role userService.Role) (*Session, error) {
 	}, nil
 }
 
-func (s *Session) Valid(ctx context.Context, minRole userService.Role) error {
+func (s *Session) Valid(ctx context.Context, minRole models.Role) error {
 	var pbms = make(errsx.Map)
 	if err := uuid.Validate(s.ID); err != nil {
 		pbms.Set("id", "session ID is not of type UUID")

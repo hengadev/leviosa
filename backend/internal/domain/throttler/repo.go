@@ -6,7 +6,7 @@ import (
 )
 
 type Reader interface {
-	IsLocked(ctx context.Context, key string) (bool, error)
+	IsLocked(ctx context.Context, key string) ([]byte, error)
 }
 
 type Writer interface {

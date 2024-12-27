@@ -24,7 +24,7 @@ func (s *StubEventRepository) GetEventByID(ctx context.Context, eventID string) 
 	return nil, nil
 }
 
-func (s *StubEventRepository) GetEventForUser(ctx context.Context, userID int) (*eventService.EventUser, error) {
+func (s *StubEventRepository) GetEventForUser(ctx context.Context, userID string) (*eventService.EventUser, error) {
 	return nil, nil
 }
 

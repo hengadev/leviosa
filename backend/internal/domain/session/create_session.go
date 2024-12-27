@@ -6,16 +6,16 @@ import (
 	"errors"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (s *Service) CreateSession(ctx context.Context, userID string, role userService.Role) (string, error) {
+func (s *Service) CreateSession(ctx context.Context, userID string, role models.Role) (string, error) {
 	session, err := NewSession(userID, role)
 	if err != nil {
 		return "", domain.NewInvalidValueErr("invalid user ID")
 	}
-	if role == userService.UNKNOWN {
+	if role == models.UNKNOWN {
 		return "", domain.NewInvalidValueErr("invalid role: role must be different than 'UNKNOWN'")
 	}
 	sessionEncoded, err := json.Marshal(session)

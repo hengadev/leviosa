@@ -2,7 +2,6 @@ package vote_test
 
 import (
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
@@ -23,8 +22,8 @@ func setup(now time.Time) (int, int) {
 }
 
 // generate  a valid vote given a valid month and year with the day set to the day of the time.Time passed, use a random userID
-func generateValidVote(now time.Time, month, year int) (int, *vote.Vote) {
-	userID := rand.Intn(23)
+func generateValidVote(now time.Time, month, year int) (string, *vote.Vote) {
+	userID := "fwrg98wo2n3fh4wt"
 	return userID, &vote.Vote{
 		UserID: userID,
 		Day:    now.Day(),
@@ -43,7 +42,7 @@ func getFormattedDayFromIntArr(days []int) string {
 }
 
 // Get the votes given an array of int representing days, userID, month and year.
-func getVotesFromIntDaysArr(userID int, days []int, month, year int) []*vote.Vote {
+func getVotesFromIntDaysArr(userID string, days []int, month, year int) []*vote.Vote {
 	var votes []*vote.Vote
 	for _, day := range days {
 		votes = append(votes, &vote.Vote{

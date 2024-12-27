@@ -10,7 +10,7 @@ import (
 )
 
 // Function that returns the votes (order is important) for a specific user
-func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string, userID int) ([]*Vote, error) {
+func (s *Service) GetVotesByUserID(ctx context.Context, monthStr, yearStr string, userID string) ([]*Vote, error) {
 	monthInt, err := strconv.Atoi(monthStr)
 	if err != nil {
 		return nil, fmt.Errorf("fail to convert string month to int")

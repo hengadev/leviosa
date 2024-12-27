@@ -6,7 +6,7 @@ import (
 
 type Reader interface {
 	GetEventByID(ctx context.Context, eventID string) (*Event, error)
-	GetEventForUser(ctx context.Context, userID int) (*EventUser, error)
+	GetEventForUser(ctx context.Context, userID string) (*EventUser, error)
 	GetPriceIDByEventID(ctx context.Context, eventID string) (string, error)
 }
 

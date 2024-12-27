@@ -11,7 +11,7 @@ import (
 )
 
 func TestGetVotesByUserID(t *testing.T) {
-	userID := 94435302
+	userID := "94435302"
 	now := time.Now().UTC()
 	month, year := setup(now)
 

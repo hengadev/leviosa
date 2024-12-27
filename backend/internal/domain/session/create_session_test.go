@@ -7,7 +7,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 
@@ -19,21 +19,21 @@ func TestCreateSession(t *testing.T) {
 	tests := []struct {
 		name          string
 		userID        string
-		role          userService.Role
+		role          models.Role
 		mockRepo      func() *MockRepo
 		expectedError error
 	}{
 		{
 			name:          "user ID not UUID",
 			userID:        "user123",
-			role:          userService.BASIC,
+			role:          models.BASIC,
 			mockRepo:      func() *MockRepo { return &MockRepo{} },
 			expectedError: domain.ErrInvalidValue,
 		},
 		{
 			name:          "invalid role",
 			userID:        userID,
-			role:          userService.UNKNOWN,
+			role:          models.UNKNOWN,
 			mockRepo:      func() *MockRepo { return &MockRepo{} },
 			expectedError: domain.ErrInvalidValue,
 		},
@@ -41,7 +41,7 @@ func TestCreateSession(t *testing.T) {
 		// {
 		// 	name:   "JSON marshal error",
 		// 	userID: userID,
-		// 	role:   userService.BASIC,
+		// 	role:   models.BASIC,
 		// 	mockRepo: func() *MockRepo {
 		// 		return &MockRepo{
 		// 			CreateSessionFunc: func(ctx context.Context, sessionID string, sessionEncoded []byte) error {
@@ -54,7 +54,7 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:   "database error",
 			userID: userID,
-			role:   userService.BASIC,
+			role:   models.BASIC,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					CreateSessionFunc: func(ctx context.Context, sessionID string, sessionEncoded []byte) error {
@@ -67,7 +67,7 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:   "context deadline exceeded error",
 			userID: userID,
-			role:   userService.BASIC,
+			role:   models.BASIC,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					CreateSessionFunc: func(ctx context.Context, sessionID string, sessionEncoded []byte) error {
@@ -80,7 +80,7 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:   "context deadline exceeded error",
 			userID: userID,
-			role:   userService.BASIC,
+			role:   models.BASIC,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					CreateSessionFunc: func(ctx context.Context, sessionID string, sessionEncoded []byte) error {
@@ -93,7 +93,7 @@ func TestCreateSession(t *testing.T) {
 		{
 			name:   "succcessful case",
 			userID: userID,
-			role:   userService.BASIC,
+			role:   models.BASIC,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					CreateSessionFunc: func(ctx context.Context, sessionID string, sessionEncoded []byte) error {

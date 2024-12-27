@@ -8,7 +8,7 @@ import (
 )
 
 type MockDBKey struct {
-	userID int
+	userID string
 	month  int
 	year   int
 }
@@ -24,7 +24,7 @@ func NewStubVoteRepository(context.Context) *StubVoteRepository {
 	return &StubVoteRepository{votes: votes}
 }
 
-func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userID int) error {
+func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userID string) error {
 	for key := range s.votes {
 		if key.userID == userID && key.month == month && key.year == year {
 			return fmt.Errorf("vote not found")
@@ -33,7 +33,7 @@ func (s *StubVoteRepository) HasVote(ctx context.Context, month, year int, userI
 	return nil
 }
 
-func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days string, month, year int) error {
+func (s *StubVoteRepository) CreateVote(ctx context.Context, userID string, days string, month, year int) error {
 	key := MockDBKey{
 		userID: userID,
 		month:  month,
@@ -46,7 +46,7 @@ func (s *StubVoteRepository) CreateVote(ctx context.Context, userID int, days st
 	return nil
 }
 
-func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, year int) error {
+func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID string, month, year int) error {
 	key := MockDBKey{
 		userID: userID,
 		month:  month,
@@ -56,11 +56,11 @@ func (s *StubVoteRepository) RemoveVote(ctx context.Context, userID int, month, 
 	return nil
 }
 
-func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string, year, userID int) (string, error) {
+func (s *StubVoteRepository) FindVotesByUserID(ctx context.Context, month string, year int, userID string) (string, error) {
 	return "", nil
 }
 
-func (s *StubVoteRepository) FindVotes(ctx context.Context, month, year, userID int) (string, error) {
+func (s *StubVoteRepository) FindVotes(ctx context.Context, month, year int, userID string) (string, error) {
 	return "", nil
 }
 

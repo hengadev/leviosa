@@ -4,10 +4,25 @@ import (
 	"time"
 )
 
-const MAXATTEMPT = 5
 const THROTTLERSESSIONDURATION = 1 * time.Hour
 const THROTTLINGDURATION = 15 * time.Minute
 
+// NOTE: here we should try something different for the throttling
+var testduration = []time.Duration{
+	1 * time.Second,
+	2 * time.Second,
+	4 * time.Second,
+	8 * time.Second,
+	15 * time.Second,
+	30 * time.Second,
+	60 * time.Second,
+	120 * time.Second,
+	300 * time.Second,
+}
+
+var MAXATTEMPT = len(testduration)
+
+// TODO: need to hash the email in redis
 type Info struct {
 	Email       string
 	Attempts    int
