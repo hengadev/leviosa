@@ -6,24 +6,27 @@ import (
 	"fmt"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/security"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (s *Service) GetUserSessionData(ctx context.Context, email string) (string, Role, error) {
-	if _, pbms := NewEmail(email); len(pbms) > 0 {
-		return "", UNKNOWN, domain.NewInvalidValueErr(fmt.Sprintf("invalid email: %q", pbms))
+func (s *Service) GetUserSessionData(ctx context.Context, email string) (string, models.Role, error) {
+	if _, pbms := models.NewEmail(email); len(pbms) > 0 {
+		return "", models.UNKNOWN, domain.NewInvalidValueErr(fmt.Sprintf("invalid email: %q", pbms))
 	}
-	ID, role, err := s.repo.GetUserSessionData(ctx, email)
+	hashedEmail := security.HashEmail(email)
+	ID, role, err := s.repo.GetUserSessionData(ctx, hashedEmail)
 	if err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotFound):
-			return "", UNKNOWN, domain.NewNotFoundErr(err)
+			return "", models.UNKNOWN, domain.NewNotFoundErr(err)
 		case errors.Is(err, rp.ErrContext):
-			return "", UNKNOWN, err
+			return "", models.UNKNOWN, err
 		case errors.Is(err, rp.ErrDatabase):
-			return "", UNKNOWN, domain.NewQueryFailedErr(err)
+			return "", models.UNKNOWN, domain.NewQueryFailedErr(err)
 		default:
-			return "", UNKNOWN, domain.NewUnexpectTypeErr(err)
+			return "", models.UNKNOWN, domain.NewUnexpectTypeErr(err)
 		}
 	}
 	return ID, role, nil
