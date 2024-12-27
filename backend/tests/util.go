@@ -11,6 +11,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
+	"github.com/GaryHY/event-reservation-app/pkg/config"
 
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
@@ -18,7 +19,12 @@ import (
 // TODO: handle the different ways to import the different domain
 // - use the repoconstructor thing
 // - return the repository interface that implements the GetDB() function
-func Setup(t testing.TB, ctx context.Context, version int64) *userHandler.AppInstance {
+func Setup(
+	t testing.TB,
+	ctx context.Context,
+	version int64,
+	config *config.Config,
+) *userHandler.AppInstance {
 	t.Helper()
 	sqlitedb, err := testdb.NewDatabase(ctx)
 	if err != nil {
@@ -30,7 +36,7 @@ func Setup(t testing.TB, ctx context.Context, version int64) *userHandler.AppIns
 	// readerRepo := userRepository.NewReaderRepository(ctx, db)
 	// userRepo := userRepository.New(ctx, readerRepo)
 	userRepo := userRepository.New(ctx, sqlitedb)
-	userService := userService.New(userRepo)
+	userService := userService.New(userRepo, config.GetSecurity())
 	appsvc := app.Services{User: userService}
 	// apprepo := handler.Repos{User: readerRepo}
 	apprepo := app.Repos{User: userRepo}

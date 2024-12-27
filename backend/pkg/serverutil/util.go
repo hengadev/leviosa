@@ -19,10 +19,15 @@ type Validator interface {
 	Valid(ctx context.Context) (problems errsx.Map)
 }
 
+var ErrValidStruct = errors.New("Failed to valid the struct")
 var ErrDecodeJSON = errors.New("Failed to decode JSON payload")
 
 func NewDecodeJSONErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrDecodeJSON, err)
+}
+
+func NewValidStructErr(structName string) error {
+	return fmt.Errorf("%w: %s", ErrValidStruct, structName)
 }
 
 func Decode[T any](body io.ReadCloser) (T, error) {

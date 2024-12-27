@@ -18,7 +18,7 @@ func (p *PhotoRepository) FindAllObjects(ctx context.Context, eventID string) ([
 		Bucket: aws.String(localisation),
 	})
 	if err != nil {
-		return nil, rp.NewNotFoundError(err, "photos")
+		return nil, rp.NewNotFoundErr(err, "photos")
 	}
 	for _, object := range output.Contents {
 		_ = object

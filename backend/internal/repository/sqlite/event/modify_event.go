@@ -18,13 +18,13 @@ func (e *EventRepository) ModifyEvent(
 ) error {
 	query, values, err := sqliteutil.WriteUpdateQuery(*event, whereMap, prohibitedFields...)
 	if err != nil {
-		return rp.NewInternalError(err)
+		return rp.NewInternalErr(err)
 	}
 	res, err := e.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

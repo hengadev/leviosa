@@ -16,7 +16,7 @@ func (r *repository) AddRegistration(ctx context.Context, reg *register.Registra
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

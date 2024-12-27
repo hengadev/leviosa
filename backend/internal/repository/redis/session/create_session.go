@@ -18,7 +18,7 @@ func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessio
 		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

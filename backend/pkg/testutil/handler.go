@@ -11,6 +11,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
 	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
+	"github.com/GaryHY/event-reservation-app/pkg/config"
 	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
 )
 
@@ -24,7 +25,8 @@ func SetupUser(t testing.TB, ctx context.Context, version int64) (*userService.S
 		t.Error(err)
 	}
 	userRepo := userRepository.New(ctx, db)
-	userService := userService.New(userRepo)
+	config := &config.SecurityConfig{}
+	userService := userService.New(userRepo, config)
 	return userService, userRepo
 }
 

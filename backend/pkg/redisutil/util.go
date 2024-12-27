@@ -52,7 +52,7 @@ func Init(ctx context.Context, client *redis.Client, queries map[string]interfac
 	for k, v := range queries {
 		err := client.Set(ctx, k, v, sessionService.SessionDuration).Err()
 		if err != nil {
-			return rp.NewRessourceCreationErr(err)
+			return rp.NewNotCreatedErr(err, "query")
 		}
 	}
 	return nil

@@ -23,7 +23,7 @@ func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
@@ -43,7 +43,7 @@ func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote
 		}
 		availableDays, err := parseDays(days)
 		if err != nil {
-			return nil, rp.NewInternalError(err)
+			return nil, rp.NewInternalErr(err)
 		}
 		for _, day := range availableDays {
 			votes = append(votes, &vote.AvailableVote{

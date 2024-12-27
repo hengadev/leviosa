@@ -11,7 +11,7 @@ import (
 func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Event) error {
 	beginat, err := formatBeginAt(event.BeginAt)
 	if err != nil {
-		rp.NewInternalError(err)
+		rp.NewInternalErr(err)
 	}
 	minutes := int(event.SessionDuration)
 	query := "INSERT INTO events (id, location, placecount, freeplace, beginat, sessionduration, priceid, day, month, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
@@ -30,7 +30,7 @@ func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Even
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

@@ -18,13 +18,13 @@ func (s *Repository) RemoveSession(ctx context.Context, ID string) error {
 		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}
 	}
 	if result.Val() == 0 {
-		return rp.NewNotFoundError(fmt.Errorf("key does not exist"), "session")
+		return rp.NewNotFoundErr(fmt.Errorf("key does not exist"), "session")
 	}
 	return nil
 }

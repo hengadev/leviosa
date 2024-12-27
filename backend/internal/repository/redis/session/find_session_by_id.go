@@ -13,7 +13,7 @@ func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) ([]b
 	if err != nil {
 		switch {
 		case errors.Is(err, redis.Nil):
-			return nil, rp.NewNotFoundError(err, "session")
+			return nil, rp.NewNotFoundErr(err, "session")
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 			fallthrough
 		default:

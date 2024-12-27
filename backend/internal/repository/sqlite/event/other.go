@@ -20,9 +20,9 @@ func (e *EventRepository) CheckEvent(ctx context.Context, eventID string) (bool,
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return false, rp.NewNotFoundError(err, "event")
+			return false, rp.NewNotFoundErr(err, "event")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return false, rp.NewContextError(err)
+			return false, rp.NewContextErr(err)
 		default:
 			return false, rp.NewDatabaseErr(err)
 		}
@@ -35,7 +35,7 @@ func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID s
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}
@@ -45,7 +45,7 @@ func (e *EventRepository) DecreaseEventPlacecount(ctx context.Context, eventID s
 		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return rp.NewNotFoundError(fmt.Errorf("no rows affected"), "event")
+		return rp.NewNotFoundErr(fmt.Errorf("no rows affected"), "event")
 	}
 	return nil
 }
@@ -63,7 +63,7 @@ func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) (
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
@@ -75,11 +75,11 @@ func (e *EventRepository) GetEventByUserID(ctx context.Context, userID string) (
 		event := &eventService.Event{}
 		var dataTemp string
 		if err := rows.Scan(&event.ID, &event.Location, &event.PlaceCount, &dataTemp, &event.PriceID); err != nil {
-			return nil, rp.NewNotFoundError(err, "event")
+			return nil, rp.NewNotFoundErr(err, "event")
 		}
 		event.BeginAt, err = time.Parse(time.RFC3339, dataTemp)
 		if err != nil {
-			return nil, rp.NewInternalError(fmt.Errorf("%s: %w", "error parsing time", err))
+			return nil, rp.NewInternalErr(fmt.Errorf("%s: %w", "error parsing time", err))
 		}
 		events = append(events, event)
 	}

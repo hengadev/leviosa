@@ -15,9 +15,9 @@ func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID strin
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return "", rp.NewNotFoundError(err, fmt.Sprintf("price ID for event with ID %s", eventID))
+			return "", rp.NewNotFoundErr(err, fmt.Sprintf("price ID for event with ID %s", eventID))
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return "", rp.NewContextError(err)
+			return "", rp.NewContextErr(err)
 		default:
 			return "", rp.NewDatabaseErr(err)
 		}

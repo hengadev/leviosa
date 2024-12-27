@@ -12,7 +12,7 @@ import (
 func TestFindVotes(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		userID       int
+		userID       string
 		month        int
 		year         int
 		expectedDays string
@@ -20,9 +20,9 @@ func TestFindVotes(t *testing.T) {
 		version      int64
 		name         string
 	}{
-		{userID: 1, month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820223653, name: "no vote in db"},
-		{userID: 349324, month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820225713, name: "wrong ID"},
-		{userID: 1, month: 4, year: 2025, expectedDays: "23|12|6", wantErr: false, version: 20240820225713, name: "nominal case"},
+		{userID: "1", month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820223653, name: "no vote in db"},
+		{userID: "349324", month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820225713, name: "wrong ID"},
+		{userID: "1", month: 4, year: 2025, expectedDays: "23|12|6", wantErr: false, version: 20240820225713, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

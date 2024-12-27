@@ -11,7 +11,7 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eventService.EventUser, error) {
+func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*eventService.EventUser, error) {
 	tx, err := e.DB.BeginTx(ctx, &sql.TxOptions{})
 	defer func() {
 		if err := tx.Rollback(); err != nil && errors.Is(err, sql.ErrTxDone) {
@@ -39,7 +39,7 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 		if err != nil {
 			switch {
 			case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-				return nil, rp.NewContextError(err)
+				return nil, rp.NewContextErr(err)
 			default:
 				return nil, rp.NewDatabaseErr(err)
 			}
@@ -72,9 +72,9 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID int) (*eve
 			if err := tx.QueryRowContext(ctx, query).Scan(&usedCount); err != nil {
 				switch {
 				case errors.Is(err, sql.ErrNoRows):
-					return &res, rp.NewNotFoundError(err, "user")
+					return &res, rp.NewNotFoundErr(err, "user")
 				case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-					return &res, rp.NewContextError(err)
+					return &res, rp.NewContextErr(err)
 				default:
 					return &res, rp.NewDatabaseErr(err)
 				}

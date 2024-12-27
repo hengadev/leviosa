@@ -15,9 +15,9 @@ func (t *Repository) IsLocked(ctx context.Context, key string) ([]byte, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, redis.Nil):
-			return nil, rp.NewNotFoundError(err, "throttler key")
+			return nil, rp.NewNotFoundErr(err, "throttler key")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}

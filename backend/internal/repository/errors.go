@@ -13,17 +13,22 @@ var (
 	ErrDatabase   = errors.New("database error")
 	ErrInternal   = errors.New("internal error")
 	ErrContext    = errors.New("context related error")
+	ErrValidation = errors.New("validation error")
 )
 
-func NewContextError(err error) error {
+func NewValidationErr(err error, domainName string) error {
+	return fmt.Errorf("%s %w: %w", domainName, ErrContext, err)
+}
+
+func NewContextErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrContext, err)
 }
 
-func NewInternalError(err error) error {
+func NewInternalErr(err error) error {
 	return fmt.Errorf("%w: %w", ErrNotFound, err)
 }
 
-func NewNotFoundError(err error, domainName string) error {
+func NewNotFoundErr(err error, domainName string) error {
 	return fmt.Errorf("%s %w: %w", domainName, ErrNotFound, err)
 }
 

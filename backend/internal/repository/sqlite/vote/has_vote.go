@@ -8,16 +8,16 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (v *repository) HasVote(ctx context.Context, month, year, userID int) error {
+func (v *repository) HasVote(ctx context.Context, month, year int, userID string) error {
 	var res bool
 	query := "SELECT 1 FROM votes WHERE userid=? AND month=? AND year=?;"
 	err := v.DB.QueryRowContext(ctx, query, userID, month, year).Scan(&res)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return rp.NewNotFoundError(err, "votes")
+			return rp.NewNotFoundErr(err, "votes")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

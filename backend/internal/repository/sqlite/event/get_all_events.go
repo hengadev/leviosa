@@ -16,7 +16,7 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
@@ -43,7 +43,7 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 		event.SessionDuration = time.Minute * time.Duration(minutes)
 		event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
 		if err != nil {
-			return nil, rp.NewInternalError(fmt.Errorf("parsing time: %w", err))
+			return nil, rp.NewInternalErr(fmt.Errorf("parsing time: %w", err))
 		}
 		events = append(events, event)
 	}

@@ -25,9 +25,9 @@ func (t *Repository) Reset(ctx context.Context, key string) error {
 		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, redis.Nil):
-			return rp.NewNotFoundError(err, "")
+			return rp.NewNotFoundErr(err, "")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}
@@ -47,7 +47,7 @@ func (t *Repository) Reset(ctx context.Context, key string) error {
 		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

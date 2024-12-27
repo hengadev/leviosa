@@ -27,7 +27,7 @@ func (t *Repository) MakeAttempt(ctx context.Context, key string, now time.Time)
 		if err != nil {
 			switch {
 			case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-				return rp.NewContextError(err)
+				return rp.NewContextErr(err)
 				// case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
 			case errors.Is(err, redis.ErrClosed):
 				fallthrough
@@ -57,7 +57,7 @@ func (t *Repository) MakeAttempt(ctx context.Context, key string, now time.Time)
 	if err = t.client.Set(ctx, THROTTLERPREFIX+info.Email, encoded, throttlerService.THROTTLERSESSIONDURATION).Err(); err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		default:
@@ -74,7 +74,7 @@ func setNewInfo(ctx context.Context, client *redis.Client, email string, encoded
 		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return rp.NewContextError(err)
+			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}

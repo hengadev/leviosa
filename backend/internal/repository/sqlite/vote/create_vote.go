@@ -8,7 +8,7 @@ import (
 )
 
 // Function to create vote for a user in a specific month and year
-func (v *repository) CreateVote(ctx context.Context, userID int, days string, month, year int) error {
+func (v *repository) CreateVote(ctx context.Context, userID string, days string, month, year int) error {
 	query := "INSERT INTO votes (userid, days, month, year) VALUES (?, ?, ?, ?);"
 	result, err := v.DB.ExecContext(ctx, query, userID, days, month, year)
 	if err != nil {

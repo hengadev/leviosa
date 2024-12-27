@@ -30,9 +30,9 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventSe
 	); err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, rp.NewNotFoundError(err, "user")
+			return nil, rp.NewNotFoundErr(err, "user")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return nil, rp.NewContextError(err)
+			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
@@ -40,7 +40,7 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventSe
 	event.SessionDuration = time.Minute * time.Duration(minutes)
 	event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
 	if err != nil {
-		return nil, rp.NewInternalError(fmt.Errorf("%s: %w", "error parsing time", err))
+		return nil, rp.NewInternalErr(fmt.Errorf("%s: %w", "error parsing time", err))
 	}
 	return event, nil
 }
