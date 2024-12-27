@@ -1,13 +1,12 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
@@ -81,8 +80,7 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
-			// add userID to context.
-			ctx = context.WithValue(ctx, UserIDKey, session.UserID)
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -102,12 +100,12 @@ var knownBasicEndpoints = []string{
 	"event",
 }
 
-func getExpectedRoleFromRequest(r *http.Request) userService.Role {
+func getExpectedRoleFromRequest(r *http.Request) models.Role {
 	segment := strings.Split(r.URL.Path, "/")[3]
 	for _, endpoint := range knownBasicEndpoints {
 		if segment == endpoint {
-			return userService.ConvertToRole("basic")
+			return models.ConvertToRole("basic")
 		}
 	}
-	return userService.ConvertToRole(segment)
+	return models.ConvertToRole(segment)
 }

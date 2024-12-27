@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -24,11 +24,11 @@ func TestValidCredentials(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.TODO()
-			problems := userService.Credentials{
+			user := models.UserSignIn{
 				Email:    tt.email,
 				Password: tt.password,
-			}.Valid(ctx)
+			}
+			problems := user.Valid(context.Background())
 			got := len(problems)
 			assert.Equal(t, got != 0, tt.wantErr)
 		})

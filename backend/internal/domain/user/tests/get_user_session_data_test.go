@@ -1,4 +1,4 @@
-package userService_test
+package models_test
 
 import (
 	"context"
@@ -7,7 +7,9 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/event-reservation-app/pkg/config"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 
 	"github.com/google/uuid"
@@ -22,7 +24,7 @@ func TestGetUserSessionData(t *testing.T) {
 		mockRepo      func() *MockRepo
 		expectedError error
 		expectedID    string
-		expectedRole  userService.Role
+		expectedRole  models.Role
 	}{
 		{
 			name:  "invalid email",
@@ -32,63 +34,63 @@ func TestGetUserSessionData(t *testing.T) {
 			},
 			expectedError: domain.ErrInvalidValue,
 			expectedID:    "",
-			expectedRole:  userService.UNKNOWN,
+			expectedRole:  models.UNKNOWN,
 		},
 		{
 			name:  "database error",
 			email: email,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, userService.Role, error) {
-						return "", userService.UNKNOWN, rp.ErrDatabase
+					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, models.Role, error) {
+						return "", models.UNKNOWN, rp.ErrDatabase
 					},
 				}
 			},
 			expectedError: domain.ErrQueryFailed,
 			expectedID:    "",
-			expectedRole:  userService.UNKNOWN,
+			expectedRole:  models.UNKNOWN,
 		},
 		{
 			name:  "context error",
 			email: email,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, userService.Role, error) {
-						return "", userService.UNKNOWN, rp.ErrContext
+					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, models.Role, error) {
+						return "", models.UNKNOWN, rp.ErrContext
 					},
 				}
 			},
 			expectedError: rp.ErrContext,
 			expectedID:    "",
-			expectedRole:  userService.UNKNOWN,
+			expectedRole:  models.UNKNOWN,
 		},
 		{
 			name:  "unexpected error",
 			email: email,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, userService.Role, error) {
-						return "", userService.UNKNOWN, errors.New("unexpected error")
+					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, models.Role, error) {
+						return "", models.UNKNOWN, errors.New("unexpected error")
 					},
 				}
 			},
 			expectedError: domain.ErrUnexpectedType,
 			expectedID:    "",
-			expectedRole:  userService.UNKNOWN,
+			expectedRole:  models.UNKNOWN,
 		},
 		{
 			name:  "successful case",
 			email: email,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, userService.Role, error) {
-						return userID, userService.BASIC, nil
+					GetUserSessionDataFunc: func(ctx context.Context, email string) (string, models.Role, error) {
+						return userID, models.BASIC, nil
 					},
 				}
 			},
 			expectedError: nil,
 			expectedID:    userID,
-			expectedRole:  userService.BASIC,
+			expectedRole:  models.BASIC,
 		},
 	}
 
@@ -96,7 +98,9 @@ func TestGetUserSessionData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			repo := tt.mockRepo()
-			service := userService.New(repo)
+			// TODO: I need to find the config for, or some sort of mock config just for the test
+			config := &config.SecurityConfig{}
+			service := userService.New(repo, config)
 			id, role, err := service.GetUserSessionData(context.Background(), tt.email)
 			assert.EqualError(t, err, tt.expectedError)
 			assert.Equal(t, id, tt.expectedID)

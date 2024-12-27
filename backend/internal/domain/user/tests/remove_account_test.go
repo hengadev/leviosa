@@ -1,4 +1,4 @@
-package userService_test
+package models_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/event-reservation-app/pkg/config"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 
 	"github.com/google/uuid"
@@ -82,7 +83,9 @@ func TestDeleteUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			repo := tt.mockRepo()
-			service := userService.New(repo)
+			// TODO: find the config for this
+			config := &config.SecurityConfig{}
+			service := userService.New(repo, config)
 			err := service.DeleteUser(context.Background(), tt.userID)
 			assert.EqualError(t, err, tt.expectedError)
 		})

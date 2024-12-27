@@ -1,15 +1,15 @@
-package userService_test
+package models_test
 
 import (
 	"context"
 	"errors"
-	"fmt"
-	"reflect"
 	"testing"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/event-reservation-app/pkg/config"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 
 	"github.com/google/uuid"
@@ -19,7 +19,7 @@ func TestUpdateUser(t *testing.T) {
 	tests := []struct {
 		name          string
 		userID        string
-		user          *userService.User
+		user          *models.User
 		mockRepo      func() *MockRepo
 		expectedError error
 	}{
@@ -47,7 +47,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return rp.ErrInternal
 					},
 				}
@@ -60,7 +60,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return rp.ErrContext
 					},
 				}
@@ -73,7 +73,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return rp.ErrDatabase
 					},
 				}
@@ -86,7 +86,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return rp.ErrNotUpdated
 					},
 				}
@@ -99,7 +99,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return errors.New("unexpected type error")
 					},
 				}
@@ -112,7 +112,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *userService.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
 						return nil
 					},
 				}
@@ -125,7 +125,8 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			repo := tt.mockRepo()
-			service := userService.New(repo)
+			config := &config.SecurityConfig{}
+			service := userService.New(repo, config)
 			err := service.UpdateAccount(
 				context.Background(),
 				tt.user,
@@ -136,38 +137,8 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 
-type TestUser struct {
-	userService.User
-}
-
-func (u *TestUser) with(fieldName string, value any) *TestUser {
-	v := reflect.ValueOf(u).Elem() // Get the underlying struct
-	field := v.FieldByName(fieldName)
-
-	if !field.IsValid() {
-		// Field does not exist
-		panic(fmt.Sprintf("Field %s does not exist", fieldName))
-	}
-
-	if !field.CanSet() {
-		// Field is not exported
-		panic(fmt.Sprintf("Field %s cannot be set", fieldName))
-	}
-
-	val := reflect.ValueOf(value)
-
-	// Check if the value is assignable to the field
-	if !val.Type().AssignableTo(field.Type()) {
-		panic(fmt.Sprintf("Cannot assign value of type %T to field %s of type %s", value, fieldName, field.Type()))
-	}
-
-	// Set the value
-	field.Set(val)
-	return u
-}
-
-func getInvalidUser() *userService.User {
-	return &userService.User{
+func getInvalidUser() *models.User {
+	return &models.User{
 		BirthDate: "",
 		LastName:  "DOE",
 		FirstName: "John",
@@ -176,8 +147,8 @@ func getInvalidUser() *userService.User {
 	}
 }
 
-func getValidUser() *userService.User {
-	return &userService.User{
+func getValidUser() *models.User {
+	return &models.User{
 		BirthDate: "11-07-1998",
 		LastName:  "DOE",
 		FirstName: "John",
