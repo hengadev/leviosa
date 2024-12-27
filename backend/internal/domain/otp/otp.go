@@ -5,30 +5,42 @@ import (
 	"encoding/binary"
 	"fmt"
 	"time"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 )
 
-const OTPDURATION = 15 * time.Minute
+const (
+	OTPDURATION    = 15 * time.Minute
+	MaxOTPAttempts = 3
+)
 
 type OTP struct {
-	Email     string
-	Value     string `json:"value" validate:"len=6"`
-	ExpiresAt time.Time
+	EmailHash string    `json:"email_hash"`
+	Code      string    `json:"code" validate:"len=6"`
+	Attempts  int       `json:"attempts"`
+	ExpiresAt time.Time `json:"-"`
+	Created   time.Time `json:"created"`
 }
 
-func NewOTP(email string) (*OTP, error) {
+func NewOTP(emailHash string) (*OTP, error) {
 	bytes := make([]byte, 4)
 	if _, err := rand.Read(bytes); err != nil {
 		return nil, fmt.Errorf("failed to generate secure random number: %w", err)
 	}
 	num := int(binary.BigEndian.Uint32(bytes) % 100000000)
 	return &OTP{
-		Email:     email,
-		Value:     fmt.Sprintf("%06d", num),
+		EmailHash: emailHash,
+		Code:      fmt.Sprintf("%06d", num),
+		Attempts:  1,
+		Created:   time.Now(),
 		ExpiresAt: time.Now().Add(OTPDURATION),
 	}, nil
 }
 
-// the function service that I need to implement:
-// - create otp
-// - validate otp
-// - invalidate otp (if the user is now signed in, I do not need someone to be able to use his otp for something else)
+func (o *OTP) IncreaseAttempt() error {
+	if o.Attempts+1 >= MaxOTPAttempts {
+		return domain.NewInvalidValueErr("max attempts reached for provided OTP")
+	}
+	o.Attempts++
+	return nil
+}
