@@ -1,4 +1,4 @@
-package userService
+package models
 
 type Role int8
 
@@ -6,13 +6,15 @@ const (
 	UNKNOWN Role = iota
 	BASIC
 	GUEST
+	FREELANCE
 	ADMINISTRATOR
 )
 
-var roles = [4]string{
+var roles = [5]string{
 	"unknown",
 	"basic",
 	"guest",
+	"freelance",
 	"admin",
 }
 
@@ -28,15 +30,11 @@ func ConvertToRole(role string) Role {
 		return GUEST
 	case "basic":
 		return BASIC
+	case "freelance":
+		return FREELANCE
 	default:
 		return UNKNOWN
 	}
-
-	// case "":
-	// 	return UNKNOWN
-	// default:
-	// 	return BASIC
-
 }
 
 // Function qui retourne si un role est superieur (ou egal a un autre role).

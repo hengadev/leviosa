@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 )
 
 const SessionID = "a36bde82-55ae-4fa9-9289-cb82bde68014"
@@ -15,7 +15,7 @@ const RandomSessionID = "3e3e6273-f118-4259-89a5-abb89cdd7492"
 var BaseSession = sessionService.Session{
 	ID:        SessionID,
 	UserID:    "user123",
-	Role:      userService.BASIC,
+	Role:      models.BASIC,
 	ExpiresAt: time.Now().Add(15 * time.Minute),
 }
 

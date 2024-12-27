@@ -1,10 +1,11 @@
-package userService
+package models_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
 func TestValidateEmail(t *testing.T) {
@@ -19,7 +20,7 @@ func TestValidateEmail(t *testing.T) {
 		{
 			email:   "awfawefawefawfawefawfwafawfghawjfkwupwfwr9i24r23rfdfwhfwefwaefefweawefwaefwaefawfawefwfawrfwefewafgwefwafawefwafawefawrfawfawefww",
 			wantErr: true,
-			name:    fmt.Sprintf("Cannot be other %d in lenght", emailMaxLength),
+			name:    fmt.Sprintf("Cannot be other %d in lenght", models.EmailMaxLength),
 		},
 		{email: "misstheatcharacter", wantErr: true, name: "Contain white space"},
 		{email: "@misstheatcharacter", wantErr: true, name: "Miss content before the @"},
@@ -32,7 +33,7 @@ func TestValidateEmail(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := ValidateEmail(tt.email)
+			got := models.ValidateEmail(tt.email)
 			assert.Equal(t, got != nil, tt.wantErr)
 		})
 	}

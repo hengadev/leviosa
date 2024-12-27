@@ -1,9 +1,9 @@
-package userService_test
+package models_test
 
 import (
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
@@ -23,7 +23,7 @@ func TestValidateTelephone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := userService.ValidateTelephone(tt.telephone)
+			got := models.ValidateTelephone(tt.telephone)
 			assert.Equal(t, got != nil, tt.wantErr)
 		})
 	}

@@ -1,4 +1,4 @@
-package userService
+package models
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
-const emailMaxLength = 100
+const EmailMaxLength = 100
 
 var (
 	invalidEmailChars = regexp.MustCompile(`[^a-zA-Z0-9+.@_~\-]`)
@@ -30,8 +30,8 @@ func ValidateEmail(email string) errsx.Map {
 	if strings.ContainsAny(email, `"'`) {
 		pbms.Set("quotes", "cannot contain quotes")
 	}
-	if rc := utf8.RuneCountInString(email); rc > emailMaxLength {
-		pbms.Set("max length", fmt.Sprintf("cannot be a over %v characters in length", emailMaxLength))
+	if rc := utf8.RuneCountInString(email); rc > EmailMaxLength {
+		pbms.Set("max length", fmt.Sprintf("cannot be a over %v characters in length", EmailMaxLength))
 	}
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
