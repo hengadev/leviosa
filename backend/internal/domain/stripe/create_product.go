@@ -1,43 +1,25 @@
 package stripeService
 
 import (
-	"fmt"
+	"context"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain"
 
 	"github.com/stripe/stripe-go/v79"
-	"github.com/stripe/stripe-go/v79/price"
 	"github.com/stripe/stripe-go/v79/product"
 )
 
-type PaymentProductInfo struct {
-	ID          string
-	Name        string
-	Description string
-	Price       int64
-}
-
-type Payment interface {
-	GetPaymentInfo() *PaymentProductInfo
-}
-
-func (s *Service) CreateProduct(v Payment) (string, error) {
-	p := v.GetPaymentInfo()
+// CreateProduct create a stripe product with a generated price using stripe's Product API.
+func (s *Service) CreateProduct(ctx context.Context, object Payment) (string, error) {
+	paymentInfo := object.GetPaymentInfo(ctx)
 	product_params := &stripe.ProductParams{
-		ID:          &p.ID,
-		Name:        stripe.String(p.Name),
-		Description: stripe.String(p.Description),
+		ID:          stripe.String(paymentInfo.ID),
+		Name:        stripe.String(paymentInfo.Name),
+		Description: stripe.String(paymentInfo.Description),
 	}
 	product, err := product.New(product_params)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create new product on server: %w ", err)
+		return "", domain.NewNotCreatedErr(err)
 	}
-	price_params := &stripe.PriceParams{
-		Currency:   stripe.String(string(stripe.CurrencyEUR)),
-		Product:    stripe.String(product.ID),
-		UnitAmount: stripe.Int64(p.Price),
-	}
-	price, err := price.New(price_params)
-	if err != nil {
-		return "", fmt.Errorf("Failed to create new price on server: %w ", err)
-	}
-	return price.ID, nil
+	return product.ID, nil
 }
