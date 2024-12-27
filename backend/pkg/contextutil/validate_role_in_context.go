@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 )
 
-func ValidateRoleInContext(ctx context.Context, expectedRole userService.Role) error {
-	role, ok := ctx.Value(RoleKey).(userService.Role)
+func ValidateRoleInContext(ctx context.Context, expectedRole models.Role) error {
+	role, ok := ctx.Value(RoleKey).(models.Role)
 	if !ok {
 		return fmt.Errorf("role not found in context")
 	}
