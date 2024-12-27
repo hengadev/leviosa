@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
 	"github.com/GaryHY/event-reservation-app/pkg/testutil"
@@ -19,7 +19,7 @@ func TestHandleOAuth(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
 
 	tests := []struct {
-		oauthUser          userService.OAuthUser
+		oauthUser          models.OAuthUser
 		provider           string
 		wantCookie         string
 		expectedStatusCode int

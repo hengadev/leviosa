@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
-func (s *Service) WelcomeUser(ctx context.Context, user *models.User) errsx.Map {
+func (s *Service) PendingUser(ctx context.Context, user *models.User) errsx.Map {
 	var errs errsx.Map
 	return errs
 }

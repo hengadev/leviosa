@@ -3,61 +3,170 @@ package userHandler
 import (
 	"context"
 	"errors"
-	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
-	// "time"
+	"time"
 
-	// "github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/internal/domain/session"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/security"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
+	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 func (a *AppInstance) HandleOAuth() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-
-		// get provider to have right OAuthUser type
-		provider := r.PathValue("provider")
-		if provider == "" {
-			var err error = fmt.Errorf("missing provider in request")
-			slog.ErrorContext(ctx, "oauth handling", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusBadRequest)
-			return
-		}
-		// decode user sent and validate it.
-		oauthUser := userService.DecodeOAuthUser(r, provider)
-		user, err := a.Repos.User.GetOAuthUser(ctx, oauthUser.GetEmail(), provider)
-		_ = user
-		// TODO: find right status to send back with this because I do not know
-		if errors.Is(err, rp.ErrNotFound) {
-			fmt.Println("this is a not found error")
-			user, err = a.Svcs.User.CreateOAuthAccount(ctx, oauthUser)
-			if err != nil {
-				slog.ErrorContext(ctx, "create oauth account", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-				return
-			}
-		}
+		ctx := r.Context()
+		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
-			slog.ErrorContext(ctx, "create oauth account", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusBadRequest)
+			slog.ErrorContext(ctx, "logger not found in context", "error", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// sessionID, err := h.Svcs.Session.CreateSession(ctx, user.ID, user.Role)
-		// if err != nil {
-		// 	slog.ErrorContext(ctx, "failed to create session", "error", err)
-		// 	http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-		// 	return
-		// }
-		// http.SetCookie(w, &http.Cookie{
-		// 	Name:     sessionService.SessionName,
-		// 	Value:    sessionID,
-		// 	Expires:  time.Now().Add(sessionService.SessionDuration),
-		// 	HttpOnly: true,
-		// })
+
+		var provider models.ProviderType
+		inputProvider := r.PathValue("provider")
+		if err = provider.Set(inputProvider); err != nil {
+			logger.ErrorContext(ctx, "invalid provider", "error", err)
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			return
+		}
+
+		user, err := a.decodeAndValidUser(ctx, w, r.Body, logger, provider)
+		if err != nil {
+			return
+		}
+		if err := a.handleUser(ctx, w, user, logger, provider); err != nil {
+			return
+		}
+		if err := a.handleSession(ctx, w, user.Email, logger); err != nil {
+			return
+		}
+
 		w.WriteHeader(http.StatusCreated)
 	})
+}
+
+func (a *AppInstance) decodeAndValidUser(ctx context.Context, w http.ResponseWriter, body io.ReadCloser, logger *slog.Logger, provider models.ProviderType) (*models.User, error) {
+	// put that into a decodeAndValid function
+	var oauthUser models.OAuthUser
+	var user *models.User
+	var err error
+	switch provider {
+	case models.Google:
+		oauthUser, err = serverutil.DecodeValid[models.GoogleUser](ctx, body)
+		user = oauthUser.ToUser()
+	case models.Apple:
+		oauthUser, err = serverutil.DecodeValid[models.AppleUser](ctx, body)
+		user = oauthUser.ToUser()
+	}
+	if err != nil {
+		switch {
+		case errors.Is(err, serverutil.ErrDecodeJSON):
+			logger.WarnContext(ctx, err.Error())
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		case errors.Is(err, serverutil.ErrValidStruct):
+			logger.WarnContext(ctx, "invalid struct")
+			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		default:
+			logger.WarnContext(ctx, "invalid decode valid")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusBadRequest)
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+func (a *AppInstance) handleUser(ctx context.Context, w http.ResponseWriter, user *models.User, logger *slog.Logger, provider models.ProviderType) error {
+	if err := a.Repos.User.HasOAuthUser(ctx, security.HashEmail(user.Email), provider); err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			if err := a.Svcs.User.CreateOAuthPendingUser(ctx, user, provider); err != nil {
+				switch {
+				case errors.Is(err, domain.ErrInvalidValue):
+					logger.WarnContext(ctx, "invalid value")
+					http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				case errors.Is(err, rp.ErrContext):
+					logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
+					http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				case errors.Is(err, domain.ErrNotCreated):
+					logger.WarnContext(ctx, "failed to create oauth user")
+					http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				case errors.Is(err, domain.ErrUnexpectedType):
+					logger.WarnContext(ctx, "unexpected errror adding oauth user")
+					http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				}
+				return err
+			}
+			if errs := a.Svcs.Mail.PendingUser(ctx, user); len(errs) > 0 {
+				logger.WarnContext(ctx, "sending mail to welcome new oauth pending user")
+				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				return errs
+			}
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database checking for oauth user existence query failed")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected errror checking for oauth user existence in pending_users table")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
+		return err
+	}
+	return nil
+}
+
+func (a *AppInstance) handleSession(ctx context.Context, w http.ResponseWriter, email string, logger *slog.Logger) error {
+	userID, role, err := a.Svcs.User.GetUserSessionData(ctx, email)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, "invalid value in getting oauth user session data")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrNotFound):
+			logger.WarnContext(ctx, "user session data (userID, role) not found in database")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database getting user session data query failed")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected error getting oauth user session data")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
+	}
+
+	sessionID, err := a.Svcs.Session.CreateSession(ctx, userID, role)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, "invalid value in session validation")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrMarshalJSON):
+			logger.WarnContext(ctx, "marshal session data for oauth user")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database creating session for oauth user query failed")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected error creating session for oauth user")
+			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionService.SessionName,
+		Value:    sessionID,
+		Expires:  time.Now().Add(sessionService.SessionDuration),
+		HttpOnly: true,
+	})
+	return nil
 }
