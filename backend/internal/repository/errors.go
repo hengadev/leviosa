@@ -17,7 +17,7 @@ var (
 )
 
 func NewValidationErr(err error, domainName string) error {
-	return fmt.Errorf("%s %w: %w", domainName, ErrContext, err)
+	return fmt.Errorf("%s %w: %w", domainName, ErrValidation, err)
 }
 
 func NewContextErr(err error) error {
@@ -25,7 +25,7 @@ func NewContextErr(err error) error {
 }
 
 func NewInternalErr(err error) error {
-	return fmt.Errorf("%w: %w", ErrNotFound, err)
+	return fmt.Errorf("%w: %w", ErrInternal, err)
 }
 
 func NewNotFoundErr(err error, domainName string) error {
