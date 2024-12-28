@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
     password TEXT,
 	createdat  DATETIME,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
     firstname TEXT NOT NULL,
 	gender TEXT NOT NULL CHECK (GENDER IN ("M", "F", "NB", "NP")),
 	telephone TEXT NOT NULL UNIQUE,
-    oauth_providers TEXT,
-    oauth_ids TEXT,
+    google_id TEXT,
+    apple_id TEXT,
     UNIQUE(lastname, firstname)
 );
 -- +goose StatementEnd

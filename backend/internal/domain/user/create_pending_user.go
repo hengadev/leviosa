@@ -22,7 +22,7 @@ func (s *Service) CreatePendingUser(ctx context.Context, email string) error {
 		case errors.Is(err, rp.ErrNotFound):
 			return domain.NewNotFoundErr(err)
 		case errors.Is(err, rp.ErrDatabase):
-			return domain.NewUnexpectTypeErr(err)
+			return domain.NewQueryFailedErr(err)
 		default:
 			return domain.NewUnexpectTypeErr(err)
 		}

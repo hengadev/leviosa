@@ -8,6 +8,7 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+
 	"github.com/redis/go-redis/v9"
 )
 

@@ -18,7 +18,7 @@ type OTP struct {
 	EmailHash string    `json:"email_hash"`
 	Code      string    `json:"code" validate:"len=6"`
 	Attempts  int       `json:"attempts"`
-	ExpiresAt time.Time `json:"-"`
+	ExpiresAt time.Time `json:"expires_at"`
 	Created   time.Time `json:"created"`
 }
 

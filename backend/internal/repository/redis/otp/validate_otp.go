@@ -3,16 +3,17 @@ package otpRepository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
-	otpService "github.com/GaryHY/event-reservation-app/internal/domain/otp"
+	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-// Helper function for validating OTP
+// ValidateOTP validates an OTP for a given email hash.
+// It checks if the OTP exists, ensures it is not expired, verifies it hasn't exceeded the maximum attempts (deleting it if so),
+// and removes the OTP if it is successfully validated.
 func (o *Repository) ValidateOTP(ctx context.Context, emailHash, providedOTP string) error {
-	key := fmt.Sprintf(otpKeyFormat, emailHash)
+	key := getOTPKey(emailHash)
 	otpData, err := o.getExistingOTP(ctx, key)
 	if err != nil {
 		return err
