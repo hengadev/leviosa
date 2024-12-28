@@ -43,6 +43,8 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 		{&user.City},
 		{&user.Address1},
 		{&user.Address2},
+		{&user.GoogleID},
+		{&user.AppleID},
 	}
 
 	for _, field := range fields {
