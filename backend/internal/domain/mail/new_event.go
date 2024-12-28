@@ -23,8 +23,8 @@ func (s *Service) NewEvent(users []*models.User, eventTime string) errsx.Map {
 		errs.Set("get working directory", err)
 	}
 
-	logoPath := filepath.Join(wd, "internal", "mail", "assets", "logo.jpg")
-	instaPath := filepath.Join(wd, "internal", "mail", "assets", "instagram.png")
+	logoPath := filepath.Join(wd, "internal", "domain", "mail", "assets", "logo.jpg")
+	instaPath := filepath.Join(wd, "internal", "domain", "mail", "assets", "instagram.png")
 
 	userSyntax := ToPlural(users, "user")
 	fmt.Printf("sending email to %d %s\n", len(users), userSyntax)
@@ -54,7 +54,7 @@ func (s *Service) NewEvent(users []*models.User, eventTime string) errsx.Map {
 					companyMail,
 					email,
 					"[Leviosa] Nouvel Évènement disponible",
-					"/internal/mail/templates/newEvent.html",
+					"/internal/domain/mail/templates/newEvent.html",
 					password,
 					templData,
 					map[string]string{

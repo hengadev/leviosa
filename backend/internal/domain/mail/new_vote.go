@@ -22,14 +22,14 @@ func (s *Service) NewVote(user *models.User, eventTime string) errsx.Map {
 	if err != nil {
 		errs.Set("get working directory", err)
 	}
-	logoPath := filepath.Join(wd, "internal", "mail", "assets", "logo.jpg")
-	instaPath := filepath.Join(wd, "internal", "mail", "assets", "instagram.png")
+	logoPath := filepath.Join(wd, "internal", "domain", "mail", "assets", "logo.jpg")
+	instaPath := filepath.Join(wd, "internal", "domain", "mail", "assets", "instagram.png")
 
 	if err := sendMail(
 		companyMail,
 		user.Email,
 		"[Leviosa] Nouveau votes disponibles",
-		"/internal/mail/newRegistry.html",
+		"/internal/domain/mail/newRegistry.html",
 		password,
 		templData,
 		map[string]string{
