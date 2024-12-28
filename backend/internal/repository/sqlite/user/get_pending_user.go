@@ -13,24 +13,34 @@ func (u *Repository) GetPendingUser(ctx context.Context, emailHash string) (*mod
 	var user models.User
 	query := `
         SELECT 
+            id,
             email,
             password,
             lastname,
             firstname,
             gender,
             birthdate,
-            telephone
+            telephone,
+            postal_code,
+            city,
+            address1,
+            address2
         FROM pending_users 
         WHERE email = ?;`
 
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(
+		&user.ID,
 		&user.EmailHash,
 		&user.PasswordHash,
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,
-		&user.BirthDate,
+		&user.EncryptedBirthDate,
 		&user.Telephone,
+		&user.PostalCode,
+		&user.City,
+		&user.Address1,
+		&user.Address2,
 	)
 	if err != nil {
 		switch {
