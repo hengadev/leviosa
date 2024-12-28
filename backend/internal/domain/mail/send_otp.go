@@ -38,8 +38,7 @@ func (s *Service) SendOTP(ctx context.Context, email, firstname string, otp *otp
 		password,
 		templData,
 		map[string]string{
-			logoPath: "logo",
-			// NOTE: got the link from the instagram logo : https://www.instagram.com/leviosa_care/
+			logoPath:  "logo",
 			instaPath: "instagram",
 		},
 	); err != nil {
