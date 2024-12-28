@@ -4,12 +4,24 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
+	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 )
 
 // DecryptUser decrypts sensitive fields of a user
 func (s *SecureUserData) DecryptUser(user *models.User) error {
+	if user.EncryptedBirthDate != "" {
+		decrypted, err := s.decrypt(user.EncryptedBirthDate)
+		if err != nil {
+			return err
+		}
+		parsedTime, err := time.Parse(time.RFC3339, decrypted)
+		if err != nil {
+			return err
+		}
+		user.BirthDate = parsedTime
+	}
 	// Decrypt email if present
 	if user.EncryptedEmail != "" {
 		decrypted, err := s.decrypt(user.EncryptedEmail)
@@ -22,7 +34,6 @@ func (s *SecureUserData) DecryptUser(user *models.User) error {
 	fields := []struct {
 		value *string
 	}{
-		{&user.BirthDate},
 		{&user.LastName},
 		{&user.FirstName},
 		{&user.Gender},
