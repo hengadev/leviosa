@@ -38,12 +38,12 @@ func (u *Repository) addGenericUser(ctx context.Context, user *models.User, prov
 		// Create new user
 		err = u.createNewUser(ctx, tx, user, provider, table)
 		if err != nil {
-			return fmt.Errorf("failed to create new user: %w", err)
+			return rp.NewNotCreatedErr(err, "new user")
 		}
 	} else {
 		// Link authentication method to existing user
 		if err := u.linkAuthMethod(ctx, tx, userID, user, provider, table); err != nil {
-			return fmt.Errorf("failed to link auth method: %w", err)
+			return rp.NewNotCreatedErr(err, "link auth methods")
 		}
 	}
 

@@ -19,7 +19,11 @@ func (u *Repository) GetUnverifiedUser(ctx context.Context, emailHash string) (*
             firstname,
             gender,
             birthdate,
-            telephone
+            telephone,
+            postal_code,
+            city,
+            address1,
+            address2
         FROM unverified_users 
         WHERE email = ?;`
 
@@ -29,8 +33,12 @@ func (u *Repository) GetUnverifiedUser(ctx context.Context, emailHash string) (*
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,
-		&user.BirthDate,
+		&user.EncryptedBirthDate,
 		&user.Telephone,
+		&user.PostalCode,
+		&user.City,
+		&user.Address1,
+		&user.Address2,
 	)
 	if err != nil {
 		switch {

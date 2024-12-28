@@ -7,7 +7,6 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/google/uuid"
 )
 
 func (s *Service) CreateUser(ctx context.Context, userResponse *models.UserPendingResponse) (*models.User, error) {
@@ -31,7 +30,6 @@ func (s *Service) CreateUser(ctx context.Context, userResponse *models.UserPendi
 	user.Role = role.String()
 	user.Create()
 	user.Login()
-	user.ID = uuid.NewString()
 
 	// TODO: check if there is an existing oauth user in it
 	// if there is a google_id just add the field that are not empty ?

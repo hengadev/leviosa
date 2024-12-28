@@ -8,9 +8,8 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user/security"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/google/uuid"
 )
-
-// the OTP has been validated
 
 func (s *Service) CreatePendingUser(ctx context.Context, email string) error {
 	emailHash := security.HashEmail(email)
@@ -27,6 +26,10 @@ func (s *Service) CreatePendingUser(ctx context.Context, email string) error {
 			return domain.NewUnexpectTypeErr(err)
 		}
 	}
+
+	// creating the userID here
+	user.ID = uuid.NewString()
+
 	// add user to pending_user table
 	if err = s.repo.AddPendingUser(ctx, user, models.Mail); err != nil {
 		switch {
