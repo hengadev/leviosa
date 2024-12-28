@@ -18,18 +18,26 @@ func (u *Repository) AddUnverifiedUser(ctx context.Context, user *models.User) e
             gender,
             birthdate,
             telephone,
-            created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW());`
+            created_at,
+            postal_code,
+            city,
+            address1,
+            address2
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, Datetime('now'),?,?,?,?);`
 	result, err := u.DB.ExecContext(
 		ctx,
 		query,
-		user.Email,
-		user.Password,
+		user.EmailHash,
+		user.PasswordHash,
 		user.LastName,
 		user.FirstName,
 		user.Gender,
-		user.BirthDate,
+		user.EncryptedBirthDate,
 		user.Telephone,
+		user.PostalCode,
+		user.City,
+		user.Address1,
+		user.Address2,
 	)
 	if err != nil {
 		switch {
@@ -50,4 +58,3 @@ func (u *Repository) AddUnverifiedUser(ctx context.Context, user *models.User) e
 	}
 	return nil
 }
-

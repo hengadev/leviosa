@@ -40,7 +40,13 @@ func (h *AppInstance) RegisterUserOTP() http.Handler {
 		if err := h.Svcs.User.CheckUser(ctx, user.Email); err != nil {
 			switch {
 			case errors.Is(err, domain.ErrNotFound):
-				break
+				emailHash, err := h.createUser(ctx, w, logger, &user)
+				if err != nil {
+					return
+				}
+				if err := h.generateAndSendOTP(ctx, w, logger, emailHash, user.Email, user.FirstName); err != nil {
+					return
+				}
 			case errors.Is(err, rp.ErrContext):
 				logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
 				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

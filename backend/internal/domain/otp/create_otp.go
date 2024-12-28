@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Service) CreateOTP(ctx context.Context, emailHash string) (*OTP, error) {
-	// get the existing otp and check for error
+	// get existing OTP
 	otpEncoded, err := s.Repo.GetOTP(ctx, emailHash)
 	if err != nil {
 		switch {
@@ -23,7 +23,7 @@ func (s *Service) CreateOTP(ctx context.Context, emailHash string) (*OTP, error)
 		case errors.Is(err, rp.ErrNotFound):
 			newOTP, err := NewOTP(emailHash)
 			if err != nil {
-				return nil, fmt.Errorf("create OTP instance: %w", err)
+				return nil, domain.NewNotCreatedErr(err)
 			}
 			otpData, err := json.Marshal(newOTP)
 			if err != nil {

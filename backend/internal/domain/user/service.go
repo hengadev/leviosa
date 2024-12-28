@@ -16,15 +16,3 @@ func New(repo ReadWriter, config *config.SecurityConfig) *Service {
 		security.NewSecureUserData(config),
 	}
 }
-
-// NOTE: the old API
-//	type Service struct {
-//		repo   ReadWriter
-//		config *security.SecureUserData
-//	}
-// func New(repo ReadWriter, config *config.SecurityConfig) *Service {
-// 	return &Service{
-// 		repo:   repo,
-// 		config: security.NewSecureUserData(config),
-// 	}
-// }
