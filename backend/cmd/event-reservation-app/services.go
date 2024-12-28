@@ -8,6 +8,7 @@ import (
 	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
+	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
 	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/product"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
@@ -19,6 +20,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/internal/server/app"
 
 	// repositories
+	"github.com/GaryHY/event-reservation-app/internal/repository/redis/otp"
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
 	"github.com/GaryHY/event-reservation-app/internal/repository/redis/throttler"
 	"github.com/GaryHY/event-reservation-app/internal/repository/s3"
@@ -76,6 +78,9 @@ func makeServices(
 	throttlerRepo := throttlerRepository.New(ctx, redisdb)
 	throttlerSvc := throttlerService.New(throttlerRepo)
 
+	otpRepo := otpRepository.New(ctx, redisdb)
+	otpSvc := otpService.New(otpRepo)
+
 	// services
 	appSvcs = app.Services{
 		User:      userSvc,
@@ -88,6 +93,7 @@ func makeServices(
 		Mail:      mailSvc,
 		Stripe:    stripeSvc,
 		Product:   productSvc,
+		OTP:       otpSvc,
 	}
 	// repos
 	appRepos = app.Repos{
@@ -99,6 +105,7 @@ func makeServices(
 		Session:   sessionRepo,
 		Throttler: throttlerRepo,
 		Product:   productRepo,
+		OTP:       otpRepo,
 	}
 	return appSvcs, appRepos, nil
 }

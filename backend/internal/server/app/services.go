@@ -23,7 +23,7 @@ type Services struct {
 	Register  *register.Service
 	Photo     *photo.Service
 	Throttler *throttlerService.Service
-	Mail      *mail.Service
 	OTP       *otpService.Service
+	Mail      *mailService.Service
 	Product   *productService.Service
 }
