@@ -16,7 +16,7 @@ func (a *AppInstance) GetNextVotes() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// specify time info for fetching
@@ -26,13 +26,13 @@ func (a *AppInstance) GetNextVotes() http.Handler {
 		votes, err := a.Repos.Vote.GetNextVotes(ctx, month, year)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get the votes from database", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// encode result to user
 		if err := serverutil.Encode(w, http.StatusFound, votes); err != nil {
 			logger.ErrorContext(ctx, "failed to encode the votes", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

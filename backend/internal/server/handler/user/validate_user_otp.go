@@ -2,6 +2,7 @@ package userHandler
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -20,21 +21,19 @@ func (h *AppInstance) ValidateUserOTP() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		// TODO:
-		// - get otp and email from userOTP
 		userOTP, err := serverutil.DecodeValid[models.UserOTP](r.Context(), r.Body)
 		if err != nil {
 			switch {
 			case errors.Is(err, serverutil.ErrDecodeJSON):
 				logger.WarnContext(ctx, "decode user", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 				return
 			default:
 				logger.WarnContext(ctx, "invalid sign up user", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -46,19 +45,19 @@ func (h *AppInstance) ValidateUserOTP() http.Handler {
 			switch {
 			case errors.Is(err, domain.ErrNotFound):
 				logger.WarnContext(ctx, "provided OTP not found in database")
-				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+				serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			case errors.Is(err, rp.ErrContext):
 				logger.WarnContext(ctx, "context error, deadline or timeout while adding unverified user")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrQueryFailed):
 				logger.WarnContext(ctx, "database compare OTPs failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrInvalidValue):
 				logger.WarnContext(ctx, "invalid OTP provided")
-				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+				serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			case errors.Is(err, domain.ErrUnexpectedType):
 				logger.WarnContext(ctx, "unexpected error while validation OTP sent")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			}
 		}
 
@@ -67,19 +66,19 @@ func (h *AppInstance) ValidateUserOTP() http.Handler {
 			switch {
 			case errors.Is(err, rp.ErrContext):
 				logger.WarnContext(ctx, "context error, deadline or timeout while adding pending user")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrNotFound):
 				logger.WarnContext(ctx, "user not found in unverified_users table")
-				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+				serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			case errors.Is(err, domain.ErrUnexpectedType):
 				logger.WarnContext(ctx, "unexpected error while adding user to pending_user table")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrNotCreated):
 				logger.WarnContext(ctx, "database creating user to pending_user table failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrQueryFailed):
 				logger.WarnContext(ctx, "database adding user to pending_user table failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			}
 		}
 		w.WriteHeader(http.StatusCreated)

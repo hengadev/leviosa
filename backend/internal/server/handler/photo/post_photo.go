@@ -17,7 +17,7 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -25,14 +25,14 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		file, fileheader, err := r.FormFile("photo")
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get the photo information from form", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// post file to bucket
 		url, err := a.Svcs.Photo.PostFile(ctx, file, fileheader.Filename, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to post file", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// TODO: see if I can send the url without making an object.
@@ -43,7 +43,7 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		// if err := serverutil.Encode(w, http.StatusSeeOther, Response{URL: url}); err != nil {
 		if err := serverutil.Encode(w, http.StatusSeeOther, url); err != nil {
 			logger.ErrorContext(ctx, "failed to send url back to client", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

@@ -22,18 +22,11 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
 			noAuthEndpoints := []string{
-				serverutil.SIGNINENDPOINT,
-				serverutil.SIGNUPENDPOINT,
-				"basic",
 				"hello",
 
-				"first-step",
-
-				"login",
-				"test-login",
-				"logout",
-				"register",
-				"login/callback",
+				"user/register",
+				"user/validate-otp",
+				"user/approve-user",
 
 				"oauth/google/user",
 			}
@@ -55,7 +48,7 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
 			if !ok {
-				http.Error(w, "logger not found in context", http.StatusInternalServerError)
+				serverutil.WriteResponse(w, "logger not found in context", http.StatusInternalServerError)
 				return
 			}
 
@@ -64,20 +57,20 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
 				logger.ErrorContext(ctx, "failed to get sessionID from the request", "error", err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// get session object from session repo
 			session, err := sessionGetter(ctx, sessionID)
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// validate session
 			if err := session.Valid(ctx, expectedRole); err != nil {
 				logger.ErrorContext(ctx, "failed to validate session", "error", err)
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				serverutil.WriteResponse(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 

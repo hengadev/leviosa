@@ -16,7 +16,7 @@ func (a *AppInstance) ShowAllPhotos() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -29,7 +29,7 @@ func (a *AppInstance) ShowAllPhotos() http.Handler {
 		// send the object to the client
 		if err := serverutil.Encode(w, http.StatusFound, objects); err != nil {
 			logger.ErrorContext(ctx, "failed to send photos back to client", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

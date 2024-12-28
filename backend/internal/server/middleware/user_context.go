@@ -4,9 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionService.Session, error)
@@ -21,20 +23,37 @@ type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionServ
 func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx, cancel := context.WithCancel(r.Context())
-			defer cancel()
+			ctx := r.Context()
 
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
 			if !ok {
-				http.Error(w, "logger not found in context", http.StatusInternalServerError)
+				slog.ErrorContext(ctx, "logger not found in context")
+				serverutil.WriteResponse(w, "logger not found in context", http.StatusInternalServerError)
 				return
+			}
+
+			// NOTE: that is just for dev mode
+			exceptURL := []string{
+				"hello",
+				"user/register",
+				"user/validate-otp",
+				"user/approve-user",
+				"oauth/google/user",
+			}
+			var url string
+			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
+			for _, endpoint := range exceptURL {
+				if url == endpoint {
+					next.ServeHTTP(w, r)
+					return
+				}
 			}
 
 			// get session ID from request
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
 				logger.ErrorContext(ctx, "get sessionID from request header", "error", err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -42,7 +61,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 			session, err := sessionGetter(ctx, sessionID)
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 

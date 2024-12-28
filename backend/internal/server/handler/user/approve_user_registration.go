@@ -17,12 +17,12 @@ func (h *AppInstance) ApproveUserRegistration() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 			logger.ErrorContext(ctx, "get role from request", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// TODO:
@@ -34,11 +34,11 @@ func (h *AppInstance) ApproveUserRegistration() http.Handler {
 			switch {
 			case errors.Is(err, serverutil.ErrDecodeJSON):
 				logger.WarnContext(ctx, "failed to decode user", "error", err)
-				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+				serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 				return
 			default:
 				logger.WarnContext(ctx, "validate user")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -47,14 +47,14 @@ func (h *AppInstance) ApproveUserRegistration() http.Handler {
 			switch {
 			default:
 				logger.WarnContext(ctx, "failed to create account", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 				return
 			}
 		}
 		// send email to user to tell them that their account have been approved
 		if errs := h.Svcs.Mail.WelcomeUser(ctx, user); len(errs) > 0 {
 			logger.WarnContext(ctx, "failed to send welcome email to new added user", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 
 		}

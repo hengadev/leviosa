@@ -17,14 +17,14 @@ func (a *AppInstance) UpdateUser() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			logger.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		userID, ok := ctx.Value(contextutil.UserIDKey).(string)
 		if !ok {
 			logger.ErrorContext(ctx, "user ID not found in context")
-			http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -32,13 +32,13 @@ func (a *AppInstance) UpdateUser() http.Handler {
 		user, err := serverutil.Decode[models.User](r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to decode user", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// modify user
 		if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
 			logger.ErrorContext(ctx, "failed to modify the user", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

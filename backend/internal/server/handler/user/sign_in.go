@@ -22,7 +22,7 @@ func (a *AppInstance) Signin() http.Handler {
 		ctx := r.Context()
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -54,11 +54,11 @@ func (a *AppInstance) decodeAndValidateUserSignIn(ctx context.Context, w http.Re
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, err.Error())
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return nil, err
 		default:
 			logger.WarnContext(ctx, "invalid user credentials", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return nil, err
 		}
 	}
@@ -69,7 +69,7 @@ func (h *AppInstance) checkThrottling(ctx context.Context, w http.ResponseWriter
 	isLocked, err := h.Repos.Throttler.IsLocked(ctx, email)
 	if isLocked != nil {
 		logger.WarnContext(ctx, "user locked, too many attempts")
-		http.Error(w, errsrv.NewGetErr("throttler locking status", err), http.StatusTooManyRequests)
+		serverutil.WriteResponse(w, errsrv.NewGetErr("throttler locking status", err), http.StatusTooManyRequests)
 		return fmt.Errorf("user locked")
 	}
 	switch {
@@ -77,11 +77,11 @@ func (h *AppInstance) checkThrottling(ctx context.Context, w http.ResponseWriter
 		logger.DebugContext(ctx, "first sign in attempt", slog.String("user", email))
 	case errors.Is(err, rp.ErrDatabase):
 		logger.ErrorContext(ctx, "failed database")
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	default:
 		logger.WarnContext(ctx, "unhandled error type", slog.String("error", err.Error()))
-		http.Error(w, "unexpected error occurred", http.StatusInternalServerError)
+		serverutil.WriteResponse(w, "unexpected error occurred", http.StatusInternalServerError)
 		return err
 	}
 	return nil
@@ -92,20 +92,20 @@ func (a *AppInstance) validateUserUserSignIn(ctx context.Context, w http.Respons
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
 		logger.WarnContext(ctx, "invalid email", "error", err)
-		http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 		return err
 	case errors.Is(err, domain.ErrQueryFailed):
 		logger.ErrorContext(ctx, "database error", "error", err)
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, domain.ErrUnexpectedType):
 		logger.WarnContext(ctx, "unhandled error type", slog.String("error", err.Error()))
-		http.Error(w, "unexpected error occurred", http.StatusInternalServerError)
+		serverutil.WriteResponse(w, "unexpected error occurred", http.StatusInternalServerError)
 		return err
 	case err != nil:
 		attemptErr := a.Svcs.Throttler.RegisterAttempt(ctx, input.Email)
 		logger.WarnContext(ctx, "invalid password", "error", errors.Join(err, attemptErr))
-		http.Error(w, errsrv.NewBadRequestErr(errors.Join(err, attemptErr)), http.StatusBadRequest)
+		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(errors.Join(err, attemptErr)), http.StatusBadRequest)
 		return err
 	}
 	return nil
@@ -116,31 +116,31 @@ func (a *AppInstance) createAndSetSession(ctx context.Context, w http.ResponseWr
 	switch {
 	case errors.Is(err, domain.ErrNotFound):
 		logger.WarnContext(ctx, "invalid email", "error", err)
-		http.Error(w, errsrv.NewGetErr("user session data", err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, errsrv.NewGetErr("user session data", err), http.StatusBadRequest)
 		return err
 	case errors.Is(err, domain.ErrQueryFailed):
 		logger.ErrorContext(ctx, "database error", "error", err)
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, domain.ErrUnexpectedType):
 		logger.WarnContext(ctx, "unhandled error type", slog.String("error", err.Error()))
-		http.Error(w, fmt.Sprintf("unexpected error occurred: %s", err.Error()), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, fmt.Sprintf("unexpected error occurred: %s", err.Error()), http.StatusInternalServerError)
 		return err
 	case err != nil:
 		attemptErr := a.Svcs.Throttler.RegisterAttempt(ctx, email)
 		logger.WarnContext(ctx, "get userID and role with email", "error", errors.Join(err, attemptErr))
-		http.Error(w, errsrv.NewBadRequestErr(errors.Join(err, attemptErr)), http.StatusBadRequest)
+		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(errors.Join(err, attemptErr)), http.StatusBadRequest)
 		return err
 	}
 	sessionID, err := a.Svcs.Session.CreateSession(ctx, userID, role)
 	switch {
 	case errors.Is(err, domain.ErrQueryFailed):
 		logger.ErrorContext(ctx, "database error", "error", err)
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 		logger.WarnContext(ctx, err.Error())
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, domain.ErrUnexpectedType):
 	}
@@ -148,18 +148,18 @@ func (a *AppInstance) createAndSetSession(ctx context.Context, w http.ResponseWr
 	switch {
 	case errors.Is(err, domain.ErrUnmarshalJSON):
 		logger.WarnContext(ctx, err.Error())
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, domain.ErrNotFound):
 		logger.WarnContext(ctx, err.Error())
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return err
 	case errors.Is(err, domain.ErrQueryFailed):
 		logger.ErrorContext(ctx, "database error", "error", err)
-		http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 	case errors.Is(err, domain.ErrAccountLocked):
 		logger.WarnContext(ctx, "user locker, too many attempts")
-		http.Error(w, errsrv.NewGetErr("throttler locking status", err), http.StatusTooManyRequests)
+		serverutil.WriteResponse(w, errsrv.NewGetErr("throttler locking status", err), http.StatusTooManyRequests)
 	}
 
 	http.SetCookie(w, &http.Cookie{

@@ -3,6 +3,7 @@ package userHandler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -20,7 +21,7 @@ func (h *AppInstance) RegisterUserOTP() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		user, err := serverutil.DecodeValid[models.UserSignUp](r.Context(), r.Body)
@@ -28,10 +29,10 @@ func (h *AppInstance) RegisterUserOTP() http.Handler {
 			switch {
 			case errors.Is(err, serverutil.ErrDecodeJSON):
 				logger.WarnContext(ctx, "decode user", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			default:
 				logger.WarnContext(ctx, "invalid sign up user", "error", err)
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			}
 			return
 		}
@@ -42,44 +43,44 @@ func (h *AppInstance) RegisterUserOTP() http.Handler {
 				break
 			case errors.Is(err, rp.ErrContext):
 				logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrQueryFailed):
 				logger.WarnContext(ctx, "database checking for user existence query failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			case errors.Is(err, domain.ErrUnexpectedType):
 				logger.WarnContext(ctx, "unexpted errror checking for user existence")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			}
-			return
-		}
-		emailHash, err := h.Svcs.User.CreateUnverifiedUser(ctx, &user)
-		if err != nil {
-			switch {
-			case errors.Is(err, domain.ErrQueryFailed):
-				logger.WarnContext(ctx, "database adding unverified user query failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			case errors.Is(err, domain.ErrNotEncrypted):
-				logger.WarnContext(ctx, "fail to encrypt unverified user")
-				http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			case errors.Is(err, domain.ErrNotCreated):
-				logger.WarnContext(ctx, "database adding unverified user query failed")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			case errors.Is(err, rp.ErrContext):
-				logger.WarnContext(ctx, "context error, deadline or timeout while adding unverified user")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			case errors.Is(err, domain.ErrUnexpectedType):
-				logger.WarnContext(ctx, "unexpected errror adding unverified user")
-				http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			}
-			return
-		}
-
-		if err := h.generateAndSendOTP(ctx, w, logger, emailHash, user.Email); err != nil {
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 	})
+}
+
+func (h *AppInstance) createUser(ctx context.Context, w http.ResponseWriter, logger *slog.Logger, user *models.UserSignUp) (string, error) {
+	emailHash, err := h.Svcs.User.CreateUnverifiedUser(ctx, user)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database adding unverified user query failed")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrNotEncrypted):
+			logger.WarnContext(ctx, "fail to encrypt unverified user")
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		case errors.Is(err, domain.ErrNotCreated):
+			logger.WarnContext(ctx, "database adding unverified user query failed")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, "context error, deadline or timeout while adding unverified user")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected errror adding unverified user")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
+		return "", err
+	}
+	return emailHash, nil
 }
 
 // TODO: do the error handling on that
@@ -89,6 +90,7 @@ func (h *AppInstance) generateAndSendOTP(
 	logger *slog.Logger,
 	emailHash string,
 	userEmail string,
+	firstname string,
 ) error {
 	// generate OTP
 	otp, err := h.Svcs.OTP.CreateOTP(ctx, emailHash)
@@ -96,23 +98,27 @@ func (h *AppInstance) generateAndSendOTP(
 		switch {
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database generate OTP failed")
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrMarshalJSON):
 			logger.WarnContext(ctx, "marshal JSON OTP failed")
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error, deadline or timeout while adding unverified user")
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrRateLimit):
+			logger.WarnContext(ctx, "too many requests")
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusTooManyRequests)
 		default:
-			logger.WarnContext(ctx, "generate OTP")
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			logger.WarnContext(ctx, "failed to generate OTP")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return err
 	}
+	fmt.Printf("the OTP that I need to send back: %#+v\n", otp)
 	// send email with OTP for user
-	if errs := h.Svcs.Mail.SendOTP(ctx, userEmail, otp); len(errs) > 0 {
-		logger.WarnContext(ctx, "send mail with OTP to specified user")
-		http.Error(w, errsrv.NewInternalErr(errs), http.StatusInternalServerError)
+	if errs := h.Svcs.Mail.SendOTP(ctx, userEmail, firstname, otp); len(errs) > 0 {
+		logger.WarnContext(ctx, "failed to send mail with OTP to specified user")
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(errs), http.StatusInternalServerError)
 		return err
 	}
 	return nil

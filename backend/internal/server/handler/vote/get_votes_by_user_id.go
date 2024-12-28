@@ -19,14 +19,14 @@ func (a *AppInstance) GetVotesByUserID() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		userID, ok := ctx.Value(contextutil.UserIDKey).(string)
 		if !ok {
 			logger.ErrorContext(ctx, "user ID not found in context")
-			http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -35,20 +35,20 @@ func (a *AppInstance) GetVotesByUserID() http.Handler {
 		if month == "" || year == "" {
 			err := fmt.Errorf("month or year are not well formatted")
 			logger.ErrorContext(ctx, "failed to parse month or year", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// get votes
 		votes, err := a.Svcs.Vote.GetVotesByUserID(ctx, month, year, userID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get the votes from database", "error", err)
-			http.Error(w, fmt.Sprintf("Failed to get the data from the database - %s", err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, fmt.Sprintf("Failed to get the data from the database - %s", err), http.StatusInternalServerError)
 			return
 		}
 		// encode result to user
 		if err := serverutil.Encode(w, http.StatusFound, votes); err != nil {
 			logger.ErrorContext(ctx, "failed to encode the votes", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

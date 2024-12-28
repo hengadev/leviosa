@@ -16,24 +16,24 @@ func (a *AppInstance) ModifyEvent() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		event, err := serverutil.Decode[eventService.Event](r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to decode the event", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		err = a.Svcs.Event.ModifyEvent(ctx, &event)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to update the event", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		if err = serverutil.Encode(w, http.StatusInternalServerError, event.ID); err != nil {
 			logger.ErrorContext(ctx, "failed to send the event ID", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

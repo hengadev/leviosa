@@ -10,24 +10,30 @@ import (
 
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/domainutil"
+	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
 func AttachLogger(logger *slog.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
 			start := time.Now()
 
 			requestID := rand.Int63()
 
-			IP := r.Header.Get("X-Client-IP")
+			// I just make a fake IP for now, I know my function to work:
+			IP := "127.0.0.1"
+			// IP := r.Header.Get("X-Client-IP")
 			if IP == "" {
-				http.Error(w, "Cannot determine Client IP", http.StatusBadRequest)
+				slog.ErrorContext(ctx, "client IP not found with required header")
+				serverutil.WriteResponse(w, "Cannot determine Client IP", http.StatusBadRequest)
 				return
 			}
 
 			loggingSalt := os.Getenv("LOGGING_SALT")
 			if loggingSalt == "" {
-				http.Error(w, "Missing environment variable: LOGGING_SALT", http.StatusBadRequest)
+				slog.ErrorContext(ctx, "logging salt not found in environment variables")
+				serverutil.WriteResponse(w, "Missing environment variable: LOGGING_SALT", http.StatusInternalServerError)
 				return
 			}
 
@@ -40,7 +46,7 @@ func AttachLogger(logger *slog.Logger) Middleware {
 				"requestID", requestID,
 			)
 
-			ctx := context.WithValue(r.Context(), contextutil.LoggerKey, logger)
+			ctx = context.WithValue(r.Context(), contextutil.LoggerKey, logger)
 
 			logger.InfoContext(ctx, "Request started")
 

@@ -15,7 +15,7 @@ func (a *AppInstance) DeleteEvent() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// get the event id from the url path
@@ -24,13 +24,13 @@ func (a *AppInstance) DeleteEvent() http.Handler {
 		err = a.Svcs.Event.RemoveEvent(ctx, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to delete the event", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// send the event id to the user to specify that the event is deleted properly.
 		if err = serverutil.Encode(w, http.StatusInternalServerError, eventID); err != nil {
 			logger.ErrorContext(ctx, "failed to send the event ID", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

@@ -28,7 +28,7 @@ func NewHandler(appCtx *app.App) *AppInstance {
 // 		votes, err := serverutil.Decode[*types.VoteSent](r)
 // 		if err != nil {
 // 			slog.ErrorContext(ctx, "failed to decode the votes from request body", "error", err)
-// 			http.Error(w, handler.NewInternalErr(err), http.StatusBadRequest)
+// 			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusBadRequest)
 // 			return
 // 		}
 //
