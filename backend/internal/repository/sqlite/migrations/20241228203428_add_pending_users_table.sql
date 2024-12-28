@@ -1,7 +1,8 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS pending_users (
-    email TEXT PRIMARY KEY,
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
     password TEXT,
 	birthdate  TEXT NOT NULL,
     lastname TEXT NOT NULL,
@@ -12,7 +13,9 @@ CREATE TABLE IF NOT EXISTS pending_users (
     postal_code TEXT NOT NULL UNIQUE, 
     city TEXT NOT NULL UNIQUE, 
     address1 TEXT NOT NULL UNIQUE, 
-    address2 TEXT NOT NULL UNIQUE 
+    address2 TEXT NOT NULL UNIQUE,
+    google_id TEXT UNIQUE,
+    apple_id TEXT UNIQUE 
 );
 -- +goose StatementEnd
 
