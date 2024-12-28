@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"time"
 
 	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 	"github.com/google/uuid"
@@ -51,10 +52,11 @@ func (a AppleUser) ToUser() *User {
 
 // ToUser create a new user from a GoogleUser
 func (g GoogleUser) ToUser() *User {
+	birthdate, _ := time.Parse("2006-01-02", g.Birthday)
 	return &User{
 		ID:         uuid.NewString(),
 		Email:      g.Email,
-		BirthDate:  g.Birthday,
+		BirthDate:  birthdate,
 		LastName:   g.FamilyName,
 		FirstName:  g.GivenName,
 		Gender:     g.Gender,

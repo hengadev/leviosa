@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain"
 	"github.com/GaryHY/event-reservation-app/internal/domain/user"
@@ -139,7 +140,7 @@ func TestUpdateUser(t *testing.T) {
 
 func getInvalidUser() *models.User {
 	return &models.User{
-		BirthDate: "",
+		BirthDate: time.Time{},
 		LastName:  "DOE",
 		FirstName: "John",
 		Gender:    "M",
@@ -148,8 +149,9 @@ func getInvalidUser() *models.User {
 }
 
 func getValidUser() *models.User {
+	birthdate, _ := time.Parse("2006-01-02", "11-07-1998")
 	return &models.User{
-		BirthDate: "11-07-1998",
+		BirthDate: birthdate,
 		LastName:  "DOE",
 		FirstName: "John",
 		Gender:    "M",

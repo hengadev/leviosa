@@ -3,7 +3,7 @@ package models
 func (u User) ToUserResponse() UserResponse {
 	return UserResponse{
 		Role:      u.Role,
-		BirthDate: u.BirthDate,
+		BirthDate: u.BirthDate.String(),
 		LastName:  u.LastName,
 		FirstName: u.FirstName,
 		Gender:    u.Gender,

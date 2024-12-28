@@ -9,17 +9,17 @@ import (
 )
 
 type UserSignUp struct {
-	Email      string `json:"email" validate:"require"` // Stored hash for searching
-	Password   string `json:"password" validate:"required,min=6"`
-	BirthDate  string `json:"birthdate" validate:"require"`
-	LastName   string `json:"lastname" validate:"required"`
-	FirstName  string `json:"firstname" validate:"required"`
-	Gender     string `json:"gender" validate:"required"`
-	Telephone  string `json:"telephone" validate:"required"`
-	PostalCode string `json:"postal_code" validate:"required"`
-	City       string `json:"city" validate:"required"`
-	Address1   string `json:"address1" validate:"required"`
-	Address2   string `json:"address2" validate:"required"`
+	Email      string    `json:"email" validate:"require"` // Stored hash for searching
+	Password   string    `json:"password" validate:"required,min=6"`
+	BirthDate  time.Time `json:"birthdate" validate:"require"`
+	LastName   string    `json:"lastname" validate:"required"`
+	FirstName  string    `json:"firstname" validate:"required"`
+	Gender     string    `json:"gender" validate:"required"`
+	Telephone  string    `json:"telephone" validate:"required"`
+	PostalCode string    `json:"postal_code" validate:"required"`
+	City       string    `json:"city" validate:"required"`
+	Address1   string    `json:"address1" validate:"required"`
+	Address2   string    `json:"address2" validate:"required"`
 }
 
 // TODO: complete that function with all the remaining fields
@@ -41,11 +41,11 @@ func (u UserSignUp) Valid(ctx context.Context) errsx.Map {
 				pbms.Set("telephone", "telephne number should have at leat 10 digits")
 			}
 		case "Birthday":
-			parsedDate, err := time.Parse(BirthdayLayout, u.BirthDate)
-			nonValidDate, _ := time.Parse(BirthdayLayout, "01-01-01")
-			if err != nil && parsedDate != nonValidDate {
-				pbms.Set("birthday", err)
-			}
+			// parsedDate, err := time.Parse(BirthdayLayout, u.BirthDate)
+			// nonValidDate, _ := time.Parse(BirthdayLayout, "01-01-01")
+			// if err != nil && parsedDate != nonValidDate {
+			// 	pbms.Set("birthday", err)
+			// }
 		default:
 			continue
 		}

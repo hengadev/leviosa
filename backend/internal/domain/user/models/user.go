@@ -10,27 +10,28 @@ import (
 
 // TODO: add the picture in this
 type User struct {
-	ID             string    `json:"-"`
-	Email          string    `json:"-"`
-	EmailHash      string    `json:"-"`
-	EncryptedEmail string    `json:"-"`
-	Password       string    `json:"-"`
-	PasswordHash   string    `json:"-"`
-	Picture        string    `json:"-"`
-	CreatedAt      time.Time `json:"-"`
-	LoggedInAt     time.Time `json:"-"`
-	Role           string    `json:"-"`
-	BirthDate      string    `json:"-"`
-	LastName       string    `json:"-"`
-	FirstName      string    `json:"-"`
-	Gender         string    `json:"-"`
-	Telephone      string    `json:"-"`
-	PostalCode     string    `json:"-"`
-	City           string    `json:"-"`
-	Address1       string    `json:"-"`
-	Address2       string    `json:"-"`
-	GoogleID       string    `json:"-"`
-	AppleID        string    `json:"-"`
+	ID                 string    `json:"-"`
+	Email              string    `json:"-"`
+	EmailHash          string    `json:"-"`
+	EncryptedEmail     string    `json:"-"`
+	Password           string    `json:"-"`
+	PasswordHash       string    `json:"-"`
+	Picture            string    `json:"-"`
+	CreatedAt          time.Time `json:"-"`
+	LoggedInAt         time.Time `json:"-"`
+	Role               string    `json:"-"`
+	BirthDate          time.Time `json:"-"`
+	EncryptedBirthDate string    `json:"-"`
+	LastName           string    `json:"-"`
+	FirstName          string    `json:"-"`
+	Gender             string    `json:"-"`
+	Telephone          string    `json:"-"`
+	PostalCode         string    `json:"-"`
+	City               string    `json:"-"`
+	Address1           string    `json:"-"`
+	Address2           string    `json:"-"`
+	GoogleID           string    `json:"-"`
+	AppleID            string    `json:"-"`
 }
 
 func (a *User) Create() {
