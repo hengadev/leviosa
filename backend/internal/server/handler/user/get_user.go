@@ -10,8 +10,10 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (a *AppInstance) GetUser() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// func (a *AppInstance) GetUser() http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+func (a *AppInstance) GetUser(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		logger, err := contextutil.GetLoggerFromContext(ctx)

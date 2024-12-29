@@ -18,8 +18,8 @@ var ipLimiters = map[string]*rate.Limiter{}
 
 // PerIPRateLimit rates limit an endpoint at the rate of r attempt per ID per second. Client can allow up to b attempts at most.
 func PerIPRateLimit(lim, burst int) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(next Handlerfunc) Handlerfunc {
+		return func(w http.ResponseWriter, r *http.Request) {
 			// TODO: need a system to remove keys after a certain time
 			ctx := r.Context()
 			logger, err := contextutil.GetLoggerFromContext(ctx)
@@ -63,8 +63,8 @@ func PerIPRateLimit(lim, burst int) Middleware {
 				return
 			}
 
-			next.ServeHTTP(w, r)
-		})
+			next(w, r)
+		}
 	}
 }
 

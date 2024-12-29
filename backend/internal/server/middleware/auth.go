@@ -18,8 +18,8 @@ const UserIDKey = ContextKey(23)
 // Function middleware to authenticate and authorize users.
 // func Auth(s sessionService.Reader) Middleware {
 func Auth(sessionGetter sessionGetterFunc) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(next Handlerfunc) Handlerfunc {
+		return func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
 			noAuthEndpoints := []string{
 				"hello",
@@ -33,13 +33,13 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 			var url string
 			if r.URL.Path == "/favicon.ico" {
 				fmt.Println("here in the favicon thing brother.")
-				next.ServeHTTP(w, r)
+				next(w, r)
 				return
 			} else {
 				url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
 				for _, endpoint := range noAuthEndpoints {
 					if url == endpoint {
-						next.ServeHTTP(w, r)
+						next(w, r)
 						return
 					}
 				}
@@ -74,8 +74,8 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 				return
 			}
 
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+			next(w, r.WithContext(ctx))
+		}
 	}
 }
 

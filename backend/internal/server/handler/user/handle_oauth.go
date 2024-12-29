@@ -18,37 +18,35 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (a *AppInstance) HandleOAuth() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger, err := contextutil.GetLoggerFromContext(ctx)
-		if err != nil {
-			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+func (a *AppInstance) HandleOAuth(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "logger not found in context", "error", err)
+		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-		var provider models.ProviderType
-		inputProvider := r.PathValue("provider")
-		if err = provider.Set(inputProvider); err != nil {
-			logger.ErrorContext(ctx, "invalid provider", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			return
-		}
+	var provider models.ProviderType
+	inputProvider := r.PathValue("provider")
+	if err = provider.Set(inputProvider); err != nil {
+		logger.ErrorContext(ctx, "invalid provider", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		return
+	}
 
-		user, err := a.decodeAndValidUser(ctx, w, r.Body, logger, provider)
-		if err != nil {
-			return
-		}
-		if err := a.handleUser(ctx, w, user, logger, provider); err != nil {
-			return
-		}
-		if err := a.handleSession(ctx, w, user.Email, logger); err != nil {
-			return
-		}
+	user, err := a.decodeAndValidUser(ctx, w, r.Body, logger, provider)
+	if err != nil {
+		return
+	}
+	if err := a.handleUser(ctx, w, user, logger, provider); err != nil {
+		return
+	}
+	if err := a.handleSession(ctx, w, user.Email, logger); err != nil {
+		return
+	}
 
-		w.WriteHeader(http.StatusCreated)
-	})
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (a *AppInstance) decodeAndValidUser(ctx context.Context, w http.ResponseWriter, body io.ReadCloser, logger *slog.Logger, provider models.ProviderType) (*models.User, error) {

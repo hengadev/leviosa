@@ -10,36 +10,34 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (a *AppInstance) UpdateUser() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-		logger, err := contextutil.GetLoggerFromContext(ctx)
-		if err != nil {
-			logger.ErrorContext(ctx, "logger not found in context", "error", err)
-			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		logger.ErrorContext(ctx, "logger not found in context", "error", err)
+		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-		userID, ok := ctx.Value(contextutil.UserIDKey).(string)
-		if !ok {
-			logger.ErrorContext(ctx, "user ID not found in context")
-			serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
-			return
-		}
+	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
+	if !ok {
+		logger.ErrorContext(ctx, "user ID not found in context")
+		serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+		return
+	}
 
-		// use a custom valid for the updtate thing
-		user, err := serverutil.Decode[models.User](r.Body)
-		if err != nil {
-			logger.ErrorContext(ctx, "failed to decode user", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		// modify user
-		if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
-			logger.ErrorContext(ctx, "failed to modify the user", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-	})
+	// use a custom valid for the updtate thing
+	user, err := serverutil.Decode[models.User](r.Body)
+	if err != nil {
+		logger.ErrorContext(ctx, "failed to decode user", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		return
+	}
+	// modify user
+	if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
+		logger.ErrorContext(ctx, "failed to modify the user", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		return
+	}
 }

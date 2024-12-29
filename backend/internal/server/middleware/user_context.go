@@ -21,8 +21,8 @@ type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionServ
 
 // get the role for the user in question
 func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(next Handlerfunc) Handlerfunc {
+		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
@@ -44,7 +44,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
 			for _, endpoint := range exceptURL {
 				if url == endpoint {
-					next.ServeHTTP(w, r)
+					next(w, r)
 					return
 				}
 			}
@@ -69,7 +69,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 			ctx = context.WithValue(r.Context(), contextutil.RoleKey, session.Role.String())
 			ctx = context.WithValue(r.Context(), contextutil.UserIDKey, session.UserID)
 
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+			next(w, r.WithContext(ctx))
+		}
 	}
 }
