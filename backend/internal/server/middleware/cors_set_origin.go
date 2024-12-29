@@ -13,17 +13,17 @@ import (
 // w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 // w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-func SetOrigin(next Handlerfunc) Handlerfunc {
+func SetOrigin(next http.Handler) http.Handler {
 	allowedOrigins := map[string]bool{
 		os.Getenv("FRONTEND_ORIGIN"): true,
 	}
-	return func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("origin")
 		if allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 		}
-		next(w, r)
-	}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func EnableMethods(next http.Handler, methods ...string) http.Handler {

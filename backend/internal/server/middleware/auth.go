@@ -16,10 +16,9 @@ type ContextKey int
 const UserIDKey = ContextKey(23)
 
 // Function middleware to authenticate and authorize users.
-// func Auth(s sessionService.Reader) Middleware {
-func Auth(sessionGetter sessionGetterFunc) Middleware {
-	return func(next Handlerfunc) Handlerfunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func Auth(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
 			noAuthEndpoints := []string{
 				"hello",
@@ -33,13 +32,13 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 			var url string
 			if r.URL.Path == "/favicon.ico" {
 				fmt.Println("here in the favicon thing brother.")
-				next(w, r)
+				next.ServeHTTP(w, r)
 				return
 			} else {
 				url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
 				for _, endpoint := range noAuthEndpoints {
 					if url == endpoint {
-						next(w, r)
+						next.ServeHTTP(w, r)
 						return
 					}
 				}
@@ -74,8 +73,9 @@ func Auth(sessionGetter sessionGetterFunc) Middleware {
 				return
 			}
 
-			next(w, r.WithContext(ctx))
-		}
+			// next(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 

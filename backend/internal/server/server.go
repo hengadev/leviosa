@@ -37,10 +37,9 @@ func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.AttachLogger(logger),
-		// TODO: remove this auth middleware here
 		mw.Auth(appCtx.Svcs.Session.GetSession),
 		mw.SetUserContext(appCtx.Svcs.Session.GetSession),
+		mw.AttachLogger(logger),
 		mw.SetOrigin,
 	)
 	return server
@@ -63,7 +62,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 // A function to add middleware to all the routes of the multiplexer.
-func (s *Server) Use(middlewares ...mw.Middleware) {
+func (s *Server) Use(middlewares ...func(http.Handler) http.Handler) {
 	for _, mw := range middlewares {
 		s.srv.Handler = mw(s.srv.Handler)
 	}

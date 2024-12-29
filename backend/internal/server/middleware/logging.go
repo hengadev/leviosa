@@ -13,9 +13,9 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func AttachLogger(logger *slog.Logger) Middleware {
-	return func(next Handlerfunc) Handlerfunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			start := time.Now()
 
@@ -50,9 +50,9 @@ func AttachLogger(logger *slog.Logger) Middleware {
 
 			logger.InfoContext(ctx, "Request started")
 
-			next(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r.WithContext(ctx))
 			duration := time.Since(start)
 			logger.InfoContext(ctx, "Request completed", "duration", duration)
-		}
+		})
 	}
 }

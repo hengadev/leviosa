@@ -6,23 +6,18 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
-
-type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionService.Session, error)
-
-// this is an authentication middleware, authorization is handle on a per route basis
 
 // TODO:
 // - handle what to do if there is nothing in the session because returning the function might not be ideal
 // -> add non allowed endpoints
 
 // get the role for the user in question
-func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
-	return func(next Handlerfunc) Handlerfunc {
-		return func(w http.ResponseWriter, r *http.Request) {
+func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
@@ -44,7 +39,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
 			for _, endpoint := range exceptURL {
 				if url == endpoint {
-					next(w, r)
+					next.ServeHTTP(w, r)
 					return
 				}
 			}
@@ -69,7 +64,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) Middleware {
 			ctx = context.WithValue(r.Context(), contextutil.RoleKey, session.Role.String())
 			ctx = context.WithValue(r.Context(), contextutil.UserIDKey, session.UserID)
 
-			next(w, r.WithContext(ctx))
-		}
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
