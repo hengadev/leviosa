@@ -6,11 +6,15 @@ import (
 )
 
 var (
-	ErrNotFound          = errors.New("The requested resource was not found.")
+	ErrNotFound          = errors.New("Requested resource not found.")
 	ErrInternal          = errors.New("An internal error occurred:")
 	ErrBadRequest        = errors.New("This is bad request.")
 	ErrServiceUnvailable = errors.New("Service unavailable.")
 )
+
+func NewNotFoundErr(err error) string {
+	return fmt.Sprintf("%s: %s", ErrNotFound, err)
+}
 
 func NewInternalErr(err error) string {
 	return fmt.Sprintf("%s: %s", ErrInternal, err)
