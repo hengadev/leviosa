@@ -10,7 +10,13 @@ var (
 	ErrInternal          = errors.New("An internal error occurred:")
 	ErrBadRequest        = errors.New("This is bad request.")
 	ErrServiceUnvailable = errors.New("Service unavailable.")
+	ErrForbidden         = errors.New("Forbidden error")    // authorization error, it is permanent
 )
+
+
+func NewForbiddenErr(err error) string {
+	return fmt.Sprintf("%s: %s", ErrForbidden, err)
+}
 
 func NewNotFoundErr(err error) string {
 	return fmt.Sprintf("%s: %s", ErrNotFound, err)

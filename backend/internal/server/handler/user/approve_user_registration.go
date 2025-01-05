@@ -21,7 +21,7 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	// TODO:
@@ -41,6 +41,7 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 			return
 		}
 	}
+
 	user, err := h.Svcs.User.CreateUser(ctx, &input)
 	if err != nil {
 		switch {
@@ -58,5 +59,6 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 
 	}
 
+	logger.InfoContext(ctx, "user successfully approved")
 	serverutil.WriteResponse(w, "user approved", http.StatusCreated)
 }
