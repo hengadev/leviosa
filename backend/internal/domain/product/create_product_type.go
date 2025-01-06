@@ -9,11 +9,11 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (s *Service) CreateProduct(ctx context.Context, product *Product) error {
-	if errs := product.Valid(ctx); len(errs) > 0 {
-		return domain.NewInvalidValueErr(fmt.Sprintf("product validation error: %s", errs.Error()))
+func (s *Service) CreateProductType(ctx context.Context, productType *ProductType) error {
+	if errs := productType.Valid(ctx); len(errs) > 0 {
+		return domain.NewInvalidValueErr(fmt.Sprintf("product type validation error: %s", errs.Error()))
 	}
-	if err := s.repo.AddProduct(ctx, product); err != nil {
+	if err := s.repo.AddProductType(ctx, productType); err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotCreated):
 			return domain.NewNotCreatedErr(err)

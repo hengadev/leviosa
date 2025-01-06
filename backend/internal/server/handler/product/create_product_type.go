@@ -14,7 +14,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (a *AppInstance) CreateProduct(w http.ResponseWriter, r *http.Request) {
+func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
@@ -29,7 +29,7 @@ func (a *AppInstance) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	product, err := serverutil.DecodeValid[productService.Product](ctx, r.Body)
+	productType, err := serverutil.DecodeValid[productService.ProductType](ctx, r.Body)
 	if err != nil {
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
@@ -42,7 +42,7 @@ func (a *AppInstance) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := a.Svcs.Product.CreateProduct(ctx, &product); err != nil {
+	if err := a.Svcs.Product.CreateProductType(ctx, &productType); err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "ivnalid product given")
@@ -59,34 +59,5 @@ func (a *AppInstance) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	productID, err := a.Svcs.Stripe.CreateProduct(ctx, &product)
-	if errors.Is(err, domain.ErrNotCreated) {
-		logger.WarnContext(ctx, "stripe product not created")
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-		return
-	}
-	priceID, err := a.Svcs.Stripe.CreatePrice(ctx, productID, product.Price)
-	if errors.Is(err, domain.ErrNotCreated) {
-		logger.WarnContext(ctx, "stripe price not created")
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-		return
-	}
-	if err := a.Svcs.Product.AddPriceID(ctx, productID, priceID); err != nil {
-		switch {
-		case errors.Is(err, rp.ErrContext):
-			logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-		case errors.Is(err, domain.ErrQueryFailed):
-			logger.WarnContext(ctx, "database query updating priceID failed")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-		case errors.Is(err, domain.ErrNotUpdated):
-			logger.WarnContext(ctx, "priceID not udpated in database")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-		case errors.Is(err, domain.ErrUnexpectedType):
-			logger.WarnContext(ctx, "unexpected error type when adding priceID to product")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-		}
-		return
-	}
-	serverutil.WriteResponse(w, "product successfully created", http.StatusCreated)
+	serverutil.WriteResponse(w, "product type successfully created", http.StatusCreated)
 }

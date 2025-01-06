@@ -8,6 +8,6 @@ type AppInstance struct {
 	*app.App
 }
 
-func NewHandler(appCtx *app.App) *AppInstance {
+func New(appCtx *app.App) *AppInstance {
 	return &AppInstance{appCtx}
 }
