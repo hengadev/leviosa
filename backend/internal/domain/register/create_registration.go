@@ -1,4 +1,4 @@
-package register
+package registerService
 
 import (
 	"context"
@@ -22,7 +22,16 @@ func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string
 	}
 	offsetDuration := time.Duration(int(event.SessionDuration) * (spot - 1))
 	registrationBeginAt := event.BeginAt.Add(offsetDuration)
-	registration := NewRegistration(userID, event.ID, registrationBeginAt)
+	_ = registrationBeginAt
+	registration := NewRegistration(
+		userID,
+		"",
+		"event",
+		time.Now(),
+		time.Now().Add(24*time.Hour),
+		nil,
+		nil,
+	)
 	err = s.Repo.AddRegistration(ctx, registration, day, year, month)
 	if err != nil {
 		switch {
