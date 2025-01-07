@@ -45,8 +45,8 @@ func (a *AppInstance) GetVotesByUserID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// encode result to user
-	if err := serverutil.Encode(w, http.StatusFound, votes); err != nil {
-		logger.ErrorContext(ctx, "failed to encode the votes", "error", err)
+	if err := serverutil.Encode(w, http.StatusOK, votes); err != nil {
+		logger.ErrorContext(ctx, "failed to encode votes found for user with provided ID", "error", err)
 		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}

@@ -44,6 +44,8 @@ func (a *AppInstance) GetProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := serverutil.Encode(w, http.StatusFound, *product); err != nil {
+	if err := serverutil.Encode(w, int(http.StatusOK), *product); err != nil {
+		logger.ErrorContext(ctx, "failed to encode product with provided ID", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 	}
 }
