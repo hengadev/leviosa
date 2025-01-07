@@ -10,12 +10,13 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-func (p *PhotoRepository) AddFile(ctx context.Context, file multipart.File, key string) (string, error) {
-	result, err := p.Uploader.Upload(ctx, &s3.PutObjectInput{
+func (r *Repository) AddFile(ctx context.Context, file multipart.File, key string) (string, error) {
+	result, err := r.Uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(BUCKETNAME),
 		Key:    aws.String(key),
 		Body:   file,
-		ACL:    "public-read",
+		// TODO: I do not think that the content here shouold be public read
+		ACL: "public-read",
 	})
 	if err != nil {
 		return "", rp.NewNotCreatedErr(err, "photo")

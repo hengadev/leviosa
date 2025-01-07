@@ -11,10 +11,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func (p *PhotoRepository) FindAllObjects(ctx context.Context, eventID string) ([]types.Object, error) {
+func (r *Repository) FindAllObjects(ctx context.Context, eventID string) ([]types.Object, error) {
 	res := make([]types.Object, 0)
 	localisation := fmt.Sprintf("%s/%s", BUCKETNAME, eventID)
-	output, err := p.Client.ListObjectsV2(context.TODO(), &s3.ListObjectsV2Input{
+	output, err := r.Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(localisation),
 	})
 	if err != nil {
