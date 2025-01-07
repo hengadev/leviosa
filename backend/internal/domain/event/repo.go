@@ -15,7 +15,7 @@ type Writer interface {
 	AddEvent(ctx context.Context, event *Event) error
 	RemoveEvent(ctx context.Context, eventID string) error
 	ModifyEvent(ctx context.Context, event *Event, whereMap map[string]any, prohibitedFields ...string) error
-	DecreaseFreeplace(ctx context.Context, eventID string) error
+	DecreaseFreePlace(ctx context.Context, eventID string) error
 }
 type ReadWriter interface {
 	Reader

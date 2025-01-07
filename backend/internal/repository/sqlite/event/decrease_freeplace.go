@@ -8,8 +8,13 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
-	res, err := e.DB.ExecContext(ctx, "UPDATE events SET freeplace = freeplace - 1 WHERE id=?;", eventID)
+// DecreaseFreePlace decrements the freeplace count for an event with the given eventID.
+func (e *EventRepository) DecreaseFreePlace(ctx context.Context, eventID string) error {
+	query := `
+        UPDATE events
+        SET freeplace = freeplace - 1 
+        WHERE id = ? AND freeplace > 0;`
+	res, err := e.DB.ExecContext(ctx, query, eventID)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
