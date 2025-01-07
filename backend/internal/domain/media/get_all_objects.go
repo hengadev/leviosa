@@ -1,4 +1,4 @@
-package photo
+package mediaService
 
 import (
 	"context"
