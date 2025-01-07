@@ -4,14 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
 func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Event, error) {
-	query := "SELECT id, location, placecount, freeplace, beginat, sessionduration, day, month, year FROM events;"
+	query := `
+        SELECT 
+            id,
+            title,
+            description,
+            type,
+            location,
+            placecount,
+            begin_at,
+            end_at
+        FROM events;`
 	rows, err := e.DB.QueryContext(ctx, query)
 	if err != nil {
 		switch {
@@ -24,27 +33,23 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 	defer rows.Close()
 	var events []*eventService.Event
 	for rows.Next() {
-		var beginat string
-		var minutes int
-		event := &eventService.Event{}
+		var event *eventService.Event
 		if err := rows.Scan(
 			&event.ID,
+			&event.Title,
+			&event.Description,
+			&event.Type,
 			&event.Location,
 			&event.PlaceCount,
-			&event.FreePlace,
-			&beginat,
-			&minutes,
-			&event.Day,
-			&event.Month,
-			&event.Year,
+			&event.BeginAtFormatted,
+			&event.EndAtFormatted,
 		); err != nil {
 			return nil, rp.NewDatabaseErr(err)
 		}
-		event.SessionDuration = time.Minute * time.Duration(minutes)
-		event.BeginAt, err = parseBeginAt(beginat, event.Day, event.Month, event.Year)
 		if err != nil {
 			return nil, rp.NewInternalErr(fmt.Errorf("parsing time: %w", err))
 		}
+		event.Parse()
 		events = append(events, event)
 	}
 	if err = rows.Err(); err != nil {
