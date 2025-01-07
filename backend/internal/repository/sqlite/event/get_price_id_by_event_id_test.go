@@ -10,7 +10,7 @@ import (
 	"github.com/GaryHY/event-reservation-app/tests/assert"
 )
 
-func TestGetPriceIDByEventID(t *testing.T) {
+func TestGetPriceID(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
 		eventID         string
@@ -29,7 +29,7 @@ func TestGetPriceIDByEventID(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
-			priceID, err := repo.GetPriceIDByEventID(ctx, tt.eventID)
+			priceID, err := repo.GetPriceID(ctx, tt.eventID)
 			assert.Equal(t, err != nil, tt.wantErr)
 			assert.ReflectEqual(t, priceID, tt.expectedPriceID)
 		})

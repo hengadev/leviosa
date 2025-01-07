@@ -33,7 +33,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		}
 
 		eventID := r.PathValue("id")
-		priceID, err := a.Repos.Event.GetPriceIDByEventID(ctx, eventID)
+		priceID, err := a.Repos.Event.GetPriceID(ctx, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get priceID for event", "error", err)
 			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)

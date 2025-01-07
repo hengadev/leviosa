@@ -9,9 +9,14 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (e *EventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
+func (e *EventRepository) GetPriceID(ctx context.Context, eventID string) (string, error) {
 	var priceID string
-	err := e.DB.QueryRowContext(ctx, "SELECT priceid from events where id = ?;", eventID).Scan(&priceID)
+	query := `
+        SELECT 
+            price_id
+        FROM events 
+        WHERE id = ?;`
+	err := e.DB.QueryRowContext(ctx, query, eventID).Scan(&priceID)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

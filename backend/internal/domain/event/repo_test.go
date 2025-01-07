@@ -28,7 +28,7 @@ func (s *StubEventRepository) GetEventForUser(ctx context.Context, userID string
 	return nil, nil
 }
 
-func (s *StubEventRepository) GetPriceIDByEventID(ctx context.Context, eventID string) (string, error) {
+func (s *StubEventRepository) GetPriceID(ctx context.Context, eventID string) (string, error) {
 
 	for _, event := range s.events {
 		if event.ID == eventID {
