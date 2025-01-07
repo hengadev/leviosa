@@ -7,18 +7,20 @@ import (
 	"time"
 
 	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/event-reservation-app/pkg/errsx"
 )
 
 // DecryptUser decrypts sensitive fields of a user
-func (s *SecureUserData) DecryptUser(user *models.User) error {
+func (s *SecureUserData) DecryptUser(user *models.User) errsx.Map {
+	var errs errsx.Map
 	if user.EncryptedBirthDate != "" {
 		decrypted, err := s.decrypt(user.EncryptedBirthDate)
 		if err != nil {
-			return err
+			errs.Set("encrypted birthdate", err)
 		}
 		parsedTime, err := time.Parse(time.RFC3339, decrypted)
 		if err != nil {
-			return err
+			errs.Set("parsing decrypted birthdate", err)
 		}
 		user.BirthDate = parsedTime
 	}
@@ -26,37 +28,38 @@ func (s *SecureUserData) DecryptUser(user *models.User) error {
 	if user.EncryptedEmail != "" {
 		decrypted, err := s.decrypt(user.EncryptedEmail)
 		if err != nil {
-			return err
+			errs.Set("encrypted email", err)
 		}
 		user.Email = decrypted
 	}
 
 	fields := []struct {
+		name  string
 		value *string
 	}{
-		{&user.LastName},
-		{&user.FirstName},
-		{&user.Gender},
-		{&user.Telephone},
-		{&user.PostalCode},
-		{&user.City},
-		{&user.Address1},
-		{&user.Address2},
-		{&user.GoogleID},
-		{&user.AppleID},
+		{"lastname", &user.LastName},
+		{"firstname", &user.FirstName},
+		{"gender", &user.Gender},
+		{"telephone", &user.Telephone},
+		{"postal code", &user.PostalCode},
+		{"city", &user.City},
+		{"address 1", &user.Address1},
+		{"address 2", &user.Address2},
+		{"google ID", &user.GoogleID},
+		{"apple ID", &user.AppleID},
 	}
 
 	for _, field := range fields {
 		if *field.value != "" {
 			decrypted, err := s.decrypt(*field.value)
 			if err != nil {
-				return err
+				errs.Set(field.name, err)
 			}
 			*field.value = decrypted
 		}
 	}
 
-	return nil
+	return errs
 }
 
 // decrypt decrypts sensitive data
