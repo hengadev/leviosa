@@ -46,7 +46,7 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := setupEnvVars(); err != nil {
 		return fmt.Errorf("failed to get env variables: %w", err)
 	}
-	// set basic logger
+	// set logger
 	logger, err := setLogger()
 	if err != nil {
 		return fmt.Errorf("failed to setup logger: %w", err)
@@ -63,11 +63,6 @@ func run(ctx context.Context, w io.Writer) error {
 	if errs := conf.Load(ctx); len(errs) > 0 {
 		return fmt.Errorf("load configuration: %s", errs.Error())
 	}
-
-	// auth, err := conf.NewAuthenticator()
-	// if err != nil {
-	// 	return fmt.Errorf("setup authenticator: %w", err)
-	// }
 
 	sqlitedb, redisdb, err := setupDatabases(ctx, conf)
 	if err != nil {
@@ -93,15 +88,18 @@ func run(ctx context.Context, w io.Writer) error {
 
 	// setting cron jobs
 	// go func() {
-	// 	cronHandler := cron.NewHandler(handler)
-	// 	srvErrCh <- cronHandler.Start()
+	// 	cronHandler := cron.New(handler, logger)
+	// 	if err := cronHandler.Start(); err != nil {
+	// 		srvErrCh <- fmt.Errorf("cron service failed: %w", err)
+	// 		return
+	// 	}
 	// }()
 
 	go func() {
 		logger.Info(fmt.Sprintf("Running server on port %d...\n", opts.server.port))
 		if err := srv.ListenAndServe(); err != nil {
 			srvErrCh <- fmt.Errorf("launch server: %w", err)
-
+			return
 		}
 	}()
 
