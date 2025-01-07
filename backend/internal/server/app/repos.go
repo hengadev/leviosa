@@ -2,8 +2,8 @@ package app
 
 import (
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/event-reservation-app/internal/domain/media"
 	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
-	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/product"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -17,8 +17,8 @@ type Repos struct {
 	Session   sessionService.Reader
 	Event     eventService.Reader
 	Vote      vote.Reader
-	Register  register.Reader
-	Photo     photo.Reader
+	Register  registerService.Reader
+	Media     mediaService.Reader
 	Throttler throttlerService.Reader
 	Product   productService.Reader
 	OTP       otpService.Reader

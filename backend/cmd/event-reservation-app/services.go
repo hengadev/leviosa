@@ -8,8 +8,8 @@ import (
 	// domain
 	"github.com/GaryHY/event-reservation-app/internal/domain/event"
 	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
+	"github.com/GaryHY/event-reservation-app/internal/domain/media"
 	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
-	"github.com/GaryHY/event-reservation-app/internal/domain/photo"
 	"github.com/GaryHY/event-reservation-app/internal/domain/product"
 	"github.com/GaryHY/event-reservation-app/internal/domain/register"
 	"github.com/GaryHY/event-reservation-app/internal/domain/session"
@@ -60,15 +60,15 @@ func makeServices(
 	voteSvc := vote.NewService(voteRepo)
 	// register
 	registerRepo := registerRepository.New(ctx, sqlitedb)
-	registerSvc := register.NewService(registerRepo)
+	registerSvc := registerService.NewService(registerRepo)
 	// stripe
 	stripeSvc := stripeService.New()
 	// photo
-	photoRepo, err := mediaRepository.NewPhotoRepository(ctx)
+	mediaRepo, err := mediaRepository.NewRepository(ctx)
 	if err != nil {
 		return appSvcs, appRepos, fmt.Errorf("create photo repository: %w", err)
 	}
-	photoSvc := photo.NewService(photoRepo)
+	mediaSvc := mediaService.New(mediaRepo)
 
 	mailSvc := mailService.New()
 
@@ -87,7 +87,7 @@ func makeServices(
 		Event:     eventSvc,
 		Vote:      voteSvc,
 		Register:  registerSvc,
-		Photo:     photoSvc,
+		Media:     mediaSvc,
 		Session:   sessionSvc,
 		Throttler: throttlerSvc,
 		Mail:      mailSvc,
@@ -101,7 +101,7 @@ func makeServices(
 		Event:     eventRepo,
 		Vote:      voteRepo,
 		Register:  registerRepo,
-		Photo:     photoRepo,
+		Media:     mediaRepo,
 		Session:   sessionRepo,
 		Throttler: throttlerRepo,
 		Product:   productRepo,
