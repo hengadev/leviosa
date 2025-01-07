@@ -11,16 +11,17 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
+// TODO:
+// - move that function to registrationRepository
+// - move part of this function to the service that uses that function
+
 func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*eventService.EventUser, error) {
 	tx, err := e.DB.BeginTx(ctx, &sql.TxOptions{})
-	defer func() {
-		if err := tx.Rollback(); err != nil && errors.Is(err, sql.ErrTxDone) {
-			// do some log thing if need be
-		}
-	}()
 	if err != nil {
-		return nil, rp.NewDatabaseErr(fmt.Errorf("start transaction: %w", err))
+		return nil, rp.NewDatabaseErr(fmt.Errorf("failed to start transaction: %w", err))
 	}
+	defer tx.Rollback()
+
 	now := time.Now()
 	day, month, year := now.Day(), int(now.Month()), now.Year()
 	statements := []struct {
