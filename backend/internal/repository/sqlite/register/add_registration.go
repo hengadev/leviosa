@@ -9,10 +9,11 @@ import (
 	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
-func (r *repository) AddRegistration(ctx context.Context, reg *register.Registration, day, year int, month string) error {
+func (r *repository) AddRegistration(ctx context.Context, reg *registerService.Registration, day, year int, month string) error {
+	// TODO: change that function because it no longer works
 	tablename := getTablename(day, year, month)
 	query := fmt.Sprintf("INSERT INTO %s (userid, eventid, beginat) values (?,?,?);", tablename)
-	result, err := r.DB.ExecContext(ctx, query, reg.UserID, reg.EventID, reg.BeginAt)
+	result, err := r.DB.ExecContext(ctx, query, reg.UserID, reg.ProductID, reg.StartTime)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):

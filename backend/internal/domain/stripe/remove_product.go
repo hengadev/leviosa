@@ -13,6 +13,7 @@ func (s *Service) RemoveProduct(ctx context.Context, eventID string) (string, er
 		ID:          &eventID,
 		Description: stripe.String("1 X Pass valuable for all the event."),
 	}
+	// NOTE: that thing does not work if the product has a price associated with it
 	_, err := product.Del(eventID, product_params)
 	if err != nil {
 		return "", fmt.Errorf("Failed to delete the product on the server: %w", err)

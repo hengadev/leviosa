@@ -10,8 +10,7 @@ import (
 
 func (r *repository) RemoveRegistration(ctx context.Context, day, year int, month string) error {
 	tablename := getTablename(day, year, month)
-	query := fmt.Sprintf("DELETE FROM %s WHERE userid=?", tablename)
-	// TODO: get the user ID in the function signature
+	query := fmt.Sprintf("DELETE FROM %s WHERE user_id=?", tablename)
 	result, err := r.DB.ExecContext(ctx, query)
 	if err != nil {
 		switch {
