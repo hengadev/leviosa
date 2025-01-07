@@ -2,16 +2,30 @@ package eventService
 
 import (
 	"context"
-	"fmt"
+	"errors"
+
+	"github.com/GaryHY/event-reservation-app/internal/domain"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 )
 
 func (s *Service) CreateEvent(ctx context.Context, event *Event) (string, error) {
 	// TODO:
-	// - check if the date is available
-	// - create the event using the right function from the repo
-	if err := s.Repo.AddEvent(ctx, event); err != nil {
-		return "", fmt.Errorf("create event: %s", err)
+	// - check if date is available in the database
+	if err := event.Format(ctx); err != nil {
+		return "", domain.NewFormatError("event", err)
 	}
-	// - return the event id and no error
-	return event.ID, nil
+	eventID, err := s.Repo.AddEvent(ctx, event)
+	if err != nil {
+		switch {
+		case errors.Is(err, rp.ErrNotCreated):
+			return "", domain.NewNotCreatedErr(err)
+		case errors.Is(err, rp.ErrDatabase):
+			return "", domain.NewQueryFailedErr(err)
+		case errors.Is(err, rp.ErrContext):
+			return "", err
+		default:
+			return "", domain.NewUnexpectTypeErr(err)
+		}
+	}
+	return eventID, nil
 }

@@ -28,7 +28,8 @@ func TestAddEvent(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
-			err := repo.AddEvent(ctx, tt.event)
+			eventID, err := repo.AddEvent(ctx, tt.event)
+			_ = eventID
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}
