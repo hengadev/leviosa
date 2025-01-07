@@ -13,7 +13,10 @@ func (u User) ToUserResponse() UserResponse {
 
 func (u User) ToUserPending() *UserPending {
 	return &UserPending{
+		EmailHash: u.EmailHash,
 		LastName:  u.LastName,
 		FirstName: u.FirstName,
+		GoogleID:  u.GoogleID,
+		AppleID:   u.AppleID,
 	}
 }

@@ -17,24 +17,9 @@ type UserPending struct {
 
 // the admin receive this when validating the user
 type UserPendingResponse struct {
-	EmailHash string `json:"email"`
-	Role      string `json:"role"`
-}
-
-func NewPrependingUser(user *UserSignUp) *User {
-	return &User{
-		Email:      user.Email,
-		Password:   user.Password,
-		BirthDate:  user.BirthDate,
-		LastName:   user.LastName,
-		FirstName:  user.FirstName,
-		Gender:     user.Gender,
-		Telephone:  user.Telephone,
-		PostalCode: user.PostalCode,
-		City:       user.City,
-		Address1:   user.Address1,
-		Address2:   user.Address2,
-	}
+	Email    string       `json:"email"`
+	Role     string       `json:"role"`
+	Provider ProviderType `json:"provider"`
 }
 
 func (u UserPending) Valid(ctx context.Context) (problems errsx.Map) {
