@@ -17,20 +17,20 @@ const SessionName = "session_token"
 
 type Session struct {
 	ID         string      `json:"id"`
-	UserID     string      `json:"userid"`
-	Role       models.Role `json:"userrole"`
-	LoggedInAt time.Time   `json:"loggedinat"`
-	CreatedAt  time.Time   `json:"createdat"`
-	ExpiresAt  time.Time   `json:"expiresat"`
+	UserID     string      `json:"user_id"`
+	Role       models.Role `json:"role"`
+	LoggedInAt time.Time   `json:"logged_in_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	ExpiresAt  time.Time   `json:"expires_at"`
 }
 
 // TODO: change that name for session stored
 type Values struct {
-	UserID     string      `json:"userid"`
-	Role       models.Role `json:"userrole"`
-	LoggedInAt time.Time   `json:"loggedinat"`
-	CreatedAt  time.Time   `json:"createdat"`
-	ExpiresAt  time.Time   `json:"expiresat"`
+	UserID     string      `json:"user_id"`
+	Role       models.Role `json:"role"`
+	LoggedInAt time.Time   `json:"logged_in_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	ExpiresAt  time.Time   `json:"expires_at"`
 }
 
 func (s Session) IsZero() bool {
@@ -60,9 +60,8 @@ func NewSession(userID string, role models.Role) (*Session, error) {
 	if err := uuid.Validate(userID); err != nil {
 		return nil, err
 	}
-	id := uuid.NewString()
 	return &Session{
-		ID:         id,
+		ID:         uuid.NewString(),
 		UserID:     userID,
 		Role:       role,
 		LoggedInAt: time.Now(),
