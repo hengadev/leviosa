@@ -11,8 +11,12 @@ var (
 	ErrBadRequest        = errors.New("This is bad request.")
 	ErrServiceUnvailable = errors.New("Service unavailable.")
 	ErrForbidden         = errors.New("Forbidden error")    // authorization error, it is permanent
+	ErrUnauthorized      = errors.New("Unauthorized error") // authenticiation error, you need to authenticate, use that in the auth middleware
 )
 
+func NewUnauthorizedErr(err error) string {
+	return fmt.Sprintf("%s: %s", ErrUnauthorized, err)
+}
 
 func NewForbiddenErr(err error) string {
 	return fmt.Sprintf("%s: %s", ErrForbidden, err)
