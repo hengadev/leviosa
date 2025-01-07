@@ -71,7 +71,7 @@ func (g GoogleUser) ToUser() *User {
 // ToUser create a new user from a GoogleUser
 func (g GoogleUser) ToUserPending() *UserPending {
 	return &UserPending{
-		EmailHash: "",
+		Email:     "",
 		LastName:  g.FamilyName,
 		FirstName: g.GivenName,
 		GoogleID:  g.GoogleID,

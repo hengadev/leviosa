@@ -10,13 +10,18 @@ import (
 )
 
 func (s *Service) CreateUser(ctx context.Context, userResponse *models.UserPendingResponse) (*models.User, error) {
-	// NOTE: for now I just hard coder the provider but it should come from userResponse
-	provider := models.Mail
-
 	// get encrypted user from hashed email
-	user, err := s.repo.GetPendingUser(ctx, userResponse.EmailHash)
+	user, err := s.repo.GetPendingUser(ctx, userResponse.Email, userResponse.Provider)
 	if err != nil {
 		switch {
+		case errors.Is(err, rp.ErrValidation):
+			return nil, domain.NewInvalidValueErr(err.Error())
+		case errors.Is(err, rp.ErrNotFound):
+			return nil, domain.NewNotFoundErr(err)
+		case errors.Is(err, rp.ErrContext):
+			return nil, err
+		case errors.Is(err, rp.ErrDatabase):
+			return nil, domain.NewQueryFailedErr(err)
 		default:
 			return nil, domain.NewUnexpectTypeErr(err)
 		}
@@ -31,12 +36,8 @@ func (s *Service) CreateUser(ctx context.Context, userResponse *models.UserPendi
 	user.Create()
 	user.Login()
 
-	// TODO: check if there is an existing oauth user in it
-	// if there is a google_id just add the field that are not empty ?
-	// same with apple_id
-
 	// add user to database
-	err = s.repo.AddUser(ctx, user, provider)
+	err = s.repo.AddUser(ctx, user, userResponse.Provider)
 	if err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotCreated):
