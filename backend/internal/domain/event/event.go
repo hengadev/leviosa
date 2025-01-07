@@ -15,39 +15,23 @@ var prohibitedFields = []string{
 	"PriceID",
 }
 
-// type Event struct {
-// 	ID              string        `json:"id"`
-// 	Location        string        `json:"location"`
-// 	PlaceCount      int           `json:"placecount"`
-// 	FreePlace       int           `json:"freeplace"`
-// 	BeginAt         time.Time     `json:"beginat"`
-// 	SessionDuration time.Duration `json:"sessionduration"`
-// 	PriceID         string        `json:"-"`
-// 	Day             int           `json:"day"`
-// 	Month           int           `json:"month"`
-// 	Year            int           `json:"year"`
-// }
-
-// NOTE: type for event :
-// - Leviosa Meetup
-// - Leviosa Care
-// - Leviosa Mental health
-
 type Event struct {
-	ID              string        `json:"id"`
-	Title           string        `json:"title"`
-	Description     string        `json:"description"`
-	Type            int           `json:"type"`
-	Location        string        `json:"location"`
-	PlaceCount      int           `json:"place_count"`
-	FreePlace       int           `json:"free_place"`
-	BeginAt         time.Time     `json:"beginat"`
-	EndAt           time.Time     `json:"end_at"`
-	SessionDuration time.Duration `json:"session_duration"`
-	PriceID         string        `json:"-"`
-	Day             int           `json:"day"`
-	Month           int           `json:"month"`
-	Year            int           `json:"year"`
+	ID               string        `json:"id"`
+	Title            string        `json:"title"`
+	Description      string        `json:"description"`
+	Type             string        `json:"type"`
+	Location         string        `json:"location"`
+	PlaceCount       int           `json:"place_count"`
+	FreePlace        int           `json:"free_place"`
+	BeginAt          time.Time     `json:"beginat"`
+	BeginAtFormatted string        `json:"beginat_formatted"`
+	EndAt            time.Time     `json:"end_at"`
+	EndAtFormatted   string        `json:"end_at_formatted"`
+	SessionDuration  time.Duration `json:"session_duration"`
+	PriceID          string        `json:"-"`
+	Day              int           `json:"day"`
+	Month            int           `json:"month"`
+	Year             int           `json:"year"`
 }
 
 func NewEvent(
@@ -60,6 +44,7 @@ func NewEvent(
 	year int,
 ) *Event {
 	return &Event{
+		ID:              uuid.NewString(),
 		Location:        location,
 		BeginAt:         beginat,
 		SessionDuration: sessionduration,
@@ -69,17 +54,6 @@ func NewEvent(
 		Month:           month,
 		Year:            year,
 	}
-}
-
-type EventUser struct {
-	PastEvents     []*Event `json:"pastEvents"`
-	NextEvents     []*Event `json:"nextEvents"`
-	IncomingEvents []*Event `json:"incomingEvents"`
-}
-
-func (e *Event) Create() {
-	e.ID = uuid.NewString()
-	// TODO: do the price id thing so I can actually acces it through stripe
 }
 
 const description = "1 X Pass valuable for all the event."
