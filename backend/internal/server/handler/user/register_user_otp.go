@@ -15,53 +15,52 @@ import (
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
 )
 
-func (h *AppInstance) RegisterUserOTP() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger, err := contextutil.GetLoggerFromContext(ctx)
-		if err != nil {
-			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
-			return
+func (h *AppInstance) RegisterUserOTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "logger not found in context", "error", err)
+		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := serverutil.DecodeValid[models.UserSignUp](r.Context(), r.Body)
+	if err != nil {
+		switch {
+		case errors.Is(err, serverutil.ErrDecodeJSON):
+			logger.WarnContext(ctx, "decode user", "error", err)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		default:
+			logger.WarnContext(ctx, "invalid sign up user", "error", err)
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		}
-		user, err := serverutil.DecodeValid[models.UserSignUp](r.Context(), r.Body)
-		if err != nil {
-			switch {
-			case errors.Is(err, serverutil.ErrDecodeJSON):
-				logger.WarnContext(ctx, "decode user", "error", err)
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			default:
-				logger.WarnContext(ctx, "invalid sign up user", "error", err)
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		return
+	}
+	// TODO: I need to check the sent password against a list of leaked password
+	if err := h.Svcs.User.CheckUser(ctx, user.Email); err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			emailHash, err := h.createUser(ctx, w, logger, &user)
+			if err != nil {
+				return
 			}
-			return
-		}
-		// TODO: I need to check the sent password against a list of leaked password
-		if err := h.Svcs.User.CheckUser(ctx, user.Email); err != nil {
-			switch {
-			case errors.Is(err, domain.ErrNotFound):
-				emailHash, err := h.createUser(ctx, w, logger, &user)
-				if err != nil {
-					return
-				}
-				if err := h.generateAndSendOTP(ctx, w, logger, emailHash, user.Email, user.FirstName); err != nil {
-					return
-				}
-			case errors.Is(err, rp.ErrContext):
-				logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			case errors.Is(err, domain.ErrQueryFailed):
-				logger.WarnContext(ctx, "database checking for user existence query failed")
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			case errors.Is(err, domain.ErrUnexpectedType):
-				logger.WarnContext(ctx, "unexpted errror checking for user existence")
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			if err := h.generateAndSendOTP(ctx, w, logger, emailHash, user.Email, user.FirstName); err != nil {
+				return
 			}
-			return
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, "context error, deadline or timeout while checking for user existence")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database checking for user existence query failed")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpted errror checking for user existence")
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		}
+		return
+	}
 
-		w.WriteHeader(http.StatusCreated)
-	})
+	logger.InfoContext(ctx, "unverified user successfully approved")
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *AppInstance) createUser(ctx context.Context, w http.ResponseWriter, logger *slog.Logger, user *models.UserSignUp) (string, error) {

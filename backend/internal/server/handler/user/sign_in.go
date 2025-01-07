@@ -18,33 +18,31 @@ import (
 )
 
 func (a *AppInstance) Signin(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		logger, err := contextutil.GetLoggerFromContext(ctx)
-		if err != nil {
-			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-		input, err := a.decodeAndValidateUserSignIn(ctx, w, r, logger)
-		if err != nil {
-			return
-		}
+	input, err := a.decodeAndValidateUserSignIn(ctx, w, r, logger)
+	if err != nil {
+		return
+	}
 
-		if err = a.checkThrottling(ctx, w, input.Email, logger); err != nil {
-			return
-		}
+	if err = a.checkThrottling(ctx, w, input.Email, logger); err != nil {
+		return
+	}
 
-		if err = a.validateUserUserSignIn(ctx, w, input, logger); err != nil {
-			return
-		}
+	if err = a.validateUserUserSignIn(ctx, w, input, logger); err != nil {
+		return
+	}
 
-		if err = a.createAndSetSession(ctx, w, input.Email, logger); err != nil {
-			return
-		}
+	if err = a.createAndSetSession(ctx, w, input.Email, logger); err != nil {
+		return
+	}
 
-		logger.InfoContext(ctx, "User successfully logged in", slog.String("key", "value"))
-
-	})
+	logger.InfoContext(ctx, "User successfully logged in", slog.String("key", "value"))
 }
 
 func (a *AppInstance) decodeAndValidateUserSignIn(ctx context.Context, w http.ResponseWriter, r *http.Request, logger *slog.Logger) (*models.UserSignIn, error) {

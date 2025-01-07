@@ -62,10 +62,9 @@ func TestUpdateUser(t *testing.T) {
 			apprepo := &app.Repos{User: userrepo}
 
 			h := app.New(appsvc, apprepo)
-			userhandler := userHandler.New(h)
+			handler := userHandler.New(h)
 
-			updateUser := userhandler.UpdateUser()
-			updateUser.ServeHTTP(w, r)
+			handler.UpdateUser(w, r)
 
 			// status code assertions
 			assert.Equal(t, w.Code, tt.expectedStatusCode)

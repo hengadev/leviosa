@@ -84,5 +84,6 @@ func (h *AppInstance) ValidateUserOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logger.InfoContext(ctx, "pending user successfully approved")
 	serverutil.WriteResponse(w, "pending user successfully created", http.StatusCreated)
 }
