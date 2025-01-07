@@ -34,6 +34,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 				"user/validate-otp",
 				"user/approve-user",
 				"oauth/google/user",
+				"upload-image",
 			}
 			var url string
 			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")

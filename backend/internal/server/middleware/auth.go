@@ -22,6 +22,7 @@ func Auth(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
 			noAuthEndpoints := []string{
 				"hello",
+				"upload-image",
 
 				"user/register",
 				"user/validate-otp",

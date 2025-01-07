@@ -19,7 +19,6 @@ import (
 func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	var errs errsx.Map
 	// TODO: do the same later with created at and loggedinat
-	// Handle birthdate separately since it's time.Time
 	if !user.BirthDate.IsZero() {
 		dateStr := user.BirthDate.Format(time.RFC3339)
 		encrypted, pbms := s.encrypt(dateStr)
@@ -49,29 +48,20 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 
 	for _, field := range fields {
 		if *field.value != "" {
-			// encrypted, err := s.encrypt(*field.value)
 			encrypted, pbms := s.encrypt(*field.value)
 			if len(pbms) > 0 {
 				errs.Set("encrypt field", pbms.Error())
-				// return errs
 			}
 			*field.value = encrypted
 		}
 	}
 	// Handle email specially - we need both a hash for searching and encrypted value
 	if user.Email != "" {
-		// Create a hash for searching
-		// emailHash := sha256.Sum256([]byte(strings.ToLower(user.Email)))
-		// user.EmailHash = hex.EncodeToString(emailHash[:])
 		user.EmailHash = HashEmail(user.Email)
 
-		// Encrypt the actual email
-		// encrypted, err := s.encrypt(user.Email)
 		encrypted, pbms := s.encrypt(user.Email)
-		// if err != nil {
 		if len(pbms) > 0 {
 			errs.Set("encrypt field", pbms.Error())
-			// return err
 		}
 		user.EncryptedEmail = encrypted
 		user.Email = "" // Clear the plain text email
@@ -82,7 +72,6 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 		hash, err := s.hashPassword(user.Password)
 		if err != nil {
 			errs.Set("hash password", err)
-			// return err
 		}
 		user.PasswordHash = hash
 		user.Password = "" // Clear plain text password

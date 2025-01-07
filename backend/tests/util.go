@@ -33,8 +33,6 @@ func Setup(
 	if err := testdb.Setup(ctx, sqlitedb, version); err != nil {
 		t.Error(err)
 	}
-	// readerRepo := userRepository.NewReaderRepository(ctx, db)
-	// userRepo := userRepository.New(ctx, readerRepo)
 	userRepo := userRepository.New(ctx, sqlitedb)
 	userService := userService.New(userRepo, config.GetSecurity())
 	appsvc := app.Services{User: userService}
