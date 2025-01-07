@@ -12,7 +12,7 @@ type Reader interface {
 	HasOAuthUser(ctx context.Context, emailHash string, provider models.ProviderType) error
 	GetHashedPasswordByEmail(ctx context.Context, email string) (string, error)
 	GetUnverifiedUser(ctx context.Context, emailHash string) (*models.User, error)
-	GetPendingUser(ctx context.Context, emailHash string) (*models.User, error)
+	GetPendingUser(ctx context.Context, emailHash string, provider models.ProviderType) (*models.User, error)
 	GetPendingUsers(ctx context.Context) ([]*models.User, error)
 	GetUserSessionData(ctx context.Context, email string) (string, models.Role, error)
 }
