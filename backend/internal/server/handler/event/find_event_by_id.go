@@ -30,8 +30,17 @@ func (a *AppInstance) FindEventByID(w http.ResponseWriter, r *http.Request) {
 	eventID := r.PathValue("id")
 	event, err := a.Repos.Event.GetEventByID(ctx, eventID)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to get the user ID", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		switch {
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, fmt.Sprintf("context error while trying to get event with ID %s", eventID))
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, rp.ErrNotFound):
+			logger.WarnContext(ctx, "failed to find event with ID %q")
+			serverutil.WriteResponse(w, errsrv.NewNotFoundErr(err), http.StatusInternalServerError)
+		case errors.Is(err, rp.ErrDatabase):
+			logger.WarnContext(ctx, fmt.Sprintf("database query error while trying to get event with ID %s", eventID))
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
 		return
 	}
 	if err := serverutil.Encode(w, int(http.StatusOK), event); err != nil {

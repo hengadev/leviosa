@@ -1,10 +1,11 @@
-package event
+package eventHandler
 
 import (
 	"errors"
 	"log/slog"
 	"net/http"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
@@ -12,14 +13,17 @@ import (
 
 func (a *AppInstance) FindEventsForUser(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
 		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	if err := contextutil.ValidateRoleInContext(ctx, models.BASIC); err != nil {
+		logger.WarnContext(ctx, "get role from request", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		return
+	}
 	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
 	if !ok {
 		logger.ErrorContext(ctx, "user ID not found in context")
@@ -27,7 +31,7 @@ func (a *AppInstance) FindEventsForUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resBody, err := a.Repos.Event.GetEventForUser(ctx, userID)
+	userEvents, err := a.Repos.Event.GetEventForUser(ctx, userID)
 	if err != nil {
 		switch {
 		default:
@@ -36,7 +40,7 @@ func (a *AppInstance) FindEventsForUser(w http.ResponseWriter, r *http.Request) 
 		}
 		return
 	}
-	if err := serverutil.Encode(w, http.StatusOK, resBody); err != nil {
+	if err := serverutil.Encode(w, http.StatusOK, userEvents); err != nil {
 		logger.ErrorContext(ctx, "failed to send the user", "error", err)
 		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return

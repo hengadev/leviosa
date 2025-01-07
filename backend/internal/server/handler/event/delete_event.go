@@ -1,9 +1,14 @@
-package event
+package eventHandler
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
+	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	rp "github.com/GaryHY/event-reservation-app/internal/repository"
 	"github.com/GaryHY/event-reservation-app/internal/server/handler"
 	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
 	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
@@ -17,18 +22,32 @@ func (a *AppInstance) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// get the event id from the url path
-	eventID := r.PathValue("id")
-	// use the service to delete that event
-	err = a.Svcs.Event.RemoveEvent(ctx, eventID)
-	if err != nil {
-		logger.ErrorContext(ctx, "failed to delete the event", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
+		logger.WarnContext(ctx, "get role from request", "error", err)
+		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
-	// send the event id to the user to specify that the event is deleted properly.
-	if err = serverutil.Encode(w, http.StatusInternalServerError, eventID); err != nil {
-		logger.ErrorContext(ctx, "failed to send the event ID", "error", err)
+	eventID := r.PathValue("id")
+	err = a.Svcs.Event.RemoveEvent(ctx, eventID)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotDeleted):
+			logger.WarnContext(ctx, fmt.Sprintf("failed to delete event with ID %q", eventID))
+			serverutil.WriteResponse(w, errsrv.NewNotFoundErr(err), http.StatusInternalServerError)
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, fmt.Sprintf("context error while trying to delete event with ID %s", eventID))
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, fmt.Sprintf("database query error while trying to delete event with ID %s", eventID))
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, fmt.Sprintf("unexpected error while trying to delete event with ID %s", eventID))
+			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		}
+		return
+	}
+	if err = serverutil.Encode(w, int(http.StatusNoContent), eventID); err != nil {
+		logger.WarnContext(ctx, "failed to send event ID to user after deletion")
 		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
