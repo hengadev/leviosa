@@ -21,15 +21,28 @@ func (a *AppInstance) PostPhoto() http.Handler {
 			return
 		}
 
+		// TODO: this is not something general I need to remove that from the posting thing
 		eventID := r.PathValue("id")
+		if eventID == "" {
+			// return  some error because I need that eventID
+		}
+
+		// Limit upload size to 10MB
+		if err = r.ParseMultipartForm(10 << 20); err != nil {
+			// add some logger to if the file is too big
+			http.Error(w, "Failed to parse form data", http.StatusBadRequest)
+			return
+		}
+
 		file, fileheader, err := r.FormFile("photo")
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get the photo information from form", "error", err)
 			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
-		// post file to bucket
-		url, err := a.Svcs.Photo.PostFile(ctx, file, fileheader.Filename, eventID)
+
+		// post file to the right bucket
+		url, err := a.Svcs.Media.PostFile(ctx, file, fileheader.Filename, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to post file", "error", err)
 			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
