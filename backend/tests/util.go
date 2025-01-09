@@ -7,13 +7,13 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/pkg/config"
+	"github.com/GaryHY/leviosa/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	"github.com/GaryHY/leviosa/pkg/config"
 
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
+	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
 )
 
 // TODO: handle the different ways to import the different domain

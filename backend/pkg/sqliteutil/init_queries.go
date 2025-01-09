@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"golang.org/x/crypto/bcrypt"
 )
 

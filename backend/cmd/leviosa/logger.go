@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil/logger"
+	"github.com/GaryHY/leviosa/pkg/serverutil/logger"
 )
 
 func setLogger() (*slog.Logger, error) {

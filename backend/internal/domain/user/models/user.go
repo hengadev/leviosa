@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 	"github.com/google/uuid"
 )
 

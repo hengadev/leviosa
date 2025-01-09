@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) DecreasePlacecount(ctx context.Context, eventID string) error {
-	err := s.Repo.DecreaseFreeplace(ctx, eventID)
+	err := s.Repo.DecreaseFreePlace(ctx, eventID)
 	if err != nil {
 		switch {
 		case errors.Is(err, rp.ErrContext):

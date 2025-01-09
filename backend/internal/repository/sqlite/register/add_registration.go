@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/register"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (r *repository) AddRegistration(ctx context.Context, reg *registerService.Registration, day, year int, month string) error {

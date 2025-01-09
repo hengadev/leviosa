@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 const EmailMaxLength = 100

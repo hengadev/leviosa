@@ -7,9 +7,9 @@ import (
 	"os"
 
 	//utils
-	"github.com/GaryHY/event-reservation-app/pkg/config"
-	"github.com/GaryHY/event-reservation-app/pkg/redisutil"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/pkg/redisutil"
+	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 
 	// external packages
 	"github.com/pressly/goose/v3"

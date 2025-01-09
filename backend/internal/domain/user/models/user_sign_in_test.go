@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestValidCredentials(t *testing.T) {

@@ -3,7 +3,7 @@ package eventService
 import (
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 // Parse initializes the Event struct after retrieving data from the database

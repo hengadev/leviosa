@@ -3,8 +3,8 @@ package redisutil
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 
 	"github.com/redis/go-redis/v9"
 )

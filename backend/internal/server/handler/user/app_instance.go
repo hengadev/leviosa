@@ -1,7 +1,7 @@
 package userHandler
 
 import (
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/app"
 )
 
 type AppInstance struct {

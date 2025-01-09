@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
 )
 
 type MockDBKey struct {

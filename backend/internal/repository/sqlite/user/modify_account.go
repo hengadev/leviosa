@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 )
 
 func (u *Repository) ModifyAccount(

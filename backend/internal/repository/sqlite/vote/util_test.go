@@ -1,7 +1,7 @@
 package voteRepository_test
 
 import (
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
 )
 
 var (

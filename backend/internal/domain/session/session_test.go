@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	test "github.com/GaryHY/event-reservation-app/tests"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	test "github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestIsZero(t *testing.T) {

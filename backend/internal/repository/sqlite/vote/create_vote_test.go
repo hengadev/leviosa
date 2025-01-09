@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/vote"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestCreateVote(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (u *Repository) GetHashedPasswordByEmail(ctx context.Context, email string) (string, error) {

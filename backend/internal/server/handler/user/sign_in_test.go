@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
-	"github.com/GaryHY/event-reservation-app/pkg/testutil"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	"github.com/GaryHY/leviosa/pkg/sqliteutil"
+	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/assert"
 
 	"github.com/google/uuid"
 )
@@ -62,8 +62,7 @@ func TestSignIn(t *testing.T) {
 			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
-			signIn := userhandler.Signin()
-			signIn.ServeHTTP(w, r)
+			userhandler.Signin(w, r)
 
 			// status code assertions
 			assert.Equal(t, w.Code, tt.expectedStatusCode)

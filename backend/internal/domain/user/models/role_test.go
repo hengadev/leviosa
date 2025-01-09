@@ -3,9 +3,9 @@ package models_test
 import (
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/tests"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestString(t *testing.T) {

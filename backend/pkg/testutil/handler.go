@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
-	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
-	"github.com/GaryHY/event-reservation-app/pkg/config"
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/repository/redis"
+	"github.com/GaryHY/leviosa/internal/repository/redis/session"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/pkg/config"
+	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
 )
 
 func SetupUser(t testing.TB, ctx context.Context, version int64) (*userService.Service, *userRepository.Repository) {

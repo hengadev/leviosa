@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
-	"github.com/GaryHY/event-reservation-app/tests"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestDecreaseFreeplace(t *testing.T) {
@@ -28,7 +28,7 @@ func TestDecreaseFreeplace(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
-			err := repo.DecreaseFreeplace(ctx, tt.id)
+			err := repo.DecreaseFreePlace(ctx, tt.id)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})
 	}

@@ -5,13 +5,13 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 // TODO: add the fact that creating an event, should also create a vote and a table with the style votes_month_year.

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
-	"github.com/GaryHY/event-reservation-app/pkg/domainutil"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/domainutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 
 	"golang.org/x/time/rate"
 )

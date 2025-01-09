@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
-	"github.com/GaryHY/event-reservation-app/internal/repository/redis/session"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/repository/redis"
+	"github.com/GaryHY/leviosa/internal/repository/redis/session"
 )
 
 func newTestRepository(t testing.TB, ctx context.Context, initMap miniredis.InitMap[*sessionService.Values]) (*sessionRepository.Repository, error) {

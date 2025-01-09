@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 )
 
 var birthdate, _ = time.Parse("2006-01-02", "1998-07-12")

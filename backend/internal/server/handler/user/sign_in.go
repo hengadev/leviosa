@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func (a *AppInstance) Signin(w http.ResponseWriter, r *http.Request) {

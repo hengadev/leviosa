@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/event"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/product"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/vote"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/handler/event"
+	"github.com/GaryHY/leviosa/internal/server/handler/product"
+	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	"github.com/GaryHY/leviosa/internal/server/handler/vote"
+	mw "github.com/GaryHY/leviosa/internal/server/middleware"
 )
 
 func (s *Server) addRoutes(h *app.App) {

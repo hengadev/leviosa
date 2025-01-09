@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 // HasUser returns an error if no user is found in the users table with the specified hashed email.

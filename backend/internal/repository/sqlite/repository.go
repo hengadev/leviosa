@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	testdb "github.com/GaryHY/event-reservation-app/pkg/sqliteutil/testdatabase"
+	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
 )
 
 type repository interface {

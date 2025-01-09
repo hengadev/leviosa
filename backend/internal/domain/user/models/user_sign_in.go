@@ -4,7 +4,7 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 type UserSignIn struct {

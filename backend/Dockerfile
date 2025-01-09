@@ -9,7 +9,7 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s" -v -o myapp ./cmd/leviosa/*.go
 
 FROM alpine:latest
 

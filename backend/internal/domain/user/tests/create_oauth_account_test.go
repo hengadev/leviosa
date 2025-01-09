@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/pkg/config"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestCreateOAuthAccount(t *testing.T) {

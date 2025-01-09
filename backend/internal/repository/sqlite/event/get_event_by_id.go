@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventService.Event, error) {

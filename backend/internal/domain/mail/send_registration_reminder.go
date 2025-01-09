@@ -3,8 +3,8 @@ package mailService
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 // Function that send an email to user to remind them of an event incoming.

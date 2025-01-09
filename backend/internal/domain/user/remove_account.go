@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/google/uuid"
 )
 

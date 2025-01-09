@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/repository/redis"
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/pkg/testutil"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/repository/redis"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestSignOut(t *testing.T) {
@@ -57,8 +57,7 @@ func TestSignOut(t *testing.T) {
 			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
-			signOut := userhandler.Signout()
-			signOut.ServeHTTP(w, r)
+			userhandler.Signout(w, r)
 
 			// status code assertions
 			assert.Equal(t, w.Code, tt.expectedStatusCode)

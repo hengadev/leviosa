@@ -3,8 +3,8 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/stripe"
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/internal/domain/stripe"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 // (massage standard, massage hibiscus etc...)

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 // Format prepares the Event struct for database storage by populating

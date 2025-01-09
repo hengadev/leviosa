@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler/user"
-	"github.com/GaryHY/event-reservation-app/pkg/testutil"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	"github.com/GaryHY/leviosa/pkg/testutil"
 )
 
 func TestHandleOAuth(t *testing.T) {
@@ -55,8 +55,7 @@ func TestHandleOAuth(t *testing.T) {
 			h := app.New(appsvc, apprepo)
 			userhandler := userHandler.New(h)
 
-			handleOAuth := userhandler.HandleOAuth()
-			handleOAuth.ServeHTTP(w, r)
+			userhandler.HandleOAuth(w, r)
 			// TODO: do all the assertions in here
 		})
 	}

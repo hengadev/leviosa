@@ -3,8 +3,8 @@ package cron
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 // Une fonction pour realiser des actions a l'approche de certaines dates.

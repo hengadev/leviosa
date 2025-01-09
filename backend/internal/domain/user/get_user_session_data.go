@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/security"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/security"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) GetUserSessionData(ctx context.Context, email string) (string, models.Role, error) {

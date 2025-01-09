@@ -1,17 +1,17 @@
 package app
 
 import (
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/domain/mail"
-	"github.com/GaryHY/event-reservation-app/internal/domain/media"
-	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
-	"github.com/GaryHY/event-reservation-app/internal/domain/product"
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/stripe"
-	"github.com/GaryHY/event-reservation-app/internal/domain/throttler"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/mail"
+	"github.com/GaryHY/leviosa/internal/domain/media"
+	"github.com/GaryHY/leviosa/internal/domain/otp"
+	"github.com/GaryHY/leviosa/internal/domain/product"
+	"github.com/GaryHY/leviosa/internal/domain/register"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/stripe"
+	"github.com/GaryHY/leviosa/internal/domain/throttler"
+	"github.com/GaryHY/leviosa/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
 )
 
 type Services struct {

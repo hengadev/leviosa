@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 const SIGNINENDPOINT = "signin"

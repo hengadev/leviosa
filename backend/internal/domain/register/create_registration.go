@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *eventService.Event) error {

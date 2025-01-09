@@ -1,4 +1,4 @@
-module github.com/GaryHY/event-reservation-app
+module github.com/GaryHY/leviosa
 
 go 1.22.1
 

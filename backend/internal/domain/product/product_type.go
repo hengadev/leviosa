@@ -3,7 +3,7 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 // (massage, coaching mental etc...)

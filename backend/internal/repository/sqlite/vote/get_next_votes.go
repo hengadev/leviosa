@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 // table available_votes

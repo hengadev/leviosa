@@ -4,7 +4,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/checkout/session"

@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 // Une fonction pour backer mes BDD. Faire les migrations en gros.

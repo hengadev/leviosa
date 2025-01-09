@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) GetAllPendingUsers(ctx context.Context) ([]*models.UserPending, error) {
@@ -26,7 +26,7 @@ func (s *Service) GetAllPendingUsers(ctx context.Context) ([]*models.UserPending
 	}
 	for _, user := range users {
 		if errs := s.DecryptUser(user); len(errs) > 0 {
-			return nil, domain.NewInvalidValueErr(err.Error())
+			return nil, domain.NewInvalidValueErr(errs.Error())
 		}
 		pendingUsers = append(pendingUsers, user.ToUserPending())
 	}

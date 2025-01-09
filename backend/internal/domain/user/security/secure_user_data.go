@@ -1,7 +1,7 @@
 package security
 
 import (
-	"github.com/GaryHY/event-reservation-app/pkg/config"
+	"github.com/GaryHY/leviosa/pkg/config"
 )
 
 type SecureUserData struct {

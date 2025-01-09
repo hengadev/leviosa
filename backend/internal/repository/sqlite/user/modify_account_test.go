@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/user"
-	"github.com/GaryHY/event-reservation-app/pkg/testutil"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestModifyAccount(t *testing.T) {

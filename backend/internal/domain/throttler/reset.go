@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) Reset(ctx context.Context, email string) error {

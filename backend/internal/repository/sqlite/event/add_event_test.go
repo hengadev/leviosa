@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestAddEvent(t *testing.T) {

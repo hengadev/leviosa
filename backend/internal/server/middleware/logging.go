@@ -8,9 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
-	"github.com/GaryHY/event-reservation-app/pkg/domainutil"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/domainutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {

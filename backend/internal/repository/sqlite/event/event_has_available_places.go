@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 // EventHasAvailablePlaces checks if an event with the given eventID exists in the database
@@ -22,7 +22,7 @@ func (e *EventRepository) EventHasAvailablePlaces(ctx context.Context, eventID s
 	if err := e.DB.QueryRowContext(ctx, query, eventID).Scan(&placecount); err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return false, rp.NewNotFoundErr(err, fmt.Sprintf("event with ID ", eventID))
+			return false, rp.NewNotFoundErr(err, fmt.Sprintf("event with ID %s", eventID))
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return false, rp.NewContextErr(err)
 		default:

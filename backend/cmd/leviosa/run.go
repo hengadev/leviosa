@@ -9,14 +9,14 @@ import (
 	"syscall"
 
 	// api
-	"github.com/GaryHY/event-reservation-app/internal/server"
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
+	"github.com/GaryHY/leviosa/internal/server"
+	"github.com/GaryHY/leviosa/internal/server/app"
 
 	// utils
-	"github.com/GaryHY/event-reservation-app/pkg/config"
-	"github.com/GaryHY/event-reservation-app/pkg/flags"
+	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/pkg/flags"
 
-	// "github.com/GaryHY/event-reservation-app/internal/http/cron"
+	// "github.com/GaryHY/leviosa/internal/http/cron"
 
 	// external packages
 	"github.com/joho/godotenv"

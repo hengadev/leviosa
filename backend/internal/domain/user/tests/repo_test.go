@@ -3,7 +3,7 @@ package models_test
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 )
 
 type MockRepo struct {
@@ -11,7 +11,7 @@ type MockRepo struct {
 	GetHashedPasswordByEmailFunc func(ctx context.Context, email string) (string, error)
 	GetUserFromEmailHashFunc     func(ctx context.Context, emailHash string) (*models.User, error)
 	GetUnverifiedUserFunc        func(ctx context.Context, emailHash string) (*models.User, error)
-	GetPendingUserFunc           func(ctx context.Context, emailHash string) (*models.User, error)
+	GetPendingUserFunc           func(ctx context.Context, emailHash string, provider models.ProviderType) (*models.User, error)
 	GetPendingUsersFunc          func(ctx context.Context) ([]*models.User, error)
 	GetOAuthUserFunc             func(ctx context.Context, email, provider string) (*models.User, error)
 	GetUserSessionDataFunc       func(ctx context.Context, email string) (string, models.Role, error)
@@ -98,9 +98,9 @@ func (m *MockRepo) AddUnverifiedUser(ctx context.Context, user *models.User) err
 	return nil
 }
 
-func (m *MockRepo) GetPendingUser(ctx context.Context, emailHash string) (*models.User, error) {
+func (m *MockRepo) GetPendingUser(ctx context.Context, emailHash string, provider models.ProviderType) (*models.User, error) {
 	if m.GetPendingUserFunc != nil {
-		return m.GetPendingUser(ctx, emailHash)
+		return m.GetPendingUser(ctx, emailHash, provider)
 	}
 	return nil, nil
 }

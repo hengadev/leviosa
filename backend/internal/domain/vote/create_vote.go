@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {

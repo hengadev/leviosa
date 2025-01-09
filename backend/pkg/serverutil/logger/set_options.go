@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/pkg/flags"
+	"github.com/GaryHY/leviosa/pkg/flags"
 )
 
 func SetOptions(env mode.EnvMode, level, style *string) error {

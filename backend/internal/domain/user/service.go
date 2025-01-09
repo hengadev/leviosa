@@ -1,8 +1,8 @@
 package userService
 
 import (
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/security"
-	"github.com/GaryHY/event-reservation-app/pkg/config"
+	"github.com/GaryHY/leviosa/internal/domain/user/security"
+	"github.com/GaryHY/leviosa/pkg/config"
 )
 
 type Service struct {

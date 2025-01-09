@@ -3,7 +3,7 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 func (s *Service) UpdateProduct(ctx context.Context, product *Product) error {

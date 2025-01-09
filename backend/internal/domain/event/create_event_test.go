@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestCreateEvent(t *testing.T) {

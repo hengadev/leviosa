@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/otp"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/redis/go-redis/v9"
 )
 

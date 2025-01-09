@@ -3,7 +3,7 @@ package models
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 // the user that is send to admin for validation

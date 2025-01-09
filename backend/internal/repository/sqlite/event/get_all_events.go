@@ -3,10 +3,9 @@ package eventRepository
 import (
 	"context"
 	"errors"
-	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Event, error) {
@@ -33,7 +32,7 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 	defer rows.Close()
 	var events []*eventService.Event
 	for rows.Next() {
-		var event *eventService.Event
+		var event eventService.Event
 		if err := rows.Scan(
 			&event.ID,
 			&event.Title,
@@ -46,11 +45,8 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 		); err != nil {
 			return nil, rp.NewDatabaseErr(err)
 		}
-		if err != nil {
-			return nil, rp.NewInternalErr(fmt.Errorf("parsing time: %w", err))
-		}
 		event.Parse()
-		events = append(events, event)
+		events = append(events, &event)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, rp.NewDatabaseErr(err)

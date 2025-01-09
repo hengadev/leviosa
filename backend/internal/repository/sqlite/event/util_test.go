@@ -3,8 +3,8 @@ package eventRepository_test
 import (
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/repository/sqlite/event"
+	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 )
 
 var (

@@ -3,7 +3,7 @@ package registerService
 import (
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 // Parse initializes the Registration struct after retrieving data from the database

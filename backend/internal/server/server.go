@@ -6,9 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/app"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	// "github.com/GaryHY/event-reservation-app/pkg/config"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	mw "github.com/GaryHY/leviosa/internal/server/middleware"
 )
 
 type Server struct {

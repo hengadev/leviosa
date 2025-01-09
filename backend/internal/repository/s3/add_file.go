@@ -4,7 +4,7 @@ import (
 	"context"
 	"mime/multipart"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"

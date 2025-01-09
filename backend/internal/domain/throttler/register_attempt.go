@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 	// TODO: add this later with the right error message and checking
-	// "github.com/GaryHY/event-reservation-app/internal/domain"
-	// rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	// "github.com/GaryHY/leviosa/internal/domain"
+	// rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) RegisterAttempt(ctx context.Context, email string) error {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 const (

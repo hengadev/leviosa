@@ -4,7 +4,7 @@ import (
 	"context"
 	// "fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event"
 )
 
 type StubEventRepository struct {
@@ -38,9 +38,9 @@ func (s *StubEventRepository) GetPriceID(ctx context.Context, eventID string) (s
 	return "", nil
 }
 
-func (s *StubEventRepository) AddEvent(ctx context.Context, event *eventService.Event) error {
+func (s *StubEventRepository) AddEvent(ctx context.Context, event *eventService.Event) (string, error) {
 	s.events = append(s.events, event)
-	return nil
+	return "", nil
 }
 func (s *StubEventRepository) RemoveEvent(ctx context.Context, eventID string) error {
 	return nil
@@ -48,6 +48,10 @@ func (s *StubEventRepository) RemoveEvent(ctx context.Context, eventID string) e
 func (s *StubEventRepository) ModifyEvent(ctx context.Context, event *eventService.Event, whereMap map[string]any, prohibitedFields ...string) error {
 	return nil
 }
-func (s *StubEventRepository) DecreaseFreeplace(ctx context.Context, eventID string) error {
+func (s *StubEventRepository) DecreaseFreePlace(ctx context.Context, eventID string) error {
 	return nil
+}
+
+func (s *StubEventRepository) EventHasAvailablePlaces(ctx context.Context, eventID string) (bool, error) {
+	return false, nil
 }

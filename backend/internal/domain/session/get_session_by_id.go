@@ -6,8 +6,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) GetSession(ctx context.Context, sessionID string) (*Session, error) {

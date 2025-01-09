@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (r *repository) RemoveRegistration(ctx context.Context, day, year int, month string) error {

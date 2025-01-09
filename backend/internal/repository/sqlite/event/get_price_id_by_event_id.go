@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (e *EventRepository) GetPriceID(ctx context.Context, eventID string) (string, error) {

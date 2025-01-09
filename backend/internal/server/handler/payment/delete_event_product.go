@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/pkg/contextutil"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	mw "github.com/GaryHY/leviosa/internal/server/middleware"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 
 	"github.com/stripe/stripe-go/v79"
 )

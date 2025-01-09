@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/otp"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/otp"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 // ValidateOTP validates an OTP for a given email hash.

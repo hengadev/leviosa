@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/register"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	"github.com/GaryHY/leviosa/internal/domain/register"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 // Function that return if there is a registration for a certain user for a certain event at a certain time.

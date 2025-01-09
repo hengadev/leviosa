@@ -3,8 +3,8 @@ package testutil
 import (
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 )
 
 const SessionID = "a36bde82-55ae-4fa9-9289-cb82bde68014"

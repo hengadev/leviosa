@@ -3,7 +3,7 @@ package userService
 import (
 	"context"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 )
 
 type Reader interface {

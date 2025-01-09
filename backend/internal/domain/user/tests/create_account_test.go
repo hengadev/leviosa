@@ -5,10 +5,10 @@ import (
 	// "reflect"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
-	"github.com/GaryHY/event-reservation-app/internal/domain/user/models"
-	"github.com/GaryHY/event-reservation-app/pkg/config"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -56,7 +56,7 @@ func TestCreateAccount(t *testing.T) {
 		// 	"CreatedAt",
 		// }
 		u := &models.UserPendingResponse{
-			EmailHash: "john.doe@gmail.com",
+			Email: "john.doe@gmail.com",
 		}
 		ctx := context.Background()
 		repo := &MockRepo{}

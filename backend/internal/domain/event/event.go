@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/stripe"
+	"github.com/GaryHY/leviosa/internal/domain/stripe"
 	"github.com/google/uuid"
 )
 

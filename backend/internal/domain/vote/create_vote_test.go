@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
+	"github.com/GaryHY/leviosa/tests/assert"
 )
 
 func TestCreateVote(t *testing.T) {

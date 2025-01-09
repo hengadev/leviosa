@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	productService "github.com/GaryHY/event-reservation-app/internal/domain/product"
-	rp "github.com/GaryHY/event-reservation-app/internal/repository"
+	productService "github.com/GaryHY/leviosa/internal/domain/product"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (p *Repository) AddProductType(ctx context.Context, productType *productService.ProductType) error {
