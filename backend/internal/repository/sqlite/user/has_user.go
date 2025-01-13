@@ -7,7 +7,14 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-// HasUser returns an error if no user is found in the users table with the specified hashed email.
+// HasUser checks whether a user exists in the "users" table based on their email hash.
+//
+// Parameters:
+//   - ctx: The context for managing the lifecycle of the database query.
+//   - emailHash: The email hash of the user to check.
+//
+// Returns:
+//   - error: Returns an error if any database issues occur or if the user is not found.
 func (u *Repository) HasUser(ctx context.Context, emailHash string) error {
 	query := `
         SELECT EXISTS (

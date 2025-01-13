@@ -10,6 +10,17 @@ import (
 	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 )
 
+// ModifyAccount modifies the user account information based on the provided fields.
+// It constructs an SQL update query, executes it, and handles the result. The function allows certain fields to be excluded from modification through the `prohibitedFields` argument.
+//
+// Parameters:
+//   - ctx: The context for managing the lifecycle of the database query.
+//   - user: The user struct containing the updated information to be saved in the database.
+//   - whereMap: A map of conditions used to identify which user record to update.
+//   - prohibitedFields: A list of fields that should not be modified during the update.
+//
+// Returns:
+//   - error: Returns an error if the query fails, the user record cannot be updated, or if any issues arise during execution.
 func (u *Repository) ModifyAccount(
 	ctx context.Context,
 	user *models.User,

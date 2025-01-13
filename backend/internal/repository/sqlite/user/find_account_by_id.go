@@ -9,8 +9,22 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// FindAccountByID retrieves a user's account details from the 'users' table based on the provided user ID.
+// The function performs a database query to fetch the user's data and maps it to a User model.
+// If the user is not found or an error occurs during the operation, appropriate errors are returned.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - id: The unique identifier of the user to find in the database.
+//
+// Returns:
+//   - *models.User: A pointer to the User model containing the retrieved account details.
+//   - error: An error if the query fails or the user is not found.
+//   - If the query returns no rows, a "not found" error is returned.
+//   - If context-related errors occur (e.g., deadline exceeded, canceled), a context error is returned.
+//   - For any other query failures, a database error is returned.
 func (u *Repository) FindAccountByID(ctx context.Context, id string) (*models.User, error) {
-	var user *models.User
+	var user models.User
 	query := `
         SELECT 
             email,
@@ -50,5 +64,5 @@ func (u *Repository) FindAccountByID(ctx context.Context, id string) (*models.Us
 			return nil, rp.NewDatabaseErr(err)
 		}
 	}
-	return user, nil
+	return &user, nil
 }

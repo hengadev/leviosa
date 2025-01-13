@@ -10,6 +10,20 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// GetPendingUser retrieves a pending user by their email hash and provider type from the 'pending_users' table.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - emailHash: The hashed email address of the user to be retrieved.
+//   - provider: The type of provider (e.g., Google, Apple, Mail) associated with the user.
+//
+// Returns:
+//   - *models.User: A pointer to the user model populated with the retrieved data.
+//   - error: An error if the query fails or the user is not found.
+//   - Returns a "validation" error if the provider type is unsupported.
+//   - Returns a "not found" error if no user exists with the given email hash.
+//   - Returns a context error if the operation is canceled or the deadline is exceeded.
+//   - Returns a database error for any other query-related issues.
 func (u *Repository) GetPendingUser(ctx context.Context, emailHash string, provider models.ProviderType) (*models.User, error) {
 	var user models.User
 	var query string

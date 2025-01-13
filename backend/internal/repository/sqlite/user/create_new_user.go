@@ -9,6 +9,22 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// createNewUser inserts a new user into the specified table ('pending_users', 'users', etc.)
+// based on the authentication provider type. The function prepares the appropriate SQL query
+// for inserting user data based on the provider (Google, Apple, or Mail) and executes it within
+// a transaction if provided.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - tx: The transaction object used for the operation. If nil, the operation is executed outside of a transaction.
+//   - user: The user object containing details such as email hash, password hash, personal details, and provider-specific information.
+//   - provider: The authentication provider type (Google, Apple, or Mail) which determines how the user data is inserted into the table.
+//   - table: The name of the table into which the user data is inserted (e.g., 'users', 'pending_users').
+//
+// Returns:
+//   - error: An error if the user insertion fails, including database-related errors.
+//   - If the provider type is unsupported, a validation error is returned.
+//   - If the insert operation does not affect any rows, an error indicating no creation is returned.
 func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models.User, provider models.ProviderType, table string) error {
 	var query string
 	var args []interface{}

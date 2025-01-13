@@ -8,6 +8,19 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// GetAllUsers retrieves all user accounts from the 'users' table.
+// The function queries the database to fetch the relevant details for each user
+// and maps the results to a slice of User models.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//
+// Returns:
+//   - []*models.User: A slice of pointers to User models containing the retrieved user details.
+//   - error: An error if the query fails or other issues occur during the operation.
+//   - If the operation is canceled or the deadline is exceeded, a context error is returned.
+//   - For query failures or result processing issues, a database error is returned.
+//   - Returns an empty slice with no error if no users are found.
 func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone FROM users;"
 	rows, err := u.DB.QueryContext(ctx, query)
@@ -23,7 +36,7 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 
 	var users []*models.User
 	for rows.Next() {
-		var user *models.User
+		var user models.User
 		err := rows.Scan(
 			&user.EmailHash,
 			&user.Role,
@@ -36,7 +49,7 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 		if err != nil {
 			return nil, rp.NewDatabaseErr(err)
 		}
-		users = append(users, user)
+		users = append(users, &user)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, rp.NewDatabaseErr(err)

@@ -8,6 +8,16 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// AddUnverifiedUser inserts a new unverified user into the 'unverified_users' table.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - user: The user object containing details to be stored in the 'unverified_users' table.
+//     This includes email hash, password hash, personal details, and encrypted birthdate.
+//
+// Returns:
+//   - error: An error if the insertion fails, including database or context-related errors. Returns nil if successful.
+//   - If no rows are affected by the insertion, a "not created" error is returned.
 func (u *Repository) AddUnverifiedUser(ctx context.Context, user *models.User) error {
 	query := `
         INSERT INTO unverified_users (

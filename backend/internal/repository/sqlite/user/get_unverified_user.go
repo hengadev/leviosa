@@ -9,6 +9,18 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// GetUnverifiedUser retrieves an unverified user's details by their email hash from the database.
+//
+// Parameters:
+//   - ctx: Context to manage the lifecycle of the operation and handle cancellation.
+//   - emailHash: The hashed email of the user to search for.
+//
+// Returns:
+//   - *models.User: A pointer to the populated user model if the user is found.
+//   - error: An error if the query fails or no matching user is found.
+//   - Returns a "not found" error if no user matches the provided email hash.
+//   - Returns a context error if the operation is canceled or the deadline is exceeded.
+//   - Returns a database error for any other query-related issues.
 func (u *Repository) GetUnverifiedUser(ctx context.Context, emailHash string) (*models.User, error) {
 	var user models.User
 	query := `

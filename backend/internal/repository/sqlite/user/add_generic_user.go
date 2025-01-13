@@ -10,8 +10,16 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-// AddGenericUser adds a user to the specified table taking into account the provider type specified.
-// The function assure account linking if other providers exists.
+// addGenericUser checks if a user exists in the specified database table and either creates a new user or links an authentication method to an existing user, all within a transaction.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - user: The user object containing details to be stored or linked.
+//   - provider: The provider type (e.g., 'apple', 'google', 'mail') used for authentication.
+//   - table: The name of the database table to check and store the user data.
+//
+// Returns:
+//   - error: An error if the transaction fails, the user creation or linking process fails, or any database-related errors occur. Returns nil if successful.
 func (u *Repository) addGenericUser(ctx context.Context, user *models.User, provider models.ProviderType, table string) error {
 	tx, err := u.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {

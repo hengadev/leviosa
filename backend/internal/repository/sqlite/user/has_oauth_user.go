@@ -10,6 +10,16 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// HasOAuthUser checks whether a user with the specified email hash has an OAuth account (Google, Apple, etc.)
+// associated with them in either the "users" or "pending_users" tables.
+//
+// Parameters:
+//   - ctx: The context for managing the lifecycle of the database query.
+//   - emailHash: The email hash of the user to check.
+//   - p: The OAuth provider type (e.g., Google, Apple, etc.).
+//
+// Returns:
+//   - error: Returns an error if any database issues occur or the user is not found.
 func (u *Repository) HasOAuthUser(ctx context.Context, emailHash string, p models.ProviderType) error {
 	tx, err := u.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {

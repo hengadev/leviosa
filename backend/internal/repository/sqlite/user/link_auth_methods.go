@@ -9,6 +9,19 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// linkAuthMethod links an authentication method (Google, Apple, or email) to a user's account.
+// This function updates the user record in the specified table with the corresponding authentication information.
+//
+// Parameters:
+//   - ctx: The context for managing the lifecycle of the database query.
+//   - tx: The transaction to execute the query within.
+//   - userID: The ID of the user to link the authentication method to.
+//   - user: The user struct containing the authentication data (GoogleID, AppleID, or PasswordHash).
+//   - provider: The provider type (Google, Apple, or Mail) indicating which authentication method to link.
+//   - table: The name of the table (either `users` or `pending_users`) to update.
+//
+// Returns:
+//   - error: Returns an error if any database issues occur or if the provider type is unsupported.
 func (u *Repository) linkAuthMethod(ctx context.Context, tx *sql.Tx, userID string, user *models.User, provider models.ProviderType, table string) error {
 	switch provider {
 	case models.Google:

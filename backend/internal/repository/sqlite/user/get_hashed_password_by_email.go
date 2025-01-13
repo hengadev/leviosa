@@ -8,6 +8,18 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// GetHashedPasswordByEmail retrieves the hashed password of a user by their email address from the 'users' table.
+//
+// Parameters:
+//   - ctx: The context for managing the transaction lifecycle and cancelation.
+//   - email: The email address of the user for which the hashed password is to be retrieved.
+//
+// Returns:
+//   - string: The hashed password of the user.
+//   - error: An error if the query fails or the user is not found.
+//   - Returns a "not found" error if no user exists with the given email.
+//   - Returns a context error if the operation is canceled or the deadline is exceeded.
+//   - Returns a database error for any other query-related issues.
 func (u *Repository) GetHashedPasswordByEmail(ctx context.Context, email string) (string, error) {
 	var hashedPassword string
 	query := "SELECT password from users where email = ?;"
