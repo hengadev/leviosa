@@ -9,7 +9,14 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// HashPassword creates a secure hash of the password
+// hashPassword generates a hashed password using the Argon2id algorithm, with added salt and pepper for extra security.
+//
+// Parameters:
+//   - password: The plaintext password to be hashed.
+//
+// Returns:
+//   - string: The generated hash, including Argon2 parameters, salt, and the password hash in a string format.
+//   - error: An error if the salt generation, hashing, or string encoding fails. Returns nil if successful.
 func (s *SecureUserData) hashPassword(password string) (string, error) {
 	// Generate a random salt
 	salt := make([]byte, s.config.Argon2Params.SaltLength)

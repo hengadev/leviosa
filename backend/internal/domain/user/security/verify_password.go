@@ -9,7 +9,16 @@ import (
 	"golang.org/x/crypto/argon2"
 )
 
-// VerifyPassword checks if the provided password matches the hash using Argon2id
+// VerifyPassword compares the provided password with an encoded hash and returns whether they match.
+//
+// Parameters:
+//   - password: The plaintext password to be verified.
+//   - encodedHash: The encoded hash string that contains version, memory, iterations, parallelism, salt, and hash data.
+//
+// Returns:
+//   - bool: A boolean value indicating whether the provided password matches the encoded hash.
+//   - error: An error if the hash format is invalid, there is an issue parsing the components of the hash,
+//     or any other error occurs during the verification process. Returns nil if the password verification is successful.
 func (s *SecureUserData) VerifyPassword(password, encodedHash string) (bool, error) {
 	// Extract the parameters, salt and hash from the encoded string
 	parts := strings.Split(encodedHash, "$")

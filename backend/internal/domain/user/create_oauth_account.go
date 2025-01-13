@@ -7,6 +7,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 )
 
+// TODO: I am not sure that I no longer need that function
+
 func (s *Service) CreateOAuthAccount(
 	ctx context.Context,
 	userCandidate *models.OAuthUser,

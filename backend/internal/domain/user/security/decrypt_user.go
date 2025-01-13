@@ -10,7 +10,15 @@ import (
 	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
-// DecryptUser decrypts sensitive fields of a user
+// DecryptUser decrypts sensitive fields in the provided user model and populates them with their decrypted values.
+//
+// Parameters:
+//   - user: A pointer to the `models.User` struct containing encrypted fields that need to be decrypted.
+//
+// Returns:
+//   - errsx.Map: A map containing errors for any decryption failures. The map contains key-value pairs
+//     where the key is the name of the field (e.g., "encrypted birthdate") and the value is the corresponding error.
+//     If no errors occur, an empty map is returned.
 func (s *SecureUserData) DecryptUser(user *models.User) errsx.Map {
 	var errs errsx.Map
 	if user.EncryptedBirthDate != "" {

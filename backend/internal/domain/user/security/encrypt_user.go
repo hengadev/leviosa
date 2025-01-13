@@ -15,7 +15,16 @@ import (
 	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
-// Encrypt sensitive fields
+// EncryptUser encrypts sensitive fields in the provided user model and clears the original plaintext values.
+//
+// Parameters:
+//   - user: A pointer to the `models.User` struct containing fields to be encrypted, such as birthdate,
+//     last name, first name, email, and password.
+//
+// Returns:
+//   - errsx.Map: A map containing errors for any encryption failures. The map contains key-value pairs
+//     where the key is the name of the field (e.g., "encrypt birthdate") and the value is the corresponding error.
+//     If no errors occur, an empty map is returned.
 func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	var errs errsx.Map
 	// TODO: do the same later with created at and loggedinat

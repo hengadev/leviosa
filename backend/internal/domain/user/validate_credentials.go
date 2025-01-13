@@ -3,6 +3,7 @@ package userService
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/GaryHY/leviosa/internal/domain"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
@@ -10,7 +11,18 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-// TODO: change that thing using the new API
+// ValidateCredentials verifies the user's credentials by checking if the provided email and password
+// match the stored data in the repository.
+//
+// Parameters:
+//   - ctx: The context used for the operation.
+//   - user: The user object containing the email and password to be validated.
+//
+// Returns:
+//   - error: An error indicating any issues during the validation process. It can return:
+//   - NewNotFoundErr if the email is not found.
+//   - NewQueryFailedErr if there is a query failure.
+//   - NewInvalidValueErr if the password verification fails.
 func (s *Service) ValidateCredentials(ctx context.Context, user *models.UserSignIn) error {
 	hashedEmail := security.HashEmail(user.Email)
 	hashedPassword, err := s.repo.GetHashedPasswordByEmail(ctx, hashedEmail)
@@ -28,10 +40,10 @@ func (s *Service) ValidateCredentials(ctx context.Context, user *models.UserSign
 	}
 	ok, err := s.VerifyPassword(user.Password, hashedPassword)
 	if err != nil {
-		// error in the verification
+		return domain.NewInvalidValueErr(fmt.Sprintf("invalid password verification: %s", err.Error()))
 	}
 	if !ok {
-		// the password are not the same
+		return domain.NewInvalidValueErr("password does not match")
 	}
 	return nil
 }

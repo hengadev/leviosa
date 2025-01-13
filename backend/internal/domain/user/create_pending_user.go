@@ -11,6 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
+// CreatePendingUser creates a pending user entry in the system for email-based registration.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - email: A string representing the email address of the user to be added to the pending user table.
+//
+// Returns:
+//   - error: An error if the user cannot be retrieved, the user cannot be added to the pending user table,
+//     or an unexpected error occurs. Returns nil if the user is successfully added.
 func (s *Service) CreatePendingUser(ctx context.Context, email string) error {
 	emailHash := security.HashEmail(email)
 	user, err := s.repo.GetUnverifiedUser(ctx, emailHash)

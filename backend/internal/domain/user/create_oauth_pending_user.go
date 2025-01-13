@@ -10,6 +10,16 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// CreateOAuthPendingUser adds a user to the pending user table for OAuth-based registration.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - user: A pointer to a models.User instance containing the user's information.
+//   - provider: A models.ProviderType value representing the OAuth provider used for registration.
+//
+// Returns:
+//   - error: An error if the user encryption fails, the user cannot be added to the pending user table,
+//     or an unexpected error occurs. Returns nil if the user is successfully added.
 func (s *Service) CreateOAuthPendingUser(ctx context.Context, user *models.User, provider models.ProviderType) error {
 	// encrypt user
 	if errs := s.EncryptUser(user); len(errs) > 0 {

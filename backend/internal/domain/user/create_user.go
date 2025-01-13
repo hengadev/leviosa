@@ -9,6 +9,16 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
+// CreateUser creates a verified user in the system based on a pending user response.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - userResponse: A pointer to a models.UserPendingResponse instance containing the pending user's response data.
+//
+// Returns:
+//   - *models.User: A pointer to the newly created user object.
+//   - error: An error if the pending user cannot be retrieved, the role is invalid, the user cannot be added to the
+//     database, or an unexpected error occurs. Returns nil if the user is successfully created.
 func (s *Service) CreateUser(ctx context.Context, userResponse *models.UserPendingResponse) (*models.User, error) {
 	// get encrypted user from hashed email
 	user, err := s.repo.GetPendingUser(ctx, userResponse.Email, userResponse.Provider)

@@ -11,6 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
+// UpdateAccount updates an existing user's account in the database based on the provided user ID and user data.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - user: A pointer to the models.User struct containing the updated user data.
+//   - userID: A string representing the ID of the user to be updated.
+//
+// Returns:
+//   - error: An error if the user ID is invalid, the user data cannot be encrypted, the account cannot be updated,
+//     or an unexpected error occurs. Returns nil if the account is successfully updated.
 func (s *Service) UpdateAccount(ctx context.Context, user *models.User, userID string) error {
 	// validate UUID provided
 	if err := uuid.Validate(userID); err != nil {
