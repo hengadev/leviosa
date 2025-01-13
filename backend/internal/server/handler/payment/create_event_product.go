@@ -31,14 +31,14 @@ func (a *AppInstance) CreateEventProduct() http.Handler {
 		event, err := serverutil.Decode[eventService.Event](r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to decode event", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// use service to make request
 		priceID, err := a.Svcs.Stripe.CreateProduct(ctx, &event)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to create product", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// use priceID to update corresponding field of event
@@ -47,7 +47,7 @@ func (a *AppInstance) CreateEventProduct() http.Handler {
 		err = a.Svcs.Event.ModifyEvent(ctx, &event)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to update the priceID for event", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// send status created to client
@@ -57,7 +57,7 @@ func (a *AppInstance) CreateEventProduct() http.Handler {
 			EventID: event.ID,
 		}); err != nil {
 			logger.ErrorContext(ctx, "failed to encode eventID for product registered", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

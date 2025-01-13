@@ -35,14 +35,14 @@ func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println("error in deleting the user")
 		logger.ErrorContext(ctx, "delete user:", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 	// - call the service repo to delete all user's session
 	err = a.Svcs.Session.RemoveSession(ctx, sessionID)
 	if err != nil {
 		logger.ErrorContext(ctx, "delete user session:", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

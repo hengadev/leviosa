@@ -26,7 +26,7 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -35,10 +35,10 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "decode product  type", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		default:
 			logger.WarnContext(ctx, "invalid product type creation", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}

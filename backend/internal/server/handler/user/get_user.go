@@ -30,13 +30,13 @@ func (a *AppInstance) GetUser(w http.ResponseWriter, r *http.Request) {
 		switch {
 		default:
 			logger.WarnContext(ctx, "find user:", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, http.StatusOK, user); err != nil {
 		logger.WarnContext(ctx, "send back user:", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

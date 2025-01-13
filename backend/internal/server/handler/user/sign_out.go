@@ -26,7 +26,7 @@ func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionService.SessionName)
 	if err != nil {
 		logger.ErrorContext(ctx, "get session cookie for signout", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 
 	}
@@ -37,16 +37,16 @@ func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "invalid value in session validation")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database removing session for user query failed")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrNotFound):
 			logger.WarnContext(ctx, "user session not found")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, "unexpected error removing user session")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}

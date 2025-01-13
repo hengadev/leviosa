@@ -29,7 +29,7 @@ func (app *AppInstance) MakeRegistration() http.Handler {
 		payload, err := io.ReadAll(r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get read request body", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewServiceUnavailableErr(err), http.StatusServiceUnavailable)
+			serverutil.WriteResponse(w, handler.NewServiceUnavailableErr(err), http.StatusServiceUnavailable)
 			return
 		}
 		// TODO: that thing should be hidden in an env variable : stripe_webhook_secret
@@ -37,7 +37,7 @@ func (app *AppInstance) MakeRegistration() http.Handler {
 		stripeEvent, err := webhook.ConstructEvent(payload, r.Header.Get("Stripe-Signature"), endpointSecret)
 		if err := json.Unmarshal(payload, &stripeEvent); err != nil {
 			logger.ErrorContext(ctx, "failed to parse webhook body json", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		// I get that part from the part types of event of the documentation: https://docs.stripe.com/api/events/types
@@ -48,7 +48,7 @@ func (app *AppInstance) MakeRegistration() http.Handler {
 			err = json.Unmarshal(stripeEvent.Data.Raw, &sessionCompletion)
 			if err != nil {
 				logger.ErrorContext(ctx, "failed to parse webhook body json", "error", err)
-				serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+				serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 				return
 			}
 			metadata = sessionCompletion.Metadata
@@ -59,17 +59,17 @@ func (app *AppInstance) MakeRegistration() http.Handler {
 		event, err := app.Repos.Event.GetEventByID(ctx, metadata["eventID"])
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get event with given ID", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 		if err := app.Svcs.Register.CreateRegistration(ctx, metadata["userID"], metadata["spot"], event); err != nil {
 			logger.ErrorContext(ctx, "failed creating registration for user", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		if err = app.Svcs.Event.DecreasePlacecount(ctx, metadata["eventID"]); err != nil {
 			logger.ErrorContext(ctx, "failed decreasing placecount for event", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

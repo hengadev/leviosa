@@ -37,7 +37,7 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		file, fileheader, err := r.FormFile("photo")
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get the photo information from form", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		}
 
@@ -45,7 +45,7 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		url, err := a.Svcs.Media.PostFile(ctx, file, fileheader.Filename, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to post file", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// TODO: see if I can send the url without making an object.
@@ -56,7 +56,7 @@ func (a *AppInstance) PostPhoto() http.Handler {
 		// if err := serverutil.Encode(w, http.StatusSeeOther, Response{URL: url}); err != nil {
 		if err := serverutil.Encode(w, http.StatusSeeOther, url); err != nil {
 			logger.ErrorContext(ctx, "failed to send url back to client", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

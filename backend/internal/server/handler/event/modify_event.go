@@ -24,13 +24,13 @@ func (a *AppInstance) ModifyEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.WarnContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	event, err := serverutil.Decode[eventService.Event](r.Body)
 	if err != nil {
 		logger.WarnContext(ctx, "failed to decode the event", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 	err = a.Svcs.Event.ModifyEvent(ctx, &event)
@@ -38,25 +38,25 @@ func (a *AppInstance) ModifyEvent(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error, deadline or timeout while updating event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database updating event failed")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrNotUpdated):
 			logger.WarnContext(ctx, "failed to update event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, "unexpected error while updating event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "invalid event error while updating event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err = serverutil.Encode(w, http.StatusInternalServerError, event.ID); err != nil {
 		logger.WarnContext(ctx, "failed to send event ID", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

@@ -25,13 +25,13 @@ func (a *AppInstance) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.WarnContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	event, err := serverutil.Decode[eventService.Event](r.Body)
 	if err != nil {
 		logger.WarnContext(ctx, "failed to decode event in create event handler", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 	eventID, err := a.Svcs.Event.CreateEvent(ctx, &event)
@@ -39,25 +39,25 @@ func (a *AppInstance) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrFormat):
 			logger.WarnContext(ctx, "failed to format event for database operation")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrNotCreated):
 			logger.WarnContext(ctx, "failed to create event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database creating event failed")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error, deadline or timeout while creating event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, "unexpected error while creating event")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, http.StatusCreated, eventID); err != nil {
 		logger.WarnContext(ctx, "failed to send the event", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

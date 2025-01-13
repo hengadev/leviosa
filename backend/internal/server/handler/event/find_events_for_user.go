@@ -21,7 +21,7 @@ func (a *AppInstance) FindEventsForUser(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.BASIC); err != nil {
 		logger.WarnContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
@@ -36,13 +36,13 @@ func (a *AppInstance) FindEventsForUser(w http.ResponseWriter, r *http.Request) 
 		switch {
 		default:
 			logger.ErrorContext(ctx, "failed to get the events for the user", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, http.StatusOK, userEvents); err != nil {
 		logger.ErrorContext(ctx, "failed to send the user", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

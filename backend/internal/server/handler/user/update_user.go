@@ -31,13 +31,13 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := serverutil.Decode[models.User](r.Body)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to decode user", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 	// modify user
 	if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
 		logger.ErrorContext(ctx, "failed to modify the user", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

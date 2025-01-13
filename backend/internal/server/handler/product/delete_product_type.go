@@ -26,7 +26,7 @@ func (a *AppInstance) DeleteProductType(w http.ResponseWriter, r *http.Request) 
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 

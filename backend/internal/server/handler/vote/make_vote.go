@@ -34,7 +34,7 @@ func (a *AppInstance) MakeVote() http.Handler {
 		votes, err := serverutil.Decode[[]*vote.Vote](r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to decode vote", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// add userID field to votes.
@@ -44,7 +44,7 @@ func (a *AppInstance) MakeVote() http.Handler {
 		// create vote
 		if err := a.Svcs.Vote.CreateVote(ctx, votes); err != nil {
 			logger.ErrorContext(ctx, "failed to create vote", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 
 		}

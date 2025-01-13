@@ -1,4 +1,4 @@
-package errsrv
+package handler
 
 import (
 	"errors"

@@ -25,7 +25,7 @@ func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) 
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -34,10 +34,10 @@ func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) 
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "decode product", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		default:
 			logger.WarnContext(ctx, "invalid product creation", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -46,16 +46,16 @@ func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) 
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "ivnalid product given")
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		case errors.Is(err, domain.ErrNotCreated):
 			logger.WarnContext(ctx, "product not created")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database query create product failed")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}

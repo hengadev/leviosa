@@ -21,7 +21,7 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	// TODO:
@@ -33,11 +33,11 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "failed to decode user", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		default:
 			logger.WarnContext(ctx, "validate user")
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -47,14 +47,14 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 		switch {
 		default:
 			logger.WarnContext(ctx, "failed to create account", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	}
 	// send email to user to tell them that their account have been approved
 	if errs := h.Svcs.Mail.WelcomeUser(ctx, user); len(errs) > 0 {
 		logger.WarnContext(ctx, "failed to send welcome email to new added user", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 
 	}

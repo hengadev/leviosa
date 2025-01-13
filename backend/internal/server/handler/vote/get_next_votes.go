@@ -28,13 +28,13 @@ func (a *AppInstance) GetNextVotes() http.Handler {
 			switch {
 			default:
 				logger.ErrorContext(ctx, "failed to get the votes from database", "error", err)
-				serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+				serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			}
 			return
 		}
 		if err := serverutil.Encode(w, int(http.StatusOK), votes); err != nil {
 			logger.WarnContext(ctx, "failed to encode the votes", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

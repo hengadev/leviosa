@@ -24,7 +24,7 @@ func (a *AppInstance) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -32,7 +32,7 @@ func (a *AppInstance) GetProduct(w http.ResponseWriter, r *http.Request) {
 	if productID == "" {
 		err := errors.New("product ID should not be empty")
 		logger.WarnContext(ctx, err.Error())
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 	}
 
 	product, err := a.Svcs.Product.GetProduct(ctx, productID)
@@ -46,6 +46,6 @@ func (a *AppInstance) GetProduct(w http.ResponseWriter, r *http.Request) {
 
 	if err := serverutil.Encode(w, int(http.StatusOK), *product); err != nil {
 		logger.ErrorContext(ctx, "failed to encode product with provided ID", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 	}
 }

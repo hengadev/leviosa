@@ -34,7 +34,7 @@ func (a *AppInstance) GetVotesByUserID(w http.ResponseWriter, r *http.Request) {
 	if month == "" || year == "" {
 		err := fmt.Errorf("month or year are not well formatted")
 		logger.ErrorContext(ctx, "failed to parse month or year", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 	// get votes
@@ -47,7 +47,7 @@ func (a *AppInstance) GetVotesByUserID(w http.ResponseWriter, r *http.Request) {
 	// encode result to user
 	if err := serverutil.Encode(w, http.StatusOK, votes); err != nil {
 		logger.ErrorContext(ctx, "failed to encode votes found for user with provided ID", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

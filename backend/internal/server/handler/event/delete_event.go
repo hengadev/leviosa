@@ -24,7 +24,7 @@ func (a *AppInstance) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.WarnContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	eventID := r.PathValue("id")
@@ -33,22 +33,22 @@ func (a *AppInstance) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrNotDeleted):
 			logger.WarnContext(ctx, fmt.Sprintf("failed to delete event with ID %q", eventID))
-			serverutil.WriteResponse(w, errsrv.NewNotFoundErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewNotFoundErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, fmt.Sprintf("context error while trying to delete event with ID %s", eventID))
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, fmt.Sprintf("database query error while trying to delete event with ID %s", eventID))
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, fmt.Sprintf("unexpected error while trying to delete event with ID %s", eventID))
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err = serverutil.Encode(w, int(http.StatusNoContent), eventID); err != nil {
 		logger.WarnContext(ctx, "failed to send event ID to user after deletion")
-		serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

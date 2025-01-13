@@ -24,7 +24,7 @@ func (a *AppInstance) FindEventByID(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, errsrv.NewForbiddenErr(err), http.StatusBadRequest)
+		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	eventID := r.PathValue("id")
@@ -33,13 +33,13 @@ func (a *AppInstance) FindEventByID(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, fmt.Sprintf("context error while trying to get event with ID %s", eventID))
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrNotFound):
 			logger.WarnContext(ctx, "failed to find event with ID %q")
-			serverutil.WriteResponse(w, errsrv.NewNotFoundErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewNotFoundErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrDatabase):
 			logger.WarnContext(ctx, fmt.Sprintf("database query error while trying to get event with ID %s", eventID))
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}

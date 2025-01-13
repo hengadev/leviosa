@@ -36,7 +36,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		priceID, err := a.Repos.Event.GetPriceID(ctx, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get priceID for event", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		_ = priceID
@@ -45,7 +45,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		sessionURL, err := a.Svcs.Stripe.CreateCheckoutSession(ctx, price_temp, 1)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to create checkout session", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// NOTE: Can not redirect with that for some reason. So I want to send the url in json format. Yet this is in the tutorial
@@ -64,7 +64,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		}
 		if err = serverutil.Encode(w, http.StatusInternalServerError, Response{URL: sessionURL}); err != nil {
 			logger.ErrorContext(ctx, "failed to encode checkout session URL", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

@@ -32,7 +32,7 @@ func (a *AppInstance) DeleteEventProduct() http.Handler {
 		_, err = a.Svcs.Stripe.RemoveProduct(ctx, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to remove product", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		type Response struct {
@@ -40,7 +40,7 @@ func (a *AppInstance) DeleteEventProduct() http.Handler {
 		}
 		if err = serverutil.Encode(w, http.StatusCreated, Response{eventID}); err != nil {
 			logger.ErrorContext(ctx, "failed to encode eventID for product registered", "error", err)
-			serverutil.WriteResponse(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})
