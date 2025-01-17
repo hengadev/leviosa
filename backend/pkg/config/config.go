@@ -30,13 +30,15 @@ func New(ctx context.Context, envFilename, envFileType string) *Config {
 		}
 	}
 	return &Config{
-		viper:  vp,
-		sqlite: &sqliteCreds{},
-		redis:  &redisCreds{},
+		viper:    vp,
+		sqlite:   &sqliteCreds{},
+		redis:    &redisCreds{},
+		s3:       &s3Creds{},
+		security: &SecurityConfig{},
 	}
 }
 
-func (c *Config) Load(ctx context.Context) errsx.Map {
+func (c *Config) Load(ctx context.Context, mode mode.EnvMode) errsx.Map {
 	var errs errsx.Map
 
 	envVarsToKeys := map[string]struct {

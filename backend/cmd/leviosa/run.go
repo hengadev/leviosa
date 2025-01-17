@@ -60,7 +60,7 @@ func run(ctx context.Context, w io.Writer) error {
 	}
 	// config
 	conf := config.New(ctx, opts.mode.String(), "env")
-	if errs := conf.Load(ctx); len(errs) > 0 {
+	if errs := conf.Load(ctx, opts.mode); len(errs) > 0 {
 		return fmt.Errorf("load configuration: %s", errs.Error())
 	}
 
