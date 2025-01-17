@@ -4,21 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
-	//utils
 	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/pkg/flags"
 	"github.com/GaryHY/leviosa/pkg/redisutil"
 	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 
-	// external packages
-	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
 )
 
 func setupDatabases(
 	ctx context.Context,
 	conf *config.Config,
+	env mode.EnvMode,
 ) (*sql.DB, *redis.Client, error) {
 	sqliteConf := conf.GetSQLITE()
 	redisConf := conf.GetRedis()
@@ -31,32 +29,31 @@ func setupDatabases(
 		redisutil.WithPassword(redisConf.Password),
 	)
 	if err != nil {
-		return nil, nil, fmt.Errorf("create connection to redis : %w", err)
+		return nil, nil, fmt.Errorf("creating connection to redis database: %w", err)
 	}
 
 	sqlitedb, err := sqliteutil.Connect(ctx, sqliteutil.BuildDSN(sqliteConf.Filename))
 	if err != nil {
-		return nil, nil, fmt.Errorf("create connection to sqlite : %w", err)
+		return nil, nil, fmt.Errorf("creating connection to sqlite database: %w", err)
 	}
 
-	// setup goose
-	goose.SetBaseFS(nil)
-	// Set the dialect to SQLite3
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return nil, nil, fmt.Errorf("Failed to set dialect: %w", err)
+	// make new migration configuration
+	migrationCfg, err := sqliteutil.NewMigrationConfig(sqlitedb, env)
+	if err != nil {
+		return nil, nil, fmt.Errorf("creating migration configuration: %w", err)
 	}
-	// run the migration to the database.
-	if err := goose.UpContext(ctx, sqlitedb, os.Getenv("MIGRATION_PATH")); err != nil {
-		return nil, nil, fmt.Errorf("failed to run migration %w", err)
+	// run migration for database.
+	if err := sqliteutil.SetMigrations(ctx, migrationCfg); err != nil {
+		return nil, nil, fmt.Errorf("setting migration for SQLite database: %w", err)
 	}
 
-	// init hte database
+	// init databases
 	queries, err := sqliteutil.GetInitQueries()
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get init queries for sqlite database: %w", err)
+		return nil, nil, fmt.Errorf("getting init queries for SQLite database: %w", err)
 	}
 	if err := sqliteutil.Init(sqlitedb, queries...); err != nil {
-		return sqlitedb, redisdb, fmt.Errorf("failed to init sqlite database: %w", err)
+		return sqlitedb, redisdb, fmt.Errorf("initialising SQLite database: %w", err)
 	}
 
 	return sqlitedb, redisdb, nil

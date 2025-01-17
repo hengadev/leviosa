@@ -64,7 +64,7 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("load configuration: %s", errs.Error())
 	}
 
-	sqlitedb, redisdb, err := setupDatabases(ctx, conf)
+	sqlitedb, redisdb, err := setupDatabases(ctx, conf, opts.mode)
 	if err != nil {
 		return fmt.Errorf("setup databases: %w", err)
 	}
