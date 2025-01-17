@@ -9,7 +9,15 @@ import (
 	"github.com/stripe/stripe-go/v79/product"
 )
 
-// CreateProduct create a stripe product with a generated price using stripe's Product API.
+// CreateProduct creates a Stripe product with a generated price using Stripe's Product API.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - object: A Payment instance containing information about the product to be created.
+//
+// Returns:
+//   - string: The ID of the newly created product in the Stripe system.
+//   - error: An error if the product could not be created.
 func (s *Service) CreateProduct(ctx context.Context, object Payment) (string, error) {
 	paymentInfo := object.GetPaymentInfo(ctx)
 	product_params := &stripe.ProductParams{

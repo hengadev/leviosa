@@ -15,6 +15,16 @@ import (
 // - metadata: I think I can use that for the webhook after that.
 // So here, I will send the userID and the eventID so that I can use that easily in the handler for the wh
 
+// CreateCheckoutSession creates a Stripe Checkout session for a specific price and quantity.
+//
+// Parameters:
+//   - ctx: A context.Context instance to manage request lifecycle and cancellation.
+//   - priceID: A string representing the ID of the price to be used in the checkout session.
+//   - quantity: An int64 representing the number of items for the specified price.
+//
+// Returns:
+//   - string: The URL of the newly created Stripe Checkout session.
+//   - error: An error if the checkout session could not be created.
 func (s *Service) CreateCheckoutSession(ctx context.Context, priceID string, quantity int64) (string, error) {
 	frontendServer := os.Getenv("FRONTEND_ORIGIN")
 	// NOTE: I can use metadata if I want but I do not know why I would use that, maybe with the product type
