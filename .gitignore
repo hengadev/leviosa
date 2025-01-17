@@ -4,7 +4,8 @@
 
 .env
 
-*.compose.yaml
+local.compose.yaml
+test.compose.yaml
 
 echo
 notes
