@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/GaryHY/leviosa/pkg/flags"
 
 	"github.com/spf13/viper"
 )
@@ -18,7 +19,6 @@ type Config struct {
 	security *SecurityConfig
 }
 
-// TODO: Add the other creds needed
 func New(ctx context.Context, envFilename, envFileType string) *Config {
 	vp := viper.New()
 	if os.Getenv("APP_ENV") != "production" {
@@ -70,14 +70,17 @@ func (c *Config) Load(ctx context.Context, mode mode.EnvMode) errsx.Map {
 			errs.Set("bind environment variable", fmt.Errorf("bind env: %w", err))
 		}
 	}
-	if err := c.setSQLITE(ctx); err != nil {
-		errs.Set("sqlite", fmt.Errorf("set SQLITE: %w", err))
+	if err := c.setSQLITE(mode); err != nil {
+		errs.Set("sqlite configuration", fmt.Errorf("set SQLITE: %w", err))
 	}
-	if err := c.setRedis(ctx); err != nil {
-		errs.Set("redis", fmt.Errorf("set Redis: %w", err))
+	if err := c.setRedis(mode); err != nil {
+		errs.Set("redis configuration", fmt.Errorf("set Redis: %w", err))
+	}
+	if err := c.setS3(mode); err != nil {
+		errs.Set("S3 configuration", fmt.Errorf("set S3: %w", err))
 	}
 	if err := c.setSecurityConfig(ctx); err != nil {
-		errs.Set("user security config", fmt.Errorf("set user security config: %w", err))
+		errs.Set("user security configuration", fmt.Errorf("set user security config: %w", err))
 	}
 	return errs
 }
