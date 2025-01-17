@@ -14,14 +14,15 @@ const (
 )
 
 type Repository struct {
-	Uploader *manager.Uploader
-	Client   *s3.Client
+	Uploader   *manager.Uploader
+	Client     *s3.Client
+	BucketName string
 }
 
-func NewRepository(ctx context.Context) (*Repository, error) {
+func New(ctx context.Context, bucketName string) (*Repository, error) {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load default config for the store repository: %w", err)
+		return nil, fmt.Errorf("load default configuration for S3 repository: %w", err)
 	}
 	client := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(client)

@@ -64,7 +64,7 @@ func makeServices(
 	// stripe
 	stripeSvc := stripeService.New()
 	// photo
-	mediaRepo, err := mediaRepository.NewRepository(ctx)
+	mediaRepo, err := mediaRepository.New(ctx, config.GetBucketName())
 	if err != nil {
 		return appSvcs, appRepos, fmt.Errorf("create photo repository: %w", err)
 	}
