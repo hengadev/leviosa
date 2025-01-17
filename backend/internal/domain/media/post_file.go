@@ -14,9 +14,10 @@ func (s *Service) PostFile(ctx context.Context, file multipart.File, filename, f
 	// NOTE: Here the best thing to do is to change the value of that thing brother
 	// key := fmt.Sprintf("%s/%s", eventID, filename)
 	key := fmt.Sprintf("events_%s/%s", folder, filename)
-	url, err := s.Repo.AddFile(ctx, file, key)
-	if err != nil {
-		return "", fmt.Errorf("add file: %w", err)
-	}
-	return url, nil
+	_ = key
+	// url, err := s.Repo.AddFile(ctx, file, key)
+	// if err != nil {
+	// 	return "", fmt.Errorf("add file: %w", err)
+	// }
+	return "", nil
 }

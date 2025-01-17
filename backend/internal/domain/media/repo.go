@@ -12,8 +12,7 @@ type Reader interface {
 }
 
 type Writer interface {
-	AddFile(ctx context.Context, file multipart.File, key string) (string, error)
-	AddDatabaseReplica(ctx context.Context, file multipart.File) error
+	AddDatabaseReplica(ctx context.Context, file multipart.File) (string, error)
 }
 
 type ReadWriter interface {
