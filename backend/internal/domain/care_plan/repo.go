@@ -7,7 +7,7 @@ import (
 type Reader interface{}
 
 type Writer interface {
-	CreateNote(ctx context.Context, registrationID string, content string) error
+	CreatePlan(ctx context.Context, registrationID string, content string) error
 }
 
 type ReadWriter interface {
