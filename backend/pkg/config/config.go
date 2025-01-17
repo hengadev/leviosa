@@ -59,6 +59,7 @@ func (c *Config) Load(ctx context.Context, mode mode.EnvMode) errsx.Map {
 		"AWS_REGION":            {required: true, key: "aws.region"},
 		"AWS_ACCESS_KEY_ID":     {required: true, key: "aws.access.key.id"},
 		"AWS_SECRET_ACCESS_KEY": {required: true, key: "aws.secret.access.key"},
+		"BUCKETNAME":            {required: true, key: "s3.bucketname"},
 
 		"USER_ENCRYPTION_KEY": {required: true, key: "user.encryption.key"},
 	}
