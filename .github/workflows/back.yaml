@@ -1,9 +1,6 @@
 name: 🛢 Back
 
 on:
-  push:
-    branches: 
-    - main
   pull_request: 
     branches:
       - main
@@ -41,7 +38,7 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOOS: linux
-        run: go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
+        run: go build -ldflags="-s" -v -o myapp ./cmd/leviosa/*.go
 
   test:
     name: 🧪 Golang tests

@@ -39,8 +39,9 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
-          docker pull henga/event-reservation-app:frontend
-          docker pull henga/event-reservation-app:backend
+          # TODO: change the name of the repository for leviosa
+          docker pull henga/leviosa:frontend
+          docker pull henga/leviosa:backend
           docker compose up -d --force-recreate
           docker system prune --all --volumes --force
           # TODO: use the health endpoint to check if the repo works fine
