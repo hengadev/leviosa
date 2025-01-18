@@ -6,6 +6,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/event"
+	"github.com/GaryHY/leviosa/internal/server/handler/health"
 	"github.com/GaryHY/leviosa/internal/server/handler/product"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/internal/server/handler/vote"
@@ -19,6 +20,7 @@ func (s *Server) addRoutes(h *app.App) {
 	router.HandleFunc("GET /api/v1/hello", sayHello)
 
 	// handlers declaration
+	healthHandler := healthHandler.New(h)
 	userHandler := userHandler.New(h)
 	voteHandler := vote.NewHandler(h)
 	eventHandler := eventHandler.New(h)
@@ -26,6 +28,8 @@ func (s *Server) addRoutes(h *app.App) {
 
 	// middlewares declaration
 	rateLimit := mw.PerIPRateLimit(1, 1)
+
+	router.HandleFunc("GET /health", healthHandler.CheckHealth)
 
 	// user
 	router.HandleFunc("GET /api/v1/user/me", userHandler.GetUser)
