@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-// TODO: make sure to write the logs right depending on the style that you have
-// I want to use the ELK stack to handle my logs
 func SetHandler(level, style string) (slog.Handler, error) {
 	logLevel, ok := loggerLevels[loggerLevel(level)]
 	if !ok {
@@ -17,10 +15,10 @@ func SetHandler(level, style string) (slog.Handler, error) {
 	var slogHandler slog.Handler
 	switch logStyle {
 	case JSON:
+		// TODO: write logs to some file to use with ELK stack
 		slogHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
 	case Text:
 		slogHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
-		// TODO: add the thing when defined
 	case Dev:
 		slogHandler = NewDevHandler(os.Stdout, logLevel)
 	default:

@@ -23,6 +23,7 @@ func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 
 			// I just make a fake IP for now, I know my function to work:
 			IP := "127.0.0.1"
+			// TODO: use the getCgetClientIP function instead
 			// IP := r.Header.Get("X-Client-IP")
 			if IP == "" {
 				slog.ErrorContext(ctx, "client IP not found with required header")

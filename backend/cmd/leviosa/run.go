@@ -11,12 +11,9 @@ import (
 	// api
 	"github.com/GaryHY/leviosa/internal/server"
 	"github.com/GaryHY/leviosa/internal/server/app"
-
-	// utils
+	// "github.com/GaryHY/leviosa/internal/server/cron"
 	"github.com/GaryHY/leviosa/pkg/config"
 	"github.com/GaryHY/leviosa/pkg/flags"
-
-	// "github.com/GaryHY/leviosa/internal/http/cron"
 
 	// external packages
 	"github.com/joho/godotenv"
@@ -52,21 +49,21 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("failed to setup logger: %w", err)
 	}
 
-	// set environment file
-	if opts.mode != mode.ModeProd {
+	// set environment file (using [mode].env for specified mode)
+	if opts.mode == mode.ModeDev {
 		if err := godotenv.Load(fmt.Sprintf("%s.env", opts.mode.String())); err != nil {
-			return fmt.Errorf("load env variables: %w", err)
+			return fmt.Errorf("loading env variables: %w", err)
 		}
 	}
 	// config
 	conf := config.New(ctx, opts.mode.String(), "env")
 	if errs := conf.Load(ctx, opts.mode); len(errs) > 0 {
-		return fmt.Errorf("load configuration: %s", errs.Error())
+		return fmt.Errorf("loading application configuration: %s", errs.Error())
 	}
 
 	sqlitedb, redisdb, err := setupDatabases(ctx, conf, opts.mode)
 	if err != nil {
-		return fmt.Errorf("setup databases: %w", err)
+		return fmt.Errorf("setting up databases: %w", err)
 	}
 
 	appSvcs, appRepos, err := makeServices(

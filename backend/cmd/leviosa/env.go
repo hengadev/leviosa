@@ -8,7 +8,7 @@ import (
 
 func setupEnvVars() error {
 	// setup port or use default value 3500
-	port_env := os.Getenv("PORT")
+	port_env := os.Getenv("BACKEND_PORT")
 	if port_env == "" {
 		port_env = "3500"
 	}

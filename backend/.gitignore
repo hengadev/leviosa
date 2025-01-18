@@ -1,7 +1,6 @@
 # output
 bin
-db.db
-
+data/*
 # build
 *.makefile
 # for me to dev the application
