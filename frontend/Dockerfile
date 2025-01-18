@@ -29,5 +29,5 @@ RUN pnpm install --prod --frozen-lockfile && \
     rm -rf /root/.local/share/pnpm/store && \
     rm -rf /root/.cache
 
-EXPOSE 3000
+EXPOSE 3000 3001
 CMD ["node", "build"]
