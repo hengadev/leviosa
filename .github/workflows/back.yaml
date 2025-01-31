@@ -42,9 +42,6 @@ jobs:
   docker-back:
     name: 🐳 Build backend application docker image
     runs-on: ubuntu-latest
-    if: |
-      ${{ github.ref == 'refs/heads/main' && github.event_name == 'pull' }}
-      ${{ github.ref == 'refs/heads/staging' && github.event_name == 'push' }}
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v3
