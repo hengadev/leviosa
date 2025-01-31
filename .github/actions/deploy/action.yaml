@@ -74,7 +74,7 @@ runs:
           docker rm -f $existing_containers
         fi
     - name: 🚀 Deploy application
-      shel: bash
+      shell: bash
       env:
         APP_ENV: ${{ inputs.app_env}}
         AWS_REGION: ${{ inputs.aws_region }}
