@@ -7,6 +7,7 @@ services:
     container_name: staging-frontend-${GITHUB_RUN_ID}
     restart: unless-stopped
     user: node
+    command: node build-staging # override command for staging
     ports:
       - "127.0.0.1:3001:3001"
     networks:
@@ -51,8 +52,7 @@ services:
       - REDIS_STAGING_DB
       - REDIS_STAGING_PASSWORD
 
-      # TODO: change the value of that frontend origin to depend on the APP_ENV
-      # - FRONTEND_ORIGIN
+      - FRONTEND_ORIGIN=frontend:3001
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3501/health"]
       interval: 30s

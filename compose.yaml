@@ -48,7 +48,7 @@ services:
       - REDIS_DB
       - REDIS_PASSWORD
 
-      - FRONTEND_ORIGIN
+      - FRONTEND_ORIGIN=3000
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3500/health"]
       interval: 30s
