@@ -91,4 +91,3 @@ jobs:
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           folder: frontend
           file: Dockerfile.staging
-
