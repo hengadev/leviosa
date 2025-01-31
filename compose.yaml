@@ -2,11 +2,10 @@ services:
   frontend: 
     depends_on:
       - backend
-    # image: henga/event-reservation-app:frontend
     image: henga/leviosa:frontend
     container_name: frontend-${GITHUB_RUN_ID}
     environment:
-      ORIGIN: "${ORIGIN:-http://localhost:3000}"
+      # ORIGIN: "${ORIGIN:-http://localhost:3000}"
     restart: unless-stopped
     user: node
     ports:
@@ -20,7 +19,6 @@ services:
   backend:
     depends_on:
       - redis
-    # image: henga/event-reservation-app:backend
     image: henga/leviosa:backend
     container_name: backend-${GITHUB_RUN_ID}
     volumes:
