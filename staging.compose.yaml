@@ -1,0 +1,81 @@
+# TODO: change ports to avoid collision with production environment
+services:
+  staging-frontend: 
+    depends_on:
+      - staging-backend
+    image: henga/leviosa:staging-frontend
+    container_name: staging-frontend-${GITHUB_RUN_ID}
+    restart: unless-stopped
+    user: node
+    ports:
+      - "127.0.0.1:3001:3001"
+    networks:
+      - staging-frontend-network
+      - staging-backend-network
+    cap_drop:
+      - ALL
+
+  staging-backend:
+    depends_on:
+      - staging-redis
+    image: henga/leviosa:staging-backend
+    container_name: staging-backend-${GITHUB_RUN_ID}
+    volumes:
+      - ./data:/app/data/staging/
+    user: appuser
+    ports:
+      - "127.0.0.1:3501:3501"
+    networks:
+      - staging-backend-network
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      - APP_ENV=staging
+      - PORT=3501
+
+      - AWS_REGION - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+
+      - GMAIL_EMAIL
+      - GMAIL_PASSWORD
+
+      - STRIPE_SECRET_KEY
+
+      - REDIS_ADDR
+      - REDIS_DB
+      - REDIS_PASSWORD
+
+      - REDIS_STAGING_ADDR
+      - REDIS_STAGING_DB
+      - REDIS_STAGING_PASSWORD
+
+      # TODO: change the value of that frontend origin to depend on the APP_ENV
+      # - FRONTEND_ORIGIN
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3501/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  staging-redis:
+    image: redis:latest
+    container_name: staging-session-manager
+    user: redis
+    command: redis-server --requirepass secret
+    ports:
+      - "127.0.0.1:6380:6380"
+    networks:
+      - staging-backend-network
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  staging-frontend-network:
+  staging-backend-network:
