@@ -1,5 +1,8 @@
 FROM node:20-alpine AS build
 WORKDIR /app
+
+ARG NODE_COMMAND=build
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -30,4 +33,5 @@ RUN pnpm install --prod --frozen-lockfile && \
     rm -rf /root/.cache
 
 EXPOSE 3000 3001
-CMD ["node", "build"]
+CMD ["node", "${NODE_COMMAND}"]
+
