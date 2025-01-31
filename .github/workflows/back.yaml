@@ -38,7 +38,7 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOOS: linux
-        run: go build -ldflags="-s" -v -o myapp ./cmd/leviosa/*.go
+        run: go build -ldflags="-s" -v -o myapp ./cmd/event-reservation-app/*.go
 
   test:
     name: 🧪 Golang tests
@@ -64,7 +64,9 @@ jobs:
   docker-back:
     name: 🐳 Build backend application docker image
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    if: |
+      ${{ github.ref == 'refs/heads/main' && github.event_name == 'pull' }}
+      ${{ github.ref == 'refs/heads/staging' && github.event_name == 'push' }}
     steps:
       - name: ⬇️ Checkout repo
         uses: actions/checkout@v3

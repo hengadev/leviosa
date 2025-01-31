@@ -36,13 +36,12 @@ runs:
           ${{ runner.os }}-buildx-
 
     - name: 🐳 Build Production Image
-      if: ${{ github.ref == 'refs/heads/main' }}
       uses: docker/build-push-action@v3
       with:
         context: ${{ inputs.FOLDER }}
         file: ./${{ inputs.FOLDER }}/Dockerfile
         push: true
-        tags: henga/event-reservation-app:${{ inputs.tag }}
+        tags: henga/leviosa:${{ inputs.tag }}
         build-args: |
           COMMIT_SHA=${{ github.sha }} \
         cache-from: type=local,src=/tmp/.buildx-cache
