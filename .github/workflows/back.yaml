@@ -29,27 +29,15 @@ jobs:
           go-version: '1.22.1'
           build-path: './cmd/event-reservation-app/*.go'
           output-name: 'leviosa'
-
-  test:
+  gotest:
     name: 🧪 Golang tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: ./.github/actions/go-test
         with:
           go-version: '1.22.1'
-      - name: Update CA certificates
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ca-certificates
-          sudo update-ca-certificates
-          sudo apt install build-essential
-      - name: Unit test application
-        env:
-          CGO_ENABLED: 1
-          GOOS: linux
-        run: go test ./...
+          test-path: './...'
 
   docker-back:
     name: 🐳 Build backend application docker image
