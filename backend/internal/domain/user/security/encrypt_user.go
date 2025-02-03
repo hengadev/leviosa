@@ -27,17 +27,26 @@ import (
 //     If no errors occur, an empty map is returned.
 func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	var errs errsx.Map
-	// TODO: do the same later with created at and loggedinat
-	if !user.BirthDate.IsZero() {
-		dateStr := user.BirthDate.Format(time.RFC3339)
-		encrypted, pbms := s.encrypt(dateStr)
-		if len(pbms) > 0 {
-			errs.Set("encrypt birthdate", pbms.Error())
+	timeFields := []struct {
+		name           string
+		value          *time.Time
+		encryptedValue *string
+	}{
+		{name: "birthdate", value: &user.BirthDate, encryptedValue: &user.EncryptedBirthDate},
+		{name: "createdAt", value: &user.CreatedAt, encryptedValue: &user.EncryptedCreatedAt},
+		{name: "loggedInAt", value: &user.LoggedInAt, encryptedValue: &user.EncryptedLoggedInAt},
+	}
+
+	for _, field := range timeFields {
+		if field.value != nil && !field.value.IsZero() {
+			dateStr := field.value.Format(time.RFC3339)
+			encrypted, pbms := s.encrypt(dateStr)
+			if len(pbms) > 0 {
+				errs.Set(field.name, pbms.Error())
+			}
+			*field.value = time.Time{}
+			*field.encryptedValue = encrypted
 		}
-		// Store encrypted string back in a temp field
-		user.EncryptedBirthDate = encrypted
-		// Zero out the original time.Time
-		user.BirthDate = time.Time{}
 	}
 
 	fields := []struct {
