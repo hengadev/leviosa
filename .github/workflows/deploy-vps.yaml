@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: ./.github/actions/deploy
         with:
+          # TODO: change that filter to be more specific brother
           filter: 'production'
           app_env: 'production'
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}

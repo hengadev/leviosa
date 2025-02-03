@@ -27,7 +27,7 @@ jobs:
       - uses: ./.github/actions/go-build
         with:
           go-version: '1.22.1'
-          build-path: './cmd/event-reservation-app/*.go'
+          build-path: './cmd/leviosa/*.go'
           output-name: 'leviosa'
   gotest:
     name: 🧪 Golang tests

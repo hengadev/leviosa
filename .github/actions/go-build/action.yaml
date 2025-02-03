@@ -7,7 +7,7 @@ inputs:
     default: '1.22.1'
   build-path:
     description: Path to the main Go files to build
-    default: './cmd/event-reservation-app/*.go'
+    default: './cmd/leviosa/*.go'
   output-name:
     description: Name of the output binary
     default: 'leviosa'
