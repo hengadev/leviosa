@@ -13,35 +13,39 @@ import (
 func Equal[T comparable](t testing.TB, got, want T) {
 	t.Helper()
 	if got != want {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("got '%v', want '%v'", got, want)
 	}
 }
 
 func NotEqual[T comparable](t testing.TB, got, want T) {
 	t.Helper()
 	if got == want {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("got '%v', want '%v'", got, want)
 	}
 }
 
 func EqualError(t testing.TB, got, want error) {
-	t.Helper()
-	if !errors.Is(got, want) {
-		t.Errorf("got %v, want %v", got.Error(), want.Error())
+	switch {
+	case got == nil && want == nil:
+		return
+	case got == nil || want == nil:
+		t.Errorf("got '%v', want '%v'", got, want)
+	case !errors.Is(got, want):
+		t.Errorf("got '%v', want '%v'", got.Error(), want.Error())
 	}
 }
 
 func ReflectEqual[T any](t testing.TB, got, want T) {
 	t.Helper()
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("got '%v', want '%v'", got, want)
 	}
 }
 
 func ReflectNotEqual[T any](t testing.TB, got, want T) {
 	t.Helper()
 	if reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, want %v", got, want)
+		t.Errorf("got '%v', want '%v'", got, want)
 	}
 }
 

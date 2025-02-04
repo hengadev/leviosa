@@ -27,11 +27,19 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
         SELECT 
             email,
             password,
+            picture,
+            created_at,
+            logged_in_at,
+            role,
+            birthdate,
             lastname,
             firstname,
             gender,
-            birthdate,
             telephone,
+            postal_code,
+            city,
+            address1,
+            address2,
             google_id,
             apple_id
         FROM users 
@@ -40,18 +48,26 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(
 		&user.EmailHash,
 		&user.PasswordHash,
+		&user.Picture,
+		&user.EncryptedCreatedAt,
+		&user.EncryptedLoggedInAt,
+		&user.Role,
+		&user.EncryptedBirthDate,
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,
-		&user.BirthDate,
 		&user.Telephone,
+		&user.PostalCode,
+		&user.City,
+		&user.Address1,
+		&user.Address2,
 		&user.GoogleID,
 		&user.AppleID,
 	)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, rp.NewNotFoundErr(err, "pending user")
+			return nil, rp.NewNotFoundErr(err, "user")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return nil, rp.NewContextErr(err)
 		default:
