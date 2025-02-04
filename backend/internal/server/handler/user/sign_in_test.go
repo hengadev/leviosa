@@ -13,15 +13,13 @@ import (
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 	"github.com/GaryHY/leviosa/pkg/testutil"
-	"github.com/GaryHY/leviosa/tests/assert"
 
+	"github.com/GaryHY/test-assert"
 	"github.com/google/uuid"
 )
 
 func TestSignIn(t *testing.T) {
-	// TEST: cases to test
-	// - session already exists ?
-	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../../../repository/sqlite/migrations/test")
 	// hash password and set an env variable with its value
 	pwd := hashPassword(t, testutil.Johndoe.Password)
 	t.Setenv("HASHED_PASSWORD", pwd)

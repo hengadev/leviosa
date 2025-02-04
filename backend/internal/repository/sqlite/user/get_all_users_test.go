@@ -8,7 +8,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
 	"github.com/GaryHY/leviosa/pkg/testutil"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestGetAllUsers(t *testing.T) {

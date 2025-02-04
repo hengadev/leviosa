@@ -8,7 +8,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/pkg/config"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestCreateAccount(t *testing.T) {

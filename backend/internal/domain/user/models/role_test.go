@@ -5,7 +5,8 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/tests"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestString(t *testing.T) {

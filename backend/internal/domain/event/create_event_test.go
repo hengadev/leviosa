@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/event"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestCreateEvent(t *testing.T) {

@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestValidateTelephone(t *testing.T) {

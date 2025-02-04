@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestConvIntToStr(t *testing.T) {

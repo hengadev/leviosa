@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain/vote"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestValidVote(t *testing.T) {

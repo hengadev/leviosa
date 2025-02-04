@@ -8,8 +8,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain"
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/tests/assert"
 
+	"github.com/GaryHY/test-assert"
 	"github.com/google/uuid"
 )
 

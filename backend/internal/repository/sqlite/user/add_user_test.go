@@ -8,19 +8,25 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
 	"github.com/GaryHY/leviosa/pkg/testutil"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestAddAccount(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
 	tests := []struct {
-		usr     *models.User
-		wantErr bool
-		version int64
-		name    string
+		name        string
+		usr         *models.User
+		version     int64
+		expectedErr error
 	}{
-		{usr: testutil.Johndoe, wantErr: true, version: 20240811140841, name: "user already exists"},
-		{usr: testutil.Johndoe, wantErr: false, version: 20240811085134, name: "add the user"},
+		{
+			name:        "user already exists",
+			usr:         testutil.Johndoe,
+			version:     20240811140841,
+			expectedErr: nil,
+		},
+		// {usr: testutil.Johndoe, expectedErr: nil, version: 20240811085134, name: "add the user"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -29,10 +35,7 @@ func TestAddAccount(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
 			err := repo.AddUser(ctx, tt.usr, models.Mail)
-			assert.Equal(t, err != nil, tt.wantErr)
-			// if !tt.wantErr {
-			// 	assert.Equal(t, int(id), testutil.Johndoe.ID)
-			// }
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }

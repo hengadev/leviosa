@@ -13,8 +13,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/testutil"
-	"github.com/GaryHY/leviosa/tests/assert"
 
+	"github.com/GaryHY/test-assert"
 	"github.com/google/uuid"
 )
 

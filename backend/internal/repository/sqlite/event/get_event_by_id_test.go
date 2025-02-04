@@ -8,7 +8,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 	"github.com/GaryHY/leviosa/tests"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestGetEventByID(t *testing.T) {

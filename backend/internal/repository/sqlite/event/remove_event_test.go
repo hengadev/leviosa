@@ -7,7 +7,8 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 	test "github.com/GaryHY/leviosa/tests"
-	"github.com/GaryHY/leviosa/tests/assert"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestRemoveEvent(t *testing.T) {

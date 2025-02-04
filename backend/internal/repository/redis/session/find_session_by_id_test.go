@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	"github.com/GaryHY/leviosa/internal/repository/redis"
 	"github.com/GaryHY/leviosa/pkg/testutil"
-	"github.com/GaryHY/leviosa/tests/assert"
+	"github.com/GaryHY/test-assert"
 )
 
 func TestFindSessionByID(t *testing.T) {
