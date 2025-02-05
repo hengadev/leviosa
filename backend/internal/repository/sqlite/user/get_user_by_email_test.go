@@ -17,7 +17,6 @@ func TestGetUserByEmail(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
 	fields := []string{
 		"EmailHash",
-		"PasswordHash",
 		"Picture",
 		"EncryptedCreatedAt",
 		"EncryptedLoggedInAt",

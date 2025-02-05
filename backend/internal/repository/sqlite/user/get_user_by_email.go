@@ -26,7 +26,6 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
 	query := `
         SELECT 
             email,
-            password,
             picture,
             created_at,
             logged_in_at,
@@ -46,8 +45,7 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
         WHERE email = ?;`
 
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(
-		&user.EmailHash,
-		&user.PasswordHash,
+		&user.EncryptedEmail,
 		&user.Picture,
 		&user.EncryptedCreatedAt,
 		&user.EncryptedLoggedInAt,
