@@ -69,4 +69,30 @@ func (u User) Valid(ctx context.Context) errsx.Map {
 	return errs
 }
 
+// Interface implementation
+
 func (u User) AssertComparable() {}
+
+func (u User) GetSQLColumnMapping() map[string]string {
+	return map[string]string{
+		"ID":                  "id",
+		"Email":               "encrypted_email",
+		"EmailHash":           "email_hash",
+		"PasswordHash":        "password_hash",
+		"Picture":             "encrypted_picture",
+		"EncryptedCreatedAt":  "encrypted_created_at",
+		"EncryptedLoggedInAt": "encrypted_logged_in_at",
+		"Role":                "role",
+		"EncryptedBirthDate":  "encrypted_birthdate",
+		"LastName":            "encrypted_lastname",
+		"FirstName":           "encrypted_firstname",
+		"Gender":              "encrypted_gender",
+		"Telephone":           "encrypted_telephone",
+		"PostalCode":          "encrypted_postal_code",
+		"City":                "encrypted_city",
+		"Address1":            "encrypted_address1",
+		"Address2":            "encrypted_address2",
+		"GoogleID":            "encrypted_google_id",
+		"AppleID":             "encrypted_apple_id",
+	}
+}
