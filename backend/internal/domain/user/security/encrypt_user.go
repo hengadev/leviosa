@@ -78,12 +78,12 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 		// create hash for searching in database
 		user.EmailHash = HashEmail(user.Email)
 		// encrypt actual email for storage
-		encrypted, pbms := s.encrypt(user.EmailHash)
+		encrypted, pbms := s.encrypt(user.Email)
 		if len(pbms) > 0 {
 			errs.Set("encrypt field", pbms.Error())
 		}
-		user.EncryptedEmail = encrypted
-		user.Email = "" // Clear the plain text email
+		// user.EncryptedEmail = encrypted
+		user.Email = encrypted
 	}
 
 	// Hash password if present

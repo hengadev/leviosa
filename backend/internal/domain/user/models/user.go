@@ -12,7 +12,6 @@ type User struct {
 	ID                  string    `json:"-"`
 	Email               string    `json:"-"`
 	EmailHash           string    `json:"-"`
-	EncryptedEmail      string    `json:"-"`
 	Password            string    `json:"-"`
 	PasswordHash        string    `json:"-"`
 	Picture             string    `json:"-"`
@@ -69,3 +68,5 @@ func (u User) Valid(ctx context.Context) errsx.Map {
 	var errs errsx.Map
 	return errs
 }
+
+func (u User) AssertComparable() {}

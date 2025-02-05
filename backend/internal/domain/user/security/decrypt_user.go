@@ -47,18 +47,6 @@ func (s *SecureUserData) DecryptUser(user *models.User) errsx.Map {
 		}
 	}
 
-	if user.EncryptedBirthDate != "" {
-		decrypted, err := s.decrypt(user.EncryptedBirthDate)
-		if err != nil {
-			errs.Set("encrypted birthdate", err)
-		}
-		parsedTime, err := time.Parse(time.RFC3339, decrypted)
-		if err != nil {
-			errs.Set("parsing decrypted birthdate", err)
-		}
-		user.BirthDate = parsedTime
-	}
-
 	fields := []struct {
 		name  string
 		value *string
@@ -86,10 +74,10 @@ func (s *SecureUserData) DecryptUser(user *models.User) errsx.Map {
 	}
 
 	// Decrypt email if present
-	if user.EncryptedEmail != "" {
-		decrypted, err := s.decrypt(user.EncryptedEmail)
+	if user.Email != "" {
+		decrypted, err := s.decrypt(user.Email)
 		if err != nil {
-			errs.Set("encrypted email", err)
+			errs.Set("email", err)
 		}
 		user.Email = decrypted
 	}

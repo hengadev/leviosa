@@ -46,6 +46,7 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
 
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(
 		&user.EncryptedEmail,
+		&user.Email,
 		&user.Picture,
 		&user.EncryptedCreatedAt,
 		&user.EncryptedLoggedInAt,
