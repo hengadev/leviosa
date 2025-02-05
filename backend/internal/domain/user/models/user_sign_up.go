@@ -46,6 +46,10 @@ func (u UserSignUp) Valid(ctx context.Context) errsx.Map {
 			// if err != nil && parsedDate != nonValidDate {
 			// 	pbms.Set("birthday", err)
 			// }
+		case "Gender":
+			if err := ValidateGender(u.Gender); err != nil {
+				pbms.Set("gender", err)
+			}
 		default:
 			continue
 		}
