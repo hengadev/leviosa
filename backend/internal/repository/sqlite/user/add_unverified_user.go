@@ -21,23 +21,25 @@ import (
 func (u *Repository) AddUnverifiedUser(ctx context.Context, user *models.User) error {
 	query := `
         INSERT INTO unverified_users (
-            email,
-            password,
-            lastname,
-            firstname,
-            gender,
-            birthdate,
-            telephone,
-            created_at,
-            postal_code,
-            city,
-            address1,
-            address2
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, Datetime('now'),?,?,?,?);`
+            email_hash,
+            encrypted_email,
+            password_hash,
+            encrypted_lastname,
+            encrypted_firstname,
+            encrypted_gender,
+            encrypted_birthdate,
+            encrypted_telephone,
+            encrypted_created_at,
+            encrypted_postal_code,
+            encrypted_city,
+            encrypted_address1,
+            encrypted_address2
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 	result, err := u.DB.ExecContext(
 		ctx,
 		query,
 		user.EmailHash,
+		user.Email,
 		user.PasswordHash,
 		user.LastName,
 		user.FirstName,

@@ -25,23 +25,21 @@ func (u *Repository) GetUnverifiedUser(ctx context.Context, emailHash string) (*
 	var user models.User
 	query := `
         SELECT 
-            email,
-            password,
-            lastname,
-            firstname,
-            gender,
-            birthdate,
-            telephone,
-            postal_code,
-            city,
-            address1,
-            address2
+            encrypted_email,
+            encrypted_lastname,
+            encrypted_firstname,
+            encrypted_gender,
+            encrypted_birthdate,
+            encrypted_telephone,
+            encrypted_postal_code,
+            encrypted_city,
+            encrypted_address1,
+            encrypted_address2
         FROM unverified_users 
-        WHERE email = ?;`
+        WHERE email_hash = ?;`
 
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(
-		&user.EmailHash,
-		&user.PasswordHash,
+		&user.Email,
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,

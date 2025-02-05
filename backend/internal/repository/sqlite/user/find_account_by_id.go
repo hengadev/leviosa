@@ -27,28 +27,28 @@ func (u *Repository) FindAccountByID(ctx context.Context, id string) (*models.Us
 	var user models.User
 	query := `
         SELECT 
-            email,
-            picture,
+            encrypted_email,
+            encrypted_picture,
             role,
-            lastname,
-            firstname,
-            gender,
-            birthdate,
-            telephone,
-            postal_code,
-            city,
-            address1,
-            address2
+            encrypted_lastname,
+            encrypted_firstname,
+            encrypted_gender,
+            encrypted_birthdate,
+            encrypted_telephone,
+            encrypted_postal_code,
+            encrypted_city,
+            encrypted_address1,
+            encrypted_address2
         FROM users
         WHERE id = ?;`
 	if err := u.DB.QueryRowContext(ctx, query, id).Scan(
-		&user.EmailHash,
+		&user.Email,
 		&user.Picture,
 		&user.Role,
 		&user.LastName,
 		&user.FirstName,
 		&user.Gender,
-		&user.BirthDate,
+		&user.EncryptedBirthDate,
 		&user.Telephone,
 		&user.PostalCode,
 		&user.City,

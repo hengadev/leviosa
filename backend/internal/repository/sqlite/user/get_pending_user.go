@@ -30,28 +30,86 @@ func (u *Repository) GetPendingUser(ctx context.Context, emailHash string, provi
 	var args []interface{}
 	switch provider {
 	case models.Google:
+		query = `
+            SELECT 
+                id,
+                encrypted_email,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_postal_code,
+                encrypted_city,
+                encrypted_address1,
+                encrypted_address2,
+                encrypted_google_id
+            FROM pending_users 
+            WHERE email_hash = ?;`
+		args = []interface{}{
+			&user.ID,
+			&user.Email,
+			&user.LastName,
+			&user.FirstName,
+			&user.Gender,
+			&user.EncryptedBirthDate,
+			&user.Telephone,
+			&user.PostalCode,
+			&user.City,
+			&user.Address1,
+			&user.Address2,
+			&user.GoogleID,
+		}
 	case models.Apple:
+		query = `
+            SELECT 
+                id,
+                encrypted_email,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_postal_code,
+                encrypted_city,
+                encrypted_address1,
+                encrypted_address2,
+                encrypted_apple_id
+            FROM pending_users 
+            WHERE email_hash = ?;`
+		args = []interface{}{
+			&user.ID,
+			&user.Email,
+			&user.LastName,
+			&user.FirstName,
+			&user.Gender,
+			&user.EncryptedBirthDate,
+			&user.Telephone,
+			&user.PostalCode,
+			&user.City,
+			&user.Address1,
+			&user.Address2,
+			&user.AppleID,
+		}
 	case models.Mail:
 		query = `
             SELECT 
                 id,
-                email,
-                password,
-                lastname,
-                firstname,
-                gender,
-                birthdate,
-                telephone,
-                postal_code,
-                city,
-                address1,
-                address2
+                encrypted_email,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_postal_code,
+                encrypted_city,
+                encrypted_address1,
+                encrypted_address2
             FROM pending_users 
-            WHERE email = ?;`
+            WHERE email_hash = ?;`
 		args = []interface{}{
 			&user.ID,
-			&user.EmailHash,
-			&user.PasswordHash,
+			&user.Email,
 			&user.LastName,
 			&user.FirstName,
 			&user.Gender,

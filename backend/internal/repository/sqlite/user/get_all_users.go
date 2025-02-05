@@ -22,7 +22,21 @@ import (
 //   - For query failures or result processing issues, a database error is returned.
 //   - Returns an empty slice with no error if no users are found.
 func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
-	query := "SELECT email, role, lastname, firstname, gender, birthdate, telephone FROM users;"
+	query := `
+        SELECT 
+            encrypted_email,
+            encrypted_picture,
+            role,
+            encrypted_birthdate,
+            encrypted_lastname,
+            encrypted_firstname,
+            encrypted_gender,
+            encrypted_telephone,
+            encrypted_postal_code,
+            encrypted_city,
+            encrypted_address1,
+            encrypted_address2
+        FROM users;`
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
 		switch {
@@ -38,13 +52,18 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	for rows.Next() {
 		var user models.User
 		err := rows.Scan(
-			&user.EmailHash,
+			&user.Email,
+			&user.Picture,
 			&user.Role,
+			&user.EncryptedBirthDate,
 			&user.LastName,
 			&user.FirstName,
 			&user.Gender,
-			&user.BirthDate,
 			&user.Telephone,
+			&user.PostalCode,
+			&user.City,
+			&user.Address1,
+			&user.Address2,
 		)
 		if err != nil {
 			return nil, rp.NewDatabaseErr(err)

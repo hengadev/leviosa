@@ -20,7 +20,7 @@ func (u *Repository) HasUser(ctx context.Context, emailHash string) error {
         SELECT EXISTS (
             SELECT 1 
             FROM users 
-            WHERE email = ?
+            WHERE email_hash = ?
         );`
 	var exists bool
 	err := u.DB.QueryRowContext(ctx, query, emailHash).Scan(&exists)

@@ -35,19 +35,21 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
 		query = fmt.Sprintf(`
             INSERT INTO %s (
                 id,
-                email,
-                password,
-                lastname,
-                firstname,
-                gender,
-                birthdate,
-                telephone,
-                google_id,
-                apple_id
-            ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL)`, table)
+                email_hash,
+                encrypted_email,
+                password_hash,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_google_id,
+                encrypted_apple_id
+            ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL)`, table)
 		args = []interface{}{
 			user.ID,
 			user.EmailHash,
+			user.Email,
 			user.LastName,
 			user.FirstName,
 			user.Gender,
@@ -59,19 +61,21 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
 		query = fmt.Sprintf(`
             INSERT INTO %s (
                 id,
-                email,
-                password,
-                lastname,
-                firstname,
-                gender,
-                birthdate,
-                telephone,
-                google_id,
-                apple_id
-            ) VALUES (?, ?, NULL, ?, ?, ?, ?, ?, NULL, ?)`, table)
+                email_hash,
+                encrypted_email,
+                password_hash,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_google_id,
+                encrypted_apple_id
+            ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, NULL, ?)`, table)
 		args = []interface{}{
 			user.ID,
 			user.EmailHash,
+			user.Email,
 			user.LastName,
 			user.FirstName,
 			user.Gender,
@@ -83,23 +87,25 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
 		query = fmt.Sprintf(`
             INSERT INTO %s (
                 id,
-                email,
-                password,
-                lastname,
-                firstname,
-                gender,
-                birthdate,
-                telephone,
-                postal_code,
-                city,
-                address1,
-                address2,
-                google_id,
-                apple_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`, table)
+                email_hash,
+                encrypted_email,
+                password_hash,
+                encrypted_lastname,
+                encrypted_firstname,
+                encrypted_gender,
+                encrypted_birthdate,
+                encrypted_telephone,
+                encrypted_postal_code,
+                encrypted_city,
+                encrypted_address1,
+                encrypted_address2,
+                encrypted_google_id,
+                encrypted_apple_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)`, table)
 		args = []interface{}{
 			user.ID,
 			user.EmailHash,
+			user.Email,
 			user.Password,
 			user.LastName,
 			user.FirstName,

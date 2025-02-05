@@ -34,7 +34,7 @@ func (u *Repository) HasOAuthUser(ctx context.Context, emailHash string, p model
         SELECT EXISTS (
             SELECT 1 
             FROM %s 
-            WHERE email = ? 
+            WHERE email_hash = ? 
             AND %s_id IS NOT NULL
             AND %s_id != ''
         );`, table, provider, provider)

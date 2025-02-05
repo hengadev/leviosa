@@ -29,7 +29,7 @@ func (u *Repository) GetUserByEmail(ctx context.Context, emailHash string) (*mod
             encrypted_picture,
             encrypted_created_at,
             encrypted_logged_in_at,
-            encrypted_role,
+            role,
             encrypted_birthdate,
             encrypted_lastname,
             encrypted_firstname,

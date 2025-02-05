@@ -2,24 +2,24 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    password TEXT,
-    picture TEXT,
-	created_at  TEXT,
-	logged_in_at TEXT,
+    email_hash TEXT NOT NULL UNIQUE,
+    encrypted_email TEXT NOT NULL UNIQUE,
+    password_hash TEXT,
+    encrypted_picture TEXT NOT NULL UNIQUE,
+	encrypted_created_at TEXT NOT NULL,
+	encrypted_logged_in_at TEXT NOT NULL,
     role TEXT NOT NULL,
-	birthdate  TEXT NOT NULL,
-    lastname TEXT NOT NULL,
-    firstname TEXT NOT NULL,
-	gender TEXT NOT NULL CHECK (GENDER IN ("M", "F", "NB", "NP")),
-	telephone TEXT NOT NULL UNIQUE,
-    postal_code TEXT NOT NULL, 
-    city TEXT NOT NULL, 
-    address1 TEXT NOT NULL, 
-    address2 TEXT NOT NULL, 
-    google_id TEXT NOT NULL, 
-    apple_id TEXT NOT NULL, 
-    UNIQUE(lastname, firstname)
+	encrypted_birthdate  TEXT NOT NULL,
+    encrypted_lastname TEXT NOT NULL,
+    encrypted_firstname TEXT NOT NULL,
+	encrypted_gender TEXT NOT NULL,
+	encrypted_telephone TEXT NOT NULL UNIQUE,
+    encrypted_postal_code TEXT NOT NULL, 
+    encrypted_city TEXT NOT NULL, 
+    encrypted_address1 TEXT NOT NULL, 
+    encrypted_address2 TEXT NOT NULL, 
+    encrypted_google_id TEXT NOT NULL, 
+    encrypted_apple_id TEXT NOT NULL 
 );
 -- +goose StatementEnd
 

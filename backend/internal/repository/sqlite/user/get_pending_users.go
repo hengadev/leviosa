@@ -22,11 +22,12 @@ import (
 func (u *Repository) GetPendingUsers(ctx context.Context) ([]*models.User, error) {
 	query := `
         SELECT 
-            email,
-            lastname,
-            firstname,
-            google_id,
-            apple_id
+            email_hash,
+            encrypted_email,
+            encrypted_lastname,
+            encrypted_firstname,
+            encrypted_google_id,
+            encrypted_apple_id
         FROM users;`
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -44,6 +45,7 @@ func (u *Repository) GetPendingUsers(ctx context.Context) ([]*models.User, error
 		var user models.User
 		if err := rows.Scan(
 			&user.EmailHash,
+			&user.Email,
 			&user.LastName,
 			&user.FirstName,
 			&user.GoogleID,

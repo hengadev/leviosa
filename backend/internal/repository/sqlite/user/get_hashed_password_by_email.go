@@ -22,7 +22,7 @@ import (
 //   - Returns a database error for any other query-related issues.
 func (u *Repository) GetHashedPasswordByEmail(ctx context.Context, email string) (string, error) {
 	var hashedPassword string
-	query := "SELECT password from users where email = ?;"
+	query := "SELECT password_hash from users where email_hash = ?;"
 	err := u.DB.QueryRowContext(ctx, query, email).Scan(&hashedPassword)
 	if err != nil {
 		switch {

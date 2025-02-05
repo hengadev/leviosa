@@ -1,18 +1,19 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS unverified_users (
-    email TEXT PRIMARY KEY,
-    password TEXT,
-	birthdate  TEXT NOT NULL,
-    lastname TEXT NOT NULL,
-    firstname TEXT NOT NULL,
-	gender TEXT NOT NULL,
-	telephone TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    postal_code TEXT NOT NULL UNIQUE, 
-    city TEXT NOT NULL UNIQUE, 
-    address1 TEXT NOT NULL UNIQUE, 
-    address2 TEXT NOT NULL UNIQUE 
+    email_hash TEXT PRIMARY KEY,
+    encrypted_email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL UNIQUE,
+	encrypted_birthdate  TEXT NOT NULL,
+    encrypted_lastname TEXT NOT NULL,
+    encrypted_firstname TEXT NOT NULL,
+	encrypted_gender TEXT NOT NULL,
+	encrypted_telephone TEXT NOT NULL UNIQUE,
+    encrypted_created_at TEXT,
+    encrypted_postal_code TEXT NOT NULL, 
+    encrypted_city TEXT NOT NULL, 
+    encrypted_address1 TEXT NOT NULL, 
+    encrypted_address2 TEXT
 );
 -- +goose StatementEnd
 
