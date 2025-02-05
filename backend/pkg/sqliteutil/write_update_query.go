@@ -6,8 +6,12 @@ import (
 	"strings"
 )
 
+type SQLMappable interface {
+	GetSQLColumnMapping() map[string]string
+}
+
 // Return the necessary elements to write a query update to target the non zero value.
-func WriteUpdateQuery[T any](
+func WriteUpdateQuery[T SQLMappable](
 	object T,
 	whereMap map[string]any,
 	prohibitedFields ...string,
@@ -28,7 +32,8 @@ func WriteUpdateQuery[T any](
 			if err := isProhibitedField(f.Name, prohibitedFields...); err != nil {
 				return fail(err)
 			}
-			tables = append(tables, placeholder(strings.ToLower(f.Name)))
+			column := object.GetSQLColumnMapping()[f.Name]
+			tables = append(tables, placeholder(column))
 			values = append(values, value.Interface())
 		}
 	}
@@ -52,7 +57,7 @@ func placeholder(name string) string {
 func isProhibitedField(name string, prohibitedFields ...string) error {
 	for _, prohibitedField := range prohibitedFields {
 		if name == prohibitedField {
-			return fmt.Errorf("field %s prohibited", prohibitedField)
+			return fmt.Errorf("field %q is prohibited", prohibitedField)
 		}
 	}
 	return nil
