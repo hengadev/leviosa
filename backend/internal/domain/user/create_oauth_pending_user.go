@@ -23,7 +23,7 @@ import (
 func (s *Service) CreateOAuthPendingUser(ctx context.Context, user *models.User, provider models.ProviderType) error {
 	// encrypt user
 	if errs := s.EncryptUser(user); len(errs) > 0 {
-		return domain.NewInvalidValueErr(fmt.Sprintf("user encryption: %s", errs.Error()))
+		return domain.NewNotEncryptedErr("OAuth pending user", errs)
 	}
 	// add user to pending_user table
 	if err := s.repo.AddPendingUser(ctx, user, provider); err != nil {

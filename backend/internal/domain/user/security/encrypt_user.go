@@ -40,9 +40,9 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	for _, field := range timeFields {
 		if field.value != nil && !field.value.IsZero() {
 			dateStr := field.value.Format(time.RFC3339)
-			encrypted, pbms := s.encrypt(dateStr)
-			if len(pbms) > 0 {
-				errs.Set(field.name, pbms.Error())
+			encrypted, encryptedErrs := s.encrypt(dateStr)
+			if len(encryptedErrs) > 0 {
+				errs.Set(field.name, encryptedErrs.Error())
 			}
 			*field.value = time.Time{}
 			*field.encryptedValue = encrypted
@@ -75,9 +75,10 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	}
 	// Handle email specially - we need both a hash for searching and encrypted value
 	if user.Email != "" {
+		// create hash for searching in database
 		user.EmailHash = HashEmail(user.Email)
-
-		encrypted, pbms := s.encrypt(user.Email)
+		// encrypt actual email for storage
+		encrypted, pbms := s.encrypt(user.EmailHash)
 		if len(pbms) > 0 {
 			errs.Set("encrypt field", pbms.Error())
 		}
@@ -91,6 +92,7 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 		if err != nil {
 			errs.Set("hash password", err)
 		}
+		// TODO: should I encrypt the password ?
 		user.PasswordHash = hash
 		user.Password = "" // Clear plain text password
 	}
@@ -106,6 +108,7 @@ func HashEmail(email string) string {
 // encrypt is a helper function for the EncryptUser function
 func (s *SecureUserData) encrypt(data string) (string, errsx.Map) {
 	var errs errsx.Map
+
 	block, err := aes.NewCipher(s.config.EncryptionKey)
 	if err != nil {
 		errs.Set("aes create cypher", err)

@@ -22,7 +22,7 @@ import (
 func (s *Service) CreateUnverifiedUser(ctx context.Context, userSignUp *models.UserSignUp) (string, error) {
 	user := userSignUp.ToUser()
 	if errs := s.EncryptUser(user); len(errs) > 0 {
-		return "", domain.NewNotEncryptedErr(errs)
+		return "", domain.NewNotEncryptedErr("unverified user", errs)
 	}
 	err := s.repo.AddUnverifiedUser(ctx, user)
 	if err != nil {
