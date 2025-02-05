@@ -1,7 +1,6 @@
 package sqliteutil
 
 import (
-	"database/sql"
 	"fmt"
 	"time"
 
@@ -35,14 +34,4 @@ func GetInitQueries() ([]string, error) {
 		),
 	}
 	return queries, nil
-}
-
-func Init(db *sql.DB, queries ...string) error {
-	for _, query := range queries {
-		_, err := db.Exec(query)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
