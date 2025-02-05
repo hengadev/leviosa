@@ -7,14 +7,14 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetAllUsers(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-	usersList := []*models.User{testutil.Johndoe, testutil.Janedoe, testutil.Jeandoe}
+	usersList := []*models.User{factories.Johndoe, factories.Janedoe, factories.Jeandoe}
 	tests := []struct {
 		expectedUsers []*models.User
 		wantErr       bool
@@ -34,8 +34,7 @@ func TestGetAllUsers(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 			fields := []string{}
 			for i := range len(users) {
-				defer testutil.RecoverCompareUser()
-				testutil.CompareUser(t, fields, users[i], tt.expectedUsers[i])
+				assert.FieldsEqual(t, users[i], tt.expectedUsers[i], fields)
 			}
 		})
 	}

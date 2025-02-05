@@ -24,7 +24,6 @@ func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessio
 		}
 	}
 
-	// TODO: Should I check for the insertion like so?
 	if result.Val() == "" {
 		return rp.NewNotCreatedErr(nil, "session")
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -22,7 +22,7 @@ func TestAddAccount(t *testing.T) {
 	}{
 		{
 			name:        "user already exists",
-			usr:         testutil.Johndoe,
+			usr:         factories.NewBasicUser(nil),
 			version:     20240811140841,
 			expectedErr: nil,
 		},

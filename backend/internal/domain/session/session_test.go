@@ -6,7 +6,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	test "github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/utils"
 
 	"github.com/GaryHY/test-assert"
 )

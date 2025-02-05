@@ -8,7 +8,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -17,8 +17,8 @@ func TestModifyAccount(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 
 	changes := map[string]any{"FirstName": "Jane", "Gender": "F"}
-	whereMap := map[string]any{"id": testutil.Johndoe.ID}
-	modifiedUser, err := domain.CreateWithZeroFieldModifiedObject(*testutil.Johndoe, changes)
+	whereMap := map[string]any{"id": factories.Johndoe.ID}
+	modifiedUser, err := domain.CreateWithZeroFieldModifiedObject(*factories.Johndoe, changes)
 	if err != nil {
 		t.Error("Failed to create object with modified field")
 	}
@@ -30,7 +30,7 @@ func TestModifyAccount(t *testing.T) {
 		name         string
 	}{
 		{userModified: nil, wantErr: true, version: 20240811085134, name: "nil user"},
-		{userModified: testutil.Johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
+		{userModified: factories.Johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
 		{userModified: modifiedUser, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
 	}
 

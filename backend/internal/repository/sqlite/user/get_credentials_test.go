@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -15,8 +15,8 @@ import (
 func TestGetCredentials(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	creds := &models.UserSignIn{
-		Email:    testutil.Johndoe.Email,
-		Password: testutil.Johndoe.Password,
+		Email:    factories.Johndoe.Email,
+		Password: factories.Johndoe.Password,
 	}
 	tests := []struct {
 		expectedUserID   string

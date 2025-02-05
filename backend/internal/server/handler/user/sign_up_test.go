@@ -12,7 +12,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/redis"
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 	"github.com/google/uuid"
@@ -29,9 +29,9 @@ func TestCreateAccount(t *testing.T) {
 		version            int64
 		name               string
 	}{
-		{user: nil, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", initMap: testutil.InitSession, version: 20240811085134, name: "no user in database"},
-		{user: testutil.Johndoe, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: testutil.InitSession, version: 20240824092110, name: "user already exists"},
-		{user: testutil.Johndoe, wantCookie: true, expectedStatusCode: 201, expectedCookieName: sessionService.SessionName, initMap: testutil.InitSession, version: 20240811085134, name: "nominal case with user creation"},
+		{user: nil, wantCookie: false, expectedStatusCode: 400, expectedCookieName: "", initMap: factories.InitSession, version: 20240811085134, name: "no user in database"},
+		{user: factories.Johndoe, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: factories.InitSession, version: 20240824092110, name: "user already exists"},
+		{user: factories.Johndoe, wantCookie: true, expectedStatusCode: 201, expectedCookieName: sessionService.SessionName, initMap: factories.InitSession, version: 20240811085134, name: "nominal case with user creation"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestCreateAccount(t *testing.T) {
 			ctx := context.Background()
 
 			// encode credentials for request
-			body := testutil.EncodeForBody(t, tt.user)
+			body := factories.EncodeForBody(t, tt.user)
 
 			// create request and responseRecorder
 			r, _ := http.NewRequest("POST", "/api/v1/signup", body)
@@ -47,9 +47,9 @@ func TestCreateAccount(t *testing.T) {
 			w := httptest.NewRecorder()
 
 			// setup session service and repo
-			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+			usersvc, userrepo := factories.SetupUser(t, ctx, tt.version)
 			// setup session service and repo
-			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, ctx, tt.initMap)
+			sessionsvc, sessionrepo, sessionteardown := factories.SetupSession(t, ctx, tt.initMap)
 			defer sessionteardown()
 
 			appsvc := &app.Services{User: usersvc, Session: sessionsvc}

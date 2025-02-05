@@ -7,7 +7,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	"github.com/GaryHY/leviosa/internal/repository/redis"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -21,8 +21,8 @@ func TestCreateSession(t *testing.T) {
 	}{
 		{session: nil, expectedErr: nil, init: nil, name: "nil session"},
 		{session: &sessionService.Session{}, expectedErr: nil, init: nil, name: "empty database"},
-		{session: &testutil.BaseSession, expectedErr: nil, init: nil, name: "nominal case"},
-		{session: &testutil.BaseSession, expectedErr: nil, init: testutil.InitSession, name: "session already exists"},
+		{session: &factories.BaseSession, expectedErr: nil, init: nil, name: "nominal case"},
+		{session: &factories.BaseSession, expectedErr: nil, init: factories.InitSession, name: "session already exists"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

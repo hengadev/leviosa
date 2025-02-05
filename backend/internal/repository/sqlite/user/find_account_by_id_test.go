@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -21,7 +21,7 @@ func TestFindAccountByID(t *testing.T) {
 		name         string
 	}{
 		{expectedUser: nil, wantErr: true, version: 20240811085134, name: "user not in the database"},
-		{expectedUser: testutil.Johndoe, wantErr: false, version: 20240811140841, name: "nominal case, user in database"},
+		{expectedUser: factories.Johndoe, wantErr: false, version: 20240811140841, name: "nominal case, user in database"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -33,8 +33,7 @@ func TestFindAccountByID(t *testing.T) {
 			assert.Equal(t, err != nil, tt.wantErr)
 			if tt.expectedUser != nil {
 				fields := []string{"ID", "Email", "Role", "BirthDate", "LastName", "FirstName", "Gender", "Telephone", "Address", "City", "PostalCard"}
-				defer testutil.RecoverCompareUser()
-				testutil.CompareUser(t, fields, user, testutil.Johndoe)
+				assert.FieldsEqual(t, user, tt.expectedUser, fields)
 			}
 		})
 	}

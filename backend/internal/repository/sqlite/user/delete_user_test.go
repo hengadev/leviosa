@@ -6,7 +6,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -19,8 +19,8 @@ func TestDeleteUser(t *testing.T) {
 		version int64
 		name    string
 	}{
-		{userID: testutil.Johndoe.ID, wantErr: true, version: 20240811085134, name: "user not in the database"},
-		{userID: "95832", wantErr: true, version: 20240811140841, name: "wrong query"}, {userID: testutil.Johndoe.ID, wantErr: false, version: 20240811140841, name: "nominal case"},
+		{userID: factories.Johndoe.ID, wantErr: true, version: 20240811085134, name: "user not in the database"},
+		{userID: "95832", wantErr: true, version: 20240811140841, name: "wrong query"}, {userID: factories.Johndoe.ID, wantErr: false, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

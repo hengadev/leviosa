@@ -11,14 +11,14 @@ import (
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestUpdateUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
-	userToModify := *testutil.Johndoe
+	userToModify := *factories.Johndoe
 	userToModify.Telephone = "0234567890"
 	var zerotime time.Time
 	tests := []struct {
@@ -27,9 +27,9 @@ func TestUpdateUser(t *testing.T) {
 		version            int64
 		name               string
 	}{
-		{user: *testutil.Johndoe, expectedStatusCode: 500, version: 20240811085134, name: "no user in database"},
-		{user: *testutil.Janedoe, expectedStatusCode: 500, version: 20240811140841, name: "user not in database"},
-		{user: *testutil.Johndoe, expectedStatusCode: 200, version: 20240811140841, name: "user with no modification to do"},
+		{user: *factories.Johndoe, expectedStatusCode: 500, version: 20240811085134, name: "no user in database"},
+		{user: *factories.Janedoe, expectedStatusCode: 500, version: 20240811140841, name: "user not in database"},
+		{user: *factories.Johndoe, expectedStatusCode: 200, version: 20240811140841, name: "user with no modification to do"},
 		{user: userToModify, expectedStatusCode: 200, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
@@ -46,7 +46,7 @@ func TestUpdateUser(t *testing.T) {
 			tt.user.Role = ""
 
 			// encode credentials for request
-			body := testutil.EncodeForBody(t, tt.user)
+			body := factories.EncodeForBody(t, tt.user)
 
 			// create request and responseRecorder
 			r, _ := http.NewRequest("PUT", "/api/v1/me", body)
@@ -57,7 +57,7 @@ func TestUpdateUser(t *testing.T) {
 			r = r.WithContext(ctx)
 
 			// setup session service and repo
-			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+			usersvc, userrepo := factories.SetupUser(t, ctx, tt.version)
 
 			appsvc := &app.Services{User: usersvc}
 			apprepo := &app.Repos{User: userrepo}

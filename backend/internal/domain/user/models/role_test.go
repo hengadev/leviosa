@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/utils"
 
 	"github.com/GaryHY/test-assert"
 )

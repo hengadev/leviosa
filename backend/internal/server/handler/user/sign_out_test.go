@@ -10,7 +10,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/redis"
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
@@ -30,9 +30,9 @@ func TestSignOut(t *testing.T) {
 		initMap            miniredis.InitMap[*sessionService.Values]
 		name               string
 	}{
-		{sessionID: testutil.BaseSession.ID, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: nil, name: "no session in database"},
-		{sessionID: testutil.RandomSessionID, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: testutil.InitSession, name: "session provided is not in database"},
-		{sessionID: testutil.BaseSession.ID, wantCookie: true, expectedStatusCode: 200, expectedCookieName: sessionService.SessionName, initMap: testutil.InitSession, name: "nominal case"},
+		{sessionID: factories.BaseSession.ID, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: nil, name: "no session in database"},
+		{sessionID: factories.RandomSessionID, wantCookie: false, expectedStatusCode: 500, expectedCookieName: "", initMap: factories.InitSession, name: "session provided is not in database"},
+		{sessionID: factories.BaseSession.ID, wantCookie: true, expectedStatusCode: 200, expectedCookieName: sessionService.SessionName, initMap: factories.InitSession, name: "nominal case"},
 	}
 
 	for _, tt := range tests {
@@ -50,7 +50,7 @@ func TestSignOut(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.AddCookie(cookie)
 			// setup session service and repo
-			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, r.Context(), tt.initMap)
+			sessionsvc, sessionrepo, sessionteardown := factories.SetupSession(t, r.Context(), tt.initMap)
 			defer sessionteardown()
 			appsvc := &app.Services{Session: sessionsvc}
 			apprepo := &app.Repos{Session: sessionrepo}

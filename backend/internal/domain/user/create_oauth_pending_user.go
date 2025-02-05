@@ -3,7 +3,6 @@ package userService
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/GaryHY/leviosa/internal/domain"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"

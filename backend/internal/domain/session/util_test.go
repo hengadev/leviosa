@@ -5,7 +5,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/tests"
+	"github.com/GaryHY/leviosa/tests/utils"
 )
 
 var baseSession = &sessionService.Session{

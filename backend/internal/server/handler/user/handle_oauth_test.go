@@ -9,7 +9,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 )
 
 func TestHandleOAuth(t *testing.T) {
@@ -37,16 +37,16 @@ func TestHandleOAuth(t *testing.T) {
 			// TODO:
 			// - setup the user database
 			// - setup the session database
-			body := testutil.EncodeForBody(t, tt.oauthUser)
+			body := factories.EncodeForBody(t, tt.oauthUser)
 			endpoint := fmt.Sprintf("/api/v1/oauth/%s/user", tt.provider)
 			r, _ := http.NewRequest("POST", endpoint, body)
 			ctx := r.Context()
 			w := httptest.NewRecorder()
 
 			// setup session service and repo
-			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+			usersvc, userrepo := factories.SetupUser(t, ctx, tt.version)
 			// setup session service and repo
-			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, ctx, nil)
+			sessionsvc, sessionrepo, sessionteardown := factories.SetupSession(t, ctx, nil)
 			defer sessionteardown()
 
 			appsvc := &app.Services{User: usersvc, Session: sessionsvc}

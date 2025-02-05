@@ -12,15 +12,16 @@ import (
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetUser(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
-	baseID := testutil.Johndoe.ID
+	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/test")
+	baseID := factories.Johndoe.ID
 	wrongID := strconv.Itoa(593857835)
+	fields := []string{"ID", "Email", "Role", "BirthDate", "LastName", "FirstName", "Gender", "Telephone", "Address", "City", "PostalCard"}
 	tests := []struct {
 		userID             string
 		expectedStatusCode int
@@ -31,7 +32,7 @@ func TestGetUser(t *testing.T) {
 		{userID: baseID, expectedStatusCode: 500, expectedUser: nil, version: 20240811085134, name: "empty database"},
 		{userID: "", expectedStatusCode: 500, expectedUser: nil, version: 20240811140841, name: "no userID provided ie failed auth"},
 		{userID: wrongID, expectedStatusCode: 500, expectedUser: nil, version: 20240811140841, name: "ID not in database"},
-		{userID: baseID, expectedStatusCode: 302, expectedUser: testutil.Johndoe, version: 20240811140841, name: "nominal case"},
+		{userID: baseID, expectedStatusCode: 302, expectedUser: factories.Johndoe, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,7 +45,7 @@ func TestGetUser(t *testing.T) {
 			ctx := context.WithValue(r.Context(), contextutil.UserIDKey, tt.userID)
 			r = r.WithContext(ctx)
 
-			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+			usersvc, userrepo := factories.SetupUser(t, ctx, tt.version)
 
 			appsvc := &app.Services{User: usersvc}
 			apprepo := &app.Repos{User: userrepo}
@@ -60,8 +61,7 @@ func TestGetUser(t *testing.T) {
 
 			assert.Equal(t, w.Code, tt.expectedStatusCode)
 			if tt.expectedUser != nil {
-				defer testutil.RecoverCompareUser()
-				testutil.CompareUser(t, testutil.BasicCompareFields, user, tt.expectedUser)
+				assert.FieldsEqual(t, user, tt.expectedUser, fields)
 			}
 		})
 	}

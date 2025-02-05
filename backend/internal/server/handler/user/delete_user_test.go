@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 	"time"
 
@@ -15,14 +14,17 @@ import (
 	"github.com/GaryHY/leviosa/internal/server/app"
 	"github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/testutil"
+	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 	"github.com/GaryHY/test-assert"
 )
 
 func TestDeleteUser(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../../../sqlite/migrations/tests")
-	baseID := testutil.Johndoe.ID
-	wrongID := strconv.Itoa(593857835)
+	user := factories.NewBasicUser(nil)
+	baseID := user.ID
+	// wrongID := strconv.Itoa(593857835)
+	wrongID := test.GenerateRandomString(36)
 	tests := []struct {
 		userID             string
 		expectedStatusCode int
@@ -30,10 +32,10 @@ func TestDeleteUser(t *testing.T) {
 		version            int64
 		name               string
 	}{
-		{userID: baseID, expectedStatusCode: 500, initMap: testutil.InitSession, version: 20240811085134, name: "empty database"},
-		{userID: wrongID, expectedStatusCode: 500, initMap: testutil.InitSession, version: 20240811140841, name: "user not in database"},
+		{userID: baseID, expectedStatusCode: 500, initMap: factories.InitSession, version: 20240811085134, name: "empty database"},
+		{userID: wrongID, expectedStatusCode: 500, initMap: factories.InitSession, version: 20240811140841, name: "user not in database"},
 		{userID: baseID, expectedStatusCode: 500, initMap: nil, version: 20240811140841, name: "session not found"},
-		{userID: baseID, expectedStatusCode: 200, initMap: testutil.InitSession, version: 20240811140841, name: "nominal case"},
+		{userID: baseID, expectedStatusCode: 200, initMap: factories.InitSession, version: 20240811140841, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,20 +45,19 @@ func TestDeleteUser(t *testing.T) {
 
 			cookie := &http.Cookie{
 				Name:     sessionService.SessionName,
-				Value:    testutil.SessionID,
+				Value:    factories.SessionID,
 				Expires:  time.Now().Add(sessionService.SessionDuration),
 				HttpOnly: true,
 			}
 			r.AddCookie(cookie)
 
 			// pass userID to context
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, contextutil.UserIDKey, tt.userID)
+			ctx := context.WithValue(context.Background(), contextutil.UserIDKey, tt.userID)
 			r = r.WithContext(ctx)
 
-			usersvc, userrepo := testutil.SetupUser(t, ctx, tt.version)
+			usersvc, userrepo := factories.SetupUser(t, ctx, tt.version)
 
-			sessionsvc, sessionrepo, sessionteardown := testutil.SetupSession(t, ctx, tt.initMap)
+			sessionsvc, sessionrepo, sessionteardown := factories.SetupSession(t, ctx, tt.initMap)
 			defer sessionteardown()
 
 			appsvc := &app.Services{User: usersvc, Session: sessionsvc}
