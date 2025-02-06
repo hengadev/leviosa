@@ -96,3 +96,13 @@ func (u User) GetSQLColumnMapping() map[string]string {
 		"AppleID":             "encrypted_apple_id",
 	}
 }
+
+func (u User) GetProhibitedFields() []string {
+	return []string{
+		"ID",
+		"Email",
+		"Password",
+		"GoogleID",
+		"AppleID",
+	}
+}
