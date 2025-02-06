@@ -10,11 +10,10 @@ var birthdate, _ = time.Parse("2006-01-02", "1998-07-12")
 
 func NewBasicUser(overrides map[string]interface{}) *models.User {
 	user := &models.User{
-		ID:                  "",
 		ID:                  "123e4567-e89b-12d3-a456-426614174000",
 		Email:               "john.doe@example.com",
 		EmailHash:           "john.doe@example.com",
-		Password:            "hashedpassword",
+		Password:            "password",
 		PasswordHash:        "hashedpassword",
 		Picture:             "picture",
 		EncryptedCreatedAt:  "2025-02-03",
@@ -82,6 +81,37 @@ func NewBasicUser(overrides map[string]interface{}) *models.User {
 		}
 	}
 	return user
+}
+
+func NewBasicUserList() []*models.User {
+	users := []*models.User{
+		NewBasicUser(nil),
+		NewBasicUser(map[string]any{
+			"ID":                 "123e4567-e89b-12d3-a456-426614174001",
+			"Email":              "john.doe@example.com",
+			"EmailHash":          "john.doe@example.com",
+			"Picture":            "picture1",
+			"FirstName":          "Jane",
+			"Telephone":          "0123456781",
+			"Gender":             "F",
+			"EncryptedBirthDate": "1970-01-28",
+			"GoogleID":           "google_id1",
+			"Apple_ID":           "apple_id1",
+		}),
+		NewBasicUser(map[string]any{
+			"ID":                 "123e4567-e89b-12d3-a456-426614174002",
+			"Email":              "jean.doe@example.com",
+			"EmailHash":          "jean.doe@example.com",
+			"Picture":            "picture2",
+			"FirstName":          "Jean",
+			"Telephone":          "0123456782",
+			"Gender":             "NB",
+			"EncryptedBirthDate": "2000-10-05",
+			"GoogleID":           "google_id2",
+			"Apple_ID":           "apple_id2",
+		}),
+	}
+	return users
 }
 
 var (
