@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS pending_users (
     email_hash TEXT NOT NULL,
     encrypted_email TEXT NOT NULL UNIQUE,
     password_hash TEXT,
+    encrypted_picture TEXT NOT NULL UNIQUE,
 	encrypted_birthdate  TEXT NOT NULL,
     encrypted_lastname TEXT NOT NULL,
     encrypted_firstname TEXT NOT NULL,
