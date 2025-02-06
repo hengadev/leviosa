@@ -20,7 +20,7 @@ type Writer interface {
 	AddUser(ctx context.Context, user *models.User, provider models.ProviderType) error
 	AddPendingUser(ctx context.Context, user *models.User, provider models.ProviderType) error
 	AddUnverifiedUser(ctx context.Context, user *models.User) error
-	ModifyAccount(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error
+	ModifyAccount(ctx context.Context, user *models.User, whereMap map[string]any) error
 	DeleteUser(ctx context.Context, id string) error
 }
 

@@ -35,7 +35,6 @@ func (s *Service) UpdateAccount(ctx context.Context, user *models.User, userID s
 		ctx,
 		user,
 		map[string]any{"id": userID},
-		prohibitedFields...,
 	)
 	if err != nil {
 		switch {
