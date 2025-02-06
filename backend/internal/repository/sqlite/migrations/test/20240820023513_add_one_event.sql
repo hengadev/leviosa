@@ -27,5 +27,5 @@ INSERT INTO events (
 
 -- +goose Down
 -- +goose StatementBegin
-DELETE from events ORDER BY id DESC LIMIT 1;
+DELETE FROM events WHERE rowid = 1;
 -- +goose StatementEnd

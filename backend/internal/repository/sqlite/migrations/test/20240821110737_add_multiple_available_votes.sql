@@ -9,5 +9,5 @@ INSERT INTO available_votes (days, month, year) VALUES
 
 -- +goose Down
 -- +goose StatementBegin
-DELETE from available_votes ORDER BY id DESC LIMIT 4;
+DELETE from available_votes;
 -- +goose StatementEnd

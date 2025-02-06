@@ -21,7 +21,7 @@ INSERT INTO users (
     encrypted_address2,
     encrypted_google_id,
     encrypted_apple_id
-    ) VALUES (
+) VALUES (
     "123e4567-e89b-12d3-a456-426614174000",
     'john.doe@example.com',
     'john.doe@example.com',
@@ -41,10 +41,10 @@ INSERT INTO users (
     '',
     'google_id',
     'apple_id'
-    );
+);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DELETE from users ORDER BY id DESC LIMIT 1;
+DELETE FROM users WHERE rowid = 1;
 -- +goose StatementEnd
