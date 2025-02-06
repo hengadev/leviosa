@@ -2,6 +2,7 @@
 -- +goose StatementBegin
 -- TODO: change that migration to use the right values for the columns
 INSERT INTO users (
+    id,
     email_hash,
     encrypted_email,
     password_hash,
@@ -21,6 +22,7 @@ INSERT INTO users (
     encrypted_google_id,
     encrypted_apple_id
     ) VALUES (
+    "123e4567-e89b-12d3-a456-426614174000",
     'john.doe@example.com',
     'john.doe@example.com',
     'hashedpassword',
