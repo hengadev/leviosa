@@ -13,7 +13,7 @@ var (
 	ErrDatabase   = errors.New("database error")
 	ErrInternal   = errors.New("internal error")
 	ErrContext    = errors.New("context related error")
-	ErrValidation = errors.New("validation error")
+	ErrValidation = errors.New("not valid")
 )
 
 func NewValidationErr(err error, domainName string) error {
