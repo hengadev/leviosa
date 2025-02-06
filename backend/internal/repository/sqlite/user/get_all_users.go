@@ -24,6 +24,7 @@ import (
 func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	query := `
         SELECT 
+            id,
             encrypted_email,
             encrypted_picture,
             role,
@@ -35,7 +36,9 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
             encrypted_postal_code,
             encrypted_city,
             encrypted_address1,
-            encrypted_address2
+            encrypted_address2,
+            encrypted_google_id,
+            encrypted_apple_id
         FROM users;`
 	rows, err := u.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -52,6 +55,7 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 	for rows.Next() {
 		var user models.User
 		err := rows.Scan(
+			&user.ID,
 			&user.Email,
 			&user.Picture,
 			&user.Role,
@@ -64,6 +68,8 @@ func (u *Repository) GetAllUsers(ctx context.Context) ([]*models.User, error) {
 			&user.City,
 			&user.Address1,
 			&user.Address2,
+			&user.GoogleID,
+			&user.AppleID,
 		)
 		if err != nil {
 			return nil, rp.NewDatabaseErr(err)
