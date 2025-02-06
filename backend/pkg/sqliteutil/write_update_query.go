@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
 type SQLMappable interface {
@@ -15,12 +17,11 @@ func WriteUpdateQuery[T SQLMappable](
 	object T,
 	whereMap map[string]any,
 	prohibitedFields ...string,
-) (string, []any, error) {
-	fail := func(err error) (string, []any, error) {
-		return "", nil, fmt.Errorf("write update query, %w", err)
-	}
+) (string, []any, errsx.Map) {
+	var errs errsx.Map
 	var tables []string
 	var values []any
+	var notUpdatedFields []string
 	v := reflect.ValueOf(object)
 	t := reflect.TypeOf(object)
 	vf := reflect.VisibleFields(t)
@@ -30,7 +31,8 @@ func WriteUpdateQuery[T SQLMappable](
 		value := v.FieldByName(f.Name)
 		if !value.IsZero() && value.CanInterface() {
 			if err := isProhibitedField(f.Name, prohibitedFields...); err != nil {
-				return fail(err)
+				notUpdatedFields = append(notUpdatedFields, f.Name)
+				continue
 			}
 			column := object.GetSQLColumnMapping()[f.Name]
 			tables = append(tables, placeholder(column))
@@ -46,7 +48,10 @@ func WriteUpdateQuery[T SQLMappable](
 		values = append(values, value)
 	}
 	query += strings.Join(wherePlaceholder, " AND ") + ";"
-	return query, values, nil
+	if len(notUpdatedFields) > 0 {
+		errs.Set("prohibited fields", strings.Join(notUpdatedFields, ", "))
+	}
+	return query, values, errs
 }
 
 func placeholder(name string) string {
