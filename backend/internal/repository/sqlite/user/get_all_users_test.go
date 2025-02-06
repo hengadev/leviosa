@@ -13,16 +13,26 @@ import (
 )
 
 func TestGetAllUsers(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
 	usersList := []*models.User{factories.Johndoe, factories.Janedoe, factories.Jeandoe}
 	tests := []struct {
-		expectedUsers []*models.User
-		wantErr       bool
-		version       int64
 		name          string
+		version       int64
+		expectedUsers []*models.User
+		expectedError error
 	}{
-		{expectedUsers: []*models.User{}, wantErr: false, version: 20240811085134, name: "No users in database"},
-		{expectedUsers: usersList, wantErr: false, version: 20240819182030, name: "Multiple users in the database to retrieve"},
+		{
+			name:          "No users in database",
+			version:       20240811085134,
+			expectedUsers: []*models.User{},
+			expectedError: nil,
+		},
+		{
+			name:          "Multiple users in database to retrieve",
+			version:       20240819182030,
+			expectedUsers: usersList,
+			expectedError: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,7 +41,7 @@ func TestGetAllUsers(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
 			users, err := repo.GetAllUsers(ctx)
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.EqualError(t, err, tt.expectedError)
 			fields := []string{}
 			for i := range len(users) {
 				assert.FieldsEqual(t, users[i], tt.expectedUsers[i], fields)
