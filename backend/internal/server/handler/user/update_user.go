@@ -36,8 +36,12 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	// modify user
 	if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
-		logger.ErrorContext(ctx, "failed to modify the user", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
-		return
+		switch err {
+		// TODO: handle the validation error to just send back the fields that are not updated because prohibited from updates
+		default:
+			logger.ErrorContext(ctx, "failed to modify the user", "error", err)
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			return
+		}
 	}
 }

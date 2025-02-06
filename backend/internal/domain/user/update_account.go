@@ -38,9 +38,7 @@ func (s *Service) UpdateAccount(ctx context.Context, user *models.User, userID s
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, rp.ErrInternal):
-			fallthrough
-		case errors.Is(err, rp.ErrContext):
+		case errors.Is(err, rp.ErrValidation), errors.Is(err, rp.ErrContext):
 			return err
 		case errors.Is(err, rp.ErrDatabase):
 			return domain.NewQueryFailedErr(err)

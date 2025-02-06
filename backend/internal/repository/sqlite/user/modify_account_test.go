@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
@@ -14,24 +14,43 @@ import (
 )
 
 func TestModifyAccount(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-
-	changes := map[string]any{"FirstName": "Jane", "Gender": "F"}
-	whereMap := map[string]any{"id": factories.Johndoe.ID}
-	modifiedUser, err := domain.CreateWithZeroFieldModifiedObject(*factories.Johndoe, changes)
-	if err != nil {
-		t.Error("Failed to create object with modified field")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	user := factories.NewBasicUser(nil)
+	whereMap := map[string]any{"id": user.ID}
+	changes := map[string]any{
+		"ID":        "",
+		"Email":     "",
+		"Password":  "",
+		"FirstName": "Jane",
+		"Gender":    "F",
+		"GoogleID":  "",
+		"AppleID":   "",
 	}
-
+	modifiedUser := factories.NewBasicUser(changes)
 	tests := []struct {
-		userModified *models.User
-		wantErr      bool
-		version      int64
 		name         string
+		modifiedUser *models.User
+		expectedErr  error
+		version      int64
 	}{
-		{userModified: nil, wantErr: true, version: 20240811085134, name: "nil user"},
-		{userModified: factories.Johndoe, wantErr: true, version: 20240811140841, name: "user with prohibited fields for modification"},
-		{userModified: modifiedUser, wantErr: false, version: 20240811140841, name: "nominal case with valid updatable user"},
+		{
+			name:         "udpate with no user in database",
+			modifiedUser: modifiedUser,
+			expectedErr:  rp.ErrNotUpdated,
+			version:      20240811085134,
+		},
+		{
+			name:         "update 'user' prohibited field(s)",
+			modifiedUser: user,
+			expectedErr:  rp.ErrValidation,
+			version:      20240811140841,
+		},
+		{
+			name:         "nominal case with valid updatable user",
+			modifiedUser: modifiedUser,
+			expectedErr:  nil,
+			version:      20240811140841,
+		},
 	}
 
 	for _, tt := range tests {
@@ -40,13 +59,8 @@ func TestModifyAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			err := repo.ModifyAccount(
-				ctx, tt.userModified,
-				whereMap,
-				"Email",
-				"Password",
-			)
-			assert.Equal(t, err != nil, tt.wantErr)
+			err := repo.ModifyAccount(ctx, tt.modifiedUser, whereMap)
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }

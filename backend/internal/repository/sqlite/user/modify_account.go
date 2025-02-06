@@ -25,12 +25,9 @@ func (u *Repository) ModifyAccount(
 	ctx context.Context,
 	user *models.User,
 	whereMap map[string]any,
-	prohibitedFields ...string,
 ) error {
-	query, values, err := sqliteutil.WriteUpdateQuery(*user, whereMap, prohibitedFields...)
-	if err != nil {
-		return rp.NewInternalErr(err)
-	}
+	query, values, writeUpdateErr := sqliteutil.WriteUpdateQuery(*user, whereMap)
+	fmt.Println("the query is:", query)
 	result, err := u.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		switch {
@@ -45,7 +42,10 @@ func (u *Repository) ModifyAccount(
 		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return rp.NewNotUpdatedErr(err, fmt.Sprintf("user with ID %s", user.ID))
+		return rp.NewNotUpdatedErr(errors.New("no rows affected"), fmt.Sprintf("user with ID %q", user.ID))
+	}
+	if len(writeUpdateErr) > 0 {
+		return rp.NewValidationErr(err, "'models.User' fields for modification")
 	}
 	return nil
 }
