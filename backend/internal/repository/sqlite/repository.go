@@ -9,11 +9,11 @@ import (
 	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
 )
 
-type repository interface {
+type sqliteRepository interface {
 	GetDB() *sql.DB
 }
 
-type repoConstructor[T repository] func(context.Context, *sql.DB) T
+type repoConstructor[T sqliteRepository] func(context.Context, *sql.DB) T
 
 func recoverDB() {
 	if r := recover(); r != nil {
@@ -23,7 +23,8 @@ func recoverDB() {
 
 type teardownFunc func()
 
-func SetupRepository[T repository](t testing.TB, ctx context.Context, version int64, constructor repoConstructor[T]) (T, teardownFunc) {
+func SetupRepository[T sqliteRepository](t testing.TB, ctx context.Context, version int64, constructor repoConstructor[T]) (T, teardownFunc) {
+	t.Helper()
 	var repo T
 	db, err := testdb.NewDatabase(ctx)
 	if err != nil {
