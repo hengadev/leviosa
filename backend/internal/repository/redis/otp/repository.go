@@ -22,3 +22,7 @@ func New(ctx context.Context, client *redis.Client) *Repository {
 func getOTPKey(emailHash string) string {
 	return fmt.Sprintf(otpKeyFormat, emailHash)
 }
+
+func (r *Repository) GetClient() *redis.Client {
+	return r.client
+}

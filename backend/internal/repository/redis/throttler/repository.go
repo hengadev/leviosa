@@ -15,3 +15,7 @@ type Repository struct {
 func New(ctx context.Context, client *redis.Client) *Repository {
 	return &Repository{client}
 }
+
+func (r *Repository) GetClient() *redis.Client {
+	return r.client
+}
