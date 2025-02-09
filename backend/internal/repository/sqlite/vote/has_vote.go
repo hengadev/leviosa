@@ -2,25 +2,30 @@ package voteRepository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (v *repository) HasVote(ctx context.Context, month, year int, userID string) error {
-	var res bool
-	query := "SELECT 1 FROM votes WHERE userid=? AND month=? AND year=?;"
-	err := v.DB.QueryRowContext(ctx, query, userID, month, year).Scan(&res)
+	var exists bool
+	query := `
+        SELECT EXISTS (
+            SELECT 1 
+            FROM votes 
+            WHERE user_id = ? AND month = ? AND year = ?
+        )`
+	err := v.DB.QueryRowContext(ctx, query, userID, month, year).Scan(&exists)
 	if err != nil {
 		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return rp.NewNotFoundErr(err, "votes")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return rp.NewContextErr(err)
 		default:
 			return rp.NewDatabaseErr(err)
 		}
+	}
+	if !exists {
+		return rp.NewNotFoundErr(errors.New("no vote found for the user with specified ID"), "votes")
 	}
 	return nil
 }
