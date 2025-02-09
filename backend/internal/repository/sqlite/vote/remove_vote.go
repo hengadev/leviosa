@@ -9,7 +9,7 @@ import (
 )
 
 func (v *repository) RemoveVote(ctx context.Context, userID string, month, year int) error {
-	query := "DELETE FROM votes WHERE userid=? AND month=? AND year=?;"
+	query := "DELETE FROM votes WHERE user_id=? AND month=? AND year=?;"
 	res, err := v.DB.ExecContext(ctx, query, userID, month, year)
 	if err != nil {
 		switch {
@@ -24,7 +24,7 @@ func (v *repository) RemoveVote(ctx context.Context, userID string, month, year 
 		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return rp.NewNotDeletedErr(err, fmt.Sprintf("vote for user with ID %s", userID))
+		return rp.NewNotDeletedErr(fmt.Errorf("no row deleted"), fmt.Sprintf("vote for user with ID %s", userID))
 	}
 	return nil
 }

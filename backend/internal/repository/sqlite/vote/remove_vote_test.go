@@ -4,25 +4,50 @@ import (
 	"context"
 	"testing"
 
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestRemoveVote(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	userID := factories.NewBasicUser(nil).ID
 	tests := []struct {
-		userID  string
-		month   int
-		year    int
-		wantErr bool
-		version int64
-		name    string
+		name        string
+		version     int64
+		userID      string
+		month       int
+		year        int
+		expectedErr error
 	}{
-		{userID: "1", month: 4, year: 2025, wantErr: true, version: 20240820223653, name: "no vote in database to remove"},
-		{userID: "447349", month: 4, year: 2025, wantErr: true, version: 20240820225713, name: "wrong query"},
-		{userID: "1", month: 4, year: 2025, wantErr: false, version: 20240820225713, name: "nominal case"},
+		{
+			name:        "no vote in database to remove",
+			version:     20240820223653,
+			userID:      userID,
+			month:       4,
+			year:        2025,
+			expectedErr: rp.ErrNotDeleted,
+		},
+		{
+			name:        "ID not in database",
+			version:     20240820225713,
+			userID:      test.GenerateRandomString(16),
+			month:       4,
+			year:        2025,
+			expectedErr: rp.ErrNotDeleted,
+		},
+		{
+			name:        "nominal case",
+			version:     20240820225713,
+			userID:      userID,
+			month:       4,
+			year:        2025,
+			expectedErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -31,7 +56,7 @@ func TestRemoveVote(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
 			defer teardown()
 			err := repo.RemoveVote(ctx, tt.userID, tt.month, tt.year)
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }
