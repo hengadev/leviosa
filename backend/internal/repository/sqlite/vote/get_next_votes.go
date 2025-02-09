@@ -11,15 +11,14 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-// table available_votes
-
-// days, month, year
-
 func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {
 	var votes []*vote.AvailableVote
-	condition := fmt.Sprintf("(year=%d AND month>%d) OR year=%d", year, month, year+1)
-	query := fmt.Sprintf("SELECT days, month, year from available_votes where %s LIMIT 3;", condition)
-	rows, err := v.DB.QueryContext(ctx, query)
+	query := `SELECT days, month, year 
+              FROM available_votes 
+              WHERE (year = ? AND month > ?) OR year = ? 
+              ORDER BY year, month 
+              LIMIT 3;`
+	rows, err := v.DB.QueryContext(ctx, query, year, month, year+1)
 	if err != nil {
 		switch {
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
@@ -31,27 +30,30 @@ func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote
 	defer rows.Close()
 	for rows.Next() {
 		var days string
-		var month_db int
-		var year_db int
+		var monthDB int
+		var yearDB int
 		err := rows.Scan(
 			&days,
-			&month_db,
-			&year_db,
+			&monthDB,
+			&yearDB,
 		)
 		if err != nil {
 			return nil, rp.NewDatabaseErr(err)
 		}
 		availableDays, err := parseDays(days)
 		if err != nil {
-			return nil, rp.NewInternalErr(err)
+			return nil, rp.NewValidationErr(err, "days for available votes")
 		}
 		for _, day := range availableDays {
 			votes = append(votes, &vote.AvailableVote{
 				Day:   day,
-				Month: month_db,
-				Year:  year_db,
+				Month: monthDB,
+				Year:  yearDB,
 			})
 		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, rp.NewDatabaseErr(err)
 	}
 	return votes, nil
 }

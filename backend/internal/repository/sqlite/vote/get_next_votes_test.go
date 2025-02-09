@@ -5,27 +5,65 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/vote"
+	// rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetNextVotes(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
 	tests := []struct {
+		name                   string
+		version                int64
 		month                  int
 		year                   int
 		expectedAvailableVotes []*vote.AvailableVote
-		wantErr                bool
-		version                int64
-		name                   string
+		expectedErr            error
 	}{
-		{month: 4, year: 2025, expectedAvailableVotes: nil, wantErr: false, version: 20240821105317, name: "no available votes in db"},
-		{month: 8, year: 2025, expectedAvailableVotes: nil, wantErr: false, version: 20240821110737, name: "wrong query, month does not exist"},
-		{month: 17, year: 2025, expectedAvailableVotes: nil, wantErr: false, version: 20240821110737, name: "wrong query, month too large"},
-		{month: 17, year: 1998, expectedAvailableVotes: nil, wantErr: false, version: 20240821110737, name: "wrong query, year too small"},
-		{month: 3, year: 2025, expectedAvailableVotes: availableVotesArr, wantErr: false, version: 20240821110737, name: "nominal case"},
+		{
+			name:                   "no available votes in db",
+			version:                20240821105317,
+			month:                  4,
+			year:                   2025,
+			expectedAvailableVotes: nil,
+			expectedErr:            nil,
+			// expectedErr:            rp.ErrDatabase,
+		},
+		{
+			name:                   "month too small",
+			version:                20240821110737,
+			month:                  8,
+			year:                   2025,
+			expectedAvailableVotes: nil,
+			expectedErr:            nil,
+		},
+		{
+			name:                   "month too large",
+			version:                20240821110737,
+			month:                  17,
+			year:                   2025,
+			expectedAvailableVotes: nil,
+			expectedErr:            nil,
+		},
+		{
+			name:                   "year too small",
+			version:                20240821110737,
+			month:                  17,
+			year:                   1998,
+			expectedAvailableVotes: nil,
+			expectedErr:            nil,
+		},
+		{
+			name:                   "nominal case",
+			version:                20240821110737,
+			month:                  3,
+			year:                   2025,
+			expectedAvailableVotes: factories.NewAvailableVotesList(),
+			expectedErr:            nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -34,7 +72,7 @@ func TestGetNextVotes(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
 			defer teardown()
 			days, err := repo.GetNextVotes(ctx, tt.month, tt.year)
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.EqualError(t, err, tt.expectedErr)
 			for i, day := range days {
 				assert.ReflectEqual(t, day, tt.expectedAvailableVotes[i])
 			}
