@@ -10,7 +10,7 @@ import (
 
 func (v *repository) FindVotes(ctx context.Context, month, year int, userID string) (string, error) {
 	var days string
-	query := "SELECT days FROM votes WHERE userid=? and month=? and year=?;"
+	query := "SELECT days FROM votes WHERE user_id=? and month=? and year=?;"
 	err := v.DB.QueryRowContext(ctx, query, userID, month, year).Scan(&days)
 	if err != nil {
 		switch {

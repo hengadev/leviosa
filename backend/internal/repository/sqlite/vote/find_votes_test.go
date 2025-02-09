@@ -4,26 +4,54 @@ import (
 	"context"
 	"testing"
 
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	test "github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestFindVotes(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	userID := factories.NewBasicUser(nil).ID
 	tests := []struct {
+		name         string
+		version      int64
 		userID       string
 		month        int
 		year         int
 		expectedDays string
-		wantErr      bool
-		version      int64
-		name         string
+		expectedErr  error
 	}{
-		{userID: "1", month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820223653, name: "no vote in db"},
-		{userID: "349324", month: 4, year: 2025, expectedDays: "", wantErr: true, version: 20240820225713, name: "wrong ID"},
-		{userID: "1", month: 4, year: 2025, expectedDays: "23|12|6", wantErr: false, version: 20240820225713, name: "nominal case"},
+		{
+			name:         "no votes in database",
+			version:      20240820223653,
+			userID:       userID,
+			month:        4,
+			year:         2025,
+			expectedDays: "",
+			expectedErr:  rp.ErrNotFound,
+		},
+		{
+			name:         "wrong ID",
+			version:      20240820225713,
+			userID:       test.GenerateRandomString(16),
+			month:        4,
+			year:         2025,
+			expectedDays: "",
+			expectedErr:  rp.ErrNotFound,
+		},
+		{
+			name:         "nominal case",
+			version:      20240820225713,
+			userID:       userID,
+			month:        4,
+			year:         2025,
+			expectedDays: "23|12|6",
+			expectedErr:  nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -32,7 +60,7 @@ func TestFindVotes(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, voteRepository.New)
 			defer teardown()
 			days, err := repo.FindVotes(ctx, tt.month, tt.year, tt.userID)
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.EqualError(t, err, tt.expectedErr)
 			assert.Equal(t, days, tt.expectedDays)
 		})
 	}
