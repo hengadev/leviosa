@@ -1,4 +1,6 @@
-# TODO: change ports to avoid collision with production environment
+# NOTE:
+# - Why is the backend port exposed, I just need to communicate internally with the frontend instance and redis.
+
 services:
   staging-frontend: 
     depends_on:
@@ -23,6 +25,10 @@ services:
     container_name: staging-backend-${GITHUB_RUN_ID}
     volumes:
       - ./data:/app/data/staging/
+      # TODO: think if it is not better to let docker handle the volume ?
+      # In that folder, I get the database and the log fi le that I am going to use logstash on
+    # volumes:
+    #   - leviosa_database:/app/data
     user: appuser
     ports:
       - "127.0.0.1:3501:3501"
@@ -79,3 +85,6 @@ services:
 networks:
   staging-frontend-network:
   staging-backend-network:
+
+# volumes:
+#   leviosa_database:
