@@ -1,37 +1,26 @@
-FROM node:20-alpine AS build
+FROM node:20.11.1-alpine AS build
 WORKDIR /app
-
-ARG NODE_COMMAND=build
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 
+RUN corepack enable
 COPY ./package.json ./pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY . .
 RUN pnpm run build
 
-FROM node:20-alpine
+FROM node:20.11.1-alpine
+
 WORKDIR /app
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+RUN adduser -D runner
 
-RUN adduser -D sveltekit
+COPY --from=build /app/build build/
+COPY --from=build /app/node_modules node_modules/ 
+COPY package.json pnpm-lock.yaml ./
 
-COPY --from=build /app/build ./build
-# COPY --from=build /app/.env.production .
-COPY --from=build /app/package.json /app/pnpm-lock.yaml ./
-
-RUN chown -R sveltekit:sveltekit /app/build
-
-RUN pnpm install --prod --frozen-lockfile && \
-    pnpm store prune && \
-    rm -rf /root/.local/share/pnpm/store && \
-    rm -rf /root/.cache
+RUN chown -R runner:runner /app/build
 
 EXPOSE 3000 3001
-CMD ["node", "${NODE_COMMAND}"]
-
+CMD ["node", "build"]
