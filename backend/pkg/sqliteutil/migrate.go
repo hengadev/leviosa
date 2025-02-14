@@ -21,7 +21,7 @@ type MigrationConfig struct {
 // targetVersions maps environment modes to their target migration versions
 var targetVersions = map[mode.EnvMode]int64{
 	mode.ModeDev:     0,
-	mode.ModeStaging: 20241228203428,
+	mode.ModeStaging: 0,
 	mode.ModeProd:    20241228203428,
 }
 

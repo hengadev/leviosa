@@ -7,13 +7,14 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestCreateVote(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
 	userID := factories.NewBasicUser(nil).ID
 	tests := []struct {
 		name        string

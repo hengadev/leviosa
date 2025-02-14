@@ -5,16 +5,16 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/vote"
-	// rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetNextVotes(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
 	tests := []struct {
 		name                   string
 		version                int64

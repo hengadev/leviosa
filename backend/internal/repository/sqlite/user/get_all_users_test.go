@@ -7,13 +7,14 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetAllUsers(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
 	usersList := []*models.User{factories.Johndoe, factories.Janedoe, factories.Jeandoe}
 	tests := []struct {
 		name          string

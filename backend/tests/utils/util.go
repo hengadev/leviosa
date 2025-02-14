@@ -3,14 +3,16 @@ package test
 import (
 	"context"
 	"math/rand"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 	"unsafe"
 
-	"github.com/GaryHY/leviosa/internal/domain/user"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	userService "github.com/GaryHY/leviosa/internal/domain/user"
+	userRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/user"
 	"github.com/GaryHY/leviosa/internal/server/app"
-	"github.com/GaryHY/leviosa/internal/server/handler/user"
+	userHandler "github.com/GaryHY/leviosa/internal/server/handler/user"
 	"github.com/GaryHY/leviosa/pkg/config"
 
 	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
@@ -18,7 +20,7 @@ import (
 
 // TODO: handle the different ways to import the different domain
 // - use the repoconstructor thing
-// - return the repository interface that implements the GetDB() function
+// - return the repository interface that implements the GetDB(0) function
 func Setup(
 	t testing.TB,
 	ctx context.Context,
@@ -67,4 +69,10 @@ func GenerateRandomString(n int) string {
 		remain--
 	}
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+func GetSQLiteMigrationPath() string {
+	_, b, _, _ := runtime.Caller(0)
+	projectRoot := filepath.Join(filepath.Dir(b), "../..") // Adjust the number of "../" based on your file structure
+	return filepath.Join(projectRoot, "migrations/test")
 }

@@ -7,26 +7,43 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestAddAccount(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	// TEST:
+	// - add mail account no user in database
+	// - add google account no user in database
+	// - add apple account no user in database
+	// - add google with google account already there
+	// - add mail with mail account already there
+	// - add apple with apple account already there
+	// - add oauth with mail account already there
+	// - add mail with oauth account already there
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	user := factories.NewBasicUser(nil)
 	tests := []struct {
 		name        string
-		usr         *models.User
+		user        *models.User
 		version     int64
 		expectedErr error
 	}{
+		// TODO: I should get an error on this one
 		{
 			name:        "user already exists",
-			usr:         factories.NewBasicUser(nil),
+			user:        user,
 			version:     20240811140841,
 			expectedErr: nil,
 		},
-		// {usr: testutil.Johndoe, expectedErr: nil, version: 20240811085134, name: "add the user"},
+		// {
+		// 	name:        "nominal case, user does not exist",
+		// 	user:        user,
+		// 	version:     20240811085134,
+		// 	expectedErr: nil,
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -34,7 +51,7 @@ func TestAddAccount(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, userRepository.New)
 			defer teardown()
-			err := repo.AddUser(ctx, tt.usr, models.Mail)
+			err := repo.AddUser(ctx, tt.user, models.Mail)
 			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}

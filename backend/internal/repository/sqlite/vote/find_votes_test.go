@@ -14,7 +14,7 @@ import (
 )
 
 func TestFindVotes(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
 	userID := factories.NewBasicUser(nil).ID
 	tests := []struct {
 		name         string

@@ -1,5 +1,4 @@
 FROM golang:1.22.1-alpine AS builder
-
 RUN apk add --no-cache build-base
 
 WORKDIR /app
@@ -18,8 +17,8 @@ RUN apk add --no-cache sqlite
 WORKDIR /app
 
 COPY --from=builder /app/myapp .
-COPY --from=builder /app/internal/sqlite/migrations ./internal/sqlite/migrations
 COPY --from=builder /app/*.env ./
+COPY --from=builder /app/migrations/production ./migrations/production/
 
 # Create the appuser
 RUN adduser -D appuser

@@ -8,6 +8,7 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 	"github.com/google/uuid"
 
@@ -15,7 +16,7 @@ import (
 )
 
 func TestFindAccountByID(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/test")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
 	user := factories.NewBasicUser(nil)
 	fields := []string{"Email", "Picture", "Role", "LastName", "FirstName", "Gender", "EncryptedBirthDate", "Telephone", "PostalCode", "City", "Address1", "Address2"}
 	tests := []struct {
