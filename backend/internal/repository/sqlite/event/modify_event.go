@@ -16,9 +16,9 @@ func (e *EventRepository) ModifyEvent(
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {
-	query, values, err := sqliteutil.WriteUpdateQuery(*event, whereMap, prohibitedFields...)
-	if err != nil {
-		return rp.NewInternalErr(err)
+	query, values, errs := sqliteutil.WriteUpdateQuery(*event, whereMap)
+	if len(errs) > 0 {
+		return rp.NewInternalErr(errs)
 	}
 	res, err := e.DB.ExecContext(ctx, query, values...)
 	if err != nil {
