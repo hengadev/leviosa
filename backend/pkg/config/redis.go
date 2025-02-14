@@ -21,11 +21,11 @@ func (c *Config) setRedis(env mode.EnvMode) error {
 	var addr, password string
 	var db int
 	switch env {
-	case mode.ModeStaging:
-		addr = c.viper.GetString("redis.staging.addr")
-		password = c.viper.GetString("redis.staging.password")
-		db = c.viper.GetInt("redis.staging.db")
-	case mode.ModeDev, mode.ModeProd:
+	case mode.ModeDev:
+		addr = "127.0.0.1:6379"
+		password = ""
+		db = 0
+	case mode.ModeStaging, mode.ModeProd:
 		addr = c.viper.GetString("redis.addr")
 		password = c.viper.GetString("redis.password")
 		db = c.viper.GetInt("redis.db")
