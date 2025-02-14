@@ -16,9 +16,9 @@ func (p *Repository) ModifyProduct(
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {
-	query, values, err := sqliteutil.WriteUpdateQuery(*product, whereMap, prohibitedFields...)
-	if err != nil {
-		return rp.NewInternalErr(err)
+	query, values, errs := sqliteutil.WriteUpdateQuery(*product, whereMap)
+	if len(errs) > 0 {
+		return rp.NewInternalErr(errs)
 	}
 	result, err := p.DB.ExecContext(ctx, query, values...)
 	if err != nil {

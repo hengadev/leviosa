@@ -35,6 +35,27 @@ func (p Product) Valid(ctx context.Context) errsx.Map {
 	return errs
 }
 
+func (p Product) AssertComparable() {}
+
+func (p Product) GetSQLColumnMapping() map[string]string {
+	return map[string]string{
+		"ID":          "id",
+		"Price":       "price",
+		"PriceID":     "encrypted_price_id",
+		"Name":        "name",
+		"Description": "description",
+		"Picture":     "picture",
+		"Type":        "type",
+	}
+}
+
+func (p Product) GetProhibitedFields() []string {
+	return []string{
+		"ID",
+		"PriceID",
+	}
+}
+
 // - create product (service to create object + store in database)
 // - get the *Product
 // - then get the Payment info from the *Product
