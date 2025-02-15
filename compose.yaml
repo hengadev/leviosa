@@ -22,8 +22,8 @@ services:
     image: henga/leviosa:backend
     container_name: backend-${GITHUB_RUN_ID}
     volumes:
-      - ./data:/app/data/
     user: appuser
+      - leviosa_database:/app/data/
     networks:
       - backend-network
     cap_drop:
@@ -71,3 +71,6 @@ services:
 networks:
   frontend-network:
   backend-network:
+
+volumes:
+  leviosa_database:

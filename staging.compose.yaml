@@ -81,6 +81,3 @@ services:
 networks:
   staging-frontend-network:
   staging-backend-network:
-
-# volumes:
-#   leviosa_database:
