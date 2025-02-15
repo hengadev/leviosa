@@ -30,8 +30,6 @@ services:
     # volumes:
     #   - leviosa_database:/app/data
     user: appuser
-    ports:
-      - "127.0.0.1:3501:3501"
     networks:
       - staging-backend-network
     cap_drop:
@@ -70,8 +68,6 @@ services:
     container_name: staging-session-manager
     user: redis
     command: redis-server --requirepass secret
-    ports:
-      - "127.0.0.1:6380:6380"
     networks:
       - staging-backend-network
     cap_drop:
