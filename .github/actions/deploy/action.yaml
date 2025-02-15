@@ -23,6 +23,14 @@ inputs:
   app_env:
     description: Application environment (e.g., 'staging' or 'production')
     required: true
+  backend_port:
+    description: 'Port number for backend service'
+    required: true
+    default: '3500'
+  port:
+    description: 'Port number for frontend service'
+    required: true
+    default: '3000'
   public-url:
     description: Public URL where the application is accessible
     required: true
@@ -76,7 +84,9 @@ runs:
     - name: 🚀 Deploy application
       shell: bash
       env:
-        APP_ENV: ${{ inputs.app_env}}
+        APP_ENV: ${{ inputs.app_env }}
+        BACKEND_PORT: ${{ inputs.backend_port }}
+        PORT: ${{ inputs.port }}
         AWS_REGION: ${{ inputs.aws_region }}
         AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}

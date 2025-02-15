@@ -1,30 +1,32 @@
 services:
-  frontend: 
+  frontend:
     depends_on:
       - backend
-    image: henga/leviosa:frontend
+    image: henga/leviosa:production-frontend
     container_name: frontend-${GITHUB_RUN_ID}
     environment:
-      # ORIGIN: "${ORIGIN:-http://localhost:3000}"
+      - API_URL=backend:${BACKEND_PORT}
+      # TODO: check if I need that one ? with the setup on example-pwa
+      - HOSTNAME=frontend:${PORT}
     restart: unless-stopped
-    user: node
+    user: runner
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${PORT}:${PORT}"
     networks:
       - frontend-network
-      - backend-network
     cap_drop:
       - ALL
 
   backend:
     depends_on:
       - redis
-    image: henga/leviosa:backend
+    image: henga/leviosa:production-backend
     container_name: backend-${GITHUB_RUN_ID}
     volumes:
-    user: appuser
       - leviosa_database:/app/data/
+    user: runner
     networks:
+      - frontend-network
       - backend-network
     cap_drop:
       - ALL
@@ -46,9 +48,9 @@ services:
       - REDIS_DB
       - REDIS_PASSWORD
 
-      - FRONTEND_ORIGIN=3000
+      - FRONTEND_ORIGIN=http://frontend:${PORT}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3500/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
       interval: 30s
       timeout: 10s
       retries: 3

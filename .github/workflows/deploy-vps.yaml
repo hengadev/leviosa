@@ -16,15 +16,16 @@ jobs:
     steps:
       - uses: ./.github/actions/deploy
         with:
-          # TODO: change that filter to be more specific brother
           filter: 'production'
           app_env: 'production'
+          backend_port: 3500
+          port: 3000
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           frontend_docker_image: 'production-frontend'
           backend_docker_image: 'production-backend'
           compose_file: 'compose'
-          public_url: 'https://production.leviosa.care'
+          public_url: 'https://leviosa.care'
           aws_region: ${{ secrets.AWS_REGION }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
