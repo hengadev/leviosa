@@ -2,9 +2,9 @@
 # - Why is the backend port exposed, I just need to communicate internally with the frontend instance and redis.
 
 services:
-  staging-frontend: 
+  frontend: 
     depends_on:
-      - staging-backend
+      - backend
     image: henga/leviosa:staging-frontend
     container_name: staging-frontend-${GITHUB_RUN_ID}
     restart: unless-stopped
@@ -18,9 +18,9 @@ services:
     cap_drop:
       - ALL
 
-  staging-backend:
+  backend:
     depends_on:
-      - staging-redis
+      - redis
     image: henga/leviosa:staging-backend
     container_name: staging-backend-${GITHUB_RUN_ID}
     volumes:
@@ -63,7 +63,7 @@ services:
       timeout: 10s
       retries: 3
 
-  staging-redis:
+  redis:
     image: redis:latest
     container_name: staging-session-manager
     user: redis
