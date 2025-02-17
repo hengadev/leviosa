@@ -9,8 +9,7 @@ import (
 )
 
 func (s *Service) RemoveProduct(ctx context.Context, productID string) error {
-	err := s.repo.RemoveProduct(ctx, productID)
-	if err != nil {
+	if err := s.repo.RemoveProduct(ctx, productID); err != nil {
 		// TODO: do all the error handling for that thing
 		switch {
 		case errors.Is(err, rp.ErrDatabase):

@@ -12,20 +12,14 @@ func (p *Repository) AddProduct(ctx context.Context, product *productService.Pro
 	query := `
             INSERT INTO products (
                 id,
-                price,
                 name,
-                description,
-                picture,
-                type,
-            ) VALUES (?, ?, ?, ?, ?, ?)`
+                description
+            ) VALUES (?, ?, ?)`
 
 	result, err := p.DB.ExecContext(ctx, query,
 		product.ID,
-		product.Price,
 		product.Name,
 		product.Description,
-		product.Picture,
-		product.Type,
 	)
 	if err != nil {
 		switch {

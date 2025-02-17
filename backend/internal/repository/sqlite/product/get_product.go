@@ -13,21 +13,13 @@ func (p *Repository) GetProduct(ctx context.Context, productID string) (*product
 	var product productService.Product
 	query := `
         SELECT 
-            price,
-            price_id,
             name,
-            description,
-            picture,
-            type
+            description
         FROM products
         WHERE id = ?;`
 	err := p.DB.QueryRowContext(ctx, query, productID).Scan(
-		&product.Price,
-		&product.PriceID,
 		&product.Name,
 		&product.Description,
-		&product.Picture,
-		&product.Type,
 	)
 	if err != nil {
 		switch {

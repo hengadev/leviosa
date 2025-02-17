@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	productService "github.com/GaryHY/leviosa/internal/domain/product"
+	"github.com/GaryHY/leviosa/internal/domain/product"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (p *Repository) AddProductType(ctx context.Context, productType *productService.ProductType) error {
+func (p *Repository) AddOffer(ctx context.Context, productType *productService.Offer) error {
 	query := `
         INSERT INTO product_types (
             name,

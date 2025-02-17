@@ -3,34 +3,23 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/stripe"
 	"github.com/GaryHY/leviosa/pkg/errsx"
 )
 
-// (massage standard, massage hibiscus etc...)
+// (massage, coaching mental etc...)
 type Product struct {
-	ID          string // this is like the productID in the products table
-	Price       int64
-	PriceID     string
+	ID          string
 	Name        string
 	Description string
-	Picture     string
-	Type        ProductType
-}
-
-func (p *Product) GetPaymentInfo(ctx context.Context) *stripeService.PaymentProductInfo {
-	return &stripeService.PaymentProductInfo{
-		ID:          p.ID,
-		Name:        p.Name,
-		Description: p.Description,
-		Price:       p.Price,
-	}
 }
 
 func (p Product) Valid(ctx context.Context) errsx.Map {
 	var errs errsx.Map
-	if p.Price <= 0 {
-		errs.Set("price", "price value should be >= 0")
+	if p.Name != "" {
+		errs.Set("name", "cannot have an empty name")
+	}
+	if p.Description != "" {
+		errs.Set("name", "cannot have an empty description")
 	}
 	return errs
 }
@@ -40,24 +29,13 @@ func (p Product) AssertComparable() {}
 func (p Product) GetSQLColumnMapping() map[string]string {
 	return map[string]string{
 		"ID":          "id",
-		"Price":       "price",
-		"PriceID":     "encrypted_price_id",
 		"Name":        "name",
 		"Description": "description",
-		"Picture":     "picture",
-		"Type":        "type",
 	}
 }
 
 func (p Product) GetProhibitedFields() []string {
 	return []string{
 		"ID",
-		"PriceID",
 	}
 }
-
-// - create product (service to create object + store in database)
-// - get the *Product
-// - then get the Payment info from the *Product
-// - use the stripe service to create a new stripe product with *Product and get the stripe PriceID
-// - store the priceID in the database

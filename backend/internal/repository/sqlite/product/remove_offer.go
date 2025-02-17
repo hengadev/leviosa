@@ -7,7 +7,7 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (p *Repository) RemoveProductType(ctx context.Context, productID int) error {
+func (p *Repository) RemoveOffer(ctx context.Context, productID int) error {
 	result, err := p.DB.ExecContext(ctx, "DELETE FROM product_types WHERE id = ?;", productID)
 	if err != nil {
 		switch {

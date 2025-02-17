@@ -12,7 +12,7 @@ import (
 
 func (p *Repository) ModifyProductType(
 	ctx context.Context,
-	productType *productService.ProductType,
+	productType *productService.Offer,
 	whereMap map[string]any,
 	prohibitedFields ...string,
 ) error {

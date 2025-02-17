@@ -7,13 +7,16 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain"
 	rp "github.com/GaryHY/leviosa/internal/repository"
+
+	"github.com/google/uuid"
 )
 
-func (s *Service) CreateProductType(ctx context.Context, productType *ProductType) error {
-	if errs := productType.Valid(ctx); len(errs) > 0 {
-		return domain.NewInvalidValueErr(fmt.Sprintf("product type validation error: %s", errs.Error()))
+func (s *Service) CreateOffer(ctx context.Context, offer *Offer) error {
+	if errs := offer.Valid(ctx); len(errs) > 0 {
+		return domain.NewInvalidValueErr(fmt.Sprintf("offer validation error: %s", errs.Error()))
 	}
-	if err := s.repo.AddProductType(ctx, productType); err != nil {
+	offer.ID = uuid.NewString()
+	if err := s.repo.AddOffer(ctx, offer); err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotCreated):
 			return domain.NewNotCreatedErr(err)

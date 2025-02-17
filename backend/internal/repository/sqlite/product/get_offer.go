@@ -9,8 +9,8 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (p *Repository) GetProductType(ctx context.Context, productID int) (*productService.ProductType, error) {
-	var productType productService.ProductType
+func (p *Repository) GetOffer(ctx context.Context, productID int) (*productService.Offer, error) {
+	var productType productService.Offer
 	query := `
         SELECT
             name,

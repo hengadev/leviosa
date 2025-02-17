@@ -30,10 +30,12 @@ func SetupRepository[T sqliteRepository](t testing.TB, ctx context.Context, vers
 	if err != nil {
 		t.Errorf("database connection: %s", err)
 	}
-	repo = constructor(ctx, db)
-	if err := testdb.Setup(ctx, repo.GetDB(), version); err != nil {
+	// NOTE: I think it is better to do it that way instead
+	// if err := testdb.Setup(ctx, repo.GetDB(), version); err != nil {
+	if err := testdb.Setup(ctx, db, version); err != nil {
 		t.Errorf("database setup: %s", err)
 	}
+	repo = constructor(ctx, db)
 	teardown := func() {
 		defer recoverDB()
 		err := db.Close()
