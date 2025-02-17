@@ -24,12 +24,13 @@ func (p *Repository) GetProduct(ctx context.Context, productID string) (*product
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, rp.NewNotFoundErr(err, "pending user")
+			return nil, rp.NewNotFoundErr(err, "product")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
 	}
+	product.ID = productID
 	return &product, nil
 }
