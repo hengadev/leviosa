@@ -9,12 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// prohibitedFields precise the fields that are non updatable on the event is created
-var prohibitedFields = []string{
-	"ID",
-	"PriceID",
-}
-
 type Event struct {
 	ID               string        `json:"id"`
 	Title            string        `json:"title"`
@@ -116,5 +110,5 @@ func (e Event) GetSQLColumnMapping() map[string]string {
 }
 
 func (e Event) GetProhibitedFields() []string {
-	return []string{"ID"}
+	return []string{"ID", "PriceID"}
 }

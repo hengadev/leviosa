@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -50,25 +51,26 @@ func (s *SecureUserData) EncryptUser(user *models.User) errsx.Map {
 	}
 
 	fields := []struct {
+		name  string
 		value *string
 	}{
-		{&user.LastName},
-		{&user.FirstName},
-		{&user.Gender},
-		{&user.Telephone},
-		{&user.PostalCode},
-		{&user.City},
-		{&user.Address1},
-		{&user.Address2},
-		{&user.GoogleID},
-		{&user.AppleID},
+		{name: "lastname", value: &user.LastName},
+		{name: "firstname", value: &user.FirstName},
+		{name: "gender", value: &user.Gender},
+		{name: "telephone", value: &user.Telephone},
+		{name: "postalCode", value: &user.PostalCode},
+		{name: "city", value: &user.City},
+		{name: "address1", value: &user.Address1},
+		{name: "address2", value: &user.Address2},
+		{name: "googleID", value: &user.GoogleID},
+		{name: "appleID", value: &user.AppleID},
 	}
 
 	for _, field := range fields {
 		if *field.value != "" {
 			encrypted, pbms := s.encrypt(*field.value)
 			if len(pbms) > 0 {
-				errs.Set("encrypt field", pbms.Error())
+				errs.Set(fmt.Sprintf("encrypt user field %s", field.name), pbms.Error())
 			}
 			*field.value = encrypted
 		}
@@ -111,12 +113,12 @@ func (s *SecureUserData) encrypt(data string) (string, errsx.Map) {
 
 	block, err := aes.NewCipher(s.config.EncryptionKey)
 	if err != nil {
-		errs.Set("aes create cypher", err)
+		errs.Set("aes create cipher", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		errs.Set("ciper create GCM", err)
+		errs.Set("cipher create GCM", err)
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
