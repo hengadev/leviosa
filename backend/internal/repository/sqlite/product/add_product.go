@@ -30,7 +30,6 @@ func (p *Repository) AddProduct(ctx context.Context, product *productService.Pro
 		}
 	}
 
-	// Check if the insert was successful
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return rp.NewDatabaseErr(err)
