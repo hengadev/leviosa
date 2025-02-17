@@ -9,27 +9,38 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (p *Repository) GetOffer(ctx context.Context, productID int) (*productService.Offer, error) {
-	var productType productService.Offer
+func (p *Repository) GetOffer(ctx context.Context, offerID string) (*productService.Offer, error) {
+	var offer productService.Offer
 	query := `
         SELECT
+			product_id,
             name,
-            description
-        FROM product_types
+            description,
+            encrypted_picture,
+            duration,
+            price,
+            encrypted_price_id
+        FROM offers
         WHERE id = ?;`
-	err := p.DB.QueryRowContext(ctx, query, productID).Scan(
-		&productType.Name,
-		&productType.Description,
+	err := p.DB.QueryRowContext(ctx, query, offerID).Scan(
+		&offer.ProductID,
+		&offer.Name,
+		&offer.Description,
+		&offer.Picture,
+		&offer.Duration,
+		&offer.Price,
+		&offer.PriceID,
 	)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return nil, rp.NewNotFoundErr(err, "pending user")
+			return nil, rp.NewNotFoundErr(err, "offer")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return nil, rp.NewContextErr(err)
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}
 	}
-	return &productType, nil
+	offer.ID = offerID
+	return &offer, nil
 }
