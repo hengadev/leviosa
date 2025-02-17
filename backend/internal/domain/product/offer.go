@@ -14,6 +14,7 @@ type Offer struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Picture     string `json:"picture"`
+	Duration    int    `json:"duration"`
 	Price       int64  `json:"price"`
 	PriceID     string `json:"price_id"`
 }
@@ -41,11 +42,13 @@ func (o Offer) Valid(ctx context.Context) errsx.Map {
 func (o Offer) GetSQLColumnMapping() map[string]string {
 	return map[string]string{
 		"ID":          "id",
+		"ProductID":   "product_id",
+		"Name":        "name",
+		"Description": "description",
+		"Picture":     "picture",
+		"Duration":    "duration",
 		"Price":       "price",
 		"PriceID":     "encrypted_price_id",
-		"Name":        "name",
-		"Picture":     "picture",
-		"Description": "description",
 	}
 }
 
