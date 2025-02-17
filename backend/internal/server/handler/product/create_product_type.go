@@ -14,7 +14,7 @@ import (
 	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
-func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) {
+func (a *AppInstance) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
@@ -29,7 +29,7 @@ func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	productType, err := serverutil.DecodeValid[productService.ProductType](ctx, r.Body)
+	product, err := serverutil.DecodeValid[productService.Product](ctx, r.Body)
 	if err != nil {
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
@@ -42,7 +42,7 @@ func (a *AppInstance) CreateProductType(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := a.Svcs.Product.CreateProductType(ctx, &productType); err != nil {
+	if err := a.Svcs.Product.CreateProduct(ctx, &product); err != nil {
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "ivnalid product given")

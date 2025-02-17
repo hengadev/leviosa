@@ -30,7 +30,7 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	productType, err := serverutil.DecodeValid[productService.ProductType](ctx, r.Body)
+	productType, err := serverutil.DecodeValid[productService.Offer](ctx, r.Body)
 	if err != nil {
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):

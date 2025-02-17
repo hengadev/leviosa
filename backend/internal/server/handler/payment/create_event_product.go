@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	"github.com/GaryHY/leviosa/internal/server/handler"
 	mw "github.com/GaryHY/leviosa/internal/server/middleware"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
@@ -28,7 +28,7 @@ func (a *AppInstance) CreateEventProduct() http.Handler {
 		}
 
 		w.Header().Set("Authorization", fmt.Sprintf("Bearer %s", stripe.Key))
-		event, err := serverutil.Decode[eventService.Event](r.Body)
+		event, err := serverutil.Decode[models.Event](r.Body)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to decode event", "error", err)
 			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)

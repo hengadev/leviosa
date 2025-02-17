@@ -64,8 +64,8 @@ func (s *Server) addRoutes(h *app.App) {
 	router.HandleFunc("PUT /api/v1/products/{id}", productHandler.UpdateProduct)
 
 	// product types
-	router.HandleFunc("POST /api/v1/product-types", productHandler.CreateProductType)
-	router.HandleFunc("DELETE /api/v1/product-types/{id}", productHandler.DeleteProductType)
+	router.HandleFunc("POST /api/v1/product-types", productHandler.CreateOffer)
+	router.HandleFunc("DELETE /api/v1/product-types/{id}", productHandler.DeleteOffer)
 
 	// event
 	router.HandleFunc("GET /api/v1/events/{id}", eventHandler.FindEventByID)

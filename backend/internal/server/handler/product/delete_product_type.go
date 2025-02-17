@@ -15,7 +15,7 @@ import (
 	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
-func (a *AppInstance) DeleteProductType(w http.ResponseWriter, r *http.Request) {
+func (a *AppInstance) DeleteOffer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
@@ -31,14 +31,14 @@ func (a *AppInstance) DeleteProductType(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// this product ID is an int
-	productIDStr := r.URL.Query().Get("id")
-	productID, err := strconv.Atoi(productIDStr)
+	offerIDStr := r.URL.Query().Get("id")
+	offerID, err := strconv.Atoi(offerIDStr)
 	if err != nil {
 		// TODO: do some error thing so that the user can know that they an invalid productID
 	}
 
 	// TODO: maybe return product name so that I can return the right message
-	err = a.Svcs.Product.RemoveProductType(ctx, productID)
+	err = a.Svcs.Product.RemoveOffer(ctx, offerID)
 	if err != nil {
 		// TODO: handle the remaining the update product
 		switch {
@@ -48,5 +48,5 @@ func (a *AppInstance) DeleteProductType(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	serverutil.WriteResponse(w, fmt.Sprintf("product with ID %d successfully deleted", productID), http.StatusNoContent)
+	serverutil.WriteResponse(w, fmt.Sprintf("product with ID %d successfully deleted", offerID), http.StatusNoContent)
 }
