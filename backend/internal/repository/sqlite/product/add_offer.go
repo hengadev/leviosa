@@ -8,17 +8,29 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (p *Repository) AddOffer(ctx context.Context, productType *productService.Offer) error {
+func (p *Repository) AddOffer(ctx context.Context, offer *productService.Offer) error {
 	query := `
-        INSERT INTO product_types (
+        INSERT INTO offers (
+			id,
+			product_id,
             name,
-            description
-        ) VALUES (?, ?);`
+            description,
+            encrypted_picture,
+            duration,
+            price,
+            encrypted_price_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
 	result, err := p.DB.ExecContext(
 		ctx,
 		query,
-		productType.Name,
-		productType.Description,
+		offer.ID,
+		offer.ProductID,
+		offer.Name,
+		offer.Description,
+		offer.Picture,
+		offer.Duration,
+		offer.Price,
+		offer.PriceID,
 	)
 	if err != nil {
 		switch {
