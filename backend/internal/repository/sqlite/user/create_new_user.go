@@ -29,32 +29,46 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
 	var query string
 	var args []interface{}
 
+	// TODO: I can add NULL to some field but what is the point of doing so ?
 	switch provider {
-	// TODO: add the remaining fields for address that are missing from google here
 	case models.Google:
 		query = fmt.Sprintf(`
             INSERT INTO %s (
                 id,
                 email_hash,
                 encrypted_email,
-                password_hash,
+                encrypted_picture,
+				encrypted_created_at,
+				encrypted_logged_in_at,
+				role,
                 encrypted_lastname,
                 encrypted_firstname,
                 encrypted_gender,
                 encrypted_birthdate,
                 encrypted_telephone,
+				encrypted_postal_code,
+				encrypted_city,
+				encrypted_address1,
+				encrypted_address2,
                 encrypted_google_id,
-                encrypted_apple_id
-            ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, NULL)`, table)
+            ) VALUES (?, ?, ?, ?, ?, ?, ? ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, table)
 		args = []interface{}{
 			user.ID,
 			user.EmailHash,
 			user.Email,
+			user.Picture,
+			user.EncryptedCreatedAt,
+			user.EncryptedLoggedInAt,
+			user.Role,
 			user.LastName,
 			user.FirstName,
 			user.Gender,
 			user.EncryptedBirthDate,
 			user.Telephone,
+			user.PostalCode,
+			user.City,
+			user.Address1,
+			user.Address2,
 			user.GoogleID,
 		}
 	case models.Apple:
@@ -63,24 +77,38 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
                 id,
                 email_hash,
                 encrypted_email,
-                password_hash,
+                encrypted_picture,
+				encrypted_created_at,
+				encrypted_logged_in_at,
+				role,
                 encrypted_lastname,
                 encrypted_firstname,
                 encrypted_gender,
                 encrypted_birthdate,
                 encrypted_telephone,
-                encrypted_google_id,
-                encrypted_apple_id
-            ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, NULL, ?)`, table)
+				encrypted_postal_code,
+				encrypted_city,
+				encrypted_address1,
+				encrypted_address2,
+                encrypted_apple_id,
+            ) VALUES (?, ?, ?, ?, ?, ?, ? ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, table)
 		args = []interface{}{
 			user.ID,
 			user.EmailHash,
 			user.Email,
+			user.Picture,
+			user.EncryptedCreatedAt,
+			user.EncryptedLoggedInAt,
+			user.Role,
 			user.LastName,
 			user.FirstName,
 			user.Gender,
 			user.EncryptedBirthDate,
 			user.Telephone,
+			user.PostalCode,
+			user.City,
+			user.Address1,
+			user.Address2,
 			user.AppleID,
 		}
 	case models.Mail:
@@ -90,6 +118,7 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
                 email_hash,
                 encrypted_email,
                 password_hash,
+                encrypted_picture,
                 encrypted_lastname,
                 encrypted_firstname,
                 encrypted_gender,
@@ -107,6 +136,7 @@ func (u *Repository) createNewUser(ctx context.Context, tx *sql.Tx, user *models
 			user.EmailHash,
 			user.Email,
 			user.Password,
+			user.Picture,
 			user.LastName,
 			user.FirstName,
 			user.Gender,

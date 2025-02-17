@@ -18,7 +18,7 @@ type MockRepo struct {
 	AddUserFunc                  func(ctx context.Context, user *models.User, provider models.ProviderType) error
 	AddPendingUserFunc           func(ctx context.Context, user *models.User, provider models.ProviderType) error
 	AddUnverifiedUserFunc        func(ctx context.Context, user *models.User) error
-	ModifyAccountFunc            func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error
+	ModifyAccountFunc            func(ctx context.Context, user *models.User, whereMap map[string]any) error
 	DeleteUserFunc               func(ctx context.Context, id string) error
 	HasUserFunc                  func(ctx context.Context, emailHash string) error
 	HasOAuthUserFunc             func(ctx context.Context, emailHash string, provider models.ProviderType) error
@@ -57,7 +57,7 @@ func (m *MockRepo) AddUser(ctx context.Context, user *models.User, provider mode
 	}
 	return nil
 }
-func (m *MockRepo) ModifyAccount(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+func (m *MockRepo) ModifyAccount(ctx context.Context, user *models.User, whereMap map[string]any) error {
 	if m.ModifyAccountFunc != nil {
 		return m.ModifyAccountFunc(ctx, user, whereMap)
 	}

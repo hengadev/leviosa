@@ -34,7 +34,7 @@ func (u *Repository) addGenericUser(ctx context.Context, user *models.User, prov
 	// Check if user exists
 	var userID string
 	err = tx.QueryRowContext(ctx,
-		fmt.Sprintf("SELECT id FROM %s WHERE email = ?", table),
+		fmt.Sprintf("SELECT id FROM %s WHERE email_hash = ?", table),
 		user.EmailHash,
 	).Scan(&userID)
 
@@ -51,7 +51,7 @@ func (u *Repository) addGenericUser(ctx context.Context, user *models.User, prov
 	} else {
 		// Link authentication method to existing user
 		if err := u.linkAuthMethod(ctx, tx, userID, user, provider, table); err != nil {
-			return rp.NewNotCreatedErr(err, "link auth methods")
+			return rp.NewNotCreatedErr(err, "linked user account")
 		}
 	}
 

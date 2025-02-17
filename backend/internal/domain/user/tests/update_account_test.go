@@ -48,7 +48,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return rp.ErrInternal
 					},
 				}
@@ -61,7 +61,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return rp.ErrContext
 					},
 				}
@@ -74,7 +74,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return rp.ErrDatabase
 					},
 				}
@@ -87,7 +87,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return rp.ErrNotUpdated
 					},
 				}
@@ -100,7 +100,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return errors.New("unexpected type error")
 					},
 				}
@@ -113,7 +113,7 @@ func TestUpdateUser(t *testing.T) {
 			user:   getValidUser(),
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
-					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any, prohibitedFields ...string) error {
+					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
 						return nil
 					},
 				}

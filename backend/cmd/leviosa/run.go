@@ -66,12 +66,7 @@ func run(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("setting up databases: %w", err)
 	}
 
-	appSvcs, appRepos, err := makeServices(
-		ctx,
-		sqlitedb,
-		redisdb,
-		conf,
-	)
+	appSvcs, appRepos, err := makeServices(ctx, sqlitedb, redisdb, conf)
 	if err != nil {
 		return fmt.Errorf("create services: %w", err)
 	}
