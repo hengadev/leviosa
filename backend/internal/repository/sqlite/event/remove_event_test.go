@@ -4,27 +4,43 @@ import (
 	"context"
 	"testing"
 
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestRemoveEvent(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-
-	randEventID := test.GenerateRandomString(16)
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	event := factories.NewBasicEvent(nil)
 
 	tests := []struct {
-		eventID string
-		wantErr bool
-		version int64
-		name    string
+		name        string
+		version     int64
+		eventID     string
+		expectedErr error
 	}{
-		{eventID: baseEventWithPriceID.ID, wantErr: true, version: 20240820013106, name: "no event in database"},
-		{eventID: randEventID, wantErr: true, version: 20240820023513, name: "ID do not exist in database"},
-		{eventID: baseEventWithPriceID.ID, wantErr: false, version: 20240820023513, name: "nominal case"},
+		{
+			name:        "no event in database",
+			version:     20240820013106,
+			eventID:     event.ID,
+			expectedErr: rp.ErrNotDeleted,
+		},
+		{
+			name:        "ID do not exist in database",
+			version:     20240820023513,
+			eventID:     test.GenerateRandomString(16),
+			expectedErr: rp.ErrNotDeleted,
+		},
+		{
+			name:        "nominal case",
+			version:     20240820023513,
+			eventID:     event.ID,
+			expectedErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -33,7 +49,7 @@ func TestRemoveEvent(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
 			err := repo.RemoveEvent(ctx, tt.eventID)
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }
