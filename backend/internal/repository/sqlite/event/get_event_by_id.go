@@ -13,20 +13,26 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*models.
 	event := &models.Event{}
 	query := `
         SELECT 
-            title,
-            description,
-            type,
-            location,
+            encrypted_title,
+            encrypted_description,
+            encrypted_city,
+            encrypted_postal_code,
+            encrypted_address1,
+            encrypted_address2,
             placecount,
             freeplace,
-            begin_at,
-            end_at
+            encrypted_begin_at,
+            encrypted_end_at
         FROM events 
         WHERE id = ?;`
 
 	if err := e.DB.QueryRowContext(ctx, query, id).Scan(
 		&event.Title,
 		&event.Description,
+		&event.City,
+		&event.PostalCode,
+		&event.Address1,
+		&event.Address2,
 		&event.PlaceCount,
 		&event.FreePlace,
 		&event.EncryptedBeginAt,

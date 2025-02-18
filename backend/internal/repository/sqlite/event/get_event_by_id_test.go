@@ -5,24 +5,40 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestGetEventByID(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	event := factories.NewBasicEvent(nil)
+	fields := []string{"ID", "Title", "Description", "City", "PostalCode", "Address1", "Address2", "PlaceCount", "FreePlace", "EncryptedBeginAt", "EncryptedEndAt"}
 	tests := []struct {
-		id            string
+		name          string
+		version       int64
+		eventID       string
 		expectedEvent *models.Event
 		expectedErr   error
-		version       int64
-		name          string
 	}{
-		{id: test.GenerateRandomString(12), expectedEvent: nil, expectedErr: nil, version: 20240820013106, name: "no event in database"},
-		{id: "ea1d74e2-1612-47ec-aee9-c6a46b65640f", expectedEvent: baseEvent, expectedErr: nil, version: 20240820023513, name: "nominal case"},
+		{
+			name:          "no event in database",
+			version:       20240820013106,
+			eventID:       test.GenerateRandomString(16),
+			expectedEvent: nil,
+			expectedErr:   rp.ErrNotFound,
+		},
+		{
+			name:          "nominal case",
+			version:       20240820023513,
+			eventID:       event.ID,
+			expectedEvent: event,
+			expectedErr:   nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -30,9 +46,9 @@ func TestGetEventByID(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
-			event, err := repo.GetEventByID(ctx, tt.id)
+			event, err := repo.GetEventByID(ctx, tt.eventID)
 			assert.EqualError(t, err, tt.expectedErr)
-			assert.ReflectEqual(t, event, tt.expectedEvent)
+			assert.FieldsEqual(t, event, tt.expectedEvent, fields)
 		})
 	}
 }
