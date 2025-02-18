@@ -81,7 +81,7 @@ func NewBasicEventList() []*models.Event {
 			"Address1":         "address1 - 2",
 			"Address2":         "",
 			"PlaceCount":       6,
-			"FreePlace":        3,
+			"FreePlace":        0,
 			"EncryptedBeginAt": "09:00:00",
 			"EncryptedEndAt":   "20:00:00",
 			"PriceID":          "bdab8511-875a-46d5-a228-6db7aecb42a2",

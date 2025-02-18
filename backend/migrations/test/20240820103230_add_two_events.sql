@@ -25,7 +25,7 @@ INSERT INTO events (
             'address1 - 2',
             '',
             6,
-            3,
+            0,
             '09:00:00',
             '19:00:00',
             'bdab8511-875a-46d5-a228-6db7aecb42a2',

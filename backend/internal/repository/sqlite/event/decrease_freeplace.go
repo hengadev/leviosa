@@ -28,7 +28,7 @@ func (e *EventRepository) DecreaseFreePlace(ctx context.Context, eventID string)
 		return rp.NewDatabaseErr(err)
 	}
 	if rowsAffected == 0 {
-		return rp.NewNotUpdatedErr(err, fmt.Sprintf("decrease freeplace count for event with ID %s", eventID))
+		return rp.NewNotUpdatedErr(fmt.Errorf("freeplace >= 0 constraint not respected for event ID %s", eventID), "freeplace count")
 	}
 	return nil
 }
