@@ -4,41 +4,48 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	// "github.com/GaryHY/leviosa/internal/domain"
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	eventRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	test "github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	assert "github.com/GaryHY/test-assert"
 )
 
 func TestModifyEvent(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
-
-	whereMap := map[string]any{"id": baseEventWithPriceID.ID}
-
-	changes := map[string]any{"Location": "Changed location", "PriceID": "a new price id"}
-	modifiedEventProhibitedField, err := domain.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes)
-	if err != nil {
-		t.Error("Failed to create object with modified field")
-	}
-
-	changes2 := map[string]any{"Location": "Changed location"}
-	modifiedEvent, err := domain.CreateWithZeroFieldModifiedObject(*baseEventWithPriceID, changes2)
-	if err != nil {
-		t.Error("Failed to create object with modified field")
-	}
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	event := factories.NewBasicEvent(nil)
+	whereMap := map[string]any{"id": event.ID}
 
 	tests := []struct {
-		eventModified *models.Event
-		wantErr       bool
-		version       int64
-		name          string
+		name        string
+		version     int64
+		event       *models.Event
+		expectedErr error
 	}{
-		{eventModified: nil, wantErr: true, version: 20240820013106, name: "nil event"},
-		{eventModified: baseEventWithPriceID, wantErr: true, version: 20240820023513, name: "event with prohibited fields for modification"},
-		{eventModified: modifiedEventProhibitedField, wantErr: true, version: 20240820023513, name: "make changes to prohibited field"},
-		{eventModified: modifiedEvent, wantErr: false, version: 20240820023513, name: "nominal case with valid updatable event"},
+		{
+			name:        "nil event",
+			version:     20240820013106,
+			event:       nil,
+			expectedErr: rp.ErrValidation,
+		},
+		{
+			name:    "event with prohibited fields for modification",
+			version: 20240820023513,
+			event: factories.NewBasicEvent(map[string]any{
+				"ID": test.GenerateRandomString(16),
+			}),
+			expectedErr: rp.ErrInternal,
+		},
+		{
+			name:        "nominal case with valid updatable event",
+			version:     20240820023513,
+			event:       factories.NewModifiableEvent(),
+			expectedErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -46,11 +53,8 @@ func TestModifyEvent(t *testing.T) {
 			ctx := context.Background()
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
-			err := repo.ModifyEvent(
-				ctx, tt.eventModified,
-				whereMap,
-			)
-			assert.Equal(t, err != nil, tt.wantErr)
+			err := repo.ModifyEvent(ctx, tt.event, whereMap)
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }

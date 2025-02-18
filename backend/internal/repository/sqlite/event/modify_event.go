@@ -15,10 +15,14 @@ func (e *EventRepository) ModifyEvent(
 	event *models.Event,
 	whereMap map[string]any,
 ) error {
+	if event == nil {
+		return rp.NewValidationErr(errors.New("nil event"), "event")
+	}
 	query, values, errs := sqliteutil.WriteUpdateQuery(*event, whereMap)
 	if len(errs) > 0 {
 		return rp.NewInternalErr(errs)
 	}
+	fmt.Println("the query is:", query)
 	res, err := e.DB.ExecContext(ctx, query, values...)
 	if err != nil {
 		switch {

@@ -69,6 +69,18 @@ func NewBasicEvent(overrides map[string]any) *models.Event {
 	return event
 }
 
+func NewModifiableEvent() *models.Event {
+	return &models.Event{
+		Title:            "First event for Leviosa",
+		Description:      "First description for Leviosa",
+		City:             "Paris",
+		EncryptedBeginAt: "08:00:00",
+		Day:              28,
+		Month:            5,
+		Year:             2025,
+	}
+}
+
 func NewBasicEventList() []*models.Event {
 	events := []*models.Event{
 		NewBasicEvent(nil),
