@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
@@ -13,14 +12,14 @@ func (e *EventRepository) GetPriceID(ctx context.Context, eventID string) (strin
 	var priceID string
 	query := `
         SELECT 
-            price_id
+            encrypted_price_id
         FROM events 
         WHERE id = ?;`
 	err := e.DB.QueryRowContext(ctx, query, eventID).Scan(&priceID)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
-			return "", rp.NewNotFoundErr(err, fmt.Sprintf("price ID for event with ID %s", eventID))
+			return "", rp.NewNotFoundErr(err, "price ID")
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return "", rp.NewContextErr(err)
 		default:
