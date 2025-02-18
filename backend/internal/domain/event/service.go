@@ -1,11 +1,18 @@
 package eventService
 
+import (
+	"github.com/GaryHY/leviosa/internal/domain/event/security"
+	"github.com/GaryHY/leviosa/pkg/config"
+)
+
 type Service struct {
-	Repo ReadWriter
+	repo ReadWriter
+	*security.SecureEventData
 }
 
-func New(repo ReadWriter) *Service {
+func New(repo ReadWriter, config *config.SecurityConfig) *Service {
 	return &Service{
-		Repo: repo,
+		repo,
+		security.NewSecureEventData(config),
 	}
 }
