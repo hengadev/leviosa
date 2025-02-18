@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	eventModels "github.com/GaryHY/leviosa/internal/domain/event/models"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/server/handler"
@@ -27,7 +27,7 @@ func (a *AppInstance) ModifyEvent(w http.ResponseWriter, r *http.Request) {
 		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
-	event, err := serverutil.Decode[eventService.Event](r.Body)
+	event, err := serverutil.Decode[eventModels.Event](r.Body)
 	if err != nil {
 		logger.WarnContext(ctx, "failed to decode the event", "error", err)
 		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)

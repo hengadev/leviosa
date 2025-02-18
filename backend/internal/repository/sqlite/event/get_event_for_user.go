@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
@@ -15,7 +15,7 @@ import (
 // - move that function to registrationRepository
 // - move part of this function to the service that uses that function
 
-func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*eventService.EventUser, error) {
+func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*models.EventUser, error) {
 	tx, err := e.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, rp.NewDatabaseErr(fmt.Errorf("failed to start transaction: %w", err))
@@ -33,7 +33,7 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 		{condition: fmt.Sprintf("(day > %d AND month = %d AND year = %d) OR (month = %d + 1 AND year = %d) OR (month = 1 AND year = %d + 1) LIMIT 1", day, month, year, year, month, year), field: "incoming"},
 	}
 
-	var res eventService.EventUser
+	var res models.EventUser
 	for _, statement := range statements {
 		query := fmt.Sprintf("SELECT * FROM events WHERE %s;", statement.condition)
 		rows, err := tx.QueryContext(ctx, query, userID)
@@ -46,17 +46,14 @@ func (e *EventRepository) GetEventForUser(ctx context.Context, userID string) (*
 			}
 		}
 		defer rows.Close()
-
 		for rows.Next() {
 			var priceID string
 			var beginAt string
-			event := &eventService.Event{}
+			event := &models.Event{}
 			if err := rows.Scan(
 				&event.ID,
-				&event.Location,
 				&event.PlaceCount,
 				&beginAt,
-				&event.SessionDuration,
 				&priceID,
 				&event.Day,
 				&event.Month,

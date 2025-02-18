@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventService.Event, error) {
-	event := &eventService.Event{}
+func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*models.Event, error) {
+	event := &models.Event{}
 	query := `
         SELECT 
             title,
@@ -27,12 +27,10 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventSe
 	if err := e.DB.QueryRowContext(ctx, query, id).Scan(
 		&event.Title,
 		&event.Description,
-		&event.Type,
-		&event.Location,
 		&event.PlaceCount,
 		&event.FreePlace,
-		&event.BeginAtFormatted,
-		&event.EndAtFormatted,
+		&event.EncryptedBeginAt,
+		&event.EncryptedEndAt,
 	); err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -43,7 +41,6 @@ func (e *EventRepository) GetEventByID(ctx context.Context, id string) (*eventSe
 			return nil, rp.NewDatabaseErr(err)
 		}
 	}
-	// parse event to make it application ready
-	event.Parse()
+	event.ID = id
 	return event, nil
 }

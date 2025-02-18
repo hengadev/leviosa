@@ -5,17 +5,17 @@ import (
 	"errors"
 
 	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (s *Service) ModifyEvent(ctx context.Context, event *Event) error {
+func (s *Service) ModifyEvent(ctx context.Context, event *models.Event) error {
 	if event == nil {
 		return domain.NewInvalidValueErr("event can not be nil")
 	}
 	// TODO: get the prohibited fields for the function in here
 	whereMap := map[string]any{"id": event.ID}
-	if err := s.Repo.ModifyEvent(
-		ctx,
+	if err := s.repo.ModifyEvent(ctx,
 		event,
 		whereMap,
 	); err != nil {

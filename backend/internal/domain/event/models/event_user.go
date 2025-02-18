@@ -1,4 +1,4 @@
-package eventService
+package models
 
 type EventUser struct {
 	// PastEvents     []*Event `json:"pastEvents"`

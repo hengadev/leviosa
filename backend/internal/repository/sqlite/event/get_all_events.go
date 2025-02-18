@@ -4,18 +4,16 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Event, error) {
+func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*models.Event, error) {
 	query := `
         SELECT 
             id,
             title,
             description,
-            type,
-            location,
             placecount,
             begin_at,
             end_at
@@ -30,22 +28,19 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*eventService.Eve
 		}
 	}
 	defer rows.Close()
-	var events []*eventService.Event
+	var events []*models.Event
 	for rows.Next() {
-		var event eventService.Event
+		var event models.Event
 		if err := rows.Scan(
 			&event.ID,
 			&event.Title,
 			&event.Description,
-			&event.Type,
-			&event.Location,
 			&event.PlaceCount,
-			&event.BeginAtFormatted,
-			&event.EndAtFormatted,
+			&event.EncryptedBeginAt,
+			&event.EncryptedEndAt,
 		); err != nil {
 			return nil, rp.NewDatabaseErr(err)
 		}
-		event.Parse()
 		events = append(events, &event)
 	}
 	if err = rows.Err(); err != nil {

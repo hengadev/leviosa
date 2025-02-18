@@ -9,18 +9,19 @@ import (
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *eventService.Event) error {
+func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *models.Event) error {
 	day, month, year := parseEventTimeForRegistration(event)
 	// NOTE: why is the spot str a string and not an int ?
 	spot, err := strconv.Atoi(spotStr)
 	if err != nil {
 		return fmt.Errorf("convert spot from string to int: %w", err)
 	}
-	offsetDuration := time.Duration(int(event.SessionDuration) * (spot - 1))
+	// offsetDuration := time.Duration(int(event.SessionDuration) * (spot - 1))
+	offsetDuration := time.Duration(int(20) * (spot - 1))
 	registrationBeginAt := event.BeginAt.Add(offsetDuration)
 	_ = registrationBeginAt
 	registration := NewRegistration(
@@ -48,7 +49,7 @@ func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string
 	return nil
 }
 
-func parseEventTimeForRegistration(e *eventService.Event) (int, string, int) {
+func parseEventTimeForRegistration(e *models.Event) (int, string, int) {
 	month := strings.ToLower(time.Month(e.Month).String())
 	return e.Day, month, e.Year
 }

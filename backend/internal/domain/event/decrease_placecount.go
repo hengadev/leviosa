@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Service) DecreasePlacecount(ctx context.Context, eventID string) error {
-	err := s.Repo.DecreaseFreePlace(ctx, eventID)
+	err := s.repo.DecreaseFreePlace(ctx, eventID)
 	if err != nil {
 		switch {
 		case errors.Is(err, rp.ErrContext):

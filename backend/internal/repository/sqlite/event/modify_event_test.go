@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 
@@ -30,7 +30,7 @@ func TestModifyEvent(t *testing.T) {
 	}
 
 	tests := []struct {
-		eventModified *eventService.Event
+		eventModified *models.Event
 		wantErr       bool
 		version       int64
 		name          string
@@ -49,8 +49,6 @@ func TestModifyEvent(t *testing.T) {
 			err := repo.ModifyEvent(
 				ctx, tt.eventModified,
 				whereMap,
-				"ID",
-				"PriceID",
 			)
 			assert.Equal(t, err != nil, tt.wantErr)
 		})

@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Service) RemoveEvent(ctx context.Context, eventID string) error {
-	if err := s.Repo.RemoveEvent(ctx, eventID); err != nil {
+	if err := s.repo.RemoveEvent(ctx, eventID); err != nil {
 		switch {
 		case errors.Is(err, rp.ErrContext):
 			return err

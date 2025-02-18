@@ -5,16 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 )
 
 func (e *EventRepository) ModifyEvent(
 	ctx context.Context,
-	event *eventService.Event,
+	event *models.Event,
 	whereMap map[string]any,
-	prohibitedFields ...string,
 ) error {
 	query, values, errs := sqliteutil.WriteUpdateQuery(*event, whereMap)
 	if len(errs) > 0 {

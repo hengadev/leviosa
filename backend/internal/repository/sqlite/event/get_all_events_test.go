@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
 
@@ -14,13 +14,13 @@ import (
 func TestGetAllEvents(t *testing.T) {
 	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
 	tests := []struct {
-		expectedEvents []*eventService.Event
+		expectedEvents []*models.Event
 		wantErr        bool
 		version        int64
 		name           string
 	}{
 		{expectedEvents: nil, wantErr: false, version: 20240820013106, name: "no event in database"},
-		{expectedEvents: []*eventService.Event{baseEvent, baseEvent1, baseEvent2}, wantErr: false, version: 20240820103230, name: "nominal case"},
+		{expectedEvents: []*models.Event{baseEvent, baseEvent1, baseEvent2}, wantErr: false, version: 20240820103230, name: "nominal case"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
