@@ -2,9 +2,9 @@
 -- +goose StatementBegin
 INSERT INTO offers (
     id,
-    product_id
+    product_id,
     name,
-    description
+    description,
     encrypted_picture,
     duration,
     price,

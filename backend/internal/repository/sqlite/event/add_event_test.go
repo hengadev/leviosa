@@ -4,24 +4,47 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	"github.com/GaryHY/test-assert"
 )
 
 func TestAddEvent(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	randID := test.GenerateRandomString(16)
+	event := factories.NewBasicEvent(nil)
 	tests := []struct {
-		event   *eventService.Event
-		wantErr bool
-		version int64
-		name    string
+		name            string
+		version         int64
+		event           *models.Event
+		expectedEventID string
+		expectedErr     error
 	}{
-		{event: &eventService.Event{}, wantErr: true, version: 20240820013106, name: "no event IDa specified"},
-		{event: baseEvent, wantErr: true, version: 20240820013106, name: "No price id specified"},
-		{event: baseEventWithPriceID, wantErr: false, version: 20240820013106, name: "nominal case"},
+		{
+			name:    "nominal case",
+			version: 20250218185533,
+			event: factories.NewBasicEvent(map[string]any{
+				"Day":     3,
+				"Month":   11,
+				"Year":    4,
+				"ID":      randID,
+				"PriceID": test.GenerateRandomString(16),
+			}),
+			expectedEventID: randID,
+			expectedErr:     nil,
+		},
+		{
+			name:            "test unique (day, month, year) constraint",
+			version:         20250218185533,
+			event:           event,
+			expectedEventID: "",
+			expectedErr:     rp.ErrDatabase,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -30,8 +53,8 @@ func TestAddEvent(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
 			eventID, err := repo.AddEvent(ctx, tt.event)
-			_ = eventID
-			assert.Equal(t, err != nil, tt.wantErr)
+			assert.Equal(t, eventID, tt.expectedEventID)
+			assert.EqualError(t, err, tt.expectedErr)
 		})
 	}
 }

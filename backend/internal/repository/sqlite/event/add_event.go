@@ -2,52 +2,30 @@ package eventRepository
 
 import (
 	"context"
-	"errors"
+	"database/sql"
+	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (e *EventRepository) AddEvent(ctx context.Context, event *eventService.Event) (string, error) {
-	query := `INSERT INTO events (
-                id,
-                title,
-                description,
-                type,
-                location,
-                placecount,
-                freeplace,
-                begin_at,
-                end_at,
-                session_duration
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-	result, err := e.DB.ExecContext(ctx, query,
-		event.ID,
-		event.Title,
-		event.Description,
-		event.Type,
-		event.Location,
-		event.PlaceCount,
-		event.FreePlace,
-		event.BeginAtFormatted,
-		event.SessionDuration,
-	)
+func (e *EventRepository) AddEvent(ctx context.Context, event *models.Event) (string, error) {
+	tx, err := e.DB.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		switch {
-		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			return "", rp.NewContextErr(err)
-		default:
-			return "", rp.NewDatabaseErr(err)
-		}
+		return "", rp.NewDatabaseErr(fmt.Errorf("failed to start transaction: %w", err))
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return "", rp.NewDatabaseErr(err)
+	defer tx.Rollback()
+	if err := e.InsertEvent(ctx, tx, event); err != nil {
+		return "", err
 	}
-	if rowsAffected == 0 {
-		return "", rp.NewNotCreatedErr(errors.New("no rows affected by insertion statement"), "event")
+	if err := e.LoopQuery(ctx, tx, "product_id", "event_products", event.Products, event.ID); err != nil {
+		return "", err
+	}
+	if err := e.LoopQuery(ctx, tx, "offer_id", "event_offers", event.Offers, event.ID); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(); err != nil {
+		return event.ID, rp.NewDatabaseErr(fmt.Errorf("commit transaction: %w", err))
 	}
 	return event.ID, nil
 }
