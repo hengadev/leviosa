@@ -13,7 +13,6 @@ func (s *Service) ModifyEvent(ctx context.Context, event *models.Event) error {
 	if event == nil {
 		return domain.NewInvalidValueErr("event can not be nil")
 	}
-	// TODO: get the prohibited fields for the function in here
 	whereMap := map[string]any{"id": event.ID}
 	if err := s.repo.ModifyEvent(ctx,
 		event,
