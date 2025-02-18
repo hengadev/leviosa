@@ -17,7 +17,7 @@ func (s *Service) DecreasePlacecount(ctx context.Context, eventID string) error 
 		case errors.Is(err, rp.ErrDatabase):
 			return domain.NewQueryFailedErr(err)
 		case errors.Is(err, rp.ErrNotUpdated):
-			domain.NewNotUpdatedErr(err)
+			return domain.NewNotUpdatedErr(err)
 		default:
 			return domain.NewUnexpectTypeErr(err)
 		}
