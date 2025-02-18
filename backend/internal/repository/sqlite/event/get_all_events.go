@@ -12,11 +12,16 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*models.Event, er
 	query := `
         SELECT 
             id,
-            title,
-            description,
+            encrypted_title,
+            encrypted_description,
+			encrypted_city,
+			encrypted_postal_code,
+			encrypted_address1,
+			encrypted_address2,
             placecount,
-            begin_at,
-            end_at
+            freeplace,
+            encrypted_begin_at,
+            encrypted_end_at
         FROM events;`
 	rows, err := e.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -35,7 +40,12 @@ func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*models.Event, er
 			&event.ID,
 			&event.Title,
 			&event.Description,
+			&event.City,
+			&event.PostalCode,
+			&event.Address1,
+			&event.Address2,
 			&event.PlaceCount,
+			&event.FreePlace,
 			&event.EncryptedBeginAt,
 			&event.EncryptedEndAt,
 		); err != nil {

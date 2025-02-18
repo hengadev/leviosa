@@ -6,21 +6,36 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	eventRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	test "github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	assert "github.com/GaryHY/test-assert"
 )
 
 func TestGetAllEvents(t *testing.T) {
-	t.Setenv("TEST_MIGRATION_PATH", "../migrations/tests")
+	t.Setenv("TEST_MIGRATION_PATH", test.GetSQLiteMigrationPath())
+	factories_events := factories.NewBasicEventList()
+	fields := []string{"ID", "Title", "Description", "City", "PostalCode", "Address1", "Address2", "PlaceCount", "FreePlace", "EncryptedBeginAt", "EncryptedEndAt"}
+
 	tests := []struct {
-		expectedEvents []*models.Event
-		wantErr        bool
-		version        int64
 		name           string
+		version        int64
+		expectedEvents []*models.Event
+		expectedErr    error
 	}{
-		{expectedEvents: nil, wantErr: false, version: 20240820013106, name: "no event in database"},
-		{expectedEvents: []*models.Event{baseEvent, baseEvent1, baseEvent2}, wantErr: false, version: 20240820103230, name: "nominal case"},
+		{
+			name:           "no event in database",
+			version:        20240820013106,
+			expectedEvents: nil,
+			expectedErr:    nil,
+		},
+		{
+			name:           "nominal case",
+			version:        20240820103230,
+			expectedEvents: factories_events,
+			expectedErr:    nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -29,9 +44,9 @@ func TestGetAllEvents(t *testing.T) {
 			repo, teardown := sqlite.SetupRepository(t, ctx, tt.version, eventRepository.New)
 			defer teardown()
 			events, err := repo.GetAllEvents(ctx)
-			assert.Equal(t, err != nil, tt.wantErr)
-			for i, event := range events {
-				assert.ReflectEqual(t, event, tt.expectedEvents[i])
+			assert.EqualError(t, err, tt.expectedErr)
+			for idx, _ := range events {
+				assert.FieldsEqual(t, events[idx], tt.expectedEvents[idx], fields)
 			}
 		})
 	}
