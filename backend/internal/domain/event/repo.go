@@ -11,6 +11,7 @@ type Reader interface {
 	GetEventForUser(ctx context.Context, userID string) (*models.EventUser, error)
 	GetPriceID(ctx context.Context, eventID string) (string, error)
 	EventHasAvailablePlaces(ctx context.Context, eventID string) (bool, error)
+	IsDateAvailable(ctx context.Context, day, month, year int) error
 }
 
 type Writer interface {
