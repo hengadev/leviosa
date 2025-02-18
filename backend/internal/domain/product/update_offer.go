@@ -11,7 +11,6 @@ func (s *Service) UpdateProductType(ctx context.Context, product *Offer) error {
 		ctx,
 		product,
 		map[string]any{"id": product.ID},
-		"id",
 	); err != nil {
 		switch {
 		default:

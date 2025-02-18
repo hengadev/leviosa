@@ -14,7 +14,6 @@ func (p *Repository) ModifyProduct(
 	ctx context.Context,
 	product *productService.Product,
 	whereMap map[string]any,
-	prohibitedFields ...string,
 ) error {
 	query, values, errs := sqliteutil.WriteUpdateQuery(*product, whereMap)
 	if len(errs) > 0 {

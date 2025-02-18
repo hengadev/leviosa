@@ -10,8 +10,6 @@ func (s *Service) UpdateProduct(ctx context.Context, product *Product) error {
 	if err := s.repo.ModifyProduct(ctx,
 		product,
 		map[string]any{"id": product.ID},
-		"id",
-		"priceID",
 	); err != nil {
 		switch {
 		default:

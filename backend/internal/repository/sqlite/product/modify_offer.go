@@ -10,11 +10,10 @@ import (
 	"github.com/GaryHY/leviosa/pkg/sqliteutil"
 )
 
-func (p *Repository) ModifyProductType(
+func (p *Repository) ModifyOffer(
 	ctx context.Context,
 	productType *productService.Offer,
 	whereMap map[string]any,
-	prohibitedFields ...string,
 ) error {
 	query, values, errs := sqliteutil.WriteUpdateQuery(*productType, whereMap)
 	if len(errs) > 0 {
