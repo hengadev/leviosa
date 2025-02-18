@@ -1,16 +1,20 @@
 -- +goose Up
 -- +goose StatementBegin
--- TODO: add the check year >= 2024 on production database
 CREATE TABLE IF NOT EXISTS events (
-    id TEXT NOT NULL PRIMARY KEY CHECK(length(id) > 0),
-    location TEXT NOT NULL CHECK(length(location) > 0),
-    placecount INTEGER NOT NULL CHECK(placecount > 0),
+    id TEXT NOT NULL PRIMARY KEY,
+    encrypted_title TEXT NOT NULL,
+    encrypted_description TEXT NOT NULL,
+    encrypted_postal_code TEXT NOT NULL,
+    encrypted_city TEXT NOT NULL,
+    encrypted_address1 TEXT NOT NULL,
+    encrypted_address2 TEXT,
+    placecount INTEGER NOT NULL,
     freeplace INTEGER CHECK(freeplace >= 0),
-    beginat TEXT NOT NULL CHECK (beginat LIKE '__:__:__'),
-    sessionduration INTEGER NOT NULL CHECK(sessionduration > 0),
-    priceid TEXT NOT NULL UNIQUE CHECK(length(priceid) > 0),
-    day INTEGER NOT NULL CHECK(day > 0),
-    month INTEGER NOT NULL CHECK(month > 0),
+    encrypted_begin_at TEXT NOT NULL,
+    encrypted_end_at TEXT NOT NULL,
+    encrypted_price_id TEXT NOT NULL UNIQUE,
+    day INTEGER NOT NULL CHECK(day > 0 AND day < 31) ,
+    month INTEGER NOT NULL CHECK(month > 0 AND month < 13) ,
     year INTEGER NOT NULL,
     UNIQUE(day, month, year)
 );

@@ -1,27 +1,37 @@
--- +goose Up
+-- +goose Up 
 -- +goose StatementBegin
 INSERT INTO events (
     id,
-    location,
+    encrypted_title,
+    encrypted_description,
+    encrypted_city,
+    encrypted_postal_code,
+    encrypted_address1,
+    encrypted_address2,
     placecount,
     freeplace,
-    beginat,
-    sessionduration,
-    priceid,
+    encrypted_begin_at,
+    encrypted_end_at,
+    encrypted_price_id,
     day,
     month,
     year
     ) VALUES (
     'ea1d74e2-1612-47ec-aee9-c6a46b65640f',
-    'Impasse Inconnue',
+    'First event for Leviosa',
+    'First description for Leviosa',
+    'Paris',
+    'postalCode',
+    'address1',
+    '',
     16,
     14,
     '08:00:00',
-    30,
-    '4fe0vuw3ef0223',
-    12,
-    7,
-    1998
+    '20:00:00',
+    '179cf8f1-81ad-4ec1-b8bb-8f48abf9ef80',
+    22,
+    4,
+    2025
     );
 -- +goose StatementEnd
 
