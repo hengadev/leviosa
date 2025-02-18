@@ -2,56 +2,80 @@ package eventService_test
 
 import (
 	"context"
-	// "fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
 )
 
-type StubEventRepository struct {
-	events []*eventService.Event
+type MockRepo struct {
+	GetEventByIDFunc            func(ctx context.Context, eventID string) (*models.Event, error)
+	GetEventForUserFunc         func(ctx context.Context, userID string) (*models.EventUser, error)
+	GetPriceIDFunc              func(ctx context.Context, eventID string) (string, error)
+	EventHasAvailablePlacesFunc func(ctx context.Context, eventID string) (bool, error)
+	IsDateAvailableFunc         func(ctx context.Context, day, month, year int) error
+	AddEventFunc                func(ctx context.Context, event *models.Event) (string, error)
+	RemoveEventFunc             func(ctx context.Context, eventID string) error
+	ModifyEventFunc             func(ctx context.Context, event *models.Event, whereMap map[string]any) error
+	DecreaseFreePlaceFunc       func(ctx context.Context, eventID string) error
 }
 
-func NewStubEventRepository() *StubEventRepository {
-	return &StubEventRepository{}
-}
-
-func (s *StubEventRepository) GetEventByID(ctx context.Context, eventID string) (*eventService.Event, error) {
-	for _, event := range s.events {
-		if event.ID == eventID {
-			return event, nil
-		}
+func (m *MockRepo) GetEventByID(ctx context.Context, eventID string) (*models.Event, error) {
+	if m.GetEventByIDFunc != nil {
+		return m.GetEventByIDFunc(ctx, eventID)
 	}
 	return nil, nil
 }
 
-func (s *StubEventRepository) GetEventForUser(ctx context.Context, userID string) (*eventService.EventUser, error) {
+func (m *MockRepo) GetEventForUser(ctx context.Context, eventID string) (*models.EventUser, error) {
+	if m.GetEventByIDFunc != nil {
+		return m.GetEventForUserFunc(ctx, eventID)
+	}
 	return nil, nil
 }
 
-func (s *StubEventRepository) GetPriceID(ctx context.Context, eventID string) (string, error) {
-
-	for _, event := range s.events {
-		if event.ID == eventID {
-			return event.PriceID, nil
-		}
+func (m *MockRepo) GetPriceID(ctx context.Context, eventID string) (string, error) {
+	if m.GetPriceIDFunc != nil {
+		return m.GetPriceIDFunc(ctx, eventID)
 	}
 	return "", nil
 }
 
-func (s *StubEventRepository) AddEvent(ctx context.Context, event *eventService.Event) (string, error) {
-	s.events = append(s.events, event)
-	return "", nil
-}
-func (s *StubEventRepository) RemoveEvent(ctx context.Context, eventID string) error {
-	return nil
-}
-func (s *StubEventRepository) ModifyEvent(ctx context.Context, event *eventService.Event, whereMap map[string]any, prohibitedFields ...string) error {
-	return nil
-}
-func (s *StubEventRepository) DecreaseFreePlace(ctx context.Context, eventID string) error {
-	return nil
-}
-
-func (s *StubEventRepository) EventHasAvailablePlaces(ctx context.Context, eventID string) (bool, error) {
+func (m *MockRepo) EventHasAvailablePlaces(ctx context.Context, eventID string) (bool, error) {
+	if m.EventHasAvailablePlacesFunc != nil {
+		return m.EventHasAvailablePlacesFunc(ctx, eventID)
+	}
 	return false, nil
+}
+func (m *MockRepo) IsDateAvailable(ctx context.Context, day, month, year int) error {
+	if m.IsDateAvailableFunc != nil {
+		return m.IsDateAvailableFunc(ctx, day, month, year)
+	}
+	return nil
+}
+
+func (m *MockRepo) AddEvent(ctx context.Context, event *models.Event) (string, error) {
+	if m.AddEventFunc != nil {
+		return m.AddEventFunc(ctx, event)
+	}
+	return "", nil
+}
+
+func (m *MockRepo) RemoveEvent(ctx context.Context, eventID string) error {
+	if m.RemoveEventFunc != nil {
+		return m.RemoveEventFunc(ctx, eventID)
+	}
+	return nil
+}
+
+func (m *MockRepo) ModifyEvent(ctx context.Context, event *models.Event, whereMap map[string]any) error {
+	if m.ModifyEventFunc != nil {
+		return m.ModifyEventFunc(ctx, event, whereMap)
+	}
+	return nil
+}
+
+func (m *MockRepo) DecreaseFreePlace(ctx context.Context, eventID string) error {
+	if m.DecreaseFreePlaceFunc != nil {
+		return m.DecreaseFreePlaceFunc(ctx, eventID)
+	}
+	return nil
 }
