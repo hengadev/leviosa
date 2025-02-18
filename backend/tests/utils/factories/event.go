@@ -1,6 +1,8 @@
 package factories
 
 import (
+	"time"
+
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
 )
 
@@ -26,8 +28,43 @@ func NewBasicEvent(overrides map[string]any) *models.Event {
 		switch key {
 		case "ID":
 			event.ID = value.(string)
+		case "Title":
+			event.Title = value.(string)
+		case "Description":
+			event.Description = value.(string)
+		case "City":
+			event.City = value.(string)
+		case "PostalCode":
+			event.PostalCode = value.(string)
+		case "Address1":
+			event.Address1 = value.(string)
+		case "Address2":
+			event.Address2 = value.(string)
+		case "PlaceCount":
+			event.PlaceCount = value.(int)
+		case "FreePlace":
+			event.FreePlace = value.(int)
+		case "BeginAt":
+			event.BeginAt = value.(time.Time)
+		case "EncryptedBeginAt":
+			event.EncryptedBeginAt = value.(string)
+		case "EndAt":
+			event.EndAt = value.(time.Time)
+		case "EncryptedEndAt":
+			event.EncryptedEndAt = value.(string)
+		case "Products":
+			event.Products = value.([]string)
+		case "Offers":
+			event.Offers = value.([]string)
+		case "PriceID":
+			event.PriceID = value.(string)
+		case "Day":
+			event.Day = value.(int)
+		case "Month":
+			event.Month = value.(int)
+		case "Year":
+			event.Year = value.(int)
 		}
-		// TODO: complete other cases
 	}
 	return event
 }
