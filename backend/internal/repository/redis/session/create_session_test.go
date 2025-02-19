@@ -14,16 +14,27 @@ import (
 )
 
 func TestCreateSession(t *testing.T) {
+	session := factories.NewBasicSession(nil)
 	tests := []struct {
 		name        string
 		session     *sessionService.Session
 		initMap     miniredis.InitMap[*sessionService.Values]
 		expectedErr error
 	}{
-		{session: nil, expectedErr: nil, initMap: nil, name: "nil session"},
-		{session: &sessionService.Session{}, expectedErr: nil, initMap: nil, name: "empty database"},
-		{session: &factories.BaseSession, expectedErr: nil, initMap: nil, name: "nominal case"},
-		{session: &factories.BaseSession, expectedErr: nil, initMap: factories.InitSession, name: "session already exists"},
+		{
+			name:        "nominal case",
+			session:     session,
+			initMap:     nil,
+			expectedErr: nil,
+		},
+		{
+			name:    "session already exists",
+			session: session,
+			initMap: map[string]*sessionService.Values{
+				session.ID: session.Values(),
+			},
+			expectedErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

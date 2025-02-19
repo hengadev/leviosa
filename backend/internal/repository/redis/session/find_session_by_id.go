@@ -15,7 +15,7 @@ func (s *Repository) FindSessionByID(ctx context.Context, sessionID string) ([]b
 		case errors.Is(err, redis.Nil):
 			return nil, rp.NewNotFoundErr(err, "session")
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
-			fallthrough
+			return nil, rp.ErrContext
 		default:
 			return nil, rp.NewDatabaseErr(err)
 		}

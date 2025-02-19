@@ -18,7 +18,8 @@ func (s *Service) CreateSession(ctx context.Context, userID string, role models.
 	if role == models.UNKNOWN {
 		return "", domain.NewInvalidValueErr("invalid role: role must be different than 'UNKNOWN'")
 	}
-	sessionEncoded, err := json.Marshal(session)
+	// sessionEncoded, err := json.Marshal(session)
+	sessionEncoded, err := json.Marshal(session.Values())
 	if err != nil {
 		return "", domain.NewJSONMarshalErr(err)
 	}
