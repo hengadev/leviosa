@@ -1,4 +1,4 @@
-package eventService_test
+package test
 
 import (
 	"encoding/hex"
@@ -7,7 +7,7 @@ import (
 	"github.com/GaryHY/leviosa/pkg/config"
 )
 
-func prepareEncryptionConfig(t *testing.T) *config.SecurityConfig {
+func PrepareEncryptionConfig(t *testing.T) *config.SecurityConfig {
 	t.Helper()
 	key, err := hex.DecodeString("fb259f76a783dc70d8e7c73a4c056b496dcb52942248d467e81c931609aef4f7")
 	if err != nil {

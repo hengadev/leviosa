@@ -9,12 +9,13 @@ import (
 	eventService "github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
+	test "github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 	assert "github.com/GaryHY/test-assert"
 )
 
 func TestModifyEvent(t *testing.T) {
-	conf := prepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig(t)
 	event := factories.NewBasicEvent(nil)
 
 	tests := []struct {

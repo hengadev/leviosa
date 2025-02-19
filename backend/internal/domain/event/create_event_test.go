@@ -9,13 +9,14 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 
 	assert "github.com/GaryHY/test-assert"
 )
 
 func TestCreateEvent(t *testing.T) {
-	conf := prepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig(t)
 	var zeroTime time.Time
 	now := time.Now()
 	event := factories.NewBasicEvent(map[string]any{

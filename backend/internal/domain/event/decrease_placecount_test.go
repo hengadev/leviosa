@@ -8,12 +8,13 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain"
 	eventService "github.com/GaryHY/leviosa/internal/domain/event"
 	rp "github.com/GaryHY/leviosa/internal/repository"
+	test "github.com/GaryHY/leviosa/tests/utils"
 	"github.com/GaryHY/leviosa/tests/utils/factories"
 	assert "github.com/GaryHY/test-assert"
 )
 
 func TestDecreasePlacecount(t *testing.T) {
-	conf := prepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig(t)
 	event := factories.NewBasicEvent(nil)
 
 	tests := []struct {
