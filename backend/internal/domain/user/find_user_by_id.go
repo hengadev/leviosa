@@ -24,7 +24,7 @@ func (s *Service) FindAccountByID(ctx context.Context, userID string) (*models.U
 	if err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotFound):
-			return &models.User{}, nil
+			return &models.User{}, domain.NewNotFoundErr(err)
 		case errors.Is(err, rp.ErrContext):
 			return nil, err
 		case errors.Is(err, rp.ErrDatabase):

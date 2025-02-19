@@ -4,61 +4,49 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user"
+	userService "github.com/GaryHY/leviosa/internal/domain/user"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
-	"github.com/google/uuid"
+	assert "github.com/GaryHY/test-assert"
 )
 
 func TestUpdateUser(t *testing.T) {
+	conf := test.PrepareEncryptionConfig(t)
+	user := factories.NewBasicUser(nil)
 	tests := []struct {
 		name          string
-		userID        string
 		user          *models.User
 		mockRepo      func() *MockRepo
 		expectedError error
 	}{
 		{
-			name:   "invalid user ID",
-			userID: "",
-			user:   nil,
-			mockRepo: func() *MockRepo {
-				return &MockRepo{}
-			},
+			name: "user ID not uuid",
+			user: factories.NewBasicUser(map[string]any{
+				"ID": test.GenerateRandomString(16),
+			}),
+			mockRepo:      func() *MockRepo { return &MockRepo{} },
 			expectedError: domain.ErrInvalidValue,
 		},
 		{
-			name:   "invalid user",
-			userID: uuid.NewString(),
-			user:   getInvalidUser(),
-			mockRepo: func() *MockRepo {
-				return &MockRepo{}
-			},
-			expectedError: domain.ErrInvalidValue,
-		},
-		{
-			name:   "internal errror",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "ModifyAccount writing update query errror",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
-						return rp.ErrInternal
+						return rp.ErrValidation
 					},
 				}
 			},
-			expectedError: rp.ErrInternal,
+			expectedError: domain.ErrInvalidValue,
 		},
 		{
-			name:   "context errror",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "ModifyAccount context errror",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
@@ -69,9 +57,8 @@ func TestUpdateUser(t *testing.T) {
 			expectedError: rp.ErrContext,
 		},
 		{
-			name:   "database errror",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "ModifyAccount database errror",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
@@ -82,9 +69,8 @@ func TestUpdateUser(t *testing.T) {
 			expectedError: domain.ErrQueryFailed,
 		},
 		{
-			name:   "not updated errror",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "ModifyAccount not updated errror",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
@@ -95,9 +81,8 @@ func TestUpdateUser(t *testing.T) {
 			expectedError: domain.ErrNotUpdated,
 		},
 		{
-			name:   "unexpected type errror",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "ModifyAccount unexpected type errror",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
@@ -108,9 +93,8 @@ func TestUpdateUser(t *testing.T) {
 			expectedError: domain.ErrUnexpectedType,
 		},
 		{
-			name:   "successul case",
-			userID: uuid.NewString(),
-			user:   getValidUser(),
+			name: "successul case",
+			user: user,
 			mockRepo: func() *MockRepo {
 				return &MockRepo{
 					ModifyAccountFunc: func(ctx context.Context, user *models.User, whereMap map[string]any) error {
@@ -126,35 +110,9 @@ func TestUpdateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			repo := tt.mockRepo()
-			config := &config.SecurityConfig{}
-			service := userService.New(repo, config)
-			err := service.UpdateAccount(
-				context.Background(),
-				tt.user,
-				tt.userID,
-			)
+			service := userService.New(repo, conf)
+			err := service.UpdateAccount(context.Background(), tt.user)
 			assert.EqualError(t, err, tt.expectedError)
 		})
-	}
-}
-
-func getInvalidUser() *models.User {
-	return &models.User{
-		BirthDate: time.Time{},
-		LastName:  "DOE",
-		FirstName: "John",
-		Gender:    "M",
-		Telephone: "",
-	}
-}
-
-func getValidUser() *models.User {
-	birthdate, _ := time.Parse("2006-01-02", "11-07-1998")
-	return &models.User{
-		BirthDate: birthdate,
-		LastName:  "DOE",
-		FirstName: "John",
-		Gender:    "M",
-		Telephone: "0102345678",
 	}
 }

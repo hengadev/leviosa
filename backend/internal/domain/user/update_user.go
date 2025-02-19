@@ -21,24 +21,27 @@ import (
 // Returns:
 //   - error: An error if the user ID is invalid, the user data cannot be encrypted, the account cannot be updated,
 //     or an unexpected error occurs. Returns nil if the account is successfully updated.
-func (s *Service) UpdateAccount(ctx context.Context, user *models.User, userID string) error {
+func (s *Service) UpdateAccount(ctx context.Context, user *models.User) error {
 	// validate UUID provided
-	if err := uuid.Validate(userID); err != nil {
+	if err := uuid.Validate(user.ID); err != nil {
 		return domain.NewInvalidValueErr(fmt.Sprintf("invalid user ID: %s", err.Error()))
 	}
 	// encrypt the user data here
 	if errs := s.EncryptUser(user); len(errs) > 0 {
+		fmt.Println("here I have errors", errs)
 		return domain.NewInvalidValueErr(fmt.Sprintf("invalid user encryption: %s", errs.Error()))
 	}
 	// call modify account on the new data
 	err := s.repo.ModifyAccount(
 		ctx,
 		user,
-		map[string]any{"id": userID},
+		map[string]any{"id": user.ID},
 	)
 	if err != nil {
 		switch {
-		case errors.Is(err, rp.ErrValidation), errors.Is(err, rp.ErrContext):
+		case errors.Is(err, rp.ErrValidation):
+			return domain.NewInvalidValueErr("writing update query")
+		case errors.Is(err, rp.ErrContext):
 			return err
 		case errors.Is(err, rp.ErrDatabase):
 			return domain.NewQueryFailedErr(err)
