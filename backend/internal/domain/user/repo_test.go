@@ -1,4 +1,4 @@
-package models_test
+package userService_test
 
 import (
 	"context"
@@ -114,7 +114,7 @@ func (m *MockRepo) GetUnverifiedUser(ctx context.Context, emailHash string) (*mo
 
 func (m *MockRepo) HasUser(ctx context.Context, emailHash string) error {
 	if m.HasUserFunc != nil {
-		return m.HasUser(ctx, emailHash)
+		return m.HasUserFunc(ctx, emailHash)
 	}
 	return nil
 }

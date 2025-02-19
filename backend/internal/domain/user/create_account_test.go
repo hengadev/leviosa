@@ -1,15 +1,16 @@
-package models_test
+package userService_test
 
 import (
 	"context"
 	// "reflect"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/user"
+	userService "github.com/GaryHY/leviosa/internal/domain/user"
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/GaryHY/leviosa/tests/utils"
 
-	"github.com/GaryHY/test-assert"
+	assert "github.com/GaryHY/test-assert"
 )
 
 func TestCreateAccount(t *testing.T) {
@@ -20,6 +21,7 @@ func TestCreateAccount(t *testing.T) {
 	// - invalid telephone
 	// - account alredy exists ?
 	// - valid user that actually creates an account
+	conf := test.PrepareEncryptionConfig(t)
 	tests := []struct {
 		user     *models.UserPendingResponse
 		mockRepo func() *MockRepo
@@ -42,8 +44,7 @@ func TestCreateAccount(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
 			repo := tt.mockRepo()
-			config := &config.SecurityConfig{}
-			service := userService.New(repo, config)
+			service := userService.New(repo, conf)
 			gotUser, gotErr := service.CreateUser(ctx, tt.user)
 			_ = gotUser
 			assert.Equal(t, gotErr != nil, tt.wantErr)
