@@ -3,7 +3,6 @@ package sessionService
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
@@ -31,19 +30,6 @@ type Values struct {
 	LoggedInAt time.Time   `json:"logged_in_at"`
 	CreatedAt  time.Time   `json:"created_at"`
 	ExpiresAt  time.Time   `json:"expires_at"`
-}
-
-func (s Session) IsZero() bool {
-	v := reflect.ValueOf(s)
-	t := reflect.TypeOf(s)
-	vf := reflect.VisibleFields(t)
-	for _, f := range vf {
-		value := v.FieldByName(f.Name)
-		if value.IsZero() && value.CanInterface() {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *Session) Values() *Values {
