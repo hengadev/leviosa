@@ -38,7 +38,7 @@ func SetupSession(t testing.TB, ctx context.Context, initMap miniredis.InitMap[*
 	if err != nil {
 		t.Errorf("setup miniredis: %s", err)
 	}
-	if err := miniredis.Init(t, ctx, client, initMap); err != nil {
+	if err := miniredis.Init(t, ctx, client, sessionRepository.SESSIONPREFIX, initMap); err != nil {
 		t.Errorf("init miniredis: %s", err)
 	}
 	sessionRepo := sessionRepository.New(ctx, client)

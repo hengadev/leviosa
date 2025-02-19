@@ -20,9 +20,9 @@ func TestCreateVote(t *testing.T) {
 	key := MockDBKey{userID: userID, month: month, year: year}
 	votes := getVotesFromIntDaysArr(userID, days, month, year)
 	tests := []struct {
+		name    string
 		votes   []*vote.Vote
 		wantErr bool
-		name    string
 	}{
 		{votes: []*vote.Vote{{UserID: userID, Day: 54, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too small"},
 		{votes: []*vote.Vote{{UserID: userID, Day: -4, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too large"},

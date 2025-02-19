@@ -3,7 +3,6 @@ package sessionRepository
 import (
 	"context"
 	"errors"
-	"net"
 
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	rp "github.com/GaryHY/leviosa/internal/repository"
@@ -15,7 +14,7 @@ func (s *Repository) CreateSession(ctx context.Context, sessionID string, sessio
 	result := s.client.Set(ctx, SESSIONPREFIX+sessionID, sessionEncoded, sessionService.SessionDuration)
 	if err := result.Err(); err != nil {
 		switch {
-		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
+		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return rp.NewContextErr(err)

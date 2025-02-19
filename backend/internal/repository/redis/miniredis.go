@@ -3,6 +3,7 @@ package miniredis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -10,10 +11,6 @@ import (
 	"github.com/alicebob/miniredis"
 	"github.com/redis/go-redis/v9"
 )
-
-// Helper to run miniredis for redis related unit tests.
-
-var redisServer *miniredis.Miniredis
 
 type InitMap[T any] map[string]T
 
@@ -28,19 +25,44 @@ func Setup(t testing.TB, ctx context.Context) (*redis.Client, error) {
 	}), nil
 }
 
-func Init[T any](t testing.TB, ctx context.Context, client *redis.Client, initMap InitMap[T]) error {
+func Init[T any](t testing.TB, ctx context.Context, client *redis.Client, prefix string, initMap InitMap[T]) error {
 	t.Helper()
-	fail := func(err string) error {
-		return fmt.Errorf("init miniredis: %s,", err)
-	}
 	for key, value := range initMap {
 		valueEncoded, err := json.Marshal(value)
 		if err != nil {
-			return fail("encoding values")
+			return errors.New("encoding values")
 		}
-		if err = client.Set(ctx, key, valueEncoded, time.Minute).Err(); err != nil {
-			return fail("set values")
+		if err = client.Set(ctx, prefix+key, valueEncoded, time.Minute).Err(); err != nil {
+			return errors.New("set values")
 		}
 	}
 	return nil
+}
+
+type redisRepository interface {
+	GetClient() *redis.Client
+}
+
+type repoConstructor[T redisRepository] func(ctx context.Context, client *redis.Client) T
+
+func SetupRepository[T redisRepository, V any](
+	t testing.TB,
+	ctx context.Context,
+	prefix string,
+	initMap InitMap[V],
+	constructor repoConstructor[T],
+) T {
+	t.Helper()
+	// setup miniredis
+	client, err := Setup(t, ctx)
+	if err != nil {
+		t.Fatalf("setup miniredis: %s", err)
+	}
+
+	// init miniredis
+	if err := Init(t, ctx, client, prefix, initMap); err != nil {
+		t.Fatalf("init miniredis: %s", err)
+	}
+
+	return constructor(ctx, client)
 }
