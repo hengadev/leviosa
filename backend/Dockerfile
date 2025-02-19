@@ -8,7 +8,7 @@ RUN go mod download && go mod verify
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s" -v -o myapp ./cmd/leviosa/*.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-s" -v -o leviosa ./cmd/leviosa/*.go
 
 FROM alpine:latest
 
@@ -16,16 +16,12 @@ RUN apk add --no-cache sqlite
 
 WORKDIR /app
 
-COPY --from=builder /app/myapp .
-COPY --from=builder /app/*.env ./
+COPY --from=builder /app/leviosa .
 COPY --from=builder /app/migrations/production ./migrations/production/
+COPY --from=builder /app/*.env ./
 
-# Create the appuser
-RUN adduser -D appuser
+RUN adduser -D runner
+USER runner
 
-# Set appuser as the default user
-USER appuser
-
-EXPOSE 3500
-
-CMD ["./myapp"]
+EXPOSE 3500 3501
+CMD ["./leviosa"]
