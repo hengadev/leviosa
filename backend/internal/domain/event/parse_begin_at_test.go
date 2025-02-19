@@ -1,43 +1,46 @@
 package eventService_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/GaryHY/leviosa/tests/utils/factories"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseBeginAt(t *testing.T) {
+	var zeroTime time.Time
+	now := time.Now()
 	tests := []struct {
 		name          string
 		event         *models.Event
 		expectedDay   int
 		expectedMonth int
 		expectedYear  int
-		expectedErrs  errsx.Map
+		expectedErr   error
 	}{
 		{
 			name: "Valid BeginAt",
-			event: &models.Event{
-				BeginAt: time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC),
-			},
-			expectedDay:   5,
-			expectedMonth: 10,
-			expectedYear:  2023,
-			expectedErrs:  nil,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": now,
+			}),
+			expectedDay:   now.Day(),
+			expectedMonth: int(now.Month()),
+			expectedYear:  now.Year(),
+			expectedErr:   nil,
 		},
 		{
 			name: "Invalid BeginAt",
 			event: &models.Event{
-				BeginAt: time.Time{},
+				BeginAt: zeroTime,
 			},
 			expectedDay:   0,
 			expectedMonth: 0,
 			expectedYear:  0,
-			expectedErrs:  nil,
+			expectedErr:   errors.New("BeginAt is zero"),
 		},
 	}
 
@@ -47,7 +50,7 @@ func TestParseBeginAt(t *testing.T) {
 			assert.Equal(t, tt.expectedDay, day)
 			assert.Equal(t, tt.expectedMonth, month)
 			assert.Equal(t, tt.expectedYear, year)
-			assert.Equal(t, tt.expectedErrs, errs)
+			assert.Equal(t, tt.expectedErr, errs)
 		})
 	}
 }
