@@ -69,3 +69,5 @@ func (s *Session) Valid(ctx context.Context, minRole models.Role) error {
 	}
 	return pbms
 }
+
+func (s Session) AssertComparable() {}

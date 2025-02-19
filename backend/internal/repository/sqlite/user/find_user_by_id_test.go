@@ -56,9 +56,7 @@ func TestFindAccountByID(t *testing.T) {
 			defer teardown()
 			user, err := repo.FindAccountByID(ctx, tt.userID)
 			assert.EqualError(t, err, tt.expectedError)
-			if tt.expectedUser != nil {
-				assert.FieldsEqual(t, user, tt.expectedUser, fields)
-			}
+			assert.FieldsEqual(t, user, tt.expectedUser, fields)
 		})
 	}
 }
