@@ -100,14 +100,14 @@ func (m *MockRepo) AddUnverifiedUser(ctx context.Context, user *models.User) err
 
 func (m *MockRepo) GetPendingUser(ctx context.Context, emailHash string, provider models.ProviderType) (*models.User, error) {
 	if m.GetPendingUserFunc != nil {
-		return m.GetPendingUser(ctx, emailHash, provider)
+		return m.GetPendingUserFunc(ctx, emailHash, provider)
 	}
 	return nil, nil
 }
 
 func (m *MockRepo) GetUnverifiedUser(ctx context.Context, emailHash string) (*models.User, error) {
 	if m.GetUnverifiedUserFunc != nil {
-		return m.GetUnverifiedUser(ctx, emailHash)
+		return m.GetUnverifiedUserFunc(ctx, emailHash)
 	}
 	return nil, nil
 }
@@ -121,7 +121,7 @@ func (m *MockRepo) HasUser(ctx context.Context, emailHash string) error {
 
 func (m *MockRepo) HasOAuthUser(ctx context.Context, emailHash string, provider models.ProviderType) error {
 	if m.HasOAuthUserFunc != nil {
-		return m.HasOAuthUser(ctx, emailHash, provider)
+		return m.HasOAuthUserFunc(ctx, emailHash, provider)
 	}
 	return nil
 }
