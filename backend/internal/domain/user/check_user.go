@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
 	"github.com/GaryHY/leviosa/internal/domain/user/security"
 	rp "github.com/GaryHY/leviosa/internal/repository"
 )
@@ -19,9 +20,10 @@ import (
 //   - error: An error if the user does not exist, the query fails, or an unexpected error occurs.
 //     Returns nil if the user exists.
 func (s *Service) CheckUser(ctx context.Context, email string) error {
-	// hash email
+	if errs := models.ValidateEmail(email); len(errs) > 0 {
+		return domain.NewInvalidValueErr(errs.Error())
+	}
 	emailHash := security.HashEmail(email)
-	// look for email in database
 	if err := s.repo.HasUser(ctx, emailHash); err != nil {
 		switch {
 		case errors.Is(err, rp.ErrNotFound):
