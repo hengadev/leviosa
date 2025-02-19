@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
+	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	"github.com/GaryHY/leviosa/internal/domain/user"
-	"github.com/GaryHY/leviosa/internal/repository/redis"
-	"github.com/GaryHY/leviosa/internal/repository/redis/session"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
+	sessionService "github.com/GaryHY/leviosa/internal/domain/session"
+	userService "github.com/GaryHY/leviosa/internal/domain/user"
+	miniredis "github.com/GaryHY/leviosa/internal/repository/redis"
+	sessionRepository "github.com/GaryHY/leviosa/internal/repository/redis/session"
+	userRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/user"
 	"github.com/GaryHY/leviosa/pkg/config"
 	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
 )
@@ -59,4 +61,26 @@ func EncodeForBody(t *testing.T, v any) *bytes.Buffer {
 	}
 	body := bytes.NewBuffer(encodedValue)
 	return body
+}
+
+func NewBasicCookie(overrides map[string]any) *http.Cookie {
+	cookie := &http.Cookie{
+		Name:     sessionService.SessionName,
+		Value:    NewBasicSession(nil).ID,
+		Expires:  time.Now().Add(sessionService.SessionDuration),
+		HttpOnly: true,
+	}
+	for key, value := range overrides {
+		switch key {
+		case "Name":
+			cookie.Name = value.(string)
+		case "Value":
+			cookie.Value = value.(string)
+		case "Expires":
+			cookie.Expires = value.(time.Time)
+		case "HttpOnly":
+			cookie.HttpOnly = value.(bool)
+		}
+	}
+	return cookie
 }
