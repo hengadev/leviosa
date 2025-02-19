@@ -18,11 +18,6 @@ import (
 func TestCreateEvent(t *testing.T) {
 	conf := test.PrepareEncryptionConfig(t)
 	var zeroTime time.Time
-	now := time.Now()
-	event := factories.NewBasicEvent(map[string]any{
-		"BeginAt": now,
-	})
-
 	tests := []struct {
 		name          string
 		mockRepo      func() *MockRepo
@@ -48,7 +43,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   domain.ErrNotCreated,
 		},
@@ -61,7 +58,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   rp.ErrContext,
 		},
@@ -74,7 +73,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   domain.ErrQueryFailed,
 		},
@@ -87,7 +88,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   rp.ErrContext,
 		},
@@ -101,7 +104,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   domain.ErrQueryFailed,
 		},
@@ -114,7 +119,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: false,
 			expectedErr:   domain.ErrNotCreated,
 		},
@@ -127,7 +134,9 @@ func TestCreateEvent(t *testing.T) {
 					},
 				}
 			},
-			event:         event,
+			event: factories.NewBasicEvent(map[string]any{
+				"BeginAt": time.Now(),
+			}),
 			expectEventID: true,
 			expectedErr:   nil,
 		},
