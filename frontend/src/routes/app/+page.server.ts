@@ -1,69 +1,28 @@
-import { redirect } from '@sveltejs/kit';
-// import { API_URL } from "$lib/envVariables"
+export type QRCodeType = string
 
-type Month =
-	| 'Jan'
-	| 'Fev'
-	| 'Mar'
-	| 'Avr'
-	| 'Mai'
-	| 'Juin'
-	| 'Juil'
-	| 'Aout'
-	| 'Sept'
-	| 'Oct'
-	| 'Nov'
-	| 'Dec';
-type NextVote = {
-	month: Month;
-	eventCount: number;
-};
+// const name: string = "John"
+const qrcode: QRCodeType = "https://1.bp.blogspot.com/-dHN4KiD3dsU/XRxU5JRV7DI/AAAAAAAAAz4/u1ynpCMIuKwZMA642dHEoXFVKuHQbJvwgCEwYBhgL/s1600/qr-code.png"
 
-// async function getNextEventId(sessionID: string) {
-async function getNextEventId() {
-	// const url = `${API_URL}/events?n=1/${sessionID}`
-	// const res = await fetch(url)
-	// if (!res.ok) {
-	//     throw new Error("")
-	// }
-	return '23r23asf3r32';
+import { redirect } from "@sveltejs/kit"
+import type { RequestEvent } from "./$types"
+
+type PageRes = { name: string | undefined, qrcode: QRCodeType }
+export function load({ locals }: RequestEvent): PageRes {
+    if (locals.user === null) {
+        return redirect(302, "/")
+    }
+    return { name: locals.user.firstname, qrcode }
 }
 
-// async function getNextVotes(sessionID: string) {
-async function getNextVotes() {
-	// TODO: Find that data using a fetch request on the backend golang.
-	const nextVotes: NextVote[] = [
-		{
-			month: 'Jan',
-			eventCount: 5
-		},
-		{
-			month: 'Fev',
-			eventCount: 2
-		},
-		{
-			month: 'Mar',
-			eventCount: 9
-		}
-	];
-	return nextVotes;
-}
 
-export async function load({ locals }) {
-	if (!locals.user) {
-		console.log('redirect user');
-		throw redirect(301, '/');
-	}
-	// const userId = locals.user.id
-	// const sessionID = cookies.get(cookieName)
-	try {
-		// const eventId = await getNextEventId(sessionID)
-		// const nextVotes = await getNextVotes(sessionID)
-		const eventId = await getNextEventId();
-		const nextVotes = await getNextVotes();
-		console.log('the next votes are :', nextVotes);
-		return { nextVotes, eventId };
-	} catch (err) {
-		if (err instanceof Error) console.error('error loading home page', err.message);
-	}
-}
+// TODO: find a way to do return the async with the qrcode
+// export async function load(): Promise<QRCode> {
+//     const qrcode = await fetch("some api")
+//     return { qrcode }
+// }
+
+
+// here to fetch something and to see what is going on brother
+// fetch('https://jsonplaceholder.typicode.com/todos/1')
+//     .then(response => response.json())
+//     .then(json => console.log(json))

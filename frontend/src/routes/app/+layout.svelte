@@ -1,140 +1,73 @@
 <script lang="ts">
-	import { type navState, navstate } from '$lib/stores/navbar';
+    import NavigationBar from "$lib/components/navigation/NavigationBar.svelte";
 
-	function setState(event: MouseEvent) {
-		let targetElement = event.currentTarget as HTMLButtonElement;
-		let id = targetElement.id as navState;
-		navstate.set(id);
-	}
+    // page transition
+    import { onNavigate } from "$app/navigation";
+    interface Props {
+        children?: import("svelte").Snippet;
+        data: import("./$types").PageData;
+    }
 
-	import type { ComponentType } from 'svelte';
-	import type { Icon } from 'lucide-svelte';
-	import CalendarDays from 'lucide-svelte/icons/calendar-days';
-	import Vote from 'lucide-svelte/icons/vote';
-	import Home from 'lucide-svelte/icons/house';
-	import Mail from 'lucide-svelte/icons/mail';
-	import CircleUser from 'lucide-svelte/icons/circle-user';
-
-	type NavItem = {
-		name: string;
-		id: string;
-		href: string;
-		icon: ComponentType<Icon>;
-	};
-
-	const NavItems: NavItem[] = [
-		{
-			name: 'Events',
-			id: 'events',
-			href: '/app/events',
-			icon: CalendarDays
-		},
-		{
-			name: 'Votes',
-			id: 'votes',
-			href: '/app/votes/',
-			icon: Vote
-		},
-		{
-			name: 'Accueil',
-			id: 'home',
-			href: '/app/',
-			icon: Home
-		},
-		{
-			name: 'Messagerie',
-			id: 'messagerie',
-			href: '/app/mails',
-			icon: Mail
-		},
-
-		{
-			name: 'Profile',
-			id: 'profile',
-			href: '/app/settings/profile',
-			icon: CircleUser
-		}
-	];
-
-	import Dock from 'lucide-svelte/icons/dock';
-	import MapPin from 'lucide-svelte/icons/map-pin';
-	interface Props {
-		children?: import('svelte').Snippet;
-	}
-
-	let { children }: Props = $props();
-	const opacityStrength = 0.4;
+    let { children, data }: Props = $props();
+    type Data = { role: import("$lib/types").Role };
+    const { role }: Data = data;
+    onNavigate((navigation) => {
+        const isSameUrl =
+            navigation?.from?.url.href === navigation?.to?.url.href;
+        const toPathname = navigation?.to?.url.pathname;
+        const fromPathname = navigation?.from?.url.pathname;
+        // TODO: handle the nav from app/ to app/... paths
+        const isSubRoute =
+            toPathname?.includes(String(fromPathname)) &&
+            fromPathname != "/app";
+        if (!document.startViewTransition || isSameUrl || !isSubRoute) return;
+        return new Promise((resolve) => {
+            document.startViewTransition(async () => {
+                resolve();
+                await navigation.complete;
+            });
+        });
+    });
 </script>
 
-<div class="header">
-	<div class="header__left">
-		<Dock color="#2ea6ff" size={36} />
-		<p>MonApp</p>
-	</div>
-	<div class="header__right">
-		<MapPin color="white" size={20} />
-		<p>Paris</p>
-	</div>
+<div class="layout">
+    <NavigationBar {role} />
+    <div class="content">
+        {@render children?.()}
+    </div>
 </div>
-{@render children?.()}
-<nav>
-	<ul>
-		{#each NavItems as item}
-			<li class="">
-				<button id={item.id} onclick={setState}>
-					<a href={item.href} style:opacity={$navstate === item.id ? 1 : opacityStrength}>
-						<item.icon />
-						<p>{item.name}</p>
-					</a>
-				</button>
-			</li>
-		{/each}
-	</ul>
-</nav>
 
 <style>
-	.header {
-		padding: 2rem 1.5rem;
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-
-	.header__left,
-	.header__right {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	.header__left {
-		gap: 1rem;
-	}
-
-	a {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		opacity: 0.4;
-	}
-
-	p {
-		font-size: 0.8rem;
-	}
-
-	nav {
-		z-index: 9999;
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		color: white;
-		padding-inline: 2rem;
-		background-color: #202127;
-	}
-
-	ul {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
+    .layout {
+        view-transition-name: pushing;
+        position: relative;
+        display: flex;
+    }
+    .content {
+        min-height: 100vh;
+        flex: 1;
+        overflow-y: auto;
+    }
+    /* do the media queries here */
+    @keyframes push-new {
+        from {
+            transform: translateX(100%);
+        }
+        to {
+            transform: translateX(0%);
+        }
+    }
+    @keyframes push-old {
+        to {
+            transform: translateX(-30%);
+            opacity: 0.3;
+        }
+    }
+    /* TODO: here there is a root, need to see how that affects other pages ? */
+    :root::view-transition-old(root) {
+        animation: 250ms ease-out both push-old;
+    }
+    :root::view-transition-new(pushed) {
+        animation: 250ms ease-out both push-new;
+    }
 </style>
