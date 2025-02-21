@@ -29,8 +29,7 @@ func (s *SecureUserData) DecryptUser(user *models.User) errsx.Map {
 	}{
 		{name: "birthdate", value: &user.EncryptedBirthDate, decryptedValue: &user.BirthDate},
 		{name: "createdAt", value: &user.EncryptedCreatedAt, decryptedValue: &user.CreatedAt},
-		{name: "loggedInAt", value: &user.EncryptedLoggedInAt, decryptedValue: &user.LoggedInAt},
-	}
+		{name: "loggedInAt", value: &user.EncryptedLoggedInAt, decryptedValue: &user.LoggedInAt}}
 
 	for _, field := range timeFields {
 		if field.value != nil && *field.value != "" {

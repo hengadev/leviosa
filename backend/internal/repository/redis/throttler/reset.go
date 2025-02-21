@@ -22,7 +22,7 @@ func (t *Repository) Reset(ctx context.Context, key string) error {
 	val, err := t.client.Get(ctx, THROTTLERPREFIX+key).Bytes()
 	if err != nil {
 		switch {
-		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
+		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, redis.Nil):
 			return rp.NewNotFoundErr(err, "")

@@ -1,7 +1,7 @@
 package userHandler
 
 import (
-	"errors"
+	// "errors"
 	"net/http"
 
 	"github.com/GaryHY/leviosa/internal/domain/user/models"
@@ -20,12 +20,12 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
-	if !ok {
-		logger.ErrorContext(ctx, "user ID not found in context")
-		serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
-		return
-	}
+	// userID, ok := ctx.Value(contextutil.UserIDKey).(string)
+	// if !ok {
+	// 	logger.ErrorContext(ctx, "user ID not found in context")
+	// 	serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+	// 	return
+	// }
 
 	// use a custom valid for the updtate thing
 	user, err := serverutil.Decode[models.User](r.Body)
@@ -35,7 +35,7 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// modify user
-	if err = a.Svcs.User.UpdateAccount(ctx, &user, userID); err != nil {
+	if err = a.Svcs.User.UpdateAccount(ctx, &user); err != nil {
 		switch err {
 		// TODO: handle the validation error to just send back the fields that are not updated because prohibited from updates
 		default:

@@ -2,7 +2,6 @@ package userHandler
 
 import (
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -33,7 +32,6 @@ func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	// - call the user repo to delete the user account from the user repository
 	err = a.Svcs.User.DeleteUser(ctx, userID)
 	if err != nil {
-		fmt.Println("error in deleting the user")
 		logger.ErrorContext(ctx, "delete user:", "error", err)
 		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return

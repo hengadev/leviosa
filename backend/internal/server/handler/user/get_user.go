@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/server/handler"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
 	"github.com/GaryHY/leviosa/pkg/serverutil"
@@ -24,18 +26,26 @@ func (a *AppInstance) GetUser(w http.ResponseWriter, r *http.Request) {
 		serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
 		return
 	}
-	user, err := a.Svcs.User.FindAccountByID(ctx, userID)
+	user, err := a.Svcs.User.FindUserByID(ctx, userID)
 	if err != nil {
-		// TODO: add other errors cases
 		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			logger.WarnContext(ctx, handler.NewNotFoundErr(err))
+			serverutil.WriteResponse(w, handler.NewNotFoundErr(err), http.StatusNotFound)
+		case errors.Is(err, rp.ErrContext), errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, handler.NewInternalErr(err))
+			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, err.Error())
+			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
 		default:
-			logger.WarnContext(ctx, "find user:", "error", err)
+			logger.WarnContext(ctx, "find user by ID:", "error", err)
 			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, http.StatusOK, user); err != nil {
-		logger.WarnContext(ctx, "send back user:", "error", err)
+		logger.WarnContext(ctx, "get found user:", "error", err)
 		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}

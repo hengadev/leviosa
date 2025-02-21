@@ -5,7 +5,6 @@ type App struct {
 	Repos *Repos
 }
 
-// Function to use in the main, once all the services and repos are built.
 func New(svcs *Services, repos *Repos) *App {
 	return &App{
 		Svcs:  svcs,

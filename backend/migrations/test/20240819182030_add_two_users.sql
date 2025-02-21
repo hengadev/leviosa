@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-INSERT INTO users ( 
+INSERT INTO users (
     id,
     email_hash,
     encrypted_email,
