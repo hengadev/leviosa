@@ -14,7 +14,7 @@ import (
 )
 
 func TestDecreasePlacecount(t *testing.T) {
-	conf := test.PrepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig()
 	event := factories.NewBasicEvent(nil)
 
 	tests := []struct {

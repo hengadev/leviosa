@@ -15,7 +15,7 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	conf := test.PrepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig()
 	userPendingResponse := factories.NewBasicUserPendingResponse(nil)
 	user := factories.NewBasicUser(nil)
 	tests := []struct {

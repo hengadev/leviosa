@@ -16,7 +16,7 @@ import (
 )
 
 func TestCreateEvent(t *testing.T) {
-	conf := test.PrepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig()
 	var zeroTime time.Time
 	tests := []struct {
 		name          string

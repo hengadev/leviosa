@@ -13,8 +13,8 @@ import (
 	miniredis "github.com/GaryHY/leviosa/internal/repository/redis"
 	sessionRepository "github.com/GaryHY/leviosa/internal/repository/redis/session"
 	userRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/pkg/config"
 	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
+	test "github.com/GaryHY/leviosa/tests/utils"
 )
 
 func SetupUser(t testing.TB, ctx context.Context, version int64) (*userService.Service, *userRepository.Repository) {
@@ -27,8 +27,9 @@ func SetupUser(t testing.TB, ctx context.Context, version int64) (*userService.S
 		t.Error(err)
 	}
 	userRepo := userRepository.New(ctx, db)
-	config := &config.SecurityConfig{}
-	userService := userService.New(userRepo, config)
+
+	conf := test.PrepareEncryptionConfig()
+	userService := userService.New(userRepo, conf)
 	return userService, userRepo
 }
 

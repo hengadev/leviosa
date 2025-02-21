@@ -16,7 +16,7 @@ import (
 )
 
 func TestUpdateUser(t *testing.T) {
-	conf := test.PrepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig()
 	user := factories.NewBasicUser(nil)
 	tests := []struct {
 		name          string

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net"
 	"time"
 
 	"github.com/GaryHY/leviosa/internal/domain/throttler"
@@ -44,7 +43,7 @@ func (t *Repository) Reset(ctx context.Context, key string) error {
 	err = t.client.Set(ctx, THROTTLERPREFIX+key, encoded, throttlerService.THROTTLERSESSIONDURATION).Err()
 	if err != nil {
 		switch {
-		case errors.Is(err, redis.ErrClosed), errors.As(err, &net.OpError{}):
+		case errors.Is(err, redis.ErrClosed):
 			return rp.NewDatabaseErr(err)
 		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
 			return rp.NewContextErr(err)

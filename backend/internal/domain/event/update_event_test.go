@@ -15,7 +15,7 @@ import (
 )
 
 func TestModifyEvent(t *testing.T) {
-	conf := test.PrepareEncryptionConfig(t)
+	conf := test.PrepareEncryptionConfig()
 	event := factories.NewBasicEvent(nil)
 
 	tests := []struct {
