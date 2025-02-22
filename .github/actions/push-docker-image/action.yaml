@@ -14,9 +14,6 @@ inputs:
   folder: 
     description: The folder where resides the dockerfile.
     required: true
-  file: 
-    description: The file with the dockerfile.
-    required: true
 
 runs:
   using: 'composite'
@@ -42,7 +39,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         context: ${{ inputs.folder }}
-        file: ./${{ inputs.folder }}/${{ inputs.file }}/
+        file: ./${{ inputs.folder }}/Dockerfile
         push: true
         tags: henga/leviosa:${{ inputs.tag }}
         build-args: |
