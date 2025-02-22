@@ -5,6 +5,7 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/media"
+	"github.com/GaryHY/leviosa/internal/domain/message"
 	"github.com/GaryHY/leviosa/internal/domain/otp"
 	"github.com/GaryHY/leviosa/internal/domain/product"
 	"github.com/GaryHY/leviosa/internal/domain/register"
@@ -25,6 +26,7 @@ type Repos struct {
 	Throttler   throttlerService.Reader
 	Product     productService.Reader
 	OTP         otpService.Reader
+	Message     messageService.Reader
 	SQLiteDB    *sql.DB
 	RedisClient *redis.Client
 }

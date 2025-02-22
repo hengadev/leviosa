@@ -4,6 +4,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/mail"
 	"github.com/GaryHY/leviosa/internal/domain/media"
+	"github.com/GaryHY/leviosa/internal/domain/message"
 	"github.com/GaryHY/leviosa/internal/domain/otp"
 	"github.com/GaryHY/leviosa/internal/domain/product"
 	"github.com/GaryHY/leviosa/internal/domain/register"
@@ -26,4 +27,5 @@ type Services struct {
 	OTP       *otpService.Service
 	Mail      *mailService.Service
 	Product   *productService.Service
+	Message   *messageService.Service
 }

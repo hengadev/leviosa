@@ -9,6 +9,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/event"
 	"github.com/GaryHY/leviosa/internal/domain/mail"
 	"github.com/GaryHY/leviosa/internal/domain/media"
+	"github.com/GaryHY/leviosa/internal/domain/message"
 	"github.com/GaryHY/leviosa/internal/domain/otp"
 	"github.com/GaryHY/leviosa/internal/domain/product"
 	"github.com/GaryHY/leviosa/internal/domain/register"
@@ -25,6 +26,7 @@ import (
 	"github.com/GaryHY/leviosa/internal/repository/redis/throttler"
 	"github.com/GaryHY/leviosa/internal/repository/s3"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/GaryHY/leviosa/internal/repository/sqlite/message"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/product"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/register"
 	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
@@ -81,6 +83,9 @@ func makeServices(
 	otpRepo := otpRepository.New(ctx, redisdb)
 	otpSvc := otpService.New(otpRepo)
 
+	messageRepo := messageRepository.New(ctx, sqlitedb)
+	messageSvc := messageService.New(messageRepo, config.GetSecurity())
+
 	// services
 	appSvcs = app.Services{
 		User:      userSvc,
@@ -94,18 +99,22 @@ func makeServices(
 		Stripe:    stripeSvc,
 		Product:   productSvc,
 		OTP:       otpSvc,
+		Message:   messageSvc,
 	}
 	// repos
 	appRepos = app.Repos{
-		User:      userRepo,
-		Event:     eventRepo,
-		Vote:      voteRepo,
-		Register:  registerRepo,
-		Media:     mediaRepo,
-		Session:   sessionRepo,
-		Throttler: throttlerRepo,
-		Product:   productRepo,
-		OTP:       otpRepo,
+		User:        userRepo,
+		Event:       eventRepo,
+		Vote:        voteRepo,
+		Register:    registerRepo,
+		Media:       mediaRepo,
+		Session:     sessionRepo,
+		Throttler:   throttlerRepo,
+		Product:     productRepo,
+		OTP:         otpRepo,
+		Message:     messageRepo,
+		SQLiteDB:    sqlitedb,
+		RedisClient: redisdb,
 	}
 	return appSvcs, appRepos, nil
 }
