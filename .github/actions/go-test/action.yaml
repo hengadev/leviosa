@@ -29,4 +29,6 @@ runs:
       env:
         CGO_ENABLED: 1
         GOOS: linux
-      run: go test ${{ inputs.test-path }}
+      run: |
+        cd backend
+        go test ${{ inputs.test-path }}

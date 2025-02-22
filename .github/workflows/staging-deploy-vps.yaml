@@ -18,8 +18,8 @@ jobs:
         with:
           filter: 'staging'
           app_env: 'staging'
-          backend_port: 3500
-          port: 3000
+          backend_port: 3501
+          port: 3001
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           frontend_docker_image: 'staging-frontend'

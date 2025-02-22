@@ -32,4 +32,6 @@ runs:
       env:
         CGO_ENABLED: 1
         GOOS: linux
-      run: go build -ldflags="-s" -v -o ${{ inputs.output-name }} ${{ inputs.build-path }}
+      run: |
+        cd backend
+        go build -ldflags="-s" -v -o ${{ inputs.output-name }} ${{ inputs.build-path }}
