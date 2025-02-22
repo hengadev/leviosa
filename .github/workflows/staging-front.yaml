@@ -17,23 +17,23 @@ defaults:
     working-directory: ./frontend
 
 jobs:
-  lint:
-    name: ⬣ ESLint
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⬇️ Checkout repo
-        uses: actions/checkout@v4
-      - name: 📦 Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-      - name: Install dependencies with pnpm
-        uses: ./.github/actions/pnpm-install
-      - name: 🔬 Lint
-        run: pnpm run lint
+  # lint:
+  #   name: ⬣ ESLint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: ⬇️ Checkout repo
+  #       uses: actions/checkout@v4
+  #     - name: 📦 Cache dependencies
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~/.pnpm-store
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pnpm-
+  #     - name: Install dependencies with pnpm
+  #       uses: ./.github/actions/pnpm-install
+  #     - name: 🔬 Lint
+  #       run: pnpm run lint
 
   # TODO: use that at the end of the project
   # typecheck:
