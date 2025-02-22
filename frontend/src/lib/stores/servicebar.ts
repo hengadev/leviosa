@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { writable, get } from 'svelte/store';
 
-import type {ServiceState} from "$lib/types"
+import type { ServiceState } from '$lib/types';
 
 function createNavbarStore(key: string, initValue: ServiceState) {
 	const store = writable<ServiceState>(initValue);

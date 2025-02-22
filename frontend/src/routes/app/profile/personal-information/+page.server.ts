@@ -1,5 +1,5 @@
-import { values } from "$lib/data"
+import { values } from '$lib/data';
 
 export function load() {
-    return { values }
+	return { values };
 }

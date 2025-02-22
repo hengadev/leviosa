@@ -1,11 +1,11 @@
-import type { Freelancer, Prestation, EventPickerMonth } from "$lib/types"
-import { prestataires, prestations, monthsData } from "$lib/data";
+import type { Freelancer, Prestation, EventPickerMonth } from '$lib/types';
+import { prestataires, prestations, monthsData } from '$lib/data';
 
 type PageRes = {
-    prestataires: Freelancer[]
-    prestations: Prestation[]
-    monthsData: EventPickerMonth[]
-}
+	prestataires: Freelancer[];
+	prestations: Prestation[];
+	monthsData: EventPickerMonth[];
+};
 
 // TODO: change that function to use a fetch when the server is set
 // async function getPrestataires(): Promise<Freelancer[]> {
@@ -21,5 +21,5 @@ type PageRes = {
 
 // NOTE: the simple with mock data
 export function load(): PageRes {
-    return { prestataires, prestations, monthsData }
+	return { prestataires, prestations, monthsData };
 }

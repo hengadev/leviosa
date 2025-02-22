@@ -1,3 +1,3 @@
-import type { Role } from "$lib/types"
+import type { Role } from '$lib/types';
 
-export let role: Role = "userPremium"
+export let role: Role = 'userPremium';

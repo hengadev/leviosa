@@ -1,2 +1,2 @@
-export * from "./navigationBar"
-export * from "./personal-information"
+export * from './navigationBar';
+export * from './personal-information';

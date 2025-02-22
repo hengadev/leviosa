@@ -1,8 +1,8 @@
-import type { Conversation, SessionNote } from "$lib/types"
+import type { Conversation, SessionNote } from '$lib/types';
 
-import { conversations, notes } from "$lib/data"
+import { conversations, notes } from '$lib/data';
 
-type PageRes = { conversations: Conversation[], notes: SessionNote[] }
+type PageRes = { conversations: Conversation[]; notes: SessionNote[] };
 export function load(): PageRes {
-    return { conversations, notes }
+	return { conversations, notes };
 }

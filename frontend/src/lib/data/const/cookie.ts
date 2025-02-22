@@ -1,1 +1,1 @@
-export const cookieName = "session_id"
+export const cookieName = 'session_id';
