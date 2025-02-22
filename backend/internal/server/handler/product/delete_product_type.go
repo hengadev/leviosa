@@ -12,7 +12,6 @@ import (
 	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/GaryHY/leviosa/internal/server/handler"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func (a *AppInstance) DeleteOffer(w http.ResponseWriter, r *http.Request) {
@@ -20,13 +19,13 @@ func (a *AppInstance) DeleteOffer(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -48,5 +47,5 @@ func (a *AppInstance) DeleteOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	serverutil.WriteResponse(w, fmt.Sprintf("product with ID %d successfully deleted", offerID), http.StatusNoContent)
+	http.Error(w, fmt.Sprintf("product with ID %d successfully deleted", offerID), http.StatusNoContent)
 }

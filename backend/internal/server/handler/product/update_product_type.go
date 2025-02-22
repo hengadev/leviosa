@@ -20,13 +20,13 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -35,10 +35,10 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "decode product  type", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		default:
 			logger.WarnContext(ctx, "invalid product type creation", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -54,5 +54,5 @@ func (a *AppInstance) UpdateProductType(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	serverutil.WriteResponse(w, fmt.Sprintf("product with name %s udpated", productType.Name), http.StatusNoContent)
+	http.Error(w, fmt.Sprintf("product with name %s udpated", productType.Name), http.StatusNoContent)
 }

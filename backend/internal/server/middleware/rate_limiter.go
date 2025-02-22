@@ -24,7 +24,7 @@ func PerIPRateLimit(lim, burst int) Middleware {
 			ctx := r.Context()
 			logger, err := contextutil.GetLoggerFromContext(ctx)
 			if err != nil {
-				serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -33,7 +33,7 @@ func PerIPRateLimit(lim, burst int) Middleware {
 			// IP := getClientIP(r)
 			if IP == "" || IP == "unknown" {
 				logger.WarnContext(ctx, "Invalid IP address in per IP rate limiter")
-				serverutil.WriteResponse(w, "Invalid IP address", http.StatusBadRequest)
+				http.Error(w, "Invalid IP address", http.StatusBadRequest)
 				return
 			}
 			// Check if the IP address is already present in the hash map
@@ -57,7 +57,7 @@ func PerIPRateLimit(lim, burst int) Middleware {
 				if err := serverutil.Encode(w, http.StatusTooManyRequests, message); err != nil {
 					rateLimitSalt := os.Getenv("RATE_LIMIT_SALT")
 					logger.WarnContext(ctx, fmt.Sprintf("Rate limited %q for %s to %s", domainutil.HashWithSalt(IP, rateLimitSalt), r.Method, r.URL.String()))
-					serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				return

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 // TODO:
@@ -23,7 +22,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
 			if !ok {
 				slog.ErrorContext(ctx, "logger not found in context")
-				serverutil.WriteResponse(w, "logger not found in context", http.StatusInternalServerError)
+				http.Error(w, "logger not found in context", http.StatusInternalServerError)
 				return
 			}
 
@@ -49,7 +48,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
 				logger.ErrorContext(ctx, "get sessionID from request header", "error", err)
-				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -57,7 +56,7 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			session, err := sessionGetter(ctx, sessionID)
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
-				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 

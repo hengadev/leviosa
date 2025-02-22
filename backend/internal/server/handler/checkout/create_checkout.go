@@ -20,7 +20,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		logger, err := contextutil.GetLoggerFromContext(ctx)
 		if err != nil {
 			slog.ErrorContext(ctx, "logger not found in context", "error", err)
-			serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -28,7 +28,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		_ = userID
 		if !ok {
 			logger.ErrorContext(ctx, "user ID not found in context")
-			serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+			http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -36,7 +36,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		priceID, err := a.Repos.Event.GetPriceID(ctx, eventID)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to get priceID for event", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		_ = priceID
@@ -45,7 +45,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		sessionURL, err := a.Svcs.Stripe.CreateCheckoutSession(ctx, price_temp, 1)
 		if err != nil {
 			logger.ErrorContext(ctx, "failed to create checkout session", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 		// NOTE: Can not redirect with that for some reason. So I want to send the url in json format. Yet this is in the tutorial
@@ -64,7 +64,7 @@ func (a *AppInstance) CreateCheckoutSession() http.Handler {
 		}
 		if err = serverutil.Encode(w, http.StatusInternalServerError, Response{URL: sessionURL}); err != nil {
 			logger.ErrorContext(ctx, "failed to encode checkout session URL", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	})

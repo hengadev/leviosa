@@ -18,12 +18,12 @@ func (h *AppInstance) GetUsersToApprove(w http.ResponseWriter, r *http.Request) 
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -32,18 +32,18 @@ func (h *AppInstance) GetUsersToApprove(w http.ResponseWriter, r *http.Request) 
 		switch {
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database getting pending users list failed")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, "unexpected error while getting pending users list")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error, deadline or timeout while getting pending users list")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, int(http.StatusOK), users); err != nil {
 		logger.ErrorContext(ctx, "failed to encode pendings users list", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 	}
 }

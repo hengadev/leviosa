@@ -48,7 +48,7 @@ func Auth(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
 
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
 			if !ok {
-				serverutil.WriteResponse(w, "logger not found in context", http.StatusInternalServerError)
+				http.Error(w, "logger not found in context", http.StatusInternalServerError)
 				return
 			}
 
@@ -57,20 +57,20 @@ func Auth(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
 			sessionID, err := getSessionIDFromRequest(r)
 			if err != nil {
 				logger.ErrorContext(ctx, "failed to get sessionID from the request", "error", err)
-				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// get session object from session repo
 			session, err := sessionGetter(ctx, sessionID)
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
-				serverutil.WriteResponse(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			// validate session
 			if err := session.Valid(ctx, expectedRole); err != nil {
 				logger.ErrorContext(ctx, "failed to validate session", "error", err)
-				serverutil.WriteResponse(w, err.Error(), http.StatusUnauthorized)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 

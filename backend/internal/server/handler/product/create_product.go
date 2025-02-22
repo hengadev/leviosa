@@ -19,13 +19,13 @@ func (a *AppInstance) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "validate role from context", "error", err)
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 
@@ -34,10 +34,10 @@ func (a *AppInstance) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "decode product", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		default:
 			logger.WarnContext(ctx, "invalid product creation", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
@@ -45,13 +45,13 @@ func (a *AppInstance) CreateOffer(w http.ResponseWriter, r *http.Request) {
 	productID, err := a.Svcs.Stripe.CreateProduct(ctx, &product)
 	if errors.Is(err, domain.ErrNotCreated) {
 		logger.WarnContext(ctx, "stripe product not created")
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 	priceID, err := a.Svcs.Stripe.CreatePrice(ctx, productID, product.Price)
 	if errors.Is(err, domain.ErrNotCreated) {
 		logger.WarnContext(ctx, "stripe price not created")
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 	}
 	product.PriceID = priceID
@@ -60,18 +60,18 @@ func (a *AppInstance) CreateOffer(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "ivnalid product given")
-			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		case errors.Is(err, domain.ErrNotCreated):
 			logger.WarnContext(ctx, "product not created")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database query create product failed")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, "context error", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
-	serverutil.WriteResponse(w, "product successfully created", http.StatusCreated)
+	http.Error(w, "product successfully created", http.StatusCreated)
 }

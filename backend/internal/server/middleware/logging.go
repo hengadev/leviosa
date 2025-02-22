@@ -10,7 +10,6 @@ import (
 
 	"github.com/GaryHY/leviosa/pkg/contextutil"
 	"github.com/GaryHY/leviosa/pkg/domainutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {
@@ -27,14 +26,14 @@ func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			// IP := r.Header.Get("X-Client-IP")
 			if IP == "" {
 				slog.ErrorContext(ctx, "client IP not found with required header")
-				serverutil.WriteResponse(w, "Cannot determine Client IP", http.StatusBadRequest)
+				http.Error(w, "Cannot determine Client IP", http.StatusBadRequest)
 				return
 			}
 
 			loggingSalt := os.Getenv("LOGGING_SALT")
 			if loggingSalt == "" {
 				slog.ErrorContext(ctx, "logging salt not found in environment variables")
-				serverutil.WriteResponse(w, "Missing environment variable: LOGGING_SALT", http.StatusInternalServerError)
+				http.Error(w, "Missing environment variable: LOGGING_SALT", http.StatusInternalServerError)
 				return
 			}
 

@@ -59,15 +59,3 @@ func Encode[T any](w http.ResponseWriter, status int, v T) error {
 	}
 	return nil
 }
-
-func WriteResponse(w http.ResponseWriter, message string, status int) error {
-	resBody := struct {
-		Message string `json:"message"`
-	}{message}
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(resBody); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return err
-	}
-	return nil
-}

@@ -16,12 +16,12 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	// TODO:
@@ -33,11 +33,11 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 		switch {
 		case errors.Is(err, serverutil.ErrDecodeJSON):
 			logger.WarnContext(ctx, "failed to decode user", "error", err)
-			serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+			http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 			return
 		default:
 			logger.WarnContext(ctx, "validate user")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -47,18 +47,18 @@ func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Req
 		switch {
 		default:
 			logger.WarnContext(ctx, "failed to create account", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	}
 	// send email to user to tell them that their account have been approved
 	if errs := h.Svcs.Mail.WelcomeUser(ctx, user); len(errs) > 0 {
 		logger.WarnContext(ctx, "failed to send welcome email to new added user", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 
 	}
 
 	logger.InfoContext(ctx, "user successfully approved")
-	serverutil.WriteResponse(w, "user approved", http.StatusCreated)
+	http.Error(w, "user approved", http.StatusCreated)
 }

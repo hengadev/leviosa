@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func (h *AppInstance) CheckHealth(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +14,7 @@ func (h *AppInstance) CheckHealth(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	services := make(map[string]string)

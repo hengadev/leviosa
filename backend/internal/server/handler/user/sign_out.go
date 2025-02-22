@@ -10,7 +10,6 @@ import (
 	"github.com/GaryHY/leviosa/internal/domain/session"
 	"github.com/GaryHY/leviosa/internal/server/handler"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +17,7 @@ func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -26,7 +25,7 @@ func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionService.SessionName)
 	if err != nil {
 		logger.ErrorContext(ctx, "get session cookie for signout", "error", err)
-		serverutil.WriteResponse(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
 		return
 
 	}
@@ -37,16 +36,16 @@ func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, domain.ErrInvalidValue):
 			logger.WarnContext(ctx, "invalid value in session validation")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrQueryFailed):
 			logger.WarnContext(ctx, "database removing session for user query failed")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrNotFound):
 			logger.WarnContext(ctx, "user session not found")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, domain.ErrUnexpectedType):
 			logger.WarnContext(ctx, "unexpected error removing user session")
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}

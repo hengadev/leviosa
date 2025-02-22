@@ -16,7 +16,7 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		logger.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -31,7 +31,7 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := serverutil.Decode[models.User](r.Body)
 	if err != nil {
 		logger.ErrorContext(ctx, "failed to decode user", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 	// modify user
@@ -40,7 +40,7 @@ func (a *AppInstance) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		// TODO: handle the validation error to just send back the fields that are not updated because prohibited from updates
 		default:
 			logger.ErrorContext(ctx, "failed to modify the user", "error", err)
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 			return
 		}
 	}

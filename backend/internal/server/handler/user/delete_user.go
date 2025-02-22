@@ -7,7 +7,6 @@ import (
 
 	"github.com/GaryHY/leviosa/internal/server/handler"
 	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
 func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -16,14 +15,14 @@ func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
 	if !ok {
 		logger.ErrorContext(ctx, "user ID not found in context")
-		serverutil.WriteResponse(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+		http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -33,14 +32,14 @@ func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	err = a.Svcs.User.DeleteUser(ctx, userID)
 	if err != nil {
 		logger.ErrorContext(ctx, "delete user:", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 	// - call the service repo to delete all user's session
 	err = a.Svcs.Session.RemoveSession(ctx, sessionID)
 	if err != nil {
 		logger.ErrorContext(ctx, "delete user session:", "error", err)
-		serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		return
 	}
 }

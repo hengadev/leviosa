@@ -19,12 +19,12 @@ func (a *AppInstance) FindEventByID(w http.ResponseWriter, r *http.Request) {
 	logger, err := contextutil.GetLoggerFromContext(ctx)
 	if err != nil {
 		slog.ErrorContext(ctx, "logger not found in context", "error", err)
-		serverutil.WriteResponse(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
 		logger.ErrorContext(ctx, "get role from request", "error", err)
-		serverutil.WriteResponse(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
+		http.Error(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
 		return
 	}
 	eventID := r.PathValue("id")
@@ -33,19 +33,19 @@ func (a *AppInstance) FindEventByID(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, rp.ErrContext):
 			logger.WarnContext(ctx, fmt.Sprintf("context error while trying to get event with ID %s", eventID))
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrNotFound):
 			logger.WarnContext(ctx, "failed to find event with ID %q")
-			serverutil.WriteResponse(w, handler.NewNotFoundErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewNotFoundErr(err), http.StatusInternalServerError)
 		case errors.Is(err, rp.ErrDatabase):
 			logger.WarnContext(ctx, fmt.Sprintf("database query error while trying to get event with ID %s", eventID))
-			serverutil.WriteResponse(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
 		return
 	}
 	if err := serverutil.Encode(w, int(http.StatusOK), event); err != nil {
 		logger.WarnContext(ctx, "failed to encode event ID for user")
-		serverutil.WriteResponse(w, fmt.Sprintf("Unable to encode event with ID of %q", eventID), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Unable to encode event with ID of %q", eventID), http.StatusInternalServerError)
 		return
 	}
 }
