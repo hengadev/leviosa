@@ -34,8 +34,7 @@
 	{@render buttonIcon(RightIcon)}
 </button>
 
-{#snippet buttonIcon(
-    Icon: typeof import("lucide-svelte")}
+{#snippet buttonIcon(Icon: any)}
 	{#if Icon}
 		<div class="icon" style:display={Icon ? 'visible' : 'none'}>
 			<Icon />

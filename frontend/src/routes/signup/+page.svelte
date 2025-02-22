@@ -161,7 +161,4 @@
 	h2 {
 		font-weight: 800;
 	}
-	h3 {
-		font-weight: 600;
-	}
 </style>

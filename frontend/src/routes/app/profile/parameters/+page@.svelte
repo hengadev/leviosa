@@ -70,9 +70,9 @@
 		left: 0;
 		right: 0;
 	}
-	.shadow {
-		box-shadow: rgba(28, 24, 24, 0.16) 0px -2px 8px;
-	}
+	/* .shadow { */
+	/* 	box-shadow: rgba(28, 24, 24, 0.16) 0px -2px 8px; */
+	/* } */
 	.back {
 		width: fit-content;
 		height: fit-content;

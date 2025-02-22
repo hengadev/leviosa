@@ -13,7 +13,9 @@
 	}
 	type Content = 'Photos' | 'Videos';
 	let content: Content = $state('Photos');
-	let subcontent: Content | 'Albums' = $state(content);
+	$effect(() => {
+		let subcontent: Content | 'Albums' = $state(content);
+	});
 	function changeContent(newContent: Content) {
 		content = newContent;
 	}
@@ -63,7 +65,7 @@
 		{#if content === 'Photos'}
 			{#each eventsPhotos as eventPhoto}
 				{#each eventPhoto.photos as content, index}
-					<button onclick={displayPhoto} id="photo_{index}" class="photo-button">
+					<button aria-label="photo" onclick={displayPhoto} id="photo_{index}" class="photo-button">
 						<div
 							class="photo"
 							style="background-image: url({content}); background-size: cover;;"
@@ -74,7 +76,7 @@
 		{:else}
 			{#each eventsVideos as eventVideo}
 				{#each eventVideo.videos as video, index}
-					<button onclick={displayPhoto} id="photo_{index}" class="video-button">
+					<button aria-label="video" onclick={displayPhoto} id="photo_{index}" class="video-button">
 						<div
 							class="video"
 							style="background-image: url({video.thumbnail}); background-size: cover;;"

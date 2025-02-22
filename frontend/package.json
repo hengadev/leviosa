@@ -51,6 +51,7 @@
 	"type": "module",
 	"dependencies": {
 		"@internationalized/date": "^3.5.5",
+		"@oslojs/jwt": "^0.3.0",
 		"@pilcrowjs/object-parser": "^0.0.4",
 		"arctic": "^1.9.2",
 		"bits-ui": "^0.21.13",
