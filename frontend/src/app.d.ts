@@ -4,17 +4,18 @@ declare global {
 	namespace App {
 		// interface Error {}
 		interface Locals {
+			// TODO: remove the "?" when done with the code
 			user: {
-				email: string;
+				email?: string;
 				role: string;
-				lastname: string;
-				firstname: string;
-				gender: string;
-				birthdate: string;
-				telephone: string;
-				address: string;
-				city: string;
-				postalcard: string;
+				lastname?: string;
+				firstname?: string;
+				gender?: string;
+				birthdate?: string;
+				telephone?: string;
+				address?: string;
+				city?: string;
+				postalCode?: number;
 			};
 		}
 		// interface PageData {}

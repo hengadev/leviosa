@@ -1,38 +1,58 @@
 package userHandler
 
 import (
-	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	"github.com/google/uuid"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
 )
 
-func (h *Handler) Signout() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-		// get session value from cookie
-		sessionID := r.Cookies()[0].Value
-		if err := uuid.Validate(sessionID); err != nil {
-			slog.ErrorContext(ctx, "get sessionID from cookie:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusBadRequest)
-			return
+func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "logger not found in context", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// get session value from cookie
+	cookie, err := r.Cookie(sessionService.SessionName)
+	if err != nil {
+		logger.ErrorContext(ctx, "get session cookie for signout", "error", err)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		return
+
+	}
+	sessionID := cookie.Value
+
+	// remove session with sessionID
+	if err := a.Svcs.Session.RemoveSession(ctx, sessionID); err != nil {
+		switch {
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, "invalid value in session validation")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database removing session for user query failed")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrNotFound):
+			logger.WarnContext(ctx, "user session not found")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected error removing user session")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
-		// remove session with sessionID
-		if err := h.Svcs.Session.RemoveSession(ctx, sessionID); err != nil {
-			slog.ErrorContext(ctx, "remove session:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		// send cookie to inform client that cookie is no longer valid
-		http.SetCookie(w, &http.Cookie{
-			Name:    sessionService.SessionName,
-			Value:   "",
-			Expires: time.Now(),
-		})
+		return
+	}
+	// send cookie to inform client that cookie is no longer valid
+	http.SetCookie(w, &http.Cookie{
+		Name:    sessionService.SessionName,
+		Value:   "",
+		Expires: time.Now(),
 	})
 }

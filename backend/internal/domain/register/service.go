@@ -1,4 +1,4 @@
-package register
+package registerService
 
 type Service struct {
 	Repo ReadWriter

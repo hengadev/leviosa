@@ -2,18 +2,19 @@ package server
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"time"
 
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/leviosa/internal/server/app"
+	mw "github.com/GaryHY/leviosa/internal/server/middleware"
 )
 
 type Server struct {
 	srv *http.Server
 }
 
-func New(handler *handler.Handler, opts ...ServerOption) *Server {
+func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
@@ -29,14 +30,16 @@ func New(handler *handler.Handler, opts ...ServerOption) *Server {
 	for _, opt := range opts {
 		opt(server)
 	}
+
 	// create router and add routes
-	server.addRoutes(handler)
+	server.addRoutes(appCtx)
+
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.Auth(handler.Repos.Session),
-		mw.EnableApplicationJSON,
-		mw.Cors,
-		mw.AddRequestID,
+		mw.Auth(appCtx.Svcs.Session.GetSession),
+		mw.SetUserContext(appCtx.Svcs.Session.GetSession),
+		mw.AttachLogger(logger),
+		mw.SetOrigin,
 	)
 	return server
 }
@@ -58,7 +61,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 }
 
 // A function to add middleware to all the routes of the multiplexer.
-func (s *Server) Use(middlewares ...mw.Middleware) {
+func (s *Server) Use(middlewares ...func(http.Handler) http.Handler) {
 	for _, mw := range middlewares {
 		s.srv.Handler = mw(s.srv.Handler)
 	}

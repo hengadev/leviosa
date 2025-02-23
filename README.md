@@ -4,7 +4,7 @@ _Note: This is the initial iteration of the README for the "Leviosa" project. It
 
 ## Overview
 
-"Leviosa" is an activity management software designed to streamline and optimize the tracking and management of daily tasks and operations within an organization. By recording and categorizing activities, it aims to enhance productivity and provide valuable insights into workflow efficiency. :contentReference[oaicite:0]{index=0}
+"Leviosa" is an activity management software designed to streamline and optimize the tracking and management of daily tasks and operations within an organization. By recording and categorizing activities, it aims to enhance productivity and provide valuable insights into workflow efficiency.
 
 ## Technology Stack
 

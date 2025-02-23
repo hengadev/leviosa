@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	util "github.com/GaryHY/event-reservation-app/pkg/sqliteutil"
+	util "github.com/GaryHY/leviosa/pkg/sqliteutil"
 	"github.com/pressly/goose/v3"
 )
 

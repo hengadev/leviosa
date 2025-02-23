@@ -2,29 +2,48 @@ package userService
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain"
-
-	"golang.org/x/crypto/bcrypt"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/security"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (s *Service) ValidateCredentials(ctx context.Context, creds *Credentials) (int, Role, error) {
-	fail := func(err error) (int, Role, error) {
-		return 0, UNKNOWN, app.NewAuthErr(err)
-	}
-	// get credential from database
-	userID, password, role, err := s.repo.GetCredentials(ctx, creds)
+// ValidateCredentials verifies the user's credentials by checking if the provided email and password
+// match the stored data in the repository.
+//
+// Parameters:
+//   - ctx: The context used for the operation.
+//   - user: The user object containing the email and password to be validated.
+//
+// Returns:
+//   - error: An error indicating any issues during the validation process. It can return:
+//   - NewNotFoundErr if the email is not found.
+//   - NewQueryFailedErr if there is a query failure.
+//   - NewInvalidValueErr if the password verification fails.
+func (s *Service) ValidateCredentials(ctx context.Context, user *models.UserSignIn) error {
+	hashedEmail := security.HashEmail(user.Email)
+	hashedPassword, err := s.repo.GetHashedPasswordByEmail(ctx, hashedEmail)
 	if err != nil {
-		fail(err)
+		switch {
+		case errors.Is(err, rp.ErrNotFound):
+			return domain.NewNotFoundErr(err)
+		case errors.Is(err, rp.ErrContext):
+			return err
+		case errors.Is(err, rp.ErrDatabase):
+			return domain.NewQueryFailedErr(err)
+		default:
+			return domain.NewUnexpectTypeErr(err)
+		}
 	}
-	// check if userID and role are valid
-	if userID == 0 || role == UNKNOWN {
-		fail(fmt.Errorf("invalid userID and role from database"))
+	ok, err := s.VerifyPassword(user.Password, hashedPassword)
+	if err != nil {
+		return domain.NewInvalidValueErr(fmt.Sprintf("invalid password verification: %s", err.Error()))
 	}
-	// check if same password
-	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(creds.Password)); err != nil {
-		return fail(err)
+	if !ok {
+		return domain.NewInvalidValueErr("password does not match")
 	}
-	return userID, role, nil
+	return nil
 }

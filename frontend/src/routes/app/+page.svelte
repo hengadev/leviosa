@@ -1,83 +1,59 @@
 <script lang="ts">
-	// data
-	import type { PageData } from './$types';
-	export let data: PageData;
-	$: ({ accordionItems, nextVotes } = data);
-	$: _nextVotes = JSON.parse(JSON.stringify(nextVotes));
-	// user data
-	import { page } from '$app/stores';
-	const name = $page.data.user.firstname;
-	// components
-	import * as Accordion from '$lib/components/ui/accordion';
-	import CardNextEvent from '$lib/components/home/CardNextEvent.svelte';
-	import NextVote from '$lib/components/home/NextVote.svelte';
 	import { navstate } from '$lib/stores/navbar';
-	navstate.set('home'); // just to forget the value stored in localstore when reconecting and I had the page to another link.
+	navstate.set('accueil'); // just to forget the value stored in localstore when reconecting and I had the page to another link.
+
+	import NoEventCard from '$lib/components/ui/NoEventCard.svelte';
+	import EventCard from '$lib/components/ui/EventCard.svelte';
+	import InstallHeader from './InstallHeader.svelte';
+	import Header from './Header.svelte';
+	import Section from './Section.svelte';
+	import ServiceCarousel from './ServiceCarousel.svelte';
+	import QRCode from './QRCode.svelte';
+
+	import type { PageData } from './$types';
+	interface Props {
+		data: PageData;
+	}
+	let { data }: Props = $props();
+	const { name, qrcode } = data;
+
+	import Drawer from '$lib/components/Drawer.svelte';
+
+	let isDrawerOpen = $state(false);
+	function toggleDrawer() {
+		console.log('toggling the drawer');
+		return () => (isDrawerOpen = !isDrawerOpen);
+	}
 </script>
 
-{#if $page.data.user}
-	<div class="content">
-		<h2 class="title">Bienvenue, {name}</h2>
-		<h3 class="subtitle">Explication du concept</h3>
-		<div class="accordion">
-			<Accordion.Root>
-				{#each accordionItems as item, i}
-					<Accordion.Item value={`item-${i}`}>
-						<Accordion.Trigger>{item.trigger}</Accordion.Trigger>
-						<Accordion.Content>{item.content}</Accordion.Content>
-					</Accordion.Item>
-				{/each}
-			</Accordion.Root>
-		</div>
-		<h3 class="subtitle">Votre prochain evenement</h3>
-		<CardNextEvent eventId="some eventId" />
-		<h3 class="subtitle">Les derniers votes ouverts.</h3>
-		<div class="votes">
-			{#each _nextVotes as vote}
-				<NextVote {...vote} />
-			{/each}
-		</div>
+<InstallHeader />
+<div class="content flow relative" style="--flow-space: 3rem;">
+	<Header {name} {toggleDrawer} />
+	<Section title="decouvrez nos services" cta="Voir tout">
+		<ServiceCarousel />
+	</Section>
+	<Section title="votre prochain evenement">
+		<EventCard />
+	</Section>
+	<Section title="votre prochain evenement">
+		<NoEventCard />
+	</Section>
+	<div class="next-event container grid" style="--gap: 1rem;">
+		<h3 class="fs-h3 subtitle">Tu peux aussi revoir...</h3>
+		<p>Jean Dupont, ton dernier prestataire massage</p>
 	</div>
-{/if}
+</div>
+<Drawer bind:isOpen={isDrawerOpen} closeDrawer={() => (isDrawerOpen = false)}>
+	<QRCode {qrcode} />
+</Drawer>
 
 <style>
-	/* TODO: make the fonts responsive */
 	.content {
-		/* padding: 2rem 1.5rem; */
-		padding-inline: 1.5rem;
-		display: grid;
-		overflow-y: scroll;
-		margin-bottom: 12rem;
+		padding-bottom: 7rem;
 	}
-
-	.title {
-		font-size: 1.5rem;
-		color: #f67373;
-		font-weight: 700;
-	}
-
 	.subtitle {
-		font-size: 1.2rem;
-		color: rgba(255, 255, 245, 0.86);
+		color: black;
+		font-size: var(--fs-1);
 		font-weight: 600;
-		margin-top: 3rem;
-	}
-
-	.accordion {
-		border-radius: 0.5rem;
-		border: 1px solid rgba(60, 60, 67, 0.78);
-		padding: 1rem;
-		padding-bottom: 0;
-	}
-	.accordion,
-	.votes {
-		margin-top: 1rem;
-	}
-
-	.votes {
-		display: flex;
-		align-items: center;
-		justify-content: space-evenly;
-		justify-content: space-around;
 	}
 </style>

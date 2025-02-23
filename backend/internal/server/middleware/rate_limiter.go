@@ -1,33 +1,81 @@
 package middleware
 
 import (
+	"fmt"
+	"net"
 	"net/http"
+	"os"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/domainutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 
 	"golang.org/x/time/rate"
 )
 
-// NOTE: article : AAAAB3NzaC1yc2EAAAADAQABAAABgQDHCvLaXiYR8aMKctmwmtpBykB1JAXcNnK07ciHCKUbuWqgNRUT9M3g0zr8Jab+v8IjKLaa1manH+ynkKVVzJY+PbG7kpMUGSCfId3XHqC7WrmBvNNcUNcIcgptZf15ZBIpHD6YhDNDCmBZzM5b6XV+S3fGXVqZE0ARMrnbLEtyA8ZR+MD7S8xsiptJgZU3chNO+R/eLZwuqzbH96rjvhlnkqDcrGccihbOjnReBfpec7dgj4qy7knn5b4uh05LcCY0EXMtDI4MHN6Tv619FJ7PLv2gmtpflFP1ZiXWBUy/7nB20j2yTrPeDx0khxhLsPumAIdnPcdLCYzpx9+dlxRCvbv1G8KLFJ8MbqeurGHjERLHRQCTYJ7z0ALiDxB/Whh26yGAJmcjPBksovK3VQmXW9wDbSv3B5ZOPViMDhlUDHyanstUBhyzi0hgsu+kpWwhmMoMKjJBQaLoC5kxw/M7TQFUWzfai1B6TAtKrAHeuH9OlgAXj98nx4Q1YEfCKtE= henga@henga-KPL-W0X
+// Map that holds hashed IP address and their respective rate limiter using the token bucket algorithm.
+var ipLimiters = map[string]*rate.Limiter{}
 
-func rateLimiter(next http.Handler) http.Handler {
-	// TODO: find the right value for that.
-	limiter := rate.NewLimiter(2, 4)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !limiter.Allow() {
-			message := struct {
-				Status string
-				Body   string
-			}{
-				Status: "Request failed",
-				Body:   "The API is at capacity, try again later",
-			}
-			if err := serverutil.Encode(w, http.StatusTooManyRequests, message); err != nil {
+// PerIPRateLimit rates limit an endpoint at the rate of r attempt per ID per second. Client can allow up to b attempts at most.
+func PerIPRateLimit(lim, burst int) Middleware {
+	return func(next Handlerfunc) Handlerfunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			// TODO: need a system to remove keys after a certain time
+			ctx := r.Context()
+			logger, err := contextutil.GetLoggerFromContext(ctx)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			return
+
+			// I just make a fake IP for now, I know my function to work:
+			IP := "127.0.0.1"
+			// IP := getClientIP(r)
+			if IP == "" || IP == "unknown" {
+				logger.WarnContext(ctx, "Invalid IP address in per IP rate limiter")
+				http.Error(w, "Invalid IP address", http.StatusBadRequest)
+				return
+			}
+			// Check if the IP address is already present in the hash map
+			limiter, exists := ipLimiters[IP]
+			if !exists {
+				// If the IP address is not present in the hash map, create a new rate limiter
+				// limiter = rate.NewLimiter(2, 4)
+				limiter = rate.NewLimiter(rate.Limit(lim), burst)
+				ipLimiters[IP] = limiter
+			}
+
+			// Use the rate limiter to check if the request should be allowed
+			if !limiter.Allow() {
+				message := struct {
+					Status string
+					Body   string
+				}{
+					Status: "Request failed",
+					Body:   "The API is at capacity, try again later",
+				}
+				if err := serverutil.Encode(w, http.StatusTooManyRequests, message); err != nil {
+					rateLimitSalt := os.Getenv("RATE_LIMIT_SALT")
+					logger.WarnContext(ctx, fmt.Sprintf("Rate limited %q for %s to %s", domainutil.HashWithSalt(IP, rateLimitSalt), r.Method, r.URL.String()))
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				return
+			}
+
+			next(w, r)
 		}
-		next.ServeHTTP(w, r)
-	})
+	}
+}
+
+// getClientIP retrieves the client IP set in the custom header 'X-Client-IP'. It returns an empty string if the IP address sent is invalid, unknown or could ne be parsed.
+func getClientIP(r *http.Request) string {
+	clientIP := r.Header.Get("X-Client-IP")
+	if clientIP == "" || clientIP == "unknown" {
+		return ""
+	}
+	if ip := net.ParseIP(clientIP); ip == nil {
+		return ""
+	}
+	return clientIP
 }

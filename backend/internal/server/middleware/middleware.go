@@ -1,14 +1,14 @@
 package middleware
 
-import "net/http"
+import (
+	"context"
+	"net/http"
 
-type Middleware func(http.Handler) http.Handler
+	"github.com/GaryHY/leviosa/internal/domain/session"
+)
 
-// to add a list of middleware together.
-func Use(mws ...Middleware) http.Handler {
-	var h http.Handler
-	for _, mw := range mws {
-		h = mw(h)
-	}
-	return h
-}
+type Handlerfunc func(http.ResponseWriter, *http.Request)
+
+type Middleware func(Handlerfunc) Handlerfunc
+
+type sessionGetterFunc func(ctx context.Context, sessionID string) (*sessionService.Session, error)
