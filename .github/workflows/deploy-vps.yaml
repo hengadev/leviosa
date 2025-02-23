@@ -22,9 +22,7 @@ jobs:
           port: 3000
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          frontend_docker_image: 'production-frontend'
-          backend_docker_image: 'production-backend'
-          compose_file: 'compose'
+          compose_file: 'Compose'
           public_url: 'https://leviosa.care'
           aws_region: ${{ secrets.AWS_REGION }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}

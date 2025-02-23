@@ -11,12 +11,6 @@ inputs:
   dockerhub_token: 
     description: Docker Hub access token for authentication
     required: true
-  frontend_docker_image: 
-    description: Tag for the frontend Docker image (e.g., 'frontend-staging' or 'frontend')
-    required: true
-  backend_docker_image: 
-    description: Tag for the backend Docker image (e.g., 'backend-staging' or 'backend')
-    required: true
   compose_file:
     description: Name of the Docker Compose file without the .compose.yaml extension
     required: true
@@ -26,11 +20,9 @@ inputs:
   backend_port:
     description: 'Port number for backend service'
     required: true
-    default: '3500'
   port:
     description: 'Port number for frontend service'
     required: true
-    default: '3000'
   public-url:
     description: Public URL where the application is accessible
     required: true
@@ -100,9 +92,9 @@ runs:
           echo "=== Deployment started at $(date) ==="
           
           echo "Pulling latest images..."
-          docker pull henga/leviosa:${{ inputs.frontend_docker_image }}
-          docker pull henga/leviosa:${{ inputs.backend_docker_image }}
-          
+          docker pull henga/leviosa:${{ inputs.app_env }}-frontend
+          docker pull henga/leviosa:${{ inputs.app_env }}-backend
+
           echo "Starting services..."
           docker compose -f ${{ inputs.compose_file }}.yaml up -d --force-recreate
           
