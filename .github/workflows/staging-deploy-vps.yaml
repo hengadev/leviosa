@@ -1,8 +1,8 @@
-name: 🚀 Deploy staging application
+name: 🛠️Deploy staging application
 
 on:
   workflow_run:
-    workflows: ["🌐 Staging Front", "🛢Staging Back"]
+    workflows: ["🌐 Staging Front", "🛢 Staging Back"]
     types:
       - completed
 

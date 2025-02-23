@@ -2,7 +2,7 @@ name: 🚀 Deploy production application
 
 on:
   workflow_run:
-    workflows: ["🌐 Front", "🛢Back"]
+    workflows: ["🌐 Front", "🛢 Back"]
     types:
       - completed
 

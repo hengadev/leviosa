@@ -1,5 +1,5 @@
 <script lang="ts">
-	// TODO: change the button type to submit when I do all the work with the form handling
+	// TODO: change the button type to submit when I do the work with form handling
 	import Google from '../assets/google.svelte';
 	import Apple from '../assets/apple.svelte';
 	import { Mail, LogIn, Slack } from 'lucide-svelte';
@@ -135,7 +135,7 @@
 		overflow: hidden;
 	}
 	.left-content {
-		outline: 2px solid red;
+		/* outline: 2px solid red; */
 		width: 100%;
 		background-color: hsl(var(--clr-light-primary));
 		padding-bottom: 1rem;
@@ -144,7 +144,7 @@
 	}
 
 	.right-content {
-		outline: 2px solid blue;
+		/* outline: 2px solid blue; */
 		width: 100%;
 		height: 100%;
 		display: none;
