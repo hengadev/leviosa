@@ -2,33 +2,102 @@ package sessionService_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/session"
-	"github.com/GaryHY/event-reservation-app/tests"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/session"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+
+	"github.com/GaryHY/test-assert"
+	"github.com/google/uuid"
 )
 
 func TestRemoveSession(t *testing.T) {
+	sessionID := uuid.NewString()
 	tests := []struct {
-		sessionID string
-		initMap   KVMap
-		wantErr   bool
-		name      string
+		name          string
+		sessionID     string
+		mockRepo      func() *MockRepo
+		expectedError error
 	}{
-		{sessionID: baseSession.ID, initMap: nil, wantErr: true, name: "empty repository"},
-		{sessionID: test.GenerateRandomString(12), initMap: initMap, wantErr: true, name: "id not in database"},
-		{sessionID: baseSession.ID, initMap: initMap, wantErr: false, name: "nominal case"},
+		{
+			name:      "invalid session ID [not UUID]",
+			sessionID: "",
+			mockRepo: func() *MockRepo {
+				return &MockRepo{}
+			},
+			expectedError: domain.ErrInvalidValue,
+		},
+		{
+			name:      "database error",
+			sessionID: sessionID,
+			mockRepo: func() *MockRepo {
+				return &MockRepo{
+					RemoveSessionFunc: func(ctx context.Context, sessionID string) error {
+						return rp.ErrDatabase
+					},
+				}
+			},
+			expectedError: domain.ErrQueryFailed,
+		},
+		{
+			name:      "context error",
+			sessionID: sessionID,
+			mockRepo: func() *MockRepo {
+				return &MockRepo{
+					RemoveSessionFunc: func(ctx context.Context, sessionID string) error {
+						return rp.ErrContext
+					},
+				}
+			},
+			expectedError: rp.ErrContext,
+		},
+		{
+			name:      "unexpected error",
+			sessionID: sessionID,
+			mockRepo: func() *MockRepo {
+				return &MockRepo{
+					RemoveSessionFunc: func(ctx context.Context, sessionID string) error {
+						return errors.New("unexpected error")
+					},
+				}
+			},
+			expectedError: domain.ErrUnexpectedType,
+		},
+		{
+			name:      "key does not exist",
+			sessionID: sessionID,
+			mockRepo: func() *MockRepo {
+				return &MockRepo{
+					RemoveSessionFunc: func(ctx context.Context, sessionID string) error {
+						return rp.ErrNotFound
+					},
+				}
+			},
+			expectedError: domain.ErrNotFound,
+		},
+		{
+			name:      "successful case",
+			sessionID: sessionID,
+			mockRepo: func() *MockRepo {
+				return &MockRepo{
+					RemoveSessionFunc: func(ctx context.Context, sessionID string) error {
+						return nil
+					},
+				}
+			},
+			expectedError: nil,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.Background()
-			repo := NewStubSessionRepository(ctx, tt.initMap)
+			repo := tt.mockRepo()
 			service := sessionService.New(repo)
-			err := service.RemoveSession(ctx, tt.sessionID)
-			assert.Equal(t, err != nil, tt.wantErr)
+			err := service.RemoveSession(context.Background(), tt.sessionID)
+			assert.EqualError(t, err, tt.expectedError)
 		})
 	}
 }

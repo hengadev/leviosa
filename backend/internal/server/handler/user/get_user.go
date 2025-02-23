@@ -1,39 +1,52 @@
 package userHandler
 
 import (
-	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"net/http"
-	"strconv"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	mw "github.com/GaryHY/event-reservation-app/internal/server/middleware"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
-func (h *Handler) GetUser() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-		fmt.Println("the user id key in :", mw.UserIDKey)
-		userIDstr := ctx.Value(mw.UserIDKey).(string)
-		userID, err := strconv.Atoi(userIDstr)
-		if err != nil {
-			slog.ErrorContext(ctx, "convert userID string stored into int :", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
+func (a *AppInstance) GetUser(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "logger not found in context", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	userID, ok := ctx.Value(contextutil.UserIDKey).(string)
+	if !ok {
+		logger.ErrorContext(ctx, "user ID not found in context")
+		http.Error(w, errors.New("failed to get user ID from context").Error(), http.StatusInternalServerError)
+		return
+	}
+	user, err := a.Svcs.User.FindUserByID(ctx, userID)
+	if err != nil {
+		switch {
+		case errors.Is(err, domain.ErrNotFound):
+			logger.WarnContext(ctx, handler.NewNotFoundErr(err))
+			http.Error(w, handler.NewNotFoundErr(err), http.StatusNotFound)
+		case errors.Is(err, rp.ErrContext), errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, handler.NewInternalErr(err))
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		default:
+			logger.WarnContext(ctx, "find user by ID:", "error", err)
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
-		user, err := h.Repos.User.FindAccountByID(ctx, userID)
-		if err != nil {
-			slog.ErrorContext(ctx, "find user:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		if err := serverutil.Encode(w, http.StatusFound, user); err != nil {
-			slog.ErrorContext(ctx, "send back user:", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-	})
+		return
+	}
+	if err := serverutil.Encode(w, http.StatusOK, user); err != nil {
+		logger.WarnContext(ctx, "get found user:", "error", err)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		return
+	}
 }

@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/vote"
-	"github.com/GaryHY/event-reservation-app/tests/assert"
+	"github.com/GaryHY/leviosa/internal/domain/vote"
+
+	"github.com/GaryHY/test-assert"
 )
 
 func TestCreateVote(t *testing.T) {
@@ -19,9 +20,9 @@ func TestCreateVote(t *testing.T) {
 	key := MockDBKey{userID: userID, month: month, year: year}
 	votes := getVotesFromIntDaysArr(userID, days, month, year)
 	tests := []struct {
+		name    string
 		votes   []*vote.Vote
 		wantErr bool
-		name    string
 	}{
 		{votes: []*vote.Vote{{UserID: userID, Day: 54, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too small"},
 		{votes: []*vote.Vote{{UserID: userID, Day: -4, Month: month, Year: year}}, wantErr: true, name: "Invalid day, too large"},
@@ -61,7 +62,7 @@ func TestFormatVote(t *testing.T) {
 	now := time.Now()
 	days := []int{12, 4, 5, 30}
 	randVote := &vote.Vote{
-		UserID: 23323543,
+		UserID: "23323543",
 		Day:    now.Day(),
 		Month:  int(now.Month()),
 		Year:   now.Year(),

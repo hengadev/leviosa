@@ -38,8 +38,8 @@ runs:
     - name: 🐳 Build Production Image
       uses: docker/build-push-action@v3
       with:
-        context: ${{ inputs.FOLDER }}
-        file: ./${{ inputs.FOLDER }}/Dockerfile
+        context: ${{ inputs.folder }}
+        file: ./${{ inputs.folder }}/Dockerfile
         push: true
         tags: henga/leviosa:${{ inputs.tag }}
         build-args: |

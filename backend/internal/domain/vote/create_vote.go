@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/domain"
 )
 
 func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {
 	for _, vote := range votes {
 		if pbms := vote.Valid(ctx); len(pbms) > 0 {
-			return serverutil.FormatError(pbms, "vote")
+			return domain.NewInvalidValueErr(pbms.Error())
 		}
 	}
 

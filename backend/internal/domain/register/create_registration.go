@@ -1,39 +1,55 @@
-package register
+package registerService
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
+	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
-func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *eventService.Event) error {
+func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *models.Event) error {
 	day, month, year := parseEventTimeForRegistration(event)
-	// check if there is a registration for the user for that specific event
-	err := s.Repo.HasRegistration(ctx, day, year, month, userID)
-	if err != nil {
-		if err := s.Repo.RemoveRegistration(ctx, day, year, month); err != nil {
-			return fmt.Errorf("remove previous registration: %w", err)
-		}
-	}
-	// there is a registration, remove the previous one and continue
+	// NOTE: why is the spot str a string and not an int ?
 	spot, err := strconv.Atoi(spotStr)
 	if err != nil {
 		return fmt.Errorf("convert spot from string to int: %w", err)
 	}
-	offsetDuration := time.Duration(int(event.SessionDuration) * (spot - 1))
+	// offsetDuration := time.Duration(int(event.SessionDuration) * (spot - 1))
+	offsetDuration := time.Duration(int(20) * (spot - 1))
 	registrationBeginAt := event.BeginAt.Add(offsetDuration)
-	registration := NewRegistration(userID, event.ID, registrationBeginAt)
-	if err = s.Repo.AddRegistration(ctx, registration, day, year, month); err != nil {
-		return fmt.Errorf("add registration: %w", err)
+	_ = registrationBeginAt
+	registration := NewRegistration(
+		userID,
+		"",
+		"event",
+		time.Now(),
+		time.Now().Add(24*time.Hour),
+		nil,
+		nil,
+	)
+	err = s.Repo.AddRegistration(ctx, registration, day, year, month)
+	if err != nil {
+		switch {
+		case errors.Is(err, rp.ErrContext):
+			return err
+		case errors.Is(err, rp.ErrDatabase):
+			return domain.NewQueryFailedErr(err)
+		case errors.Is(err, rp.ErrNotCreated):
+			return domain.NewNotCreatedErr(err)
+		default:
+			return fmt.Errorf("add registration: %w", err)
+		}
 	}
 	return nil
 }
 
-func parseEventTimeForRegistration(e *eventService.Event) (int, string, int) {
+func parseEventTimeForRegistration(e *models.Event) (int, string, int) {
 	month := strings.ToLower(time.Month(e.Month).String())
 	return e.Day, month, e.Year
 }

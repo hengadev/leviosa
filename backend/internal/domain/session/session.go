@@ -3,10 +3,10 @@ package sessionService
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"time"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/user"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/GaryHY/leviosa/pkg/errsx"
 
 	"github.com/google/uuid"
 )
@@ -15,33 +15,21 @@ const SessionDuration = 30 * 24 * time.Hour
 const SessionName = "session_token"
 
 type Session struct {
-	ID         string    `json:"id"`
-	UserID     int       `json:"userid"`
-	Role       string    `json:"userrole"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	CreatedAt  time.Time `json:"createdat"`
-	ExpiresAt  time.Time `json:"expiresat"`
+	ID         string      `json:"id"`
+	UserID     string      `json:"user_id"`
+	Role       models.Role `json:"role"`
+	LoggedInAt time.Time   `json:"logged_in_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	ExpiresAt  time.Time   `json:"expires_at"`
 }
 
+// TODO: change that name for session stored
 type Values struct {
-	UserID     int       `json:"userid"`
-	Role       string    `json:"userrole"`
-	LoggedInAt time.Time `json:"loggedinat"`
-	CreatedAt  time.Time `json:"createdat"`
-	ExpiresAt  time.Time `json:"expiresat"`
-}
-
-func (s Session) IsZero() bool {
-	v := reflect.ValueOf(s)
-	t := reflect.TypeOf(s)
-	vf := reflect.VisibleFields(t)
-	for _, f := range vf {
-		value := v.FieldByName(f.Name)
-		if value.IsZero() && value.CanInterface() {
-			return true
-		}
-	}
-	return false
+	UserID     string      `json:"user_id"`
+	Role       models.Role `json:"role"`
+	LoggedInAt time.Time   `json:"logged_in_at"`
+	CreatedAt  time.Time   `json:"created_at"`
+	ExpiresAt  time.Time   `json:"expires_at"`
 }
 
 func (s *Session) Values() *Values {
@@ -54,35 +42,32 @@ func (s *Session) Values() *Values {
 	}
 }
 
-func NewSession(userID int, role string) (*Session, error) {
+func NewSession(userID string, role models.Role) (*Session, error) {
+	if err := uuid.Validate(userID); err != nil {
+		return nil, err
+	}
 	return &Session{
-		UserID: userID,
-		Role:   role,
+		ID:         uuid.NewString(),
+		UserID:     userID,
+		Role:       role,
+		LoggedInAt: time.Now(),
+		CreatedAt:  time.Now(),
+		ExpiresAt:  time.Now().Add(SessionDuration),
 	}, nil
 }
 
-// change the value of the field created at
-func (s *Session) Create() {
-	s.ID = uuid.NewString()
-	s.CreatedAt = time.Now().UTC()
-	s.ExpiresAt = time.Now().UTC().Add(SessionDuration)
-}
-
-func (s *Session) Login() {
-	s.LoggedInAt = time.Now().UTC()
-}
-
-func (s *Session) Valid(ctx context.Context, minRole userService.Role) (problems map[string]string) {
-	var pbms = make(map[string]string)
+func (s *Session) Valid(ctx context.Context, minRole models.Role) error {
+	var pbms = make(errsx.Map)
 	if err := uuid.Validate(s.ID); err != nil {
-		pbms["id"] = "session ID is not of type UUID"
+		pbms.Set("id", "session ID is not of type UUID")
 	}
 	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
-		pbms["expiredat"] = "session expired"
+		pbms.Set("expiredat", "session expired")
 	}
-	sessionRole := userService.ConvertToRole(s.Role)
-	if !sessionRole.IsSuperior(minRole) {
-		pbms["role"] = fmt.Sprintf("unauthorized, user role %s is not superior to %s", sessionRole, minRole)
+	if !s.Role.IsSuperior(minRole) {
+		pbms.Set("role", fmt.Sprintf("unauthorized, user role %s is not superior to %s", s.Role, minRole))
 	}
 	return pbms
 }
+
+func (s Session) AssertComparable() {}

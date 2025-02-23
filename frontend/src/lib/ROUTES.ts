@@ -9,208 +9,172 @@
  * PAGES
  */
 const PAGES = {
-	'/app': `/app`,
-	'/app/admin': `/app/admin`,
-	'/app/admin/events': `/app/admin/events`,
-	'/app/admin/users': `/app/admin/users`,
-	'/app/admin/votes': `/app/admin/votes`,
-	'/app/bookings/[bookingId]': (params: { bookingId: string | number }) => {
-		return `/app/bookings/${params.bookingId}`;
-	},
-	'/app/checkout/cancel': `/app/checkout/cancel`,
-	'/app/checkout/success': `/app/checkout/success`,
-	'/app/events': `/app/events`,
-	'/app/events/[eventId]': (params: { eventId: string | number }) => {
-		return `/app/events/${params.eventId}`;
-	},
-	'/app/events/[eventId]/photos': (params: { eventId: string | number }) => {
-		return `/app/events/${params.eventId}/photos`;
-	},
-	'/app/mails': `/app/mails`,
-	'/app/photos': `/app/photos`,
-	'/app/settings/profile': `/app/settings/profile`,
-	'/app/votes': `/app/votes`,
-	'/app/votes/[year]/[month]': (params: { year: string | number; month: string | number }) => {
-		return `/app/votes/${params.year}/${params.month}`;
-	},
-	'/auth/signin': `/auth/signin`,
-	'/auth/signup': `/auth/signup`,
-	'/soon': `/soon`
-};
+  "/": `/`,
+  "/app": `/app`,
+  "/app/galerie": `/app/galerie`,
+  "/app/galerie/[eventID]": (params: { eventID: (string | number) }) => {
+    return `/app/galerie/${params.eventID}`
+  },
+  "/app/messages": `/app/messages`,
+  "/app/messages/[id]": (params: { id: (string | number) }) => {
+    return `/app/messages/${params.id}`
+  },
+  "/app/messages/conversations": `/app/messages/conversations`,
+  "/app/profile": `/app/profile`,
+  "/app/profile/about": `/app/profile/about`,
+  "/app/profile/confidential-policy": `/app/profile/confidential-policy`,
+  "/app/profile/image-right-consent-form": `/app/profile/image-right-consent-form`,
+  "/app/profile/notifications": `/app/profile/notifications`,
+  "/app/profile/parameters": `/app/profile/parameters`,
+  "/app/profile/parameters/login-and-security": `/app/profile/parameters/login-and-security`,
+  "/app/profile/parameters/notifications": `/app/profile/parameters/notifications`,
+  "/app/profile/personal-information": `/app/profile/personal-information`,
+  "/app/profile/service-condition": `/app/profile/service-condition`,
+  "/app/profile/user-profile": `/app/profile/user-profile`,
+  "/app/reservations": `/app/reservations`,
+  "/app/reservations/consultations": `/app/reservations/consultations`,
+  "/app/reservations/events/[id]": (params: { id: (string | number) }) => {
+    return `/app/reservations/events/${params.id}`
+  },
+  "/app/reservations/events/book": `/app/reservations/events/book`,
+  "/app/reservations/events/galerie": `/app/reservations/events/galerie`,
+  "/app/reservations/events/galerie/[eventID]": (params: { eventID: (string | number) }) => {
+    return `/app/reservations/events/galerie/${params.eventID}`
+  },
+  "/app/services": `/app/services`,
+  "/app/users": `/app/users`,
+  "/signup": `/signup`,
+  "/signup/address": `/signup/address`,
+  "/signup/general": `/signup/general`,
+  "/signup/password": `/signup/password`,
+  "/signup/pending": `/signup/pending`,
+  "/signup/verify-email": `/signup/verify-email`,
+  "/verify-email": `/verify-email`
+}
 
 /**
  * SERVERS
  */
 const SERVERS = {
-	'GET /auth/oauth/google': `/auth/oauth/google`,
-	'GET /auth/oauth/google/callback': `/auth/oauth/google/callback`
-};
+  "GET /oauth/google": `/oauth/google`,
+  "GET /oauth/google/callback": `/oauth/google/callback`,
+  "GET /test": `/test`
+}
 
 /**
  * ACTIONS
  */
 const ACTIONS = {
-	'deleteUser /app/admin/users': `/app/admin/users?/deleteUser`,
-	'viewMonth /app/admin/votes': `/app/admin/votes?/viewMonth`,
-	'viewDayInMonth /app/admin/votes': `/app/admin/votes?/viewDayInMonth`,
-	'default /app/events': `/app/events`,
-	'default /app/settings/profile': `/app/settings/profile`,
-	'signout /app/signout': `/app/signout?/signout`,
-	'default /app/votes': `/app/votes`,
-	'default /app/votes/[year]/[month]': (params: {
-		year: string | number;
-		month: string | number;
-	}) => {
-		return `/app/votes/${params.year}/${params.month}`;
-	},
-	'register /auth/signin': `/auth/signin?/register`,
-	'default /auth/signup': `/auth/signup`
-};
+  
+}
 
 /**
  * LINKS
  */
-const LINKS = {};
+const LINKS = {
+  
+}
 
-type ParamValue = string | number | undefined;
+type ParamValue = string | number | undefined
 
 /**
  * Append search params to a string
  */
-export const appendSp = (
-	sp?: Record<string, ParamValue | ParamValue[]>,
-	prefix: '?' | '&' = '?'
-) => {
-	if (sp === undefined) return '';
+export const appendSp = (sp?: Record<string, ParamValue | ParamValue[]>, prefix: '?' | '&' = '?') => {
+  if (sp === undefined) return ''
 
-	const params = new URLSearchParams();
-	const append = (n: string, v: ParamValue) => {
-		if (v !== undefined) {
-			params.append(n, String(v));
-		}
-	};
+  const params = new URLSearchParams()
+  const append = (n: string, v: ParamValue) => {
+    if (v !== undefined) {
+      params.append(n, String(v))
+    }
+  }
 
-	for (const [name, val] of Object.entries(sp)) {
-		if (Array.isArray(val)) {
-			for (const v of val) {
-				append(name, v);
-			}
-		} else {
-			append(name, val);
-		}
-	}
+  for (const [name, val] of Object.entries(sp)) {
+    if (Array.isArray(val)) {
+      for (const v of val) {
+        append(name, v)
+      }
+    } else {
+      append(name, val)
+    }
+  }
 
-	const formatted = params.toString();
-	if (formatted) {
-		return `${prefix}${formatted}`;
-	}
-	return '';
-};
+  const formatted = params.toString()
+  if (formatted) {
+    return `${prefix}${formatted}`
+  }
+  return ''
+}
 
 /**
  * get the current search params
- *
+ * 
  * Could be use like this:
  * ```
  * route("/cities", { page: 2 }, { ...currentSP() })
  * ```
- */
+ */ 
 export const currentSp = () => {
-	const params = new URLSearchParams(window.location.search);
-	const record: Record<string, string> = {};
-	for (const [key, value] of params.entries()) {
-		record[key] = value;
-	}
-	return record;
-};
+  const params = new URLSearchParams(window.location.search)
+  const record: Record<string, string> = {}
+  for (const [key, value] of params.entries()) {
+    record[key] = value
+  }
+  return record
+}
 
 // route function helpers
-type NonFunctionKeys<T> = { [K in keyof T]: T[K] extends Function ? never : K }[keyof T];
-type FunctionKeys<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T];
-type FunctionParams<T> = T extends (...args: infer P) => any ? P : never;
+type NonFunctionKeys<T> = { [K in keyof T]: T[K] extends Function ? never : K }[keyof T]
+type FunctionKeys<T> = { [K in keyof T]: T[K] extends Function ? K : never }[keyof T]
+type FunctionParams<T> = T extends (...args: infer P) => any ? P : never
 
-const AllObjs = { ...PAGES, ...ACTIONS, ...SERVERS, ...LINKS };
-type AllTypes = typeof AllObjs;
+const AllObjs = { ...PAGES, ...ACTIONS, ...SERVERS, ...LINKS }
+type AllTypes = typeof AllObjs
 
-export type Routes = keyof AllTypes extends `${string}/${infer Route}`
-	? `/${Route}`
-	: keyof AllTypes;
+export type Routes = keyof AllTypes extends `${string}/${infer Route}` ? `/${Route}` : keyof AllTypes
 export const routes = [
-	...new Set(Object.keys(AllObjs).map((route) => /^\/.*|[^ ]?\/.*$/.exec(route)?.[0] ?? route))
-] as Routes[];
+	...new Set(Object.keys(AllObjs).map((route) => /^\/.*|[^ ]?\/.*$/.exec(route)?.[0] ?? route)),
+] as Routes[]
 
 /**
- * To be used like this:
+ * To be used like this: 
  * ```ts
  * import { route } from './ROUTES'
- *
+ * 
  * route('site_id', { id: 1 })
  * ```
  */
-export function route<T extends FunctionKeys<AllTypes>>(
-	key: T,
-	...params: FunctionParams<AllTypes[T]>
-): string;
-export function route<T extends NonFunctionKeys<AllTypes>>(key: T): string;
+export function route<T extends FunctionKeys<AllTypes>>(key: T, ...params: FunctionParams<AllTypes[T]>): string
+export function route<T extends NonFunctionKeys<AllTypes>>(key: T): string
 export function route<T extends keyof AllTypes>(key: T, ...params: any[]): string {
-	if ((AllObjs[key] as any) instanceof Function) {
-		const element = (AllObjs as any)[key] as (...args: any[]) => string;
-		return element(...params);
-	} else {
-		return AllObjs[key] as string;
-	}
+  if (AllObjs[key] as any instanceof Function) {
+    const element = (AllObjs as any)[key] as (...args: any[]) => string
+    return element(...params)
+  } else {
+    return AllObjs[key] as string
+  }
 }
 
 /**
- * Add this type as a generic of the vite plugin `kitRoutes<KIT_ROUTES>`.
- *
- * Full example:
- * ```ts
- * import type { KIT_ROUTES } from './ROUTES'
- * import { kitRoutes } from 'vite-plugin-kit-routes'
- *
- * kitRoutes<KIT_ROUTES>({
- *  PAGES: {
- *    // here, key of object will be typed!
- *  }
- * })
- * ```
- */
+* Add this type as a generic of the vite plugin `kitRoutes<KIT_ROUTES>`.
+*
+* Full example:
+* ```ts
+* import type { KIT_ROUTES } from './ROUTES'
+* import { kitRoutes } from 'vite-plugin-kit-routes'
+*
+* kitRoutes<KIT_ROUTES>({
+*  PAGES: {
+*    // here, key of object will be typed!
+*  }
+* })
+* ```
+*/
 export type KIT_ROUTES = {
-	PAGES: {
-		'/app': never;
-		'/app/admin': never;
-		'/app/admin/events': never;
-		'/app/admin/users': never;
-		'/app/admin/votes': never;
-		'/app/bookings/[bookingId]': 'bookingId';
-		'/app/checkout/cancel': never;
-		'/app/checkout/success': never;
-		'/app/events': never;
-		'/app/events/[eventId]': 'eventId';
-		'/app/events/[eventId]/photos': 'eventId';
-		'/app/mails': never;
-		'/app/photos': never;
-		'/app/settings/profile': never;
-		'/app/votes': never;
-		'/app/votes/[year]/[month]': 'year' | 'month';
-		'/auth/signin': never;
-		'/auth/signup': never;
-		'/soon': never;
-	};
-	SERVERS: { 'GET /auth/oauth/google': never; 'GET /auth/oauth/google/callback': never };
-	ACTIONS: {
-		'deleteUser /app/admin/users': never;
-		'viewMonth /app/admin/votes': never;
-		'viewDayInMonth /app/admin/votes': never;
-		'default /app/events': never;
-		'default /app/settings/profile': never;
-		'signout /app/signout': never;
-		'default /app/votes': never;
-		'default /app/votes/[year]/[month]': 'year' | 'month';
-		'register /auth/signin': never;
-		'default /auth/signup': never;
-	};
-	LINKS: Record<string, never>;
-	Params: { bookingId: never; eventId: never; year: never; month: never };
-};
+  PAGES: { '/': never, '/app': never, '/app/galerie': never, '/app/galerie/[eventID]': 'eventID', '/app/messages': never, '/app/messages/[id]': 'id', '/app/messages/conversations': never, '/app/profile': never, '/app/profile/about': never, '/app/profile/confidential-policy': never, '/app/profile/image-right-consent-form': never, '/app/profile/notifications': never, '/app/profile/parameters': never, '/app/profile/parameters/login-and-security': never, '/app/profile/parameters/notifications': never, '/app/profile/personal-information': never, '/app/profile/service-condition': never, '/app/profile/user-profile': never, '/app/reservations': never, '/app/reservations/consultations': never, '/app/reservations/events/[id]': 'id', '/app/reservations/events/book': never, '/app/reservations/events/galerie': never, '/app/reservations/events/galerie/[eventID]': 'eventID', '/app/services': never, '/app/users': never, '/signup': never, '/signup/address': never, '/signup/general': never, '/signup/password': never, '/signup/pending': never, '/signup/verify-email': never, '/verify-email': never }
+  SERVERS: { 'GET /oauth/google': never, 'GET /oauth/google/callback': never, 'GET /test': never }
+  ACTIONS: Record<string, never>
+  LINKS: Record<string, never>
+  Params: { eventID: never, id: never }
+}

@@ -1,5 +1,5 @@
 # vars
-IMAGE_NAME := "henga/event-reservation-app"## The name of the docker image for the frontend part of the project
+IMAGE_NAME := "henga/leviosa"## The name of the docker image for the frontend part of the project
 
 .PHONY: help run test test-unit test-integration
 

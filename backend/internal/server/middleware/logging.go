@@ -1,47 +1,58 @@
 package middleware
 
 import (
-	"fmt"
-	"log"
+	"context"
 	"log/slog"
+	"math/rand"
+	"net/http"
+	"os"
 	"time"
 
-	// "log/slog"
-	"net/http"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/domainutil"
 )
 
-// NOTE: I get this thing from this parameter in the routes.go file
-// I get it also from this video : https://www.youtube.com/watch?v=a2hWCvaAA80
+func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			start := time.Now()
 
-// I think I should use the logger thing from the slog package.
-type Logger struct {
-	handler http.Handler
-}
+			requestID := rand.Int63()
 
-// from the samvcodes video
-var loggerLevels = map[string]slog.Level{
-	"info":  slog.LevelInfo,
-	"debug": slog.LevelDebug,
-	"error": slog.LevelError,
-	"warn":  slog.LevelWarn,
-}
+			// I just make a fake IP for now, I know my function to work:
+			IP := "127.0.0.1"
+			// TODO: use the getCgetClientIP function instead
+			// IP := r.Header.Get("X-Client-IP")
+			if IP == "" {
+				slog.ErrorContext(ctx, "client IP not found with required header")
+				http.Error(w, "Cannot determine Client IP", http.StatusBadRequest)
+				return
+			}
 
-// a very simple logger
-func (l *Logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	l.handler.ServeHTTP(w, r)
-	log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
-}
+			loggingSalt := os.Getenv("LOGGING_SALT")
+			if loggingSalt == "" {
+				slog.ErrorContext(ctx, "logging salt not found in environment variables")
+				http.Error(w, "Missing environment variable: LOGGING_SALT", http.StatusInternalServerError)
+				return
+			}
 
-// this function comes from the handler addes to all the endpoints in the NewServer constructor
-func NewLogger(handlerToWrap http.Handler) *Logger {
-	return &Logger{handlerToWrap}
-	// NOTE: I get that from the page : https://drstearns.github.io/tutorials/gomiddleware/
-}
+			hashedIP := domainutil.HashWithSalt(IP, loggingSalt)
 
-// this function comes from the handler addes to all the endpoints in the NewServer constructor
-func NewLoggingMiddleware(logger Logger, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Just to test the logging thing")
-	})
+			logger = logger.With(
+				"method", r.Method,
+				"URL", r.URL.String(),
+				"IP", hashedIP,
+				"requestID", requestID,
+			)
+
+			ctx = context.WithValue(r.Context(), contextutil.LoggerKey, logger)
+
+			logger.InfoContext(ctx, "Request started")
+
+			next.ServeHTTP(w, r.WithContext(ctx))
+			duration := time.Since(start)
+			logger.InfoContext(ctx, "Request completed", "duration", duration)
+		})
+	}
 }

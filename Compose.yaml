@@ -1,0 +1,77 @@
+services:
+  frontend: 
+    depends_on:
+      - backend
+    image: henga/leviosa:${APP_ENV}-frontend
+    container_name: ${APP_ENV}-frontend-${GITHUB_RUN_ID}
+    environment:
+      - API_URL=backend:${BACKEND_PORT}
+    restart: unless-stopped
+    user: runner
+    ports:
+      - "127.0.0.1:${PORT}:${PORT}"
+      # TODO: check if I need that one in the project ?
+      - HOSTNAME=frontend:${PORT}
+    networks:
+      - ${APP_ENV}-frontend-network
+    cap_drop:
+      - ALL
+
+  backend:
+    depends_on:
+      - ${APP_ENV}-redis
+    image: henga/leviosa:${APP_ENV}-backend
+    container_name: ${APP_ENV}-backend-${GITHUB_RUN_ID}
+    user: runner
+    networks:
+      - ${APP_ENV}-frontend-network
+      - ${APP_ENV}-backend-network
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    environment:
+      - APP_ENV=${APP_ENV}
+      - BACKEND_PORT=${BACKEND_PORT}
+
+      # TODO: use different values for other envs to not interfere with production
+      - AWS_REGION 
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+
+      - GMAIL_EMAIL
+      - GMAIL_PASSWORD
+
+      - STRIPE_SECRET_KEY
+
+      - REDIS_ADDR
+      - REDIS_DB
+      - REDIS_PASSWORD
+
+      - FRONTEND_ORIGIN=frontend:${PORT}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:latest
+    container_name: ${APP_ENV}-session-manager-${GITHUB_RUN_ID}
+    user: redis
+    command: redis-server --requirepass secret
+    networks:
+      - ${APP_ENV}-backend-network
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  "${APP_ENV}-frontend-network":
+    driver: bridge
+  "${APP_ENV}-backend-network":
+    driver: bridge

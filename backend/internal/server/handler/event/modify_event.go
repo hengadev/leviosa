@@ -1,35 +1,62 @@
-package event
+package eventHandler
 
 import (
-	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/event-reservation-app/internal/domain/event"
-	"github.com/GaryHY/event-reservation-app/internal/server/handler"
-	"github.com/GaryHY/event-reservation-app/pkg/serverutil"
+	"github.com/GaryHY/leviosa/internal/domain"
+	eventModels "github.com/GaryHY/leviosa/internal/domain/event/models"
+	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/GaryHY/leviosa/internal/server/handler"
+	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/GaryHY/leviosa/pkg/serverutil"
 )
 
-func (h *Handler) ModifyEvent() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithCancel(r.Context())
-		defer cancel()
-		event, err := serverutil.Decode[eventService.Event](r)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to decode the event", "error", err)
-			http.Error(w, errsrv.NewBadRequestErr(err), http.StatusBadRequest)
-			return
+func (a *AppInstance) ModifyEvent(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger, err := contextutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "logger not found in context", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := contextutil.ValidateRoleInContext(ctx, models.ADMINISTRATOR); err != nil {
+		logger.WarnContext(ctx, "get role from request", "error", err)
+		http.Error(w, handler.NewForbiddenErr(err), http.StatusBadRequest)
+		return
+	}
+	event, err := serverutil.Decode[eventModels.Event](r.Body)
+	if err != nil {
+		logger.WarnContext(ctx, "failed to decode the event", "error", err)
+		http.Error(w, handler.NewBadRequestErr(err), http.StatusBadRequest)
+		return
+	}
+	err = a.Svcs.Event.ModifyEvent(ctx, &event)
+	if err != nil {
+		switch {
+		case errors.Is(err, rp.ErrContext):
+			logger.WarnContext(ctx, "context error, deadline or timeout while updating event")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrQueryFailed):
+			logger.WarnContext(ctx, "database updating event failed")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrNotUpdated):
+			logger.WarnContext(ctx, "failed to update event")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrUnexpectedType):
+			logger.WarnContext(ctx, "unexpected error while updating event")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		case errors.Is(err, domain.ErrInvalidValue):
+			logger.WarnContext(ctx, "invalid event error while updating event")
+			http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
 		}
-		eventID, err := h.Svcs.Event.ModifyEvent(ctx, &event)
-		if err != nil {
-			slog.ErrorContext(ctx, "failed to update the event", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-		if err = serverutil.Encode(w, http.StatusInternalServerError, eventID); err != nil {
-			slog.ErrorContext(ctx, "failed to send the event ID", "error", err)
-			http.Error(w, errsrv.NewInternalErr(err), http.StatusInternalServerError)
-			return
-		}
-	})
+		return
+	}
+	if err = serverutil.Encode(w, http.StatusInternalServerError, event.ID); err != nil {
+		logger.WarnContext(ctx, "failed to send event ID", "error", err)
+		http.Error(w, handler.NewInternalErr(err), http.StatusInternalServerError)
+		return
+	}
 }

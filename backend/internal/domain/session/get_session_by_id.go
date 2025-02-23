@@ -2,17 +2,35 @@ package sessionService
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"strings"
+
+	"github.com/GaryHY/leviosa/internal/domain"
+	rp "github.com/GaryHY/leviosa/internal/repository"
 )
 
 func (s *Service) GetSession(ctx context.Context, sessionID string) (*Session, error) {
-	if sessionID == "" {
-		return nil, errors.New("nil sessionID")
+	if strings.TrimSpace(sessionID) == "" {
+		return nil, domain.NewNotFoundErr(errors.New("empty session ID"))
 	}
-	session, err := s.Repo.FindSessionByID(ctx, sessionID)
+
+	sessionEncoded, err := s.Repo.FindSessionByID(ctx, sessionID)
 	if err != nil {
-		return nil, fmt.Errorf("repository error: %w", err)
+		switch {
+		case errors.Is(err, rp.ErrNotFound):
+			return nil, domain.NewNotFoundErr(err)
+		case errors.Is(err, rp.ErrDatabase):
+			return nil, domain.NewQueryFailedErr(err)
+		default:
+			return nil, domain.NewUnexpectTypeErr(err)
+		}
 	}
-	return session, nil
+
+	var session Session
+	if err = json.Unmarshal(sessionEncoded, &session); err != nil {
+		return nil, domain.NewJSONUnmarshalErr(err)
+	}
+
+	return &session, nil
 }

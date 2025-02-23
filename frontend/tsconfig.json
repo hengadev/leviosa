@@ -10,7 +10,7 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler",
-		"types": ["vitest/globals"],
+		"types": ["vitest/globals", "node"],
 		// TODO: remove that when done with the project
 		"noUnusedLocals": false // this should be originally true
 	}

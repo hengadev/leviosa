@@ -1,9 +1,10 @@
-package register
+package registerService
 
 import "context"
 
 type Reader interface {
 	HasRegistration(ctx context.Context, day, year int, month, userID string) error
+	GetLastRegistrationOfType(ctx context.Context, count int, regType RegistrationType, userID string) ([]*Registration, error)
 }
 
 type Writer interface {

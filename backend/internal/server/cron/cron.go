@@ -1,42 +1,23 @@
 package cron
 
 import (
-	"fmt"
-	"time"
+	"log/slog"
 
-	"github.com/GaryHY/event-reservation-app/internal/server/service"
+	"github.com/GaryHY/leviosa/internal/server/app"
 
-	"github.com/robfig/cron"
+	"github.com/robfig/cron/v3"
 )
 
-type Handler struct {
-	*handler.Handler
+type AppInstance struct {
+	App    *app.App
+	cron   *cron.Cron
+	logger *slog.Logger
 }
 
-func NewHandler(handler *handler.Handler) *Handler {
-	return &Handler{handler}
-}
-
-// A function to just set the cron job friend
-func (h *Handler) Start() error {
-	loc, err := time.LoadLocation("Europe/Paris")
-	if err != nil {
-		return fmt.Errorf("get location from time module: %w", err)
-	}
-	cronJob := cron.NewWithLocation(loc)
-	defer cronJob.Stop()
-
-	// sec min hour dayofmonth month dayofweek
-	cronJob.AddFunc("0 1 * * * *", testPrint("Gary"))
-	cronJob.AddFunc("0 0 6 * * *", parseEvent)
-	cronJob.AddFunc("0 0 6 * * *", checkCloseVote)
-	cronJob.AddFunc("0 0 6 * * *", backupDatabase)
-	cronJob.Start()
-	select {}
-}
-
-func testPrint(name string) func() {
-	return func() {
-		fmt.Printf("Je teste la fonction avec le name: %s", name)
+func New(appCtx *app.App, logger *slog.Logger) *AppInstance {
+	return &AppInstance{
+		App:    appCtx,
+		cron:   cron.New(), // Initialize cron in constructor
+		logger: logger,
 	}
 }
