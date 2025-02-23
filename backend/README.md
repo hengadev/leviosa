@@ -1,5 +1,6 @@
-# Leviosa Activity Manager
-This is a SvelteKit project for a company to help manage their activities. This README will be completed later.
+# Leviosa Activity Manager Backend
+
+This is the backend part of the Leviosa Activity Manager project, built using Go. This README will be completed later.
 
 ## Installation
 
