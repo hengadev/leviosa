@@ -6,12 +6,12 @@ services:
     container_name: ${APP_ENV}-frontend-${GITHUB_RUN_ID}
     environment:
       - API_URL=backend:${BACKEND_PORT}
+      # TODO: check if I need that one in the project ?
+      - HOSTNAME=frontend:${PORT}
     restart: unless-stopped
     user: runner
     ports:
       - "127.0.0.1:${PORT}:${PORT}"
-      # TODO: check if I need that one in the project ?
-      - HOSTNAME=frontend:${PORT}
     networks:
       - ${APP_ENV}-frontend-network
     cap_drop:
