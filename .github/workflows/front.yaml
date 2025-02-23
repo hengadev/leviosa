@@ -90,5 +90,4 @@ jobs:
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
           # TODO: add the google related environment variable for the frontend to build
           folder: frontend
-          file: Dockerfile
 
