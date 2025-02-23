@@ -23,7 +23,7 @@ inputs:
   port:
     description: 'Port number for frontend service'
     required: true
-  public-url:
+  public_url:
     description: Public URL where the application is accessible
     required: true
   aws_region:
