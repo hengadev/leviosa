@@ -2,10 +2,8 @@
 
 .worktrees
 
-.env
+*.env
 
-local.compose.yaml
-test.compose.yaml
+*.compose.yaml
 
-echo
 notes

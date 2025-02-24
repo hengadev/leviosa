@@ -88,7 +88,7 @@ func run(ctx context.Context, w io.Writer) error {
 	// }()
 
 	go func() {
-		logger.Info(fmt.Sprintf("Running server on port %d...\n", opts.server.port))
+		logger.Info(fmt.Sprintf("Running server on port %d...", opts.server.port))
 		if err := srv.ListenAndServe(); err != nil {
 			srvErrCh <- fmt.Errorf("launch server: %w", err)
 			return

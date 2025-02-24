@@ -32,7 +32,8 @@ func setupDatabases(
 		return nil, nil, fmt.Errorf("creating connection to redis database: %w", err)
 	}
 
-	sqlitedb, err := sqliteutil.Connect(ctx, sqliteutil.BuildDSN(sqliteConf.Filename))
+	sqliteDSN := sqliteutil.BuildDSN(sqliteConf.Filename)
+	sqlitedb, err := sqliteutil.Connect(ctx, sqliteDSN)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating connection to sqlite database: %w", err)
 	}
@@ -45,15 +46,6 @@ func setupDatabases(
 	// run migration for database.
 	if err := sqliteutil.SetMigrations(ctx, migrationCfg); err != nil {
 		return nil, nil, fmt.Errorf("setting migration for SQLite database: %w", err)
-	}
-
-	// init databases
-	queries, err := sqliteutil.GetInitQueries()
-	if err != nil {
-		return nil, nil, fmt.Errorf("getting init queries for SQLite database: %w", err)
-	}
-	if err := sqliteutil.Init(sqlitedb, queries...); err != nil {
-		return sqlitedb, redisdb, fmt.Errorf("initialising SQLite database: %w", err)
 	}
 
 	return sqlitedb, redisdb, nil
