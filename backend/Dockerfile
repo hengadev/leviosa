@@ -21,6 +21,9 @@ COPY --from=builder /app/migrations/production ./migrations/production/
 COPY --from=builder /app/*.env ./
 
 RUN adduser -D runner
+
+RUN mkdir -p /app/data && chown -R runner:runner /app
+
 USER runner
 
 EXPOSE 3500 3501
