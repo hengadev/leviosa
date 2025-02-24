@@ -20,17 +20,18 @@ type Config struct {
 }
 
 func New(ctx context.Context, envFilename, envFileType string) *Config {
-	vp := viper.New()
-	if os.Getenv("APP_ENV") != "production" {
-		vp.AddConfigPath(".")
-		vp.SetConfigName(envFilename)
-		vp.SetConfigType(envFileType)
-		if err := vp.ReadInConfig(); err != nil {
+	config := viper.New()
+	appEnv := os.Getenv("APP_ENV")
+	if appEnv == "development" {
+		config.AddConfigPath(".")
+		config.SetConfigName(envFilename)
+		config.SetConfigType(envFileType)
+		if err := config.ReadInConfig(); err != nil {
 			fmt.Println("viper reading :", err)
 		}
 	}
 	return &Config{
-		viper:    vp,
+		viper:    config,
 		sqlite:   &sqliteCreds{},
 		redis:    &redisCreds{},
 		s3:       &s3Creds{},
