@@ -13,7 +13,7 @@ import (
 
 func (r *Repository) FindAllObjects(ctx context.Context, eventID string) ([]types.Object, error) {
 	res := make([]types.Object, 0)
-	localisation := fmt.Sprintf("%s/%s", BUCKETNAME, eventID)
+	localisation := fmt.Sprintf("%s/%s", r.BucketName, eventID)
 	output, err := r.Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(localisation),
 	})
