@@ -9,10 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-const (
-	BUCKETNAME = "test-bucket-golang-gary"
-)
-
 type Repository struct {
 	Uploader   *manager.Uploader
 	Client     *s3.Client
@@ -27,7 +23,8 @@ func New(ctx context.Context, bucketName string) (*Repository, error) {
 	client := s3.NewFromConfig(cfg)
 	uploader := manager.NewUploader(client)
 	return &Repository{
-		Uploader: uploader,
-		Client:   client,
+		Uploader:   uploader,
+		Client:     client,
+		BucketName: bucketName,
 	}, nil
 }

@@ -13,7 +13,7 @@ import (
 func (r *Repository) CreateFolder(ctx context.Context, foldername string) error {
 	// Put an empty object with folderName as the key
 	_, err := r.Client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket: aws.String(BUCKETNAME),
+		Bucket: aws.String(r.BucketName),
 		Key:    aws.String(foldername),
 	})
 	if err != nil {

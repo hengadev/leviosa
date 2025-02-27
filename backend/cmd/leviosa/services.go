@@ -65,24 +65,30 @@ func makeServices(
 	registerSvc := registerService.NewService(registerRepo)
 	// stripe
 	stripeSvc := stripeService.New()
-	// photo
-	mediaRepo, err := mediaRepository.New(ctx, config.GetBucketName())
+	// media
+	bucketName := config.GetS3().BucketName
+	mediaRepo, err := mediaRepository.New(ctx, bucketName)
 	if err != nil {
 		return appSvcs, appRepos, fmt.Errorf("create photo repository: %w", err)
 	}
 	mediaSvc := mediaService.New(mediaRepo)
 
+	// mail
 	mailSvc := mailService.New()
 
+	// product
 	productRepo := productRepository.New(ctx, sqlitedb)
 	productSvc := productService.New(productRepo)
 
+	// throttle
 	throttlerRepo := throttlerRepository.New(ctx, redisdb)
 	throttlerSvc := throttlerService.New(throttlerRepo)
 
+	// OTP
 	otpRepo := otpRepository.New(ctx, redisdb)
 	otpSvc := otpService.New(otpRepo)
 
+	// message
 	messageRepo := messageRepository.New(ctx, sqlitedb)
 	messageSvc := messageService.New(messageRepo, config.GetSecurity())
 
