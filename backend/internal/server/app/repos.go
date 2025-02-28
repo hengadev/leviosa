@@ -3,16 +3,16 @@ package app
 import (
 	"database/sql"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
-	"github.com/GaryHY/leviosa/internal/domain/media"
-	"github.com/GaryHY/leviosa/internal/domain/message"
-	"github.com/GaryHY/leviosa/internal/domain/otp"
-	"github.com/GaryHY/leviosa/internal/domain/product"
-	"github.com/GaryHY/leviosa/internal/domain/register"
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	"github.com/GaryHY/leviosa/internal/domain/throttler"
-	"github.com/GaryHY/leviosa/internal/domain/user"
-	"github.com/GaryHY/leviosa/internal/domain/vote"
+	"github.com/hengadev/leviosa/internal/domain/event"
+	"github.com/hengadev/leviosa/internal/domain/media"
+	"github.com/hengadev/leviosa/internal/domain/message"
+	"github.com/hengadev/leviosa/internal/domain/otp"
+	"github.com/hengadev/leviosa/internal/domain/product"
+	"github.com/hengadev/leviosa/internal/domain/register"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	"github.com/hengadev/leviosa/internal/domain/throttler"
+	"github.com/hengadev/leviosa/internal/domain/user"
+	"github.com/hengadev/leviosa/internal/domain/vote"
 	"github.com/redis/go-redis/v9"
 )
 

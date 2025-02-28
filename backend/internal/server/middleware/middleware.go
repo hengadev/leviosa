@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
+	"github.com/hengadev/leviosa/internal/domain/session"
 )
 
 type Handlerfunc func(http.ResponseWriter, *http.Request)

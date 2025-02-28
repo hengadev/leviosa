@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	util "github.com/GaryHY/leviosa/pkg/sqliteutil"
+	util "github.com/hengadev/leviosa/pkg/sqliteutil"
 	"github.com/pressly/goose/v3"
 )
 

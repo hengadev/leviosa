@@ -1,7 +1,7 @@
 package factories
 
 import (
-	"github.com/GaryHY/leviosa/internal/domain/product"
+	"github.com/hengadev/leviosa/internal/domain/product"
 )
 
 func NewBasicOffer(overrides map[string]interface{}) *productService.Offer {

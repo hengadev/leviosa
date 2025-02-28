@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (p *Repository) RemoveOffer(ctx context.Context, productID int) error {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (v *repository) HasVote(ctx context.Context, month, year int, userID string) error {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (s *Service) ValidateOTP(ctx context.Context, emailHash string, value string) error {

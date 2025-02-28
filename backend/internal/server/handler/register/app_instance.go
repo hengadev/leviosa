@@ -1,7 +1,7 @@
 package register
 
 import (
-	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/hengadev/leviosa/internal/server/app"
 )
 
 type AppInstance struct {

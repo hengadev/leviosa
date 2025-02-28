@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	mode "github.com/GaryHY/leviosa/pkg/flags"
+	mode "github.com/hengadev/leviosa/pkg/flags"
 )
 
 type s3Creds struct {

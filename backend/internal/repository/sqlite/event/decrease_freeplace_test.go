@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
-	"github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/repository/sqlite"
+	"github.com/hengadev/leviosa/internal/repository/sqlite/event"
+	"github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestDecreaseFreeplace(t *testing.T) {

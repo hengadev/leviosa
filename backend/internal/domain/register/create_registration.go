@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (s *Service) CreateRegistration(ctx context.Context, userID, spotStr string, event *models.Event) error {

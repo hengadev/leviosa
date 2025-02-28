@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (e *EventRepository) GetPriceID(ctx context.Context, eventID string) (string, error) {

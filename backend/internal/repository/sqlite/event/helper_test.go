@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/hengadev/leviosa/internal/repository/sqlite/event"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestConvIntToStr(t *testing.T) {

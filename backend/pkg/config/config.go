@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
-	"github.com/GaryHY/leviosa/pkg/flags"
+	"github.com/hengadev/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/pkg/flags"
 
 	"github.com/spf13/viper"
 )

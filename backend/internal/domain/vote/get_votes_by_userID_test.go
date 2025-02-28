@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/vote"
+	"github.com/hengadev/leviosa/internal/domain/vote"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestGetVotesByUserID(t *testing.T) {

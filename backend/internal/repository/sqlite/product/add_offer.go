@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/product"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/product"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (p *Repository) AddOffer(ctx context.Context, offer *productService.Offer) error {

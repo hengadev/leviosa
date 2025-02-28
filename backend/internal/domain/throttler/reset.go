@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (s *Service) Reset(ctx context.Context, email string) error {

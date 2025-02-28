@@ -3,7 +3,7 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain"
 )
 
 func (s *Service) UpdateProductType(ctx context.Context, product *Offer) error {

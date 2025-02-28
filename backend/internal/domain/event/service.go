@@ -1,8 +1,8 @@
 package eventService
 
 import (
-	"github.com/GaryHY/leviosa/internal/domain/event/security"
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/internal/domain/event/security"
+	"github.com/hengadev/leviosa/pkg/config"
 )
 
 type Service struct {

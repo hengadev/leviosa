@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/event"
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain/event"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/pkg/config"
 
-	"github.com/GaryHY/test-assert"
 	"github.com/google/uuid"
+	"github.com/hengadev/test-assert"
 )
 
 func TestGetUserSessionData(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // CreateVote inserts a new vote record into the 'votes' table for a specific user and date.

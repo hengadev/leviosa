@@ -1,6 +1,6 @@
 package mailService
 
-import "github.com/GaryHY/leviosa/pkg/errsx"
+import "github.com/hengadev/leviosa/pkg/errsx"
 
 func (s *Service) HandlePasswordForgotten() errsx.Map {
 	var errs errsx.Map

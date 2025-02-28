@@ -3,7 +3,7 @@ package messageService_test
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/message/models"
+	"github.com/hengadev/leviosa/internal/domain/message/models"
 )
 
 type MockRepo struct {

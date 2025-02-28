@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/internal/domain/user/security"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/security"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // ValidateCredentials verifies the user's credentials by checking if the provided email and password

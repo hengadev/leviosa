@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // GetHashedPasswordByEmail retrieves the hashed password of a user by their email address from the 'users' table.

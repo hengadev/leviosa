@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (e *EventRepository) LoopQuery(

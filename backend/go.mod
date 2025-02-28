@@ -1,9 +1,8 @@
-module github.com/GaryHY/leviosa
+module github.com/hengadev/leviosa
 
 go 1.22.1
 
 require (
-	github.com/GaryHY/test-assert v0.0.0-20250204174133-50d63b4505b5
 	github.com/alicebob/miniredis v2.5.0+incompatible
 	github.com/aws/aws-sdk-go-v2 v1.32.7
 	github.com/aws/aws-sdk-go-v2/config v1.27.3
@@ -11,6 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/hengadev/test-assert v0.0.0-20250228115801-1031b9f2da92
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.20
 	github.com/pressly/goose/v3 v3.24.1

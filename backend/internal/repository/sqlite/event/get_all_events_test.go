@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	eventRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/event"
-	test "github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/repository/sqlite"
+	eventRepository "github.com/hengadev/leviosa/internal/repository/sqlite/event"
+	test "github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	assert "github.com/GaryHY/test-assert"
+	assert "github.com/hengadev/test-assert"
 )
 
 func TestGetAllEvents(t *testing.T) {

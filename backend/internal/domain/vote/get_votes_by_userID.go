@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // Function that returns the votes (order is important) for a specific user

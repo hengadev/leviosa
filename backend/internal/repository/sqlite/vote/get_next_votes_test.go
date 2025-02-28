@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/vote"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/vote"
-	"github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain/vote"
+	"github.com/hengadev/leviosa/internal/repository/sqlite"
+	"github.com/hengadev/leviosa/internal/repository/sqlite/vote"
+	"github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestGetNextVotes(t *testing.T) {

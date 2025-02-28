@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (e *EventRepository) GetAllEvents(ctx context.Context) ([]*models.Event, error) {

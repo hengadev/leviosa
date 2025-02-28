@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/domainutil"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/domainutil"
 )
 
 func AttachLogger(logger *slog.Logger) func(http.Handler) http.Handler {

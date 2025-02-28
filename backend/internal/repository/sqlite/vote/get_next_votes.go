@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GaryHY/leviosa/internal/domain/vote"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/vote"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (v *repository) GetNextVotes(ctx context.Context, month, year int) ([]*vote.AvailableVote, error) {

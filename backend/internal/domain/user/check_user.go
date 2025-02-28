@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/internal/domain/user/security"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/security"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // CheckUser verifies if a user with the given email exists in the system.

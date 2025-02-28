@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // HasUser checks whether a user exists in the "users" table based on their email hash.

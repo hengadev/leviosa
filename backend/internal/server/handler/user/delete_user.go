@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	"github.com/hengadev/leviosa/pkg/contextutil"
 )
 
 func (a *AppInstance) DeleteUser(w http.ResponseWriter, r *http.Request) {

@@ -3,7 +3,7 @@ package eventService_test
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
 )
 
 type MockRepo struct {

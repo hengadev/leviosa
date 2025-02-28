@@ -6,14 +6,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/internal/repository/redis"
-	sessionRepository "github.com/GaryHY/leviosa/internal/repository/redis/session"
-	test "github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/repository/redis"
+	sessionRepository "github.com/hengadev/leviosa/internal/repository/redis/session"
+	test "github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestFindSessionByID(t *testing.T) {

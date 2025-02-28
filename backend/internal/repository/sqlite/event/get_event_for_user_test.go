@@ -4,10 +4,10 @@ package eventRepository_test
 // 	"context"
 // 	"testing"
 //
-// 	"github.com/GaryHY/leviosa/internal/domain/event"
-// 	"github.com/GaryHY/leviosa/internal/sqlite"
-// 	"github.com/GaryHY/leviosa/internal/sqlite/event"
-// 	"github.com/GaryHY/leviosa/tests/assert"
+// 	"github.com/hengadev/leviosa/internal/domain/event"
+// 	"github.com/hengadev/leviosa/internal/sqlite"
+// 	"github.com/hengadev/leviosa/internal/sqlite/event"
+// 	"github.com/hengadev/leviosa/tests/assert"
 // )
 
 // NOTE: I should get the past event for those the user actually registered for

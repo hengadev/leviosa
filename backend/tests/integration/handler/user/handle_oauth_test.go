@@ -6,11 +6,11 @@ package userHandler_test
 // 	"net/http/httptest"
 // 	"testing"
 //
-// 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-// 	"github.com/GaryHY/leviosa/internal/server/app"
-// 	userHandler "github.com/GaryHY/leviosa/internal/server/handler/user"
-// 	test "github.com/GaryHY/leviosa/tests/utils"
-// 	"github.com/GaryHY/leviosa/tests/utils/factories"
+// 	"github.com/hengadev/leviosa/internal/domain/user/models"
+// 	"github.com/hengadev/leviosa/internal/server/app"
+// 	userHandler "github.com/hengadev/leviosa/internal/server/handler/user"
+// 	test "github.com/hengadev/leviosa/tests/utils"
+// 	"github.com/hengadev/leviosa/tests/utils/factories"
 // )
 //
 // func TestHandleOAuth(t *testing.T) {

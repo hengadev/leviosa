@@ -3,10 +3,10 @@ package models_test
 import (
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/tests/utils"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestString(t *testing.T) {

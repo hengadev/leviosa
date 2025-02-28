@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain"
 )
 
 // Format prepares the Registration struct for database storage by populating

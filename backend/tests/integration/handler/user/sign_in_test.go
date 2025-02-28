@@ -7,14 +7,14 @@ package userHandler_test
 // "testing"
 // "time"
 //
-// "github.com/GaryHY/leviosa/internal/domain/session"
-// "github.com/GaryHY/leviosa/internal/domain/user/models"
-// "github.com/GaryHY/leviosa/internal/server/app"
-// "github.com/GaryHY/leviosa/internal/server/handler/user"
-// "github.com/GaryHY/leviosa/pkg/sqliteutil"
-// "github.com/GaryHY/leviosa/tests/utils/factories"
+// "github.com/hengadev/leviosa/internal/domain/session"
+// "github.com/hengadev/leviosa/internal/domain/user/models"
+// "github.com/hengadev/leviosa/internal/server/app"
+// "github.com/hengadev/leviosa/internal/server/handler/user"
+// "github.com/hengadev/leviosa/pkg/sqliteutil"
+// "github.com/hengadev/leviosa/tests/utils/factories"
 //
-// "github.com/GaryHY/test-assert"
+// "github.com/hengadev/test-assert"
 // "github.com/google/uuid"
 // )
 

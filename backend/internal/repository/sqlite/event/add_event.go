@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (e *EventRepository) AddEvent(ctx context.Context, event *models.Event) (string, error) {

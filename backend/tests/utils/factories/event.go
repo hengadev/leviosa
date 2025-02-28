@@ -3,7 +3,7 @@ package factories
 import (
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
 )
 
 func NewBasicEvent(overrides map[string]any) *models.Event {

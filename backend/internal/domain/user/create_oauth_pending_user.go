@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // CreateOAuthPendingUser adds a user to the pending user table for OAuth-based registration.

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // DecryptUser decrypts sensitive fields in the provided user model and populates them with their decrypted values.

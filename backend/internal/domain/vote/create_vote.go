@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain"
 )
 
 func (s *Service) CreateVote(ctx context.Context, votes []*Vote) error {

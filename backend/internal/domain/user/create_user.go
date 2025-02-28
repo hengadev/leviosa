@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // CreateUser creates a verified user in the system based on a pending user response.

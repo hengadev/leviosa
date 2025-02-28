@@ -8,13 +8,13 @@ import (
 	"testing"
 	"time"
 
-	sessionService "github.com/GaryHY/leviosa/internal/domain/session"
-	userService "github.com/GaryHY/leviosa/internal/domain/user"
-	miniredis "github.com/GaryHY/leviosa/internal/repository/redis"
-	sessionRepository "github.com/GaryHY/leviosa/internal/repository/redis/session"
-	userRepository "github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
-	test "github.com/GaryHY/leviosa/tests/utils"
+	sessionService "github.com/hengadev/leviosa/internal/domain/session"
+	userService "github.com/hengadev/leviosa/internal/domain/user"
+	miniredis "github.com/hengadev/leviosa/internal/repository/redis"
+	sessionRepository "github.com/hengadev/leviosa/internal/repository/redis/session"
+	userRepository "github.com/hengadev/leviosa/internal/repository/sqlite/user"
+	testdb "github.com/hengadev/leviosa/pkg/sqliteutil/testdatabase"
+	test "github.com/hengadev/leviosa/tests/utils"
 )
 
 func SetupUser(t testing.TB, ctx context.Context, version int64) (*userService.Service, *userRepository.Repository) {

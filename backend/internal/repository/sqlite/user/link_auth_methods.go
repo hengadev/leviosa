@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // linkAuthMethod links an authentication method (Google, Apple, or email) to a user's account.

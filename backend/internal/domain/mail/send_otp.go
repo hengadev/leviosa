@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	otpService "github.com/GaryHY/leviosa/internal/domain/otp"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	otpService "github.com/hengadev/leviosa/internal/domain/otp"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // TODO: make the right email template for that mail domain service

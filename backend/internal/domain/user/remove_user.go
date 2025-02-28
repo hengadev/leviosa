@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/google/uuid"
+	"github.com/hengadev/leviosa/internal/domain"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // DeleteUser deletes a user from the database based on their user ID.

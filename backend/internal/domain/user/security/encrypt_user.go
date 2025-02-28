@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // EncryptUser encrypts sensitive fields in the provided user model and clears the original plaintext values.

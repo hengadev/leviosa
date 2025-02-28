@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 const SIGNINENDPOINT = "signin"

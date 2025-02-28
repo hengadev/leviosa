@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/product"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/product"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (p *Repository) GetOffer(ctx context.Context, offerID string) (*productService.Offer, error) {

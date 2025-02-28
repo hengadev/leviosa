@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (v *repository) FindVotes(ctx context.Context, month, year int, userID string) (string, error) {

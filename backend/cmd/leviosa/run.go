@@ -9,11 +9,11 @@ import (
 	"syscall"
 
 	// api
-	"github.com/GaryHY/leviosa/internal/server"
-	"github.com/GaryHY/leviosa/internal/server/app"
-	// "github.com/GaryHY/leviosa/internal/server/cron"
-	"github.com/GaryHY/leviosa/pkg/config"
-	"github.com/GaryHY/leviosa/pkg/flags"
+	"github.com/hengadev/leviosa/internal/server"
+	"github.com/hengadev/leviosa/internal/server/app"
+	// "github.com/hengadev/leviosa/internal/server/cron"
+	"github.com/hengadev/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/pkg/flags"
 
 	// external packages
 	"github.com/joho/godotenv"

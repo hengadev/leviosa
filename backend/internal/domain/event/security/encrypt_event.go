@@ -9,8 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // EncryptEvent encrypts sensitive fields in the provided user model and clears the original plaintext values.
