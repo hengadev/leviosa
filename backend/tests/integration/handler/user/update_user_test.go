@@ -7,14 +7,14 @@ package userHandler_test
 // 	"testing"
 // 	"time"
 //
-// 	"github.com/GaryHY/leviosa/internal/domain/user/models"
-// 	"github.com/GaryHY/leviosa/internal/server/app"
-// 	userHandler "github.com/GaryHY/leviosa/internal/server/handler/user"
-// 	"github.com/GaryHY/leviosa/pkg/contextutil"
-// 	test "github.com/GaryHY/leviosa/tests/utils"
-// 	"github.com/GaryHY/leviosa/tests/utils/factories"
+// 	"github.com/hengadev/leviosa/internal/domain/user/models"
+// 	"github.com/hengadev/leviosa/internal/server/app"
+// 	userHandler "github.com/hengadev/leviosa/internal/server/handler/user"
+// 	"github.com/hengadev/leviosa/pkg/contextutil"
+// 	test "github.com/hengadev/leviosa/tests/utils"
+// 	"github.com/hengadev/leviosa/tests/utils/factories"
 //
-// 	assert "github.com/GaryHY/test-assert"
+// 	assert "github.com/hengadev/test-assert"
 // )
 //
 // func TestUpdateUser(t *testing.T) {

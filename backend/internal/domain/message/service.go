@@ -1,8 +1,8 @@
 package messageService
 
 import (
-	"github.com/GaryHY/leviosa/internal/domain/message/security"
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/internal/domain/message/security"
+	"github.com/hengadev/leviosa/pkg/config"
 )
 
 type Service struct {

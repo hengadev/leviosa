@@ -3,7 +3,7 @@ package userRepository
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 )
 
 // AddPendingUser adds a user to the 'pending_users' table by invoking the addGenericUser function.

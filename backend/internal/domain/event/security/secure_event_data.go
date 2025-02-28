@@ -1,7 +1,7 @@
 package security
 
 import (
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/pkg/config"
 )
 
 type SecureEventData struct {

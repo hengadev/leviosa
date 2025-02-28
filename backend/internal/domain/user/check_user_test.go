@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	userService "github.com/GaryHY/leviosa/internal/domain/user"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	test "github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain"
+	userService "github.com/hengadev/leviosa/internal/domain/user"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	test "github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	assert "github.com/GaryHY/test-assert"
+	assert "github.com/hengadev/test-assert"
 )
 
 func TestCheckUser(t *testing.T) {

@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	sessionService "github.com/GaryHY/leviosa/internal/domain/session"
-	miniredis "github.com/GaryHY/leviosa/internal/repository/redis"
-	sessionRepository "github.com/GaryHY/leviosa/internal/repository/redis/session"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	sessionService "github.com/hengadev/leviosa/internal/domain/session"
+	miniredis "github.com/hengadev/leviosa/internal/repository/redis"
+	sessionRepository "github.com/hengadev/leviosa/internal/repository/redis/session"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	assert "github.com/GaryHY/test-assert"
+	assert "github.com/hengadev/test-assert"
 )
 
 func TestCreateSession(t *testing.T) {

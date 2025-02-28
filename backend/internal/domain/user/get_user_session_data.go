@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/internal/domain/user/security"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/security"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // GetUserSessionData retrieves the session data for a user based on their email.

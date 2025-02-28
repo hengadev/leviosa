@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/serverutil"
 )
 
 type ContextKey int

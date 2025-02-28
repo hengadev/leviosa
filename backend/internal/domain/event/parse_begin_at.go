@@ -3,7 +3,7 @@ package eventService
 import (
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
 )
 
 func ParseBeginAt(event *models.Event) (int, int, int, error) {

@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 type Password string

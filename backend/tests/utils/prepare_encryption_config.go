@@ -3,7 +3,7 @@ package test
 import (
 	"encoding/hex"
 
-	"github.com/GaryHY/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/pkg/config"
 )
 
 func PrepareEncryptionConfig() *config.SecurityConfig {

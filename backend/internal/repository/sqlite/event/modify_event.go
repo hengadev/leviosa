@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/pkg/sqliteutil"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/pkg/sqliteutil"
 )
 
 func (e *EventRepository) ModifyEvent(

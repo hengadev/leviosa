@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/event"
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/event"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	assert "github.com/GaryHY/test-assert"
+	assert "github.com/hengadev/test-assert"
 )
 
 func TestCreateEvent(t *testing.T) {

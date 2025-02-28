@@ -3,7 +3,7 @@ package cron
 import (
 	"log/slog"
 
-	"github.com/GaryHY/leviosa/internal/server/app"
+	"github.com/hengadev/leviosa/internal/server/app"
 
 	"github.com/robfig/cron/v3"
 )

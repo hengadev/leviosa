@@ -3,7 +3,7 @@ package userService_test
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 )
 
 type MockRepo struct {

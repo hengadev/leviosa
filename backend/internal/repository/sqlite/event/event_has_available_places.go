@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // EventHasAvailablePlaces checks if an event with the given eventID exists in the database

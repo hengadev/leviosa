@@ -3,9 +3,9 @@ package sessionService_test
 import (
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/tests/utils"
 )
 
 var baseSession = &sessionService.Session{

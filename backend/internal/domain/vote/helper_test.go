@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/vote"
+	"github.com/hengadev/leviosa/internal/domain/vote"
 )
 
 // setup provides given a time.Time instance a month and year for the next valid votes. That function helps with the case where you want the next valid vote in December of some year for example.

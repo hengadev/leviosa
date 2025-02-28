@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/message/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/message/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (m *Repository) ListConversations(ctx context.Context, userID string) ([]*models.Conversation, error) {

@@ -6,7 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain"
 )
 
 // Une fonction pour backer mes BDD. Faire les migrations en gros.

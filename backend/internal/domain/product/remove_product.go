@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (s *Service) RemoveProduct(ctx context.Context, productID string) error {

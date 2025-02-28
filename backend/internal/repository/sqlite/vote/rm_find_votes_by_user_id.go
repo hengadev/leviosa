@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (v *repository) FindVotesByUserID(ctx context.Context, month string, year int, userID string) (string, error) {

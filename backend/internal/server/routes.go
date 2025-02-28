@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/internal/server/app"
-	"github.com/GaryHY/leviosa/internal/server/handler/event"
-	"github.com/GaryHY/leviosa/internal/server/handler/health"
-	"github.com/GaryHY/leviosa/internal/server/handler/product"
-	"github.com/GaryHY/leviosa/internal/server/handler/user"
-	"github.com/GaryHY/leviosa/internal/server/handler/vote"
-	mw "github.com/GaryHY/leviosa/internal/server/middleware"
+	"github.com/hengadev/leviosa/internal/server/app"
+	"github.com/hengadev/leviosa/internal/server/handler/event"
+	"github.com/hengadev/leviosa/internal/server/handler/health"
+	"github.com/hengadev/leviosa/internal/server/handler/product"
+	"github.com/hengadev/leviosa/internal/server/handler/user"
+	"github.com/hengadev/leviosa/internal/server/handler/vote"
+	mw "github.com/hengadev/leviosa/internal/server/middleware"
 )
 
 func (s *Server) addRoutes(h *app.App) {

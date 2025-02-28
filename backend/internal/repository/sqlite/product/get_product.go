@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/product"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/product"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (p *Repository) GetProduct(ctx context.Context, productID string) (*productService.Product, error) {

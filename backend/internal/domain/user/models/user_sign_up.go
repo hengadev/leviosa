@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 type UserSignUp struct {

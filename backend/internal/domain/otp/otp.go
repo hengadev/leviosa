@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain"
 )
 
 const (

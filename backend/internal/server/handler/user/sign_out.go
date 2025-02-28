@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	"github.com/hengadev/leviosa/pkg/contextutil"
 )
 
 func (a *AppInstance) Signout(w http.ResponseWriter, r *http.Request) {

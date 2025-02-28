@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/contextutil"
 )
 
 func (h *AppInstance) CheckHealth(w http.ResponseWriter, r *http.Request) {

@@ -5,10 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/serverutil"
 )
 
 func (h *AppInstance) ApproveUserRegistration(w http.ResponseWriter, r *http.Request) {

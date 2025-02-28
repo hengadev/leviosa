@@ -3,8 +3,8 @@ package productService
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/stripe"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/stripe"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // (standard, premium etc...)

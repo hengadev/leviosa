@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (v *repository) RemoveVote(ctx context.Context, userID string, month, year int) error {

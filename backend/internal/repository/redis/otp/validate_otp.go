@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/otp"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/otp"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // ValidateOTP validates an OTP for a given email hash.

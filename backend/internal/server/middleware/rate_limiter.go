@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/domainutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/domainutil"
+	"github.com/hengadev/leviosa/pkg/serverutil"
 
 	"golang.org/x/time/rate"
 )

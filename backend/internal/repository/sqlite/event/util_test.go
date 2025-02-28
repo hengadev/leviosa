@@ -1,8 +1,8 @@
 package eventRepository_test
 
 import (
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/event"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/repository/sqlite/event"
 )
 
 var (

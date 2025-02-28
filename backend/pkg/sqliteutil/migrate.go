@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/GaryHY/leviosa/pkg/flags"
+	"github.com/hengadev/leviosa/pkg/flags"
 
 	"github.com/pressly/goose/v3"
 )

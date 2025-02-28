@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	rp "github.com/hengadev/leviosa/internal/repository"
 
 	"github.com/redis/go-redis/v9"
 )

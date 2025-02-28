@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	"github.com/hengadev/leviosa/pkg/contextutil"
 )
 
 func (a *AppInstance) DeleteProduct(w http.ResponseWriter, r *http.Request) {

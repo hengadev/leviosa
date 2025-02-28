@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	mw "github.com/GaryHY/leviosa/internal/server/middleware"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	mw "github.com/hengadev/leviosa/internal/server/middleware"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/serverutil"
 
 	"github.com/stripe/stripe-go/v79"
 )

@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/server/handler"
-	"github.com/GaryHY/leviosa/pkg/contextutil"
-	"github.com/GaryHY/leviosa/pkg/serverutil"
+	"github.com/hengadev/leviosa/internal/server/handler"
+	"github.com/hengadev/leviosa/pkg/contextutil"
+	"github.com/hengadev/leviosa/pkg/serverutil"
 )
 
 func (a *AppInstance) GetNextVotes() http.Handler {

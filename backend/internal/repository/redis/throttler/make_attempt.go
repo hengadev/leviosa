@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	throttlerService "github.com/GaryHY/leviosa/internal/domain/throttler"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	throttlerService "github.com/hengadev/leviosa/internal/domain/throttler"
+	rp "github.com/hengadev/leviosa/internal/repository"
 
 	"github.com/redis/go-redis/v9"
 )

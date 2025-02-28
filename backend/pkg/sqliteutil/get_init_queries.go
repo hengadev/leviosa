@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 	"golang.org/x/crypto/bcrypt"
 )
 

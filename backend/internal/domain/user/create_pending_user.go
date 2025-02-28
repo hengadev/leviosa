@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/internal/domain/user/security"
-	rp "github.com/GaryHY/leviosa/internal/repository"
 	"github.com/google/uuid"
+	"github.com/hengadev/leviosa/internal/domain"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/security"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // CreatePendingUser creates a pending user entry in the system for email-based registration.

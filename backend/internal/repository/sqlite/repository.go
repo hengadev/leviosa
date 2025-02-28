@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
-	testdb "github.com/GaryHY/leviosa/pkg/sqliteutil/testdatabase"
+	testdb "github.com/hengadev/leviosa/pkg/sqliteutil/testdatabase"
 )
 
 type sqliteRepository interface {

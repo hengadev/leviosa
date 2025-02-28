@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/GaryHY/leviosa/internal/domain"
-	eventService "github.com/GaryHY/leviosa/internal/domain/event"
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	test "github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
-	assert "github.com/GaryHY/test-assert"
+	"github.com/hengadev/leviosa/internal/domain"
+	eventService "github.com/hengadev/leviosa/internal/domain/event"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	test "github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
+	assert "github.com/hengadev/test-assert"
 )
 
 func TestRemoveEvent(t *testing.T) {

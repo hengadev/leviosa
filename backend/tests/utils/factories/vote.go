@@ -1,7 +1,7 @@
 package factories
 
 import (
-	"github.com/GaryHY/leviosa/internal/domain/vote"
+	"github.com/hengadev/leviosa/internal/domain/vote"
 )
 
 func NewBasicVote(overrides map[string]any) *vote.Vote {

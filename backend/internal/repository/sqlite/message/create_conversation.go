@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/GaryHY/leviosa/internal/domain/message/models"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/message/models"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 func (m *Repository) CreateConversation(ctx context.Context, conversation *models.Conversation) error {

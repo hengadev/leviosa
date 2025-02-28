@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/GaryHY/leviosa/internal/domain/otp"
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/domain/otp"
+	rp "github.com/hengadev/leviosa/internal/repository"
 	"github.com/redis/go-redis/v9"
 )
 

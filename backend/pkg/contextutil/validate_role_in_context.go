@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 )
 
 func ValidateRoleInContext(ctx context.Context, expectedRole models.Role) error {

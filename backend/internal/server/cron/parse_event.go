@@ -3,8 +3,8 @@ package cron
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // Une fonction pour realiser des actions a l'approche de certaines dates.

@@ -3,8 +3,8 @@ package factories
 import (
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/session"
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/session"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 )
 
 func NewBasicSession(overrides map[string]interface{}) *sessionService.Session {

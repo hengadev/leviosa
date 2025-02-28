@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/GaryHY/leviosa/pkg/config"
-	"github.com/GaryHY/leviosa/pkg/flags"
-	"github.com/GaryHY/leviosa/pkg/redisutil"
-	"github.com/GaryHY/leviosa/pkg/sqliteutil"
+	"github.com/hengadev/leviosa/pkg/config"
+	"github.com/hengadev/leviosa/pkg/flags"
+	"github.com/hengadev/leviosa/pkg/redisutil"
+	"github.com/hengadev/leviosa/pkg/sqliteutil"
 
 	"github.com/redis/go-redis/v9"
 )

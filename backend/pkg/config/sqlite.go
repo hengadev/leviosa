@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/GaryHY/leviosa/pkg/flags"
+	"github.com/hengadev/leviosa/pkg/flags"
 )
 
 type sqliteCreds struct {

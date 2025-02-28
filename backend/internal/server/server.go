@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/server/app"
-	mw "github.com/GaryHY/leviosa/internal/server/middleware"
+	"github.com/hengadev/leviosa/internal/server/app"
+	mw "github.com/hengadev/leviosa/internal/server/middleware"
 )
 
 type Server struct {

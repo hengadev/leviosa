@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite"
-	"github.com/GaryHY/leviosa/internal/repository/sqlite/user"
-	"github.com/GaryHY/leviosa/tests/utils"
-	"github.com/GaryHY/leviosa/tests/utils/factories"
 	"github.com/google/uuid"
+	rp "github.com/hengadev/leviosa/internal/repository"
+	"github.com/hengadev/leviosa/internal/repository/sqlite"
+	"github.com/hengadev/leviosa/internal/repository/sqlite/user"
+	"github.com/hengadev/leviosa/tests/utils"
+	"github.com/hengadev/leviosa/tests/utils/factories"
 
-	"github.com/GaryHY/test-assert"
+	"github.com/hengadev/test-assert"
 )
 
 func TestDeleteUser(t *testing.T) {

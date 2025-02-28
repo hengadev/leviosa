@@ -3,7 +3,7 @@ package userRepository
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/user/models"
+	"github.com/hengadev/leviosa/internal/domain/user/models"
 )
 
 // AddUser inserts a new user into the 'users' table, either creating a new user or linking an authentication method

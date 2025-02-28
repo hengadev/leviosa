@@ -3,7 +3,7 @@ package eventService
 import (
 	"context"
 
-	"github.com/GaryHY/leviosa/internal/domain/event/models"
+	"github.com/hengadev/leviosa/internal/domain/event/models"
 )
 
 type Reader interface {

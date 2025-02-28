@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/GaryHY/leviosa/pkg/errsx"
 	"github.com/google/uuid"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 type User struct {

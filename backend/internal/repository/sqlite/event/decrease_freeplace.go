@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	rp "github.com/GaryHY/leviosa/internal/repository"
+	rp "github.com/hengadev/leviosa/internal/repository"
 )
 
 // DecreaseFreePlace decrements the freeplace count for an event with the given eventID.

@@ -9,8 +9,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/GaryHY/leviosa/internal/domain/message/models"
-	"github.com/GaryHY/leviosa/pkg/errsx"
+	"github.com/hengadev/leviosa/internal/domain/message/models"
+	"github.com/hengadev/leviosa/pkg/errsx"
 )
 
 // EncryptMessage encrypts sensitive fields in the provided message model and clears the original plaintext values.
