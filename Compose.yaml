@@ -54,7 +54,7 @@ services:
 
       - FRONTEND_ORIGIN=frontend:${PORT}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3

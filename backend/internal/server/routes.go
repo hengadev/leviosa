@@ -16,8 +16,8 @@ import (
 func (s *Server) addRoutes(h *app.App) {
 	router := http.NewServeMux()
 
-	// basic route to test things out
-	router.HandleFunc("GET /api/v1/hello", sayHello)
+	// basic check health
+	router.HandleFunc("GET /heathz", healthz)
 
 	// handlers declaration
 	healthHandler := healthHandler.New(h)
@@ -81,6 +81,11 @@ func (s *Server) addRoutes(h *app.App) {
 
 // TODO: how can I make groups for that thing and make sure that I can add as much middleware to a group as I want ?
 
+func healthz(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "OK")
+}
+
 func handleImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("here we are in the handle image handler")
 	err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
@@ -99,9 +104,4 @@ func handleImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("the filename that I uploaded is:", handler.Filename)
 
 	w.WriteHeader(http.StatusOK)
-}
-
-func sayHello(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("here on the server, someone hit the hello endpoint\n\n")
-	fmt.Fprintln(w, "hello world!")
 }
