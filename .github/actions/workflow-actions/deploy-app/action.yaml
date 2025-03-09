@@ -1,5 +1,5 @@
 name: 🚀 Deploy application
-description: Build and push a docker image to docker hub.
+description: This action deploys the application by pulling the latest Docker images from the container registry, removing existing containers, and starting the services. It also includes health checks and cleanup of unused resources.
 
 inputs:
   filter:
@@ -10,9 +10,6 @@ inputs:
     required: true
   dockerhub_token: 
     description: Docker Hub access token for authentication
-    required: true
-  compose_file:
-    description: Name of the Docker Compose file without the .compose.yaml extension
     required: true
   app_env:
     description: Application environment (e.g., 'staging' or 'production')
@@ -49,6 +46,9 @@ inputs:
     required: true
   google_client_secret:
     description: Google OAuth client secret for authentication
+    required: true
+  redis_password:
+    description: Redis password for authentication
     required: true
 
 runs:
@@ -87,6 +87,7 @@ runs:
         GMAIL_PASSWORD: ${{ inputs.gmail_password }}
         GOOGLE_CLIENT_ID: ${{ inputs.google_client_id }}
         GOOGLE_CLIENT_SECRET: ${{ inputs.google_client_secret }}
+        REDIS_PASSWORD: ${{ inputs.redis_password }}
       run: |
         {
           echo "=== Deployment started at $(date) ==="
@@ -96,7 +97,7 @@ runs:
           docker pull henga/leviosa:${{ inputs.app_env }}-backend
 
           echo "Starting services..."
-          docker compose -f ${{ inputs.compose_file }}.yaml up -d --force-recreate
+          docker compose up -d --force-recreate
           
           echo "Waiting for services to be healthy..."
           attempt_counter=0
@@ -105,7 +106,7 @@ runs:
           until curl --output /dev/null --silent --fail ${{ inputs.public_url }}/health; do
             if [ ${attempt_counter} -eq ${max_attempts} ]; then
               echo "ERROR: Application failed to become healthy after 2 minutes"
-              docker compose -f ${{ inputs.compose_file }}.compose.yaml logs
+              docker compose logs
               exit 1
             fi
             
