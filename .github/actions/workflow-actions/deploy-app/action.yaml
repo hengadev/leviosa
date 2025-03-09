@@ -33,7 +33,7 @@ inputs:
     description: AWS secret access key for authentication
     required: true
   bucketname:
-    description:
+    description: Name of the S3 bucket for storing application data
     required: true
   stripe_secret_key:
     description: Stripe API secret key for payment processing
@@ -51,16 +51,19 @@ inputs:
     description: Google OAuth client secret for authentication
     required: true
   redis_addr:
-    description:
+    description: Redis server address for caching
     required: true
   redis_password:
     description: Redis password for authentication
     required: true
   redis_db:
-    description:
+    description: Redis database number to use
     required: true
   user_encryption_key:
-    description:
+    description: Key used for encrypting user data
+    required: true
+  logging_salt:
+    description: Salt used for logging purposes
     required: true
 
 
@@ -105,6 +108,7 @@ runs:
         REDIS_PASSWORD: ${{ inputs.redis_password }}
         REDIS_DB: ${{ inputs.redis_db }}
         USER_ENCRYPTION_KEY: ${{ inputs.user_encryption_key }}
+        LOGGING_SALT: ${{ inputs.logging_salt }}
       run: |
         {
           echo "=== Deployment started at $(date) ==="

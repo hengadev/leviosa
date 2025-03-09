@@ -41,6 +41,7 @@ services:
       - AWS_SECRET_ACCESS_KEY
       - BUCKETNAME
       - USER_ENCRYPTION_KEY
+      - LOGGING_SALT
       - GMAIL_EMAIL
       - GMAIL_PASSWORD
       - STRIPE_SECRET_KEY
