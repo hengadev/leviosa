@@ -63,6 +63,7 @@ func (c *Config) Load(ctx context.Context, mode mode.EnvMode) errsx.Map {
 		"BUCKETNAME":            {required: true, key: "s3.bucketname"},
 
 		"USER_ENCRYPTION_KEY": {required: true, key: "user.encryption.key"},
+		"LOGGING_SALT":        {required: true, key: "logging.salt"},
 	}
 	for envVar, requiredKey := range envVarsToKeys {
 		if os.Getenv(envVar) == "" && requiredKey.required == true {

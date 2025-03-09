@@ -70,3 +70,4 @@ jobs:
           redis_password: ${{ secrets.REDIS_PASSWORD }}
           redis_db: ${{ secrets.REDIS_DB }}
           user_encryption_key: ${{ secrets.USER_ENCRYPTION_KEY }}
+          logging_salt: ${{ secrets.LOGGING_SALT }}
