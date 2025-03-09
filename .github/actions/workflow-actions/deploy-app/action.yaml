@@ -32,6 +32,9 @@ inputs:
   aws_secret_access_key:
     description: AWS secret access key for authentication
     required: true
+  bucketname:
+    description:
+    required: true
   stripe_secret_key:
     description: Stripe API secret key for payment processing
     required: true
@@ -47,9 +50,19 @@ inputs:
   google_client_secret:
     description: Google OAuth client secret for authentication
     required: true
+  redis_addr:
+    description:
+    required: true
   redis_password:
     description: Redis password for authentication
     required: true
+  redis_db:
+    description:
+    required: true
+  user_encryption_key:
+    description:
+    required: true
+
 
 runs:
   using: 'composite'
@@ -82,12 +95,16 @@ runs:
         AWS_REGION: ${{ inputs.aws_region }}
         AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+        BUCKETNAME: ${{ inputs.bucketname }}
         STRIPE_SECRET_KEY: ${{ inputs.stripe_secret_key }}
         GMAIL_EMAIL: ${{ inputs.gmail_email }}
         GMAIL_PASSWORD: ${{ inputs.gmail_password }}
         GOOGLE_CLIENT_ID: ${{ inputs.google_client_id }}
         GOOGLE_CLIENT_SECRET: ${{ inputs.google_client_secret }}
+        REDIS_ADDR: ${{ inputs.redis_addr }}
         REDIS_PASSWORD: ${{ inputs.redis_password }}
+        REDIS_DB: ${{ inputs.redis_db }}
+        USER_ENCRYPTION_KEY: ${{ inputs.user_encryption_key }}
       run: |
         {
           echo "=== Deployment started at $(date) ==="
