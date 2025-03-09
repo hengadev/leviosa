@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/hengadev/leviosa/pkg/flags"
 )
@@ -34,6 +34,6 @@ func (c *Config) setSQLITE(env mode.EnvMode) error {
 	if err != nil {
 		return fmt.Errorf("failed to get working directory to set SQLite database: %w", err)
 	}
-	c.sqlite.Filename = path.Join(wd, "data", sqliteFile)
+	c.sqlite.Filename = filepath.Join(wd, "data", sqliteFile)
 	return nil
 }
