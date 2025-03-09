@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 func Connect(ctx context.Context, connStr string) (*sql.DB, error) {
@@ -14,5 +15,8 @@ func Connect(ctx context.Context, connStr string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("ping %q: %w", connStr, err)
 	}
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(time.Hour)
 	return db, nil
 }
