@@ -1,7 +1,8 @@
 services:
   frontend:
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     image: henga/leviosa:${APP_ENV}-frontend
     container_name: ${APP_ENV}-frontend-${GITHUB_RUN_ID}
     environment:
@@ -18,7 +19,8 @@ services:
 
   backend:
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     image: henga/leviosa:${APP_ENV}-backend
     container_name: ${APP_ENV}-backend-${GITHUB_RUN_ID}
     user: runner
