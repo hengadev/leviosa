@@ -17,7 +17,7 @@ func (s *Server) addRoutes(h *app.App) {
 	router := http.NewServeMux()
 
 	// basic check health
-	router.HandleFunc("GET /heathz", healthz)
+	router.HandleFunc("GET /healthz", healthz)
 
 	// handlers declaration
 	healthHandler := healthHandler.New(h)
