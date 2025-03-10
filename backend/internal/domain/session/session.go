@@ -2,7 +2,6 @@ package sessionService
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/hengadev/leviosa/internal/domain/user/models"
@@ -56,16 +55,19 @@ func NewSession(userID string, role models.Role) (*Session, error) {
 	}, nil
 }
 
-func (s *Session) Valid(ctx context.Context, minRole models.Role) error {
+func (s *Session) Valid(ctx context.Context) error {
 	var pbms = make(errsx.Map)
 	if err := uuid.Validate(s.ID); err != nil {
 		pbms.Set("id", "session ID is not of type UUID")
 	}
+	if err := uuid.Validate(s.UserID); err != nil {
+		pbms.Set("userId", "User ID is not of type UUID")
+	}
 	if time.Now().Add(SessionDuration).Before(s.ExpiresAt) {
 		pbms.Set("expiredat", "session expired")
 	}
-	if !s.Role.IsSuperior(minRole) {
-		pbms.Set("role", fmt.Sprintf("unauthorized, user role %s is not superior to %s", s.Role, minRole))
+	if s.Role != models.UNKNOWN {
+		pbms.Set("role", "got UNKNOWN role, expect one of 'BASIC', 'GUEST', 'FREELANCE', 'ADMINISTRATOR'")
 	}
 	return pbms
 }
