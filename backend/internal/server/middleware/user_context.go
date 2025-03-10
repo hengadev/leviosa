@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strings"
+	"slices"
 
 	"github.com/hengadev/leviosa/pkg/contextutil"
 )
@@ -26,22 +26,17 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 				return
 			}
 
-			// NOTE: that is just for dev mode
-			exceptURL := []string{
-				"hello",
-				"user/register",
-				"user/validate-otp",
-				"user/approve-user",
-				"oauth/google/user",
-				"upload-image",
+			exceptPath := []string{
+				"/healthz",
+				"/user/register",
+				"/user/validate-otp",
+				"/user/approve-user",
+				"/oauth/google/user",
+				"/upload-image",
 			}
-			var url string
-			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-			for _, endpoint := range exceptURL {
-				if url == endpoint {
-					next.ServeHTTP(w, r)
-					return
-				}
+			if slices.Contains(exceptPath, r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
 			}
 
 			// get session ID from request
