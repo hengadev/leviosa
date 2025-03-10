@@ -9,10 +9,6 @@ import (
 	"github.com/hengadev/leviosa/pkg/contextutil"
 )
 
-// TODO:
-// - handle what to do if there is nothing in the session because returning the function might not be ideal
-// -> add non allowed endpoints
-
 // get the role for the user in question
 func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -52,6 +48,13 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			// validate session
+			if err := session.Valid(ctx); err != nil {
+				logger.ErrorContext(ctx, "invalid session", "error", err)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 

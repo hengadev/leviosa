@@ -36,7 +36,6 @@ func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.Auth(appCtx.Svcs.Session.GetSession),
 		mw.SetUserContext(appCtx.Svcs.Session.GetSession),
 		mw.AttachLogger(logger),
 		mw.SetOrigin,
