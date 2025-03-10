@@ -15,13 +15,6 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
-			if !ok {
-				slog.ErrorContext(ctx, "logger not found in context")
-				http.Error(w, "logger not found in context", http.StatusInternalServerError)
-				return
-			}
-
 			exceptPath := []string{
 				"/healthz",
 				"/user/register",
@@ -32,6 +25,13 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			}
 			if slices.Contains(exceptPath, r.URL.Path) {
 				next.ServeHTTP(w, r)
+				return
+			}
+
+			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
+			if !ok {
+				slog.ErrorContext(ctx, "logger not found in context")
+				http.Error(w, "logger not found in context", http.StatusInternalServerError)
 				return
 			}
 

@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"fmt"
-	"net"
+	// "net"
 	"net/http"
 	"os"
 
@@ -68,14 +68,14 @@ func PerIPRateLimit(lim, burst int) Middleware {
 	}
 }
 
-// getClientIP retrieves the client IP set in the custom header 'X-Client-IP'. It returns an empty string if the IP address sent is invalid, unknown or could ne be parsed.
-func getClientIP(r *http.Request) string {
-	clientIP := r.Header.Get("X-Client-IP")
-	if clientIP == "" || clientIP == "unknown" {
-		return ""
-	}
-	if ip := net.ParseIP(clientIP); ip == nil {
-		return ""
-	}
-	return clientIP
-}
+// // getClientIP retrieves the client IP set in the custom header 'X-Client-IP'. It returns an empty string if the IP address sent is invalid, unknown or could ne be parsed.
+// func getClientIP(r *http.Request) string {
+// 	clientIP := r.Header.Get("X-Client-IP")
+// 	if clientIP == "" || clientIP == "unknown" {
+// 		return ""
+// 	}
+// 	if ip := net.ParseIP(clientIP); ip == nil {
+// 		return ""
+// 	}
+// 	return clientIP
+// }

@@ -82,8 +82,7 @@ func (s *Server) addRoutes(h *app.App) {
 // TODO: how can I make groups for that thing and make sure that I can add as much middleware to a group as I want ?
 
 func healthz(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "OK")
+	w.Write([]byte("OK"))
 }
 
 func handleImage(w http.ResponseWriter, r *http.Request) {

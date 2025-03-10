@@ -7,7 +7,8 @@ import (
 	"github.com/hengadev/leviosa/pkg/serverutil/logger"
 )
 
-func setLogger() (*slog.Logger, error) {
+// func setLogger() (*slog.Logger, error) {
+func setLogger() (slog.Handler, error) {
 	if err := logger.SetOptions(opts.mode, &opts.logger.level, &opts.logger.style); err != nil {
 		return nil, fmt.Errorf("set logger options: %w", err)
 	}
@@ -15,6 +16,5 @@ func setLogger() (*slog.Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create logger handler: %w", err)
 	}
-	logger := slog.New(slogHandler)
-	return logger, nil
+	return slogHandler, nil
 }
