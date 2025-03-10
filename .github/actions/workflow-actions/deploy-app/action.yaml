@@ -139,7 +139,13 @@ runs:
           echo "Application is healthy!"
           
           echo "Cleaning up unused resources..."
-          docker system prune --all --volumes --force --filter "until=24h"
+
+          echo "Remove stopped containers older than 24h"
+          docker container prune --force --filter "until=24h"
+          echo "Remove dangling images (those with <none> tags)"
+          docker image prune --force
+          echo "Optionally, remove all unused images older than 24h"
+          docker image prune --all --force --filter "until=24h"
           
           echo "=== Deployment completed successfully at $(date) ==="
         } 2>&1 | tee -a ${{ env.DEPLOY_LOG }}
