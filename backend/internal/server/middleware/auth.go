@@ -1,9 +1,9 @@
 package middleware
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/hengadev/leviosa/internal/domain/user/models"
@@ -21,28 +21,20 @@ func Auth(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// make exception for certain path where you just call next.ServeHTTP(w,r)
 			noAuthEndpoints := []string{
-				"hello",
-				"upload-image",
-
-				"user/register",
-				"user/validate-otp",
-				"user/approve-user",
-
-				"oauth/google/user",
+				"/healthz",
+				"/upload-image",
+				"/user/register",
+				"/user/validate-otp",
+				"/user/approve-user",
+				"/oauth/google/user",
 			}
-			var url string
 			if r.URL.Path == "/favicon.ico" {
-				fmt.Println("here in the favicon thing brother.")
 				next.ServeHTTP(w, r)
 				return
-			} else {
-				url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-				for _, endpoint := range noAuthEndpoints {
-					if url == endpoint {
-						next.ServeHTTP(w, r)
-						return
-					}
-				}
+			}
+			if slices.Contains(noAuthEndpoints, r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
 			}
 			ctx := r.Context()
 
@@ -96,10 +88,8 @@ var knownBasicEndpoints = []string{
 
 func getExpectedRoleFromRequest(r *http.Request) models.Role {
 	segment := strings.Split(r.URL.Path, "/")[3]
-	for _, endpoint := range knownBasicEndpoints {
-		if segment == endpoint {
-			return models.ConvertToRole("basic")
-		}
+	if slices.Contains(knownBasicEndpoints, segment) {
+		return models.ConvertToRole("basic")
 	}
 	return models.ConvertToRole(segment)
 }
