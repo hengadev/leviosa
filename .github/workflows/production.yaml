@@ -56,12 +56,17 @@ jobs:
           port: 3000
           dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
-          public_url: 'https://leviosa.care'
           aws_region: ${{ secrets.AWS_REGION }}
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          bucketname: ${{ secrets.BUCKETNAME }}
           stripe_secret_key: ${{ secrets.STRIPE_SECRET_KEY }}
           gmail_email: ${{ secrets.GMAIL_EMAIL }}
           gmail_password: ${{ secrets.GMAIL_PASSWORD }}
           google_client_id: ${{ secrets.GOOGLE_CLIENT_ID }}
           google_client_secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          redis_addr: ${{ secrets.REDIS_ADDR }}
+          redis_password: ${{ secrets.REDIS_PASSWORD }}
+          redis_db: ${{ secrets.REDIS_DB }}
+          user_encryption_key: ${{ secrets.USER_ENCRYPTION_KEY }}
+          logging_salt: ${{ secrets.LOGGING_SALT }}

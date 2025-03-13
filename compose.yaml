@@ -16,6 +16,12 @@ services:
       - frontend-network
     cap_drop:
       - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   backend:
     depends_on:
@@ -36,30 +42,25 @@ services:
     environment:
       - APP_ENV=${APP_ENV}
       - BACKEND_PORT=${BACKEND_PORT}
-
       - AWS_REGION 
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
-
       - BUCKETNAME
-
       - USER_ENCRYPTION_KEY
-
+      - LOGGING_SALT
       - GMAIL_EMAIL
       - GMAIL_PASSWORD
-
       - STRIPE_SECRET_KEY
-
       - REDIS_ADDR
       - REDIS_DB
       - REDIS_PASSWORD
-
       - FRONTEND_ORIGIN=frontend:${PORT}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${BACKEND_PORT}/healthz"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${BACKEND_PORT}/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
 
   redis:
     image: redis:latest

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,7 @@ import (
 	// api
 	"github.com/hengadev/leviosa/internal/server"
 	"github.com/hengadev/leviosa/internal/server/app"
+
 	// "github.com/hengadev/leviosa/internal/server/cron"
 	"github.com/hengadev/leviosa/pkg/config"
 	"github.com/hengadev/leviosa/pkg/flags"
@@ -43,8 +45,9 @@ func run(ctx context.Context, w io.Writer) error {
 	if err := setupEnvVars(); err != nil {
 		return fmt.Errorf("failed to get env variables: %w", err)
 	}
+
 	// set logger
-	logger, err := setLogger()
+	slogHandler, err := setLogger()
 	if err != nil {
 		return fmt.Errorf("failed to setup logger: %w", err)
 	}
@@ -73,7 +76,8 @@ func run(ctx context.Context, w io.Writer) error {
 	appCtx := app.New(&appSvcs, &appRepos)
 	srv := server.New(
 		appCtx,
-		logger,
+		opts.mode,
+		slogHandler,
 		server.WithPort(opts.server.port),
 	)
 	var srvErrCh = make(chan error)
@@ -88,7 +92,7 @@ func run(ctx context.Context, w io.Writer) error {
 	// }()
 
 	go func() {
-		logger.Info(fmt.Sprintf("Running server on port %d...", opts.server.port))
+		slog.InfoContext(ctx, fmt.Sprintf("Server running on port %d.", opts.server.port))
 		if err := srv.ListenAndServe(); err != nil {
 			srvErrCh <- fmt.Errorf("launch server: %w", err)
 			return

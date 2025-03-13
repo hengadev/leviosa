@@ -20,9 +20,6 @@ inputs:
   port:
     description: 'Port number for frontend service'
     required: true
-  public_url:
-    description: Public URL where the application is accessible
-    required: true
   aws_region:
     description: AWS region for service deployment
     required: true
@@ -31,6 +28,9 @@ inputs:
     required: true
   aws_secret_access_key:
     description: AWS secret access key for authentication
+    required: true
+  bucketname:
+    description: Name of the S3 bucket for storing application data
     required: true
   stripe_secret_key:
     description: Stripe API secret key for payment processing
@@ -46,6 +46,21 @@ inputs:
     required: true
   google_client_secret:
     description: Google OAuth client secret for authentication
+    required: true
+  redis_addr:
+    description: Redis server address for caching
+    required: true
+  redis_password:
+    description: Redis password for authentication
+    required: true
+  redis_db:
+    description: Redis database number to use
+    required: true
+  user_encryption_key:
+    description: Key used for encrypting user data
+    required: true
+  logging_salt:
+    description: Salt used for logging purposes
     required: true
 
 runs:
@@ -79,11 +94,18 @@ runs:
         AWS_REGION: ${{ inputs.aws_region }}
         AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+        BUCKETNAME: ${{ inputs.bucketname }}
         STRIPE_SECRET_KEY: ${{ inputs.stripe_secret_key }}
         GMAIL_EMAIL: ${{ inputs.gmail_email }}
         GMAIL_PASSWORD: ${{ inputs.gmail_password }}
         GOOGLE_CLIENT_ID: ${{ inputs.google_client_id }}
         GOOGLE_CLIENT_SECRET: ${{ inputs.google_client_secret }}
+        REDIS_ADDR: ${{ inputs.redis_addr }}
+        REDIS_PASSWORD: ${{ inputs.redis_password }}
+        REDIS_DB: ${{ inputs.redis_db }}
+        USER_ENCRYPTION_KEY: ${{ inputs.user_encryption_key }}
+        LOGGING_SALT: ${{ inputs.logging_salt }}
+
       run: |
         {
           echo "=== Deployment started at $(date) ==="
@@ -99,7 +121,8 @@ runs:
           attempt_counter=0
           max_attempts=12  # 2 minutes total (12 * 10 seconds)
           
-          until curl --output /dev/null --silent --fail ${{ inputs.public_url }}/health; do
+        until curl --output /dev/null --silent --fail http://localhost:${{ inputs.port }}/healthz; do
+
             if [ ${attempt_counter} -eq ${max_attempts} ]; then
               echo "ERROR: Application failed to become healthy after 2 minutes"
               docker compose logs
@@ -108,13 +131,21 @@ runs:
             
             attempt_counter=$(($attempt_counter+1))
             echo "Waiting for application to be ready... (${attempt_counter}/${max_attempts})"
-            sleep 10
+            sleep 20
+
           done
           
           echo "Application is healthy!"
           
           echo "Cleaning up unused resources..."
-          docker system prune --all --volumes --force --filter "until=24h"
+
+          echo "Remove stopped containers older than 24h"
+          docker container prune --force --filter "until=24h"
+          echo "Remove dangling images (those with <none> tags)"
+          docker image prune --force
+          echo "Optionally, remove all unused images older than 24h"
+          docker image prune --all --force --filter "until=24h"
+
           
           echo "=== Deployment completed successfully at $(date) ==="
         } 2>&1 | tee -a ${{ env.DEPLOY_LOG }}

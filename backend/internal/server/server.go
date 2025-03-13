@@ -8,13 +8,20 @@ import (
 
 	"github.com/hengadev/leviosa/internal/server/app"
 	mw "github.com/hengadev/leviosa/internal/server/middleware"
+	mode "github.com/hengadev/leviosa/pkg/flags"
 )
 
 type Server struct {
 	srv *http.Server
 }
 
-func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
+func New(
+	appCtx *app.App,
+	env mode.EnvMode,
+	slogHandler slog.Handler,
+	opts ...ServerOption,
+) *Server {
+
 	// build server with default options.
 	server := &Server{
 		srv: &http.Server{
@@ -36,9 +43,8 @@ func New(appCtx *app.App, logger *slog.Logger, opts ...ServerOption) *Server {
 
 	// add middlewares common to all routes. [Order important]
 	server.Use(
-		mw.Auth(appCtx.Svcs.Session.GetSession),
 		mw.SetUserContext(appCtx.Svcs.Session.GetSession),
-		mw.AttachLogger(logger),
+		mw.AttachLogger(env, slogHandler),
 		mw.SetOrigin,
 	)
 	return server

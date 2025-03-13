@@ -4,14 +4,10 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strings"
+	"slices"
 
 	"github.com/hengadev/leviosa/pkg/contextutil"
 )
-
-// TODO:
-// - handle what to do if there is nothing in the session because returning the function might not be ideal
-// -> add non allowed endpoints
 
 // get the role for the user in question
 func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Handler {
@@ -19,29 +15,24 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			exceptPath := []string{
+				"/healthz",
+				"/user/register",
+				"/user/validate-otp",
+				"/user/approve-user",
+				"/oauth/google/user",
+				"/upload-image",
+			}
+			if slices.Contains(exceptPath, r.URL.Path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			logger, ok := ctx.Value(contextutil.LoggerKey).(*slog.Logger)
 			if !ok {
 				slog.ErrorContext(ctx, "logger not found in context")
 				http.Error(w, "logger not found in context", http.StatusInternalServerError)
 				return
-			}
-
-			// NOTE: that is just for dev mode
-			exceptURL := []string{
-				"hello",
-				"user/register",
-				"user/validate-otp",
-				"user/approve-user",
-				"oauth/google/user",
-				"upload-image",
-			}
-			var url string
-			url = strings.Join(strings.Split(r.URL.Path, "/")[3:], "/")
-			for _, endpoint := range exceptURL {
-				if url == endpoint {
-					next.ServeHTTP(w, r)
-					return
-				}
 			}
 
 			// get session ID from request
@@ -57,6 +48,13 @@ func SetUserContext(sessionGetter sessionGetterFunc) func(http.Handler) http.Han
 			if err != nil {
 				logger.ErrorContext(ctx, "get session from database", "error", err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			// validate session
+			if err := session.Valid(ctx); err != nil {
+				logger.ErrorContext(ctx, "invalid session", "error", err)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 
