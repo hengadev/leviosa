@@ -1,3 +1,4 @@
+name: ${APP_ENV}
 services:
   frontend:
     depends_on:
