@@ -63,7 +63,6 @@ inputs:
     description: Salt used for logging purposes
     required: true
 
-
 runs:
   using: 'composite'
   steps:
@@ -106,6 +105,7 @@ runs:
         REDIS_DB: ${{ inputs.redis_db }}
         USER_ENCRYPTION_KEY: ${{ inputs.user_encryption_key }}
         LOGGING_SALT: ${{ inputs.logging_salt }}
+
       run: |
         {
           echo "=== Deployment started at $(date) ==="
@@ -122,6 +122,7 @@ runs:
           max_attempts=12  # 2 minutes total (12 * 10 seconds)
           
         until curl --output /dev/null --silent --fail http://localhost:${{ inputs.port }}/healthz; do
+
             if [ ${attempt_counter} -eq ${max_attempts} ]; then
               echo "ERROR: Application failed to become healthy after 2 minutes"
               docker compose logs
@@ -131,6 +132,7 @@ runs:
             attempt_counter=$(($attempt_counter+1))
             echo "Waiting for application to be ready... (${attempt_counter}/${max_attempts})"
             sleep 20
+
           done
           
           echo "Application is healthy!"
@@ -143,6 +145,7 @@ runs:
           docker image prune --force
           echo "Optionally, remove all unused images older than 24h"
           docker image prune --all --force --filter "until=24h"
+
           
           echo "=== Deployment completed successfully at $(date) ==="
         } 2>&1 | tee -a ${{ env.DEPLOY_LOG }}
