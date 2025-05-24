@@ -1,0 +1,33 @@
+package productRepository
+
+import (
+	"context"
+	"database/sql"
+	"embed"
+	"fmt"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
+)
+
+//go:embed migrations/*.sql
+var migrations embed.FS
+
+type repository struct {
+	DB *sql.DB
+}
+
+func (u *repository) GetDB() *sql.DB {
+	return u.DB
+}
+
+func New(ctx context.Context, db *sql.DB) (*repository, error) {
+	goose.SetBaseFS(migrations)
+	if err := goose.SetDialect("sqlite3"); err != nil {
+		return nil, fmt.Errorf("setting dialect for product repository: %w", err)
+	}
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return nil, fmt.Errorf("running all migrations for product repository: %w", err)
+	}
+	return &repository{db}, nil
+}
