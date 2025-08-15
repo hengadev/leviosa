@@ -4,10 +4,10 @@ import (
 	"github.com/hengadev/leviosa/internal/server/app"
 )
 
-type AppInstance struct {
+type handler struct {
 	*app.App
 }
 
-func New(appCtx *app.App) *AppInstance {
-	return &AppInstance{appCtx}
+func New(appCtx *app.App) *handler {
+	return &handler{appCtx}
 }
