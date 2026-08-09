@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Build and Run
-- `docker compose up` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ); supports Compose Watch for live sync/rebuild on file changes
+- `docker compose up --build` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ, Vault, S3-via-LocalStack); builds from `local.Dockerfile`, which runs `air` for live reload — the source tree is bind-mounted, so edits rebuild and restart the server automatically. Needs `development.env` (copy from `example.env`; `make local-dev` from the repo root does this for you).
 - `go run ./cmd/app` - Run the backend binary directly against already-running dependencies
 - `go run ./cmd/seed` - Seed data (configured via `cmd/seed/seed_data.example.json`)
 
