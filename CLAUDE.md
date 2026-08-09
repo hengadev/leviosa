@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Root Level Commands
 - `make help` - Show all available commands (local dev, Docker image builds, VPS deploy, Terraform, Ansible)
-- `make local-dev` - Run both frontend and backend in development mode
-- `make local-up` - Start application with docker-compose (local development)
-- `make local-down` - Stop docker-compose services
+- `make local-dev` - Frontend natively (`pnpm run dev`) + backend and its dependencies via Docker (`backend/compose.yaml`: Postgres, Redis, RabbitMQ, Vault, S3-via-LocalStack), live reload via `air` (see `backend/local.Dockerfile`). Fastest loop for day-to-day work — edits under `backend/` rebuild and restart the server automatically via a bind mount.
+- `make local-start` - Run the entire app (frontend, backend, Postgres, Redis, RabbitMQ, Vault, S3-via-LocalStack) in containers, built from the real production Dockerfiles and mirroring `infra/ansible/roles/app/templates/docker-compose.yml.j2` + `env.j2` (same image pins, same service shape minus Caddy) (`local.compose.yaml`). No hot reload — closest simulation of what actually ships to staging/production. Copies `.env.example` to `.env` on first run.
+- `make local-stop` / `make local-restart` - Stop/restart the `local-start` stack
+
+Both the `local-dev` backend stack and the `local-start` stack are intentionally ephemeral (no named volumes): stopping either wipes its Postgres, Vault dev-mode secrets, and LocalStack S3 bucket together, so a restart never has Postgres pointing at data encrypted under a Vault key that no longer exists. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data.
 
 Deployment to the VPS (image build/push, Ansible, Terraform) is also driven from this Makefile — see `make help` for the full list (`image-*`, `deploy*`, `prod-*`, `staging-*`, `infra-*`, `ansible-*`).
 

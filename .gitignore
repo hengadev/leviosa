@@ -5,6 +5,10 @@
 *.env
 
 *.compose.yaml
+# local.compose.yaml is checked in on purpose: it's the shared local full-stack simulation
+# (make local-start), holds no secrets (those come from the gitignored .env), and every
+# developer should get the same one rather than reinventing it.
+!local.compose.yaml
 
 /notes
 
