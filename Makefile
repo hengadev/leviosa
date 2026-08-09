@@ -27,7 +27,7 @@ CLIENT_IP_HEADER ?= x-client-ip
 BACKEND_PORT ?= 3500
 
 .PHONY: help \
-		local-dev local-up local-down \
+		local-dev local-start local-stop local-restart \
 		image-build-front image-build-back image-build \
 		image-build-staging-front image-build-staging-back image-build-staging \
 		image-push-front image-push-back image-push \
@@ -50,9 +50,10 @@ help:
 	@echo "================================="
 	@echo ""
 	@echo "Local Development:"
-	@echo "  make local-dev        - Start frontend and backend in dev mode"
-	@echo "  make local-up         - Start local docker compose"
-	@echo "  make local-down       - Stop local docker compose"
+	@echo "  make local-dev        - Start frontend (native) and backend deps (Docker), hot reload"
+	@echo "  make local-start      - Start the whole app in Docker (prod-like build, no hot reload)"
+	@echo "  make local-stop       - Stop the local Docker stack"
+	@echo "  make local-restart    - Restart the local Docker stack"
 	@echo ""
 	@echo "Docker Images (build locally):"
 	@echo "  make image-build      - Build frontend and backend images (prod)"
@@ -114,17 +115,27 @@ help:
 # ===========================================
 
 local-dev:
+	@if [ ! -f backend/development.env ]; then \
+		echo "No backend/development.env found — copying backend/example.env (edit it to add real Stripe/Twilio/SMTP creds if needed)."; \
+		cp backend/example.env backend/development.env; \
+	fi
 	@echo "Starting frontend and backend in dev mode..."
 	@cd frontend && pnpm run dev &
-	@cd backend && docker compose up
+	@cd backend && docker compose up --build
 
-local-up:
+local-start:
+	@if [ ! -f .env ]; then \
+		echo "No .env found — copying .env.example to .env (edit it to add real Stripe/Twilio/SMTP creds if needed)."; \
+		cp .env.example .env; \
+	fi
 	@echo "Starting local docker compose..."
-	docker compose -f local.compose.yaml up
+	docker compose -f local.compose.yaml up --build
 
-local-down:
+local-stop:
 	@echo "Stopping local docker compose..."
 	docker compose -f local.compose.yaml down
+
+local-restart: local-stop local-start
 
 # ===========================================
 # Docker Image Commands (run on local machine)
