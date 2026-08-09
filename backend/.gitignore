@@ -17,8 +17,13 @@ notes
 !example.env
 
 *.Dockerfile
+# local.Dockerfile is checked in on purpose: it's the shared dev-mode image (live reload via
+# air) used by compose.yaml / `make local-dev`, holds no secrets, and every developer should
+# get the same one.
+!local.Dockerfile
 
 .air.toml
+!.air.toml
 
 .encx
 
