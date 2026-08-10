@@ -26,7 +26,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
     if (env.COMING_SOON === 'true') {
-        if (event.url.pathname !== '/coming-soon' && event.url.pathname !== '/healthz') {
+        const exemptPaths = ['/coming-soon', '/healthz', '/robots.txt', '/sitemap.xml'];
+        if (!exemptPaths.includes(event.url.pathname)) {
             throw redirect(302, '/coming-soon')
         }
         return await resolve(event)
