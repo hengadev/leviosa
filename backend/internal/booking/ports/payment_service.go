@@ -47,6 +47,8 @@ const (
 	WebhookEventPaymentIntentCanceled       = "payment_intent.canceled"
 	WebhookEventChargeRefunded              = "charge.refunded"
 	WebhookEventPaymentIntentRequiresAction = "payment_intent.requires_action"
+	WebhookEventChargeDisputeCreated        = "charge.dispute.created"
+	WebhookEventChargeDisputeClosed         = "charge.dispute.closed"
 )
 
 // PaymentIntentInfo represents payment intent information from Stripe
