@@ -14,6 +14,8 @@
 		MessageSquare,
 		CalendarClock,
 		Undo2,
+		Receipt,
+		ExternalLink,
 	} from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
@@ -224,6 +226,25 @@
 				<div>
 					<p class="text-sm font-medium text-muted-foreground">Prix</p>
 					<p class="text-foreground font-medium">{formatCents(booking.total_price_cents)}</p>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Receipt -->
+		{#if booking.payment_status === 'paid' && booking.receipt_url}
+			<div class="flex items-start gap-3">
+				<Receipt size={18} class="text-muted-foreground mt-0.5 flex-shrink-0" />
+				<div>
+					<p class="text-sm font-medium text-muted-foreground">Reçu</p>
+					<a
+						href={booking.receipt_url}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 text-sm font-medium text-foreground hover:underline"
+					>
+						Voir le reçu
+						<ExternalLink size={13} />
+					</a>
 				</div>
 			</div>
 		{/if}
