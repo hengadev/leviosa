@@ -63,3 +63,15 @@ var (
 	ErrInvalidBookingToken = errors.New("invalid booking token")
 	ErrBookingTokenExpired = errors.New("booking token has expired")
 )
+
+// Review errors
+var (
+	ErrInvalidReviewBookingID = errors.New("invalid booking ID for review")
+	ErrInvalidReviewRating    = errors.New("review rating must be between 1 and 5")
+	ErrReviewCommentTooLong   = errors.New("review comment exceeds maximum length")
+	ErrReviewAlreadyHidden    = errors.New("review is already hidden")
+	ErrReviewNotHidden        = errors.New("review is not hidden")
+	ErrBookingNotCompleted    = errors.New("booking must be completed before it can be reviewed")
+	ErrReviewNotBookingOwner  = errors.New("only the booking's client may leave a review for it")
+	ErrReviewAlreadyExists    = errors.New("a review already exists for this booking")
+)
