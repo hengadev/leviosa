@@ -70,3 +70,15 @@ func (c *InProcessClient) GetUserName(ctx context.Context, userID uuid.UUID) (st
 	name := strings.TrimSpace(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
 	return name, nil
 }
+
+// GetUserEmail retrieves the email address for a user by their ID.
+func (c *InProcessClient) GetUserEmail(ctx context.Context, userID uuid.UUID) (string, error) {
+	if c.userService == nil {
+		return "", nil
+	}
+	user, err := c.userService.GetUserByID(ctx, userID)
+	if err != nil {
+		return "", fmt.Errorf("get user by id %s: %w", userID, err)
+	}
+	return user.Email, nil
+}
