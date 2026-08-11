@@ -40,9 +40,9 @@ type Config struct {
 	EncxPepperAlias string
 
 	// Stripe
-	StripeSecretKey              string
-	StripeWebhookSecret          string
-	StripeConnectWebhookSecret   string
+	StripeSecretKey            string
+	StripeWebhookSecret        string
+	StripeConnectWebhookSecret string
 
 	// Twilio
 	TwilioAccountSID  string
@@ -73,17 +73,19 @@ type Config struct {
 	FrontendOrigin string
 
 	// Booking reminder scheduler
-	ReminderIntervalMinutes  int
-	ReminderWindowHours      int
+	ReminderIntervalMinutes int
+	ReminderWindowHours     int
 
 	// Service Auth
 	ServiceKeyCacheTTLSeconds int
 
 	// Rate Limiting
-	RateLimitSigninMax             int
-	RateLimitSigninWindowSeconds   int
-	RateLimitPasswordResetMax      int
+	RateLimitSigninMax                  int
+	RateLimitSigninWindowSeconds        int
+	RateLimitPasswordResetMax           int
 	RateLimitPasswordResetWindowSeconds int
+	RateLimitContactMax                 int
+	RateLimitContactWindowSeconds       int
 }
 
 // LoadConfig loads configuration from environment variables
@@ -166,7 +168,7 @@ func LoadConfig(ctx context.Context) (*Config, error) {
 
 		// Booking reminder scheduler
 		ReminderIntervalMinutes: getEnvInt("REMINDER_INTERVAL_MINUTES", 15),
-		ReminderWindowHours:    getEnvInt("REMINDER_WINDOW_HOURS", 24),
+		ReminderWindowHours:     getEnvInt("REMINDER_WINDOW_HOURS", 24),
 
 		// Service Auth
 		ServiceKeyCacheTTLSeconds: getEnvInt("SERVICE_KEY_CACHE_TTL_SECONDS", 300),
@@ -176,6 +178,8 @@ func LoadConfig(ctx context.Context) (*Config, error) {
 		RateLimitSigninWindowSeconds:        getEnvInt("RATE_LIMIT_SIGNIN_WINDOW_SECONDS", 900),
 		RateLimitPasswordResetMax:           getEnvInt("RATE_LIMIT_PASSWORD_RESET_MAX", 5),
 		RateLimitPasswordResetWindowSeconds: getEnvInt("RATE_LIMIT_PASSWORD_RESET_WINDOW_SECONDS", 900),
+		RateLimitContactMax:                 getEnvInt("RATE_LIMIT_CONTACT_MAX", 5),
+		RateLimitContactWindowSeconds:       getEnvInt("RATE_LIMIT_CONTACT_WINDOW_SECONDS", 900),
 	}
 
 	// Validate required fields
