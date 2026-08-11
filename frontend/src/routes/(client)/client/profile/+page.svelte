@@ -2,7 +2,16 @@
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
 	import { Dialog } from 'bits-ui';
-	import { CheckCircle, ArrowLeft, Save, MessageSquareText, AlertTriangle, X } from '@lucide/svelte';
+	import {
+		CheckCircle,
+		ArrowLeft,
+		Save,
+		MessageSquareText,
+		AlertTriangle,
+		X,
+		CreditCard,
+		ExternalLink
+	} from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -31,6 +40,28 @@
 	function closeDeleteDialog() {
 		deleteDialogOpen = false;
 		deleteConfirmInput = '';
+	}
+
+	// Issue 013: manage-payment-method link (Stripe Billing Portal)
+	let billingPortalLoading = $state(false);
+	let billingPortalError = $state<string | null>(null);
+
+	async function openBillingPortal() {
+		billingPortalLoading = true;
+		billingPortalError = null;
+		try {
+			const res = await fetch('/api/users/me/stripe/billing-portal-link', { method: 'POST' });
+			if (res.ok) {
+				const { url } = await res.json();
+				window.location.href = url;
+			} else {
+				billingPortalError = 'Impossible de générer le lien de gestion du paiement. Veuillez réessayer.';
+			}
+		} catch {
+			billingPortalError = 'Une erreur est survenue. Veuillez réessayer.';
+		} finally {
+			billingPortalLoading = false;
+		}
 	}
 </script>
 
@@ -204,6 +235,29 @@
 			</div>
 		</form>
 
+		<!-- Payment method -->
+		<div class="bg-card rounded-lg border border-border p-6 space-y-4">
+			<h2 class="text-lg font-semibold text-foreground">Moyen de paiement</h2>
+			<p class="text-sm text-muted-foreground">
+				Mettez à jour ou remplacez la carte enregistrée sur votre compte via l'espace sécurisé de
+				notre prestataire de paiement.
+			</p>
+			<button
+				type="button"
+				onclick={openBillingPortal}
+				disabled={billingPortalLoading}
+				class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+			>
+				<CreditCard size={16} />
+				{billingPortalLoading ? 'Chargement...' : 'Gérer mon moyen de paiement'}
+				{#if !billingPortalLoading}
+					<ExternalLink size={14} />
+				{/if}
+			</button>
+			{#if billingPortalError}
+				<p class="text-sm text-red-700 dark:text-red-400">{billingPortalError}</p>
+			{/if}
+		</div>
 		<!-- RGPD: request my data -->
 		<div class="bg-card rounded-lg border border-border p-6 space-y-4">
 			<div>
