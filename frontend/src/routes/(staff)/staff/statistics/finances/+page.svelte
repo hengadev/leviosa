@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { Banknote, Clock, TrendingUp, ArrowDownToLine, Calendar, Inbox } from '@lucide/svelte';
+	import { Banknote, Clock, TrendingUp, ArrowDownToLine, Calendar, Inbox, Download } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
@@ -155,6 +155,53 @@
 	const maxEarning = $derived(
 		monthlyEarnings.length > 0 ? Math.max(...monthlyEarnings.map((m) => m.amountInCents)) : 1,
 	);
+
+	// CSV export for the selected month.
+	//
+	// This page shows a partner's own earnings (GET /partners/earnings/:id),
+	// not the admin-wide GET /admin/bookings/financial-summary aggregation
+	// that issue 022 extends with format=csv — a partner-scoped role has no
+	// access to that admin-gated endpoint. The export here is a client-side
+	// CSV built from the same booking-derived transactions already loaded
+	// for this page, keeping the "no new reporting pipeline" spirit of
+	// ADR-0007 without adding a parallel backend endpoint for partner data.
+	function csvEscape(field: string): string {
+		if (/[",\n]/.test(field)) {
+			return '"' + field.replace(/"/g, '""') + '"';
+		}
+		return field;
+	}
+
+	function exportCSV() {
+		const rows: string[][] = [
+			['section', 'summary'],
+			['month', selectedMonth],
+			['revenue_this_month_cents', String(selectedMonthPaid)],
+			['revenue_previous_month_cents', String(prevMonthPaid)],
+			['pending_cents', String(selectedMonthPending)],
+			[],
+			['id', 'slot_start_time', 'product_name', 'amount_cents', 'payment_status', 'booking_status'],
+			...filteredTransactions.map((tx: Transaction) => [
+				tx.id,
+				tx.slotStartTime,
+				tx.productName,
+				String(tx.amountCents),
+				tx.paymentStatus,
+				tx.bookingStatus,
+			]),
+		];
+
+		const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\n');
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `finances_${selectedMonth}.csv`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
 </script>
 
 <svelte:head>
@@ -169,15 +216,27 @@
 			<p class="text-muted-foreground mt-3 text-sm">Suivi de vos revenus et paiements</p>
 			<div class="mt-4 h-px w-16 bg-foreground/20"></div>
 		</div>
-		<!-- Month picker -->
-		<div class="flex items-center gap-2">
-			<Calendar size={18} class="text-muted-foreground" />
-			<input
-				type="month"
-				value={selectedMonth}
-				onchange={onMonthChange}
-				class="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-			/>
+		<div class="flex items-center gap-3">
+			<!-- Month picker -->
+			<div class="flex items-center gap-2">
+				<Calendar size={18} class="text-muted-foreground" />
+				<input
+					type="month"
+					value={selectedMonth}
+					onchange={onMonthChange}
+					class="bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+				/>
+			</div>
+			<!-- CSV export -->
+			<button
+				type="button"
+				onclick={exportCSV}
+				disabled={!data.summary}
+				class="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+			>
+				<Download size={16} />
+				Exporter CSV
+			</button>
 		</div>
 	</div>
 
