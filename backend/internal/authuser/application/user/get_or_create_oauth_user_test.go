@@ -195,7 +195,7 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		mockCrypto := &mockCryptoService{}
 		mockStripe := &mockStripeService{}
 
-		userService := user.New(mockRepo, mockCrypto, mockStripe)
+		userService := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		existingUserEncx := &domain.UserEncx{
 			ID: uuid.New(),
@@ -217,7 +217,7 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		mockCrypto := &mockCryptoService{}
 		mockStripe := &mockStripeService{}
 
-		userService := user.New(mockRepo, mockCrypto, mockStripe)
+		userService := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Mock that neither OAuth ID nor email exists
 		mockRepo.On("GetUserByGoogleID", ctx, "google456").Return(nil, errs.ErrRepositoryNotFound)
@@ -246,7 +246,7 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		mockCrypto := &mockCryptoService{}
 		mockStripe := &mockStripeService{}
 
-		userService := user.New(mockRepo, mockCrypto, mockStripe)
+		userService := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		_, _, err := userService.GetOrCreateOAuthUser(ctx, "invalid_provider", "oauth123", "test@example.com", "John", "Doe")
 
@@ -259,7 +259,7 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		mockCrypto := &mockCryptoService{}
 		mockStripe := &mockStripeService{}
 
-		userService := user.New(mockRepo, mockCrypto, mockStripe)
+		userService := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Test missing provider
 		_, _, err := userService.GetOrCreateOAuthUser(ctx, "", "oauth123", "test@example.com", "John", "Doe")
