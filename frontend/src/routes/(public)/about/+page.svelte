@@ -40,6 +40,14 @@
     ];
 </script>
 
+<svelte:head>
+    <title>À propos | Leviosa Care</title>
+    <meta
+        name="description"
+        content="Trouver le bon expert prend trop de temps. Leviosa change ça : une réservation directe, des praticiens vérifiés, un soulagement à portée de main."
+    />
+</svelte:head>
+
 <!-- Hero -->
 <section class="py-28 sm:py-36 bg-background-section">
     <div
