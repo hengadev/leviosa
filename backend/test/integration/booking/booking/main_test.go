@@ -13,10 +13,18 @@ import (
 	"time"
 
 	bookingService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
+	buildingAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
+	roomAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
 	availabilityPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
+	buildingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
+	roomPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
+	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
+
+	authuserUserService "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
+	authuserUserPostgres "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
 
 	productService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/product"
 	priceService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/price"
@@ -80,6 +88,14 @@ var (
 	testServer       *http.Server
 	authSessionRepo  authsession.SessionRepository
 	notificationSpy  *SpyNotificationService
+
+	// Real notification adapter (backed by real user/room/building/product
+	// fetchers against the test database) plus SMS/email spies, used by tests
+	// that need to verify actual SMS-send-attempt behavior end-to-end, not
+	// just that the ports.BookingNotificationService interface was invoked.
+	realNotificationAdapter *bookingNotification.BookingNotificationAdapter
+	notificationSMSSpy      *IntegrationSMSSpy
+	notificationEmailSpy    *IntegrationEmailSpy
 )
 
 func TestMain(m *testing.M) {
@@ -226,6 +242,31 @@ func TestMain(m *testing.M) {
 	notificationSpy = NewSpyNotificationService()
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
 		bookingService.WithTokenSecret(testTokenSecret))
+
+	// Wire a real BookingNotificationAdapter (real user/room/building/product
+	// fetchers against the test DB) backed by SMS/email spies, so tests can
+	// assert that an SMS send is actually attempted end-to-end, not just that
+	// the notification port was invoked.
+	authUserRepo := authuserUserPostgres.New(ctx, testPool)
+	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil)
+
+	realBuildingRepo := buildingPostgres.New(ctx, testPool)
+	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
+
+	realRoomRepo := roomPostgres.New(ctx, testPool)
+	realRoomService := roomAppService.New(realRoomRepo, realBuildingRepo, crypto)
+
+	notificationSMSSpy = &IntegrationSMSSpy{}
+	notificationEmailSpy = &IntegrationEmailSpy{}
+	realNotificationAdapter = bookingNotification.NewBookingNotificationAdapter(
+		notificationEmailSpy,
+		notificationSMSSpy,
+		"https://app.leviosa.test",
+		bookingNotification.NewInProcessUserFetcher(realAuthUserService),
+		bookingNotification.NewInProcessRoomFetcher(realRoomService),
+		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
+		catalogProductService,
+	)
 
 	// Pre-compute the hash of the test service key so the mock secret reader can
 	// return it for RequireServiceAuth validation on POST /bookings/claim.
