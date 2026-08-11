@@ -20,6 +20,9 @@ type SettingsService interface {
 	GetOTPMaxAttempts(ctx context.Context) (*domain.GetOTPMaxAttemptsResponse, error)
 	GetAccessTokenDuration(ctx context.Context) (*domain.GetAccessTokenDurationResponse, error)
 	GetRefreshTokenDuration(ctx context.Context) (*domain.GetRefreshTokenDurationResponse, error)
+	GetCompanyRegistrationNumber(ctx context.Context) (*domain.GetCompanyRegistrationNumberResponse, error)
+	GetCompanyVatNumber(ctx context.Context) (*domain.GetCompanyVatNumberResponse, error)
+	GetCompanyHostingProvider(ctx context.Context) (*domain.GetCompanyHostingProviderResponse, error)
 	// setters
 	SetCompanyName(ctx context.Context, request *domain.SetCompanyNameRequest) (*domain.SetCompanyNameResponse, error)
 	SetCompanyEmail(ctx context.Context, request *domain.SetCompanyEmailRequest) (*domain.SetCompanyEmailResponse, error)
@@ -32,6 +35,9 @@ type SettingsService interface {
 	SetOTPMaxAttempts(ctx context.Context, request *domain.SetOTPMaxAttemptsRequest) (*domain.SetOTPMaxAttemptsResponse, error)
 	SetAccessTokenDuration(ctx context.Context, request *domain.SetAccessTokenDurationRequest) (*domain.SetAccessTokenDurationResponse, error)
 	SetRefreshTokenDuration(ctx context.Context, request *domain.SetRefreshTokenDurationRequest) (*domain.SetRefreshTokenDurationResponse, error)
+	SetCompanyRegistrationNumber(ctx context.Context, request *domain.SetCompanyRegistrationNumberRequest) (*domain.SetCompanyRegistrationNumberResponse, error)
+	SetCompanyVatNumber(ctx context.Context, request *domain.SetCompanyVatNumberRequest) (*domain.SetCompanyVatNumberResponse, error)
+	SetCompanyHostingProvider(ctx context.Context, request *domain.SetCompanyHostingProviderRequest) (*domain.SetCompanyHostingProviderResponse, error)
 	// COMMENTED OUT: Event publishing is now an internal implementation detail
 	// External modules should access settings via this interface's getter methods
 	// PublishSettingUpdate(ctx context.Context, key string, value any) error
