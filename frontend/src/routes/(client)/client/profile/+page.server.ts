@@ -1,5 +1,5 @@
 import { env } from '$env/dynamic/private';
-import { fail, type Actions } from '@sveltejs/kit';
+import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ fetch, locals }) => {
@@ -18,7 +18,10 @@ export const load: PageServerLoad = async ({ fetch, locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, fetch }) => {
+	// SvelteKit forbids mixing a `default` action with named actions on the
+	// same page, so the pre-existing profile-update handler becomes a named
+	// action alongside `deleteAccount` and `requestData` below.
+	updateProfile: async ({ request, fetch }) => {
 		const formData = await request.formData();
 
 		const gender = formData.get('gender') as string;
@@ -50,5 +53,39 @@ export const actions: Actions = {
 
 		const updatedUser = await res.json();
 		return { success: true as const, user: updatedUser };
+	},
+
+	// Issue 003: destructive, irreversible self-service account deletion,
+	// wired to the existing authuser `DELETE /auth/me` endpoint.
+	deleteAccount: async ({ fetch, cookies, locals }) => {
+		if (env.USE_MOCK_DATA === 'true') {
+			cookies.delete('mock_session', { path: '/' });
+			throw redirect(302, '/auth');
+		}
+
+		let res: Response;
+		try {
+			res = await fetch(`${env.API_URL}/auth/me`, { method: 'DELETE' });
+		} catch (error) {
+			console.error('Delete account request failed:', error);
+			return fail(503, {
+				deleteError: 'Impossible de contacter le serveur. Veuillez réessayer.'
+			});
+		}
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return fail(res.status, {
+				deleteError:
+					err.error ?? err.message ?? 'Impossible de supprimer votre compte. Veuillez réessayer.'
+			});
+		}
+
+		// The backend already revokes every session server-side; clear the
+		// local cookies too so the browser is signed out immediately.
+		cookies.delete(locals.sessionCookieName, { path: '/', domain: locals.cookieDomain });
+		cookies.delete('leviosa_refresh_token', { path: '/', domain: locals.cookieDomain });
+
+		throw redirect(302, '/auth');
 	}
 };

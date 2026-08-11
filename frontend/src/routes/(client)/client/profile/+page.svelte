@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
-	import { CheckCircle, ArrowLeft, Save } from '@lucide/svelte';
+	import { Dialog } from 'bits-ui';
+	import { CheckCircle, ArrowLeft, Save, AlertTriangle, X } from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -16,6 +17,18 @@
 	let address2 = $state(user?.address2 ?? '');
 	let postalCode = $state(user?.postal_code ?? '');
 	let city = $state(user?.city ?? '');
+
+	// Issue 003: delete-account, guarded by a type-to-confirm dialog
+	const DELETE_CONFIRM_WORD = 'SUPPRIMER';
+	let deleteDialogOpen = $state(false);
+	let deleteConfirmInput = $state('');
+	let deletingAccount = $state(false);
+	let deleteConfirmed = $derived(deleteConfirmInput.trim() === DELETE_CONFIRM_WORD);
+
+	function closeDeleteDialog() {
+		deleteDialogOpen = false;
+		deleteConfirmInput = '';
+	}
 </script>
 
 <svelte:head>
@@ -49,7 +62,7 @@
 	{/if}
 
 	{#if user}
-		<form method="POST" use:enhance class="space-y-8">
+		<form method="POST" action="?/updateProfile" use:enhance class="space-y-8">
 			<!-- Personal info -->
 			<div class="bg-card rounded-lg border border-border p-6 space-y-6">
 				<h2 class="text-lg font-semibold text-foreground">Informations personnelles</h2>
@@ -187,6 +200,107 @@
 				</button>
 			</div>
 		</form>
+
+		<!-- Danger zone: delete account -->
+		<div class="bg-card rounded-lg border border-destructive/30 p-6 space-y-4">
+			<div>
+				<h2 class="text-lg font-semibold text-foreground">Zone de danger</h2>
+				<p class="text-sm text-muted-foreground mt-1">
+					La suppression de votre compte est définitive et irréversible : vos informations
+					personnelles, votre historique de réservations et vos messages seront effacés.
+				</p>
+			</div>
+
+			{#if form?.deleteError}
+				<div class="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-400">
+					{form.deleteError}
+				</div>
+			{/if}
+
+			<button
+				type="button"
+				onclick={() => (deleteDialogOpen = true)}
+				class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-destructive text-white text-sm font-medium hover:bg-destructive/90 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 transition-colors"
+			>
+				Supprimer mon compte
+			</button>
+		</div>
+
+		<Dialog.Root bind:open={deleteDialogOpen}>
+			<Dialog.Portal>
+				<Dialog.Overlay
+					class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80"
+				/>
+				<Dialog.Content
+					class="rounded-card-lg bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 outline-hidden fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border p-8 sm:max-w-[480px]"
+				>
+					<div class="flex items-start gap-4">
+						<div class="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+							<AlertTriangle size={20} class="text-destructive" />
+						</div>
+						<div>
+							<Dialog.Title class="text-xl font-semibold tracking-tight text-foreground">
+								Supprimer votre compte ?
+							</Dialog.Title>
+							<Dialog.Description class="text-sm text-muted-foreground mt-2">
+								Cette action est irréversible. Toutes vos données personnelles, réservations et
+								messages seront définitivement supprimés et vous serez déconnecté.
+							</Dialog.Description>
+						</div>
+					</div>
+
+					<form
+						method="POST"
+						action="?/deleteAccount"
+						class="mt-6"
+						use:enhance={() => {
+							deletingAccount = true;
+							return async ({ update }) => {
+								await update();
+								deletingAccount = false;
+							};
+						}}
+					>
+						<label for="delete-confirm" class="block text-sm font-medium text-foreground mb-1.5">
+							Tapez <span class="font-mono font-semibold">{DELETE_CONFIRM_WORD}</span> pour confirmer
+						</label>
+						<input
+							type="text"
+							id="delete-confirm"
+							name="confirm"
+							bind:value={deleteConfirmInput}
+							autocomplete="off"
+							class="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40"
+						/>
+
+						<div class="flex w-full justify-end gap-3 mt-6">
+							<button
+								type="button"
+								onclick={closeDeleteDialog}
+								class="inline-flex items-center justify-center px-6 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+							>
+								Annuler
+							</button>
+							<button
+								type="submit"
+								disabled={!deleteConfirmed || deletingAccount}
+								class="inline-flex items-center justify-center px-6 py-2.5 rounded-lg bg-destructive text-white text-sm font-semibold hover:bg-destructive/90 focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+							>
+								{deletingAccount ? 'Suppression…' : 'Supprimer définitivement'}
+							</button>
+						</div>
+					</form>
+
+					<Dialog.Close
+						onclick={closeDeleteDialog}
+						class="focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden absolute right-5 top-5 rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 cursor-pointer"
+					>
+						<X class="text-foreground size-5" />
+						<span class="sr-only">Fermer</span>
+					</Dialog.Close>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 	{:else}
 		<div class="bg-card rounded-lg border border-border p-8 text-center text-muted-foreground">
 			Impossible de charger vos informations. Veuillez réessayer.
