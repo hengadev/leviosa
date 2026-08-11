@@ -42,8 +42,10 @@ func NewService(apiKey, baseURL, webhookSecret string) *Service {
 	}
 }
 
-// CreatePaymentIntent creates a Stripe payment intent for a booking
-func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency, description string, metadata map[string]string) (string, string, error) {
+// CreatePaymentIntent creates a Stripe payment intent for a booking.
+// When receiptEmail is non-empty, it is set on the PaymentIntent so Stripe
+// automatically emails the client a hosted receipt once payment succeeds.
+func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) {
 	params := &stripe.PaymentIntentParams{
 		Amount:      stripe.Int64(int64(amount)),
 		Currency:    stripe.String(currency),
@@ -53,6 +55,10 @@ func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency,
 		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
 			Enabled: stripe.Bool(true),
 		},
+	}
+
+	if receiptEmail != "" {
+		params.ReceiptEmail = stripe.String(receiptEmail)
 	}
 
 	pi, err := paymentintent.New(params)
@@ -75,9 +81,14 @@ func (s *Service) ConfirmPaymentIntent(ctx context.Context, paymentIntentID stri
 	return nil
 }
 
-// RetrievePaymentIntent retrieves a payment intent to check its status
+// RetrievePaymentIntent retrieves a payment intent to check its status.
+// The latest charge is expanded so the underlying charge's hosted receipt URL
+// can be surfaced to clients once payment has succeeded.
 func (s *Service) RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (*ports.PaymentIntentInfo, error) {
-	pi, err := paymentintent.Get(paymentIntentID, &stripe.PaymentIntentParams{})
+	params := &stripe.PaymentIntentParams{}
+	params.AddExpand("latest_charge")
+
+	pi, err := paymentintent.Get(paymentIntentID, params)
 	if err != nil {
 		return nil, s.classifyStripeError("retrieve payment intent", err)
 	}
@@ -90,6 +101,11 @@ func (s *Service) RetrievePaymentIntent(ctx context.Context, paymentIntentID str
 		ClientSecret: pi.ClientSecret,
 		Description:  pi.Description,
 		Metadata:     pi.Metadata,
+	}
+
+	// Surface the hosted receipt URL from the underlying charge, when available.
+	if pi.LatestCharge != nil {
+		info.ReceiptURL = pi.LatestCharge.ReceiptURL
 	}
 
 	// Include error information if present
