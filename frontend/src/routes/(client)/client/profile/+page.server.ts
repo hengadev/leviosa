@@ -2,6 +2,21 @@ import { env } from '$env/dynamic/private';
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
+interface ThreadSummary {
+	thread_id: string;
+	participant_id: string;
+	participant_name: string;
+	last_message: string;
+	last_message_at: string;
+	unread_count: number;
+}
+
+// Canned request body sent into the client↔partner thread when a client asks
+// for their personal data. No new backend/inbound channel — this rides the
+// existing messaging system per docs/prd/legal-compliance-gdpr-foundations.md.
+const DATA_REQUEST_MESSAGE =
+	"Bonjour,\n\nJe souhaite exercer mon droit d'accès à mes données personnelles (RGPD, article 15) et en recevoir une copie. Merci de me confirmer la réception de cette demande.\n\n— Demande envoyée automatiquement depuis mon espace client.";
+
 export const load: PageServerLoad = async ({ fetch, locals }) => {
 	if (env.USE_MOCK_DATA === 'true') {
 		return { user: locals.user ?? null };
@@ -87,5 +102,56 @@ export const actions: Actions = {
 		cookies.delete('leviosa_refresh_token', { path: '/', domain: locals.cookieDomain });
 
 		throw redirect(302, '/auth');
+	},
+
+	// Issue 004: "request my data" — routes into the existing client↔partner
+	// messaging thread rather than building new export tooling. See
+	// docs/runbooks/gdpr-data-export.md for how staff fulfill the request.
+	requestData: async ({ fetch }) => {
+		if (env.USE_MOCK_DATA === 'true') {
+			return { dataRequestSent: true as const, threadId: 'c1' };
+		}
+
+		let threadsRes: Response;
+		try {
+			threadsRes = await fetch(`${env.API_URL}/threads`);
+		} catch (error) {
+			console.error('Fetch threads for data request failed:', error);
+			return fail(503, {
+				dataRequestError: 'Impossible de contacter le serveur. Veuillez réessayer.'
+			});
+		}
+
+		if (!threadsRes.ok) {
+			return fail(threadsRes.status, {
+				dataRequestError: 'Impossible de récupérer vos conversations. Veuillez réessayer.'
+			});
+		}
+
+		const threads: ThreadSummary[] = await threadsRes.json();
+		if (!threads.length) {
+			// No existing partner conversation to carry the request — surface
+			// the manual email fallback instead of failing silently.
+			return { dataRequestNoThread: true as const };
+		}
+
+		// Threads are returned most-recently-active first.
+		const threadId = threads[0].thread_id;
+
+		const sendRes = await fetch(`${env.API_URL}/threads/${threadId}/messages`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ body: DATA_REQUEST_MESSAGE })
+		});
+
+		if (!sendRes.ok) {
+			const err = await sendRes.json().catch(() => ({}));
+			return fail(sendRes.status, {
+				dataRequestError:
+					err.error ?? err.message ?? "Impossible d'envoyer votre demande. Veuillez réessayer."
+			});
+		}
+
+		return { dataRequestSent: true as const, threadId };
 	}
 };
