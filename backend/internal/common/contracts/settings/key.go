@@ -12,6 +12,11 @@ const (
 	OTPMaxAttempts       = "otp_max_attempts"
 	AccessTokenDuration  = "access_token_duration"
 	RefreshTokenDuration = "refresh_token_duration"
+
+	// Legal identity fields (mentions légales / GDPR compliance foundations)
+	CompanyRegistrationNumber = "company_registration_number" // SIRET/SIREN
+	CompanyVatNumber          = "company_vat_number"           // may be blank (franchise en base de TVA)
+	CompanyHostingProvider    = "hosting_provider"              // hosting provider name + address
 )
 
 // NOTE: the key that I am going to keep

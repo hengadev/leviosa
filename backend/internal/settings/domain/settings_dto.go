@@ -3,11 +3,19 @@ package domain
 import (
 	"context"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/validation"
 	"github.com/hengadev/errsx"
 )
+
+// registrationNumberDigitsPattern matches a purely numeric SIREN (9 digits) or SIRET (14 digits).
+var registrationNumberDigitsPattern = regexp.MustCompile(`^\d+$`)
+
+// vatNumberPattern approximates the EU VAT number format: a 2-letter country
+// code followed by 2-13 alphanumeric characters.
+var vatNumberPattern = regexp.MustCompile(`^[A-Za-z]{2}[A-Za-z0-9]{2,13}$`)
 
 type SetCompanyNameRequest struct {
 	Name string `json:"name" validate:"required,min=1,max=255"`
@@ -154,6 +162,47 @@ type GetRefreshTokenDurationResponse struct {
 	Duration int `json:"duration"`
 }
 
+type SetCompanyRegistrationNumberRequest struct {
+	RegistrationNumber string `json:"registration_number" validate:"required,min=9,max=14"`
+}
+
+type SetCompanyRegistrationNumberResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetCompanyRegistrationNumberResponse struct {
+	RegistrationNumber string `json:"registration_number"`
+}
+
+// SetCompanyVatNumberRequest carries the company's VAT number. It may be blank:
+// businesses under the French "franchise en base de TVA" regime have none.
+type SetCompanyVatNumberRequest struct {
+	VatNumber string `json:"vat_number"`
+}
+
+type SetCompanyVatNumberResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetCompanyVatNumberResponse struct {
+	VatNumber string `json:"vat_number"`
+}
+
+type SetCompanyHostingProviderRequest struct {
+	HostingProvider string `json:"hosting_provider" validate:"required,min=1,max=500"`
+}
+
+type SetCompanyHostingProviderResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetCompanyHostingProviderResponse struct {
+	HostingProvider string `json:"hosting_provider"`
+}
+
 type ErrorResponse struct {
 	Error   string            `json:"error"`
 	Details map[string]string `json:"details,omitempty"`
@@ -192,6 +241,53 @@ func (d SetCompanyLegalAddressRequest) Valid(ctx context.Context) error {
 	}
 	if len(d.Address) > 500 {
 		errs.Set("address_length", "legal address cannot exceed 500 characters")
+	}
+	return errs.AsError()
+}
+
+func (d SetCompanyRegistrationNumberRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	trimmed := strings.TrimSpace(d.RegistrationNumber)
+	if trimmed == "" {
+		errs.Set("registration_number_required", "company registration number is required")
+		return errs.AsError()
+	}
+	if !registrationNumberDigitsPattern.MatchString(trimmed) {
+		errs.Set("registration_number_format", "company registration number must contain only digits")
+	}
+	if len(trimmed) != 9 && len(trimmed) != 14 {
+		errs.Set("registration_number_length", "company registration number must be 9 digits (SIREN) or 14 digits (SIRET)")
+	}
+	return errs.AsError()
+}
+
+// Valid intentionally allows a blank VAT number: businesses under the French
+// "franchise en base de TVA" regime are not VAT-registered and have none.
+func (d SetCompanyVatNumberRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	trimmed := strings.TrimSpace(d.VatNumber)
+	if trimmed == "" {
+		return nil
+	}
+	if len(trimmed) > 20 {
+		errs.Set("vat_number_length", "VAT number cannot exceed 20 characters")
+	}
+	if !vatNumberPattern.MatchString(trimmed) {
+		errs.Set("vat_number_format", "VAT number must start with a 2-letter country code followed by alphanumeric characters")
+	}
+	return errs.AsError()
+}
+
+func (d SetCompanyHostingProviderRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	if d.HostingProvider == "" {
+		errs.Set("hosting_provider_required", "hosting provider identity is required")
+	}
+	if len(strings.TrimSpace(d.HostingProvider)) == 0 {
+		errs.Set("hosting_provider_empty", "hosting provider identity cannot be empty or whitespace only")
+	}
+	if len(d.HostingProvider) > 500 {
+		errs.Set("hosting_provider_length", "hosting provider identity cannot exceed 500 characters")
 	}
 	return errs.AsError()
 }
