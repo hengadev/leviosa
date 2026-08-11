@@ -786,6 +786,14 @@ export type Category = {
     productCount?: number;
 };
 
+// A single graduated cancellation-fee tier: cancel with at least
+// minHoursBefore hours' notice -> refund refundPercentage% of the amount
+// paid. See docs/adr/0014-graduated-cancellation-fee-tiers.md.
+export type CancellationTier = {
+    minHoursBefore: number;
+    refundPercentage: number;
+};
+
 export type CardType = {
     id: string;
     name: string;
@@ -799,6 +807,7 @@ export type CardType = {
     availability: "online" | "in-person" | "hybrid";
     bufferTime: number;
     cancellationHours: number;
+    cancellationTiers?: CancellationTier[];
 };
 
 export const mockAdminCategories: Category[] = [

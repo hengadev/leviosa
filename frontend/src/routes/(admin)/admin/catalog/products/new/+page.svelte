@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { goto } from "$app/navigation";
-	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, DollarSign, Upload, X, ImageIcon } from "@lucide/svelte";
+	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, DollarSign, Upload, X, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
 	import type { PageData, ActionData } from "./$types";
+	import type { CancellationTier } from "$lib/data/mockData";
 	import { getToastContext } from "$lib/components/toast";
 
 	let { data, form }: { data: PageData, form: ActionData } = $props();
@@ -19,7 +20,16 @@
 	let availability = $state<"online" | "in-person" | "hybrid">("hybrid");
 	let bufferTime = $state(15);
 	let cancellationHours = $state(24);
+	let cancellationTiers = $state<CancellationTier[]>([]);
 	let stripeProductId = $state("");
+
+	function addCancellationTier() {
+		cancellationTiers = [...cancellationTiers, { minHoursBefore: 0, refundPercentage: 0 }];
+	}
+
+	function removeCancellationTier(index: number) {
+		cancellationTiers = cancellationTiers.filter((_, i) => i !== index);
+	}
 	let imageUrl = $state("");
 
 	// Image upload state
@@ -397,6 +407,71 @@
 						</select>
 					</div>
 				</div>
+			</div>
+
+			<!-- Cancellation Fee Tiers -->
+			<div class="pt-4 border-t border-border-card">
+				<div class="flex items-center justify-between mb-2">
+					<span class="block text-sm font-medium text-foreground-alt">
+						Paliers de frais d'annulation
+					</span>
+					<button
+						type="button"
+						onclick={addCancellationTier}
+						class="inline-flex items-center gap-1 text-sm text-foreground hover:opacity-80 transition-opacity"
+					>
+						<Plus size={16} />
+						Ajouter un palier
+					</button>
+				</div>
+				<p class="text-xs text-muted-foreground mb-3">
+					Remplace le blocage strict d'annulation (ADR-0006) par des frais gradués selon le délai avant le rendez-vous (ADR-0014). Laissez vide pour ne pas utiliser les frais gradués. Le dernier palier doit couvrir 0h pour être valide.
+				</p>
+
+				{#if cancellationTiers.length === 0}
+					<p class="text-sm text-muted-foreground italic mb-2">Aucun palier configuré.</p>
+				{:else}
+					<div class="space-y-2 mb-2">
+						{#each cancellationTiers as tier, i}
+							<div class="flex items-center gap-3 bg-muted/50 rounded-lg p-3">
+								<div class="flex-1">
+									<label for={`tier-hours-${i}`} class="block text-xs text-muted-foreground mb-1">
+										Heures minimum avant le rendez-vous
+									</label>
+									<input
+										id={`tier-hours-${i}`}
+										type="number"
+										min="0"
+										bind:value={tier.minHoursBefore}
+										class="w-full px-3 py-2 text-sm border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
+									/>
+								</div>
+								<div class="flex-1">
+									<label for={`tier-refund-${i}`} class="block text-xs text-muted-foreground mb-1">
+										Pourcentage remboursé
+									</label>
+									<input
+										id={`tier-refund-${i}`}
+										type="number"
+										min="0"
+										max="100"
+										bind:value={tier.refundPercentage}
+										class="w-full px-3 py-2 text-sm border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
+									/>
+								</div>
+								<button
+									type="button"
+									onclick={() => removeCancellationTier(i)}
+									class="mt-5 p-2 text-muted-foreground hover:text-red-600 transition-colors"
+									aria-label="Supprimer ce palier"
+								>
+									<Trash2 size={16} />
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+				<input type="hidden" name="cancellationTiers" value={JSON.stringify(cancellationTiers)} />
 			</div>
 
 			<!-- Submit Buttons -->

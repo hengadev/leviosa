@@ -4,7 +4,7 @@ import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate } from 'sveltekit-superforms';
 import { env } from '$env/dynamic/private';
 import { productSchema, productDefaults } from '../../schemas';
-import { mockAdminCards, mockAdminCategories, type CardType, type Category } from "$lib/data/mockData";
+import { mockAdminCards, mockAdminCategories, type CardType, type Category, type CancellationTier } from "$lib/data/mockData";
 
 interface BackendCategory {
 	id: string;
@@ -32,6 +32,7 @@ interface BackendProductAggregator {
 		availability: string;
 		bufferTime: number;
 		cancellationHours: number;
+		cancellationTiers?: CancellationTier[];
 	};
 	prices?: {
 		amount: number;
@@ -85,6 +86,7 @@ function mapBackendProductToFrontend(agg: BackendProductAggregator): CardType {
 		availability: prod.availability as 'online' | 'in-person' | 'hybrid',
 		bufferTime: prod.bufferTime,
 		cancellationHours: prod.cancellationHours,
+		cancellationTiers: prod.cancellationTiers ?? [],
 	};
 }
 
@@ -194,6 +196,7 @@ export const actions: Actions = {
 		const availability = formData.get('availability') as string | null;
 		const bufferTimeStr = formData.get('bufferTime') as string | null;
 		const cancellationHoursStr = formData.get('cancellationHours') as string | null;
+		const cancellationTiersStr = formData.get('cancellationTiers') as string | null;
 
 		// Build the PATCH body — only include fields that are present
 		const body: Record<string, unknown> = {};
@@ -205,6 +208,18 @@ export const actions: Actions = {
 		if (availability != null) body.availability = availability;
 		if (bufferTimeStr != null) body.bufferTime = parseInt(bufferTimeStr, 10);
 		if (cancellationHoursStr != null) body.cancellationHours = parseInt(cancellationHoursStr, 10);
+		if (cancellationTiersStr != null) {
+			try {
+				const parsed: CancellationTier[] = JSON.parse(cancellationTiersStr);
+				body.cancellationTiers = parsed.map((t) => ({
+					minHoursBefore: Number(t.minHoursBefore),
+					refundPercentage: Number(t.refundPercentage),
+				}));
+			} catch (e) {
+				console.error('Invalid cancellationTiers payload:', e);
+				return fail(400, { error: 'Paliers de remboursement invalides.' });
+			}
+		}
 
 		const res = await fetch(`${env.API_URL}/admin/products/${productId}`, {
 			method: 'PATCH',
