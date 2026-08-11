@@ -75,3 +75,16 @@ var (
 	ErrReviewNotBookingOwner  = errors.New("only the booking's client may leave a review for it")
 	ErrReviewAlreadyExists    = errors.New("a review already exists for this booking")
 )
+
+// Waitlist entry errors
+var (
+	ErrInvalidWaitlistProductID      = errors.New("invalid product ID")
+	ErrInvalidWaitlistDateRange      = errors.New("desired range end must be after desired range start")
+	ErrCannotJoinWaitlistInPast      = errors.New("cannot join waitlist for a date range that has already passed")
+	ErrInvalidWaitlistIdentity       = errors.New("waitlist entry must have either a client ID or guest fields")
+	ErrAmbiguousWaitlistIdentity     = errors.New("waitlist entry must have either a client ID or guest fields, not both")
+	ErrWaitlistEntryNotWaiting       = errors.New("waitlist entry is not in the waiting state")
+	ErrWaitlistEntryNotNotified      = errors.New("waitlist entry is not in the notified state")
+	ErrWaitlistEntryAlreadyCancelled = errors.New("waitlist entry is already cancelled")
+	ErrCannotCancelWaitlistEntry     = errors.New("cannot cancel a waitlist entry that has already been claimed or expired")
+)
