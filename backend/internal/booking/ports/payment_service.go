@@ -38,6 +38,12 @@ type WebhookEvent struct {
 	Metadata        map[string]string `json:"metadata"`
 	FailureCode     string            `json:"failure_code,omitempty"`
 	FailureMessage  string            `json:"failure_message,omitempty"`
+
+	// Dispute fields, populated for charge.dispute.created / charge.dispute.closed events.
+	// Status carries the Stripe dispute status (e.g. "needs_response", "won", "lost") for
+	// these event types, reusing the same field payment_intent events use for PI status.
+	DisputeID     string `json:"dispute_id,omitempty"`
+	DisputeReason string `json:"dispute_reason,omitempty"`
 }
 
 // Webhook Event Type Constants
@@ -110,4 +116,3 @@ const (
 	// RefundReasonRequestedByCustomer indicates customer requested refund
 	RefundReasonRequestedByCustomer = "requested_by_customer"
 )
-
