@@ -19,6 +19,7 @@ import (
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
 	buildingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/building"
 	metricsHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/metrics"
+	reviewHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/review"
 	roomHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/room"
 
 	// Catalog HTTP handlers
@@ -255,6 +256,13 @@ func (s *Server) setupBookingRoutes(router *http.ServeMux) {
 		s.container.AuthMw,
 	)
 	metricsH.RegisterRoutes(router)
+
+	// Review handler (issue 009)
+	reviewH := reviewHandler.New(
+		s.container.ReviewService,
+		s.container.AuthMw,
+	)
+	reviewH.RegisterRoutes(router)
 }
 
 func (s *Server) setupMessagingRoutes(router *http.ServeMux) {
