@@ -23,6 +23,11 @@ type StripeService interface {
 	// Returns the URL the partner should be redirected to.
 	CreateAccountLink(ctx context.Context, accountID, linkType, returnURL, refreshURL string) (string, error)
 
+	// CreateBillingPortalSession creates a Stripe Billing Portal session scoped to the given
+	// customer, for payment-method management. Returns the URL the customer should be
+	// redirected to.
+	CreateBillingPortalSession(ctx context.Context, customerID, returnURL string) (string, error)
+
 	// VerifyConnectWebhookSignature verifies the Stripe webhook signature using the
 	// Connect-specific webhook secret and returns the parsed account.updated event data.
 	// Returns the Stripe account ID and whether charges/payouts are enabled.
