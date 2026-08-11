@@ -102,9 +102,25 @@ type BookingReminderRequest struct {
 	Year        int    `json:"year"`
 }
 
+// Contact Form Notification — sent to staff/company inbox when a visitor
+// submits the public contact form. Reuses the existing SMTP notification
+// channel rather than a new inbound-message pipeline.
+type ContactFormRequest struct {
+	ToEmail      string `json:"to_email"`   // staff/company inbox (recipient)
+	FromEmail    string `json:"from_email"` // company email (sender)
+	Name         string `json:"name"`
+	ContactEmail string `json:"contact_email,omitempty"` // visitor's email, used as Reply-To when present
+	ContactPhone string `json:"contact_phone,omitempty"`
+	Message      string `json:"message"`
+	CompanyName  string `json:"company_name"`
+	LogoURL      string `json:"logo_url"`
+	SubmittedAt  string `json:"submitted_at"`
+}
+
 // EmailRequest is the generic email structure used by SMTP client
 type EmailRequest struct {
 	To         string
+	ReplyTo    string
 	Subject    string
 	Template   string
 	Data       interface{}
