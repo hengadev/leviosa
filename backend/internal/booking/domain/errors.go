@@ -43,17 +43,19 @@ var (
 
 // Booking errors
 var (
-	ErrInvalidClientID              = errors.New("invalid client ID")
-	ErrAmbiguousBookingIdentity     = errors.New("booking must have either a client ID or guest fields, not both")
-	ErrInvalidBookingPrice          = errors.New("booking price cannot be negative")
-	ErrCannotMarkRefundedAsPaid     = errors.New("cannot mark refunded payment as paid")
-	ErrCannotRefundUnpaidBooking    = errors.New("cannot refund unpaid booking")
-	ErrCannotCancelCompletedBooking = errors.New("cannot cancel completed booking")
-	ErrBookingAlreadyCancelled      = errors.New("booking is already cancelled")
-	ErrCannotCompleteBooking        = errors.New("cannot complete cancelled booking")
-	ErrBookingAlreadyCompleted      = errors.New("booking is already completed")
-	ErrCannotMarkCancelledAsNoShow  = errors.New("cannot mark cancelled booking as no-show")
-	ErrCannotMarkCompletedAsNoShow  = errors.New("cannot mark completed booking as no-show")
+	ErrInvalidClientID                 = errors.New("invalid client ID")
+	ErrAmbiguousBookingIdentity        = errors.New("booking must have either a client ID or guest fields, not both")
+	ErrInvalidBookingPrice             = errors.New("booking price cannot be negative")
+	ErrCannotMarkRefundedAsPaid        = errors.New("cannot mark refunded payment as paid")
+	ErrCannotRefundUnpaidBooking       = errors.New("cannot refund unpaid booking")
+	ErrCannotCancelCompletedBooking    = errors.New("cannot cancel completed booking")
+	ErrBookingAlreadyCancelled         = errors.New("booking is already cancelled")
+	ErrCannotCompleteBooking           = errors.New("cannot complete cancelled booking")
+	ErrBookingAlreadyCompleted         = errors.New("booking is already completed")
+	ErrCannotMarkCancelledAsNoShow     = errors.New("cannot mark cancelled booking as no-show")
+	ErrCannotMarkCompletedAsNoShow     = errors.New("cannot mark completed booking as no-show")
+	ErrCannotDisputeUnpaidBooking      = errors.New("cannot dispute a booking that is not paid")
+	ErrCannotResolveNonDisputedBooking = errors.New("cannot resolve dispute for a booking that is not disputed")
 )
 
 // Booking token errors
@@ -61,4 +63,3 @@ var (
 	ErrInvalidBookingToken = errors.New("invalid booking token")
 	ErrBookingTokenExpired = errors.New("booking token has expired")
 )
-

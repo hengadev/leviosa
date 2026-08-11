@@ -25,6 +25,7 @@ const (
 	PaymentStatusPaid     PaymentStatus = "paid"
 	PaymentStatusFailed   PaymentStatus = "failed"
 	PaymentStatusRefunded PaymentStatus = "refunded"
+	PaymentStatusDisputed PaymentStatus = "disputed"
 )
 
 // Booking represents a client reservation of partner availability
@@ -36,9 +37,9 @@ type Booking struct {
 	RoomID         uuid.UUID  `json:"room_id"`
 
 	// Slot information (product and time boundaries)
-	ProductID     uuid.UUID `json:"product_id" encx:"encrypt"`               // Link to catalog product
-	SlotStartTime time.Time `json:"slot_start_time" encx:"encrypt"`          // Actual slot start (10-min aligned)
-	SlotEndTime   time.Time `json:"slot_end_time" encx:"encrypt"`            // Calculated: SlotStartTime + Product.Duration
+	ProductID     uuid.UUID `json:"product_id" encx:"encrypt"`      // Link to catalog product
+	SlotStartTime time.Time `json:"slot_start_time" encx:"encrypt"` // Actual slot start (10-min aligned)
+	SlotEndTime   time.Time `json:"slot_end_time" encx:"encrypt"`   // Calculated: SlotStartTime + Product.Duration
 
 	// Booking details (encrypted for GDPR compliance)
 	ClientNotes  string `json:"client_notes,omitempty" encx:"encrypt"`
@@ -166,6 +167,39 @@ func (b *Booking) RefundPayment() error {
 		return ErrCannotRefundUnpaidBooking
 	}
 	b.PaymentStatus = PaymentStatusRefunded
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
+// MarkPaymentDisputed marks the booking payment as disputed after a Stripe
+// charge.dispute.created webhook. Only a paid booking can be disputed. No
+// automatic refund or cancellation happens here — dispute response is a
+// manual, evidence-gathering process (ADR-0007, issue 018).
+func (b *Booking) MarkPaymentDisputed() error {
+	if b.PaymentStatus != PaymentStatusPaid {
+		return ErrCannotDisputeUnpaidBooking
+	}
+	b.PaymentStatus = PaymentStatusDisputed
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
+// ResolveDispute transitions a disputed booking's payment status once Stripe
+// closes the dispute (charge.dispute.closed). stripeDisputeStatus is the
+// Stripe dispute's terminal status: "lost" means the cardholder's bank kept
+// the chargeback, so the booking reverts to Refunded (the money is gone,
+// mirroring what a manual refund would leave); any other outcome (won,
+// warning_closed, etc.) reverts to Paid. This only records the outcome — it
+// never triggers an actual Stripe refund call.
+func (b *Booking) ResolveDispute(stripeDisputeStatus string) error {
+	if b.PaymentStatus != PaymentStatusDisputed {
+		return ErrCannotResolveNonDisputedBooking
+	}
+	if stripeDisputeStatus == "lost" {
+		b.PaymentStatus = PaymentStatusRefunded
+	} else {
+		b.PaymentStatus = PaymentStatusPaid
+	}
 	b.UpdatedAt = time.Now()
 	return nil
 }
