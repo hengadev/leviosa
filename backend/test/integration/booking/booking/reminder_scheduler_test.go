@@ -101,22 +101,39 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 	err = bookingRepo.MarkReminderSent(ctx, booking3.ID)
 	require.NoError(t, err)
 
-	// Reset spy
-	notificationSpy.BookingReminders = nil
+	// Reset spies. Use the real notification adapter (backed by SMS/email
+	// spies) rather than the port-level notificationSpy so we can assert
+	// that an SMS send is actually attempted, not just that the
+	// BookingNotificationService interface was invoked.
+	notificationEmailSpy.BookingReminders = nil
+	notificationSMSSpy.Messages = nil
 
 	// Create scheduler with 24h window and run one tick
 	scheduler := bookingService.NewReminderScheduler(
 		bookingRepo,
-		notificationSpy,
+		realNotificationAdapter,
 		crypto,
 		bookingService.WithReminderWindow(24*time.Hour),
 	)
 	scheduler.TickOnce(ctx)
 
-	// Assert: exactly one reminder sent (for booking 1)
-	assert.Len(t, notificationSpy.BookingReminders, 1, "expected exactly one reminder notification")
-	if len(notificationSpy.BookingReminders) == 1 {
-		assert.Equal(t, booking1.ID, notificationSpy.BookingReminders[0].BookingID)
+	// Notification dispatch is fire-and-forget (spawned in a goroutine by the
+	// adapter), so give it a moment to complete before asserting.
+	require.Eventually(t, func() bool {
+		return len(notificationEmailSpy.BookingReminders) >= 1
+	}, 2*time.Second, 10*time.Millisecond, "expected reminder email to be sent")
+
+	// Assert: exactly one reminder email sent (for booking 1)
+	assert.Len(t, notificationEmailSpy.BookingReminders, 1, "expected exactly one reminder email")
+	if len(notificationEmailSpy.BookingReminders) == 1 {
+		assert.Equal(t, booking1.ID.String(), notificationEmailSpy.BookingReminders[0].BookingID)
+	}
+
+	// Assert: exactly one reminder SMS attempted (client has a phone on file)
+	assert.Len(t, notificationSMSSpy.Messages, 1, "expected exactly one reminder SMS attempt")
+	if len(notificationSMSSpy.Messages) == 1 {
+		assert.NotEmpty(t, notificationSMSSpy.Messages[0].PhoneNumber, "reminder SMS should have a phone number")
+		assert.Contains(t, notificationSMSSpy.Messages[0].Message, "Rappel", "reminder SMS should use the French reminder copy pattern")
 	}
 
 	// Assert: booking 1 has reminded_at set
