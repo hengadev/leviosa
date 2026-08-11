@@ -31,6 +31,11 @@ const (
 	// Change password
 	ChangePasswordEndpoint = UsersBasePath + MePath + PasswordPath
 
+	// === Stripe Endpoints ===
+
+	// Get Stripe billing portal link for the authenticated user (payment-method management)
+	GetBillingPortalLinkEndpoint = UsersBasePath + MePath + "/stripe/billing-portal-link"
+
 	// === Admin-Only Endpoints ===
 
 	// Get pending users (users awaiting approval)
