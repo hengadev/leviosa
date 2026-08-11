@@ -46,6 +46,11 @@ type BookingService interface {
 	// RefundBooking processes a refund
 	RefundBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
+	// AdminOverrideCancelBooking lets an admin force-cancel a booking,
+	// bypassing the product's cancellation-window policy. Writes an audit
+	// entry on success.
+	AdminOverrideCancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error)
+
 	// GetClientBookings retrieves bookings for a client
 	GetClientBookings(ctx context.Context, clientID uuid.UUID, filter BookingFilter) ([]*domain.Booking, error)
 

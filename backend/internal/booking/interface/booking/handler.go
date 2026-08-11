@@ -20,6 +20,7 @@ type Handler interface {
 	GetUpcomingBookings(w http.ResponseWriter, r *http.Request)
 	UpdateBookingNotes(w http.ResponseWriter, r *http.Request)
 	CancelBooking(w http.ResponseWriter, r *http.Request)
+	AdminOverrideCancelBooking(w http.ResponseWriter, r *http.Request)
 	CancelBookingPublic(w http.ResponseWriter, r *http.Request)
 	CompleteBooking(w http.ResponseWriter, r *http.Request)
 	MarkNoShow(w http.ResponseWriter, r *http.Request)

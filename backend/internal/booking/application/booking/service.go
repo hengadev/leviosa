@@ -3,6 +3,7 @@ package booking
 import (
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	catalogPorts "github.com/Leviosa-care/leviosa/backend/internal/catalog/ports"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/hengadev/encx"
 )
 
@@ -17,6 +18,7 @@ type BookingService struct {
 	authUserClient      ports.AuthUserClient
 	crypto              encx.CryptoService
 	tokenSecret         []byte
+	audit               audit.Logger
 }
 
 // New creates a new instance of the booking service
@@ -61,4 +63,11 @@ func WithAuthUserClient(c ports.AuthUserClient) Option {
 // WithTokenSecret sets the HMAC secret used to sign booking tokens.
 func WithTokenSecret(secret []byte) Option {
 	return func(s *BookingService) { s.tokenSecret = secret }
+}
+
+// WithAuditLogger injects the audit-log port used to record sensitive
+// booking actions (refunds, admin overrides). If not provided, those use
+// cases simply skip writing an audit entry.
+func WithAuditLogger(l audit.Logger) Option {
+	return func(s *BookingService) { s.audit = l }
 }

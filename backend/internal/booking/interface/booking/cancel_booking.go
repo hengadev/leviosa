@@ -102,6 +102,38 @@ func (h *handler) CancelBooking(w http.ResponseWriter, r *http.Request) {
 	httpx.RespondWithJSON(w, cancelBookingResponse(booking), http.StatusOK)
 }
 
+// AdminOverrideCancelBooking lets an admin force-cancel a booking, bypassing
+// the product's cancellation-window policy. Route is admin-gated
+// (RequireAdmin); the service layer writes an audit entry on success.
+func (h *handler) AdminOverrideCancelBooking(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		httpx.RespondWithError(w, errors.New("unsupported media type: please send 'application/json'"), http.StatusUnsupportedMediaType)
+		return
+	}
+
+	ctx := r.Context()
+
+	bookingID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		httpx.RespondWithError(w, errs.NewInvalidValueErr("invalid booking ID format"), http.StatusBadRequest)
+		return
+	}
+
+	request, err := decodeCancelRequest(r)
+	if err != nil {
+		httpx.RespondWithError(w, err, http.StatusBadRequest)
+		return
+	}
+
+	booking, err := h.svc.AdminOverrideCancelBooking(ctx, bookingID, request.Reason)
+	if err != nil {
+		httpx.RespondWithError(w, err, mapCancelError(err))
+		return
+	}
+
+	httpx.RespondWithJSON(w, cancelBookingResponse(booking), http.StatusOK)
+}
+
 // CancelBookingPublic handles token-based booking cancellation for unauthenticated
 // guests. The booking token is passed as a query parameter (?token=xxx).
 // The response uses the public DTO (no internal IDs or guest contact fields).

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 
 	"github.com/google/uuid"
@@ -38,6 +39,43 @@ func (s *BookingService) CancelBookingByToken(ctx context.Context, bookingID uui
 }
 
 func (s *BookingService) CancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error) {
+	return s.cancelBooking(ctx, id, reason, false)
+}
+
+// AdminOverrideCancelBooking lets an admin force-cancel a booking, bypassing
+// the product's cancellation-window policy that would otherwise reject a
+// too-late cancellation. This is the "admin override" of a booking's normal
+// business rules — the route this is exposed on is admin-gated
+// (RequireAdmin), and every successful override writes an audit entry since
+// it's a deliberate departure from the standard policy on the customer's
+// behalf.
+func (s *BookingService) AdminOverrideCancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error) {
+	booking, err := s.cancelBooking(ctx, id, reason, true)
+	if err != nil {
+		return nil, err
+	}
+
+	actorID, actorRole := audit.ActorFromContext(ctx)
+	audit.WriteOrLog(ctx, s.audit, audit.Entry{
+		ActorID:    actorID,
+		ActorRole:  actorRole,
+		Action:     "booking.admin_override",
+		TargetType: "booking",
+		TargetID:   booking.ID.String(),
+		Payload: map[string]any{
+			"reason":                       reason,
+			"bypassed_cancellation_policy": true,
+		},
+	})
+
+	return booking, nil
+}
+
+// cancelBooking holds the shared cancellation flow used by both the
+// standard customer-facing CancelBooking and the admin-only
+// AdminOverrideCancelBooking. When bypassCancellationPolicy is true, the
+// product's CancellationHours policy is not enforced.
+func (s *BookingService) cancelBooking(ctx context.Context, id uuid.UUID, reason string, bypassCancellationPolicy bool) (*domain.Booking, error) {
 	// Get existing booking
 	bookingEncx, err := s.bookingRepo.GetByID(ctx, id)
 	if err != nil {
@@ -67,7 +105,7 @@ func (s *BookingService) CancelBooking(ctx context.Context, id uuid.UUID, reason
 			return nil, fmt.Errorf("get product for cancellation policy: %w", err)
 		}
 		// Product not found - proceed without policy enforcement
-	} else if product.CancellationHours > 0 {
+	} else if !bypassCancellationPolicy && product.CancellationHours > 0 {
 		// Calculate time remaining until appointment
 		now := time.Now()
 		timeUntilAppointment := booking.SlotStartTime.Sub(now)

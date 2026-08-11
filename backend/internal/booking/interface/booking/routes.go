@@ -17,6 +17,7 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /admin/bookings", RequireAdmin(mw.EnableCORS(h.GetAdminBookings)))
 	router.HandleFunc("GET /admin/analytics/summary", RequireAdmin(mw.EnableCORS(h.GetAnalyticsSummary)))
 	router.HandleFunc("GET /admin/bookings/financial-summary", RequireAdmin(mw.EnableCORS(h.GetFinancialSummary)))
+	router.HandleFunc("POST /admin/bookings/{id}/override-cancel", RequireAdmin(mw.EnableCORS(h.AdminOverrideCancelBooking)))
 
 	// Public booking endpoints (unauthenticated — used by guest booking page)
 	router.HandleFunc("GET /bookings/lookup", mw.EnableCORS(h.LookupBooking))
