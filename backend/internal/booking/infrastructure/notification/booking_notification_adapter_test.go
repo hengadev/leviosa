@@ -81,6 +81,9 @@ func (s *spyEmailService) SendBookingReminderEmail(ctx context.Context, req noti
 	s.bookingReminders = append(s.bookingReminders, req)
 	return nil
 }
+func (s *spyEmailService) SendContactFormEmail(ctx context.Context, req notificationDomain.ContactFormRequest) error {
+	return nil
+}
 
 // ---- Stub fetchers ----
 
