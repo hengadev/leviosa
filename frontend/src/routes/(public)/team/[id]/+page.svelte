@@ -2,11 +2,42 @@
     import { ChevronLeft, CalendarCheck, Clock, Briefcase } from "@lucide/svelte";
     import { reveal } from "$lib/actions/reveal";
     import type { PageProps } from "./$types";
+    import { page } from "$app/state";
+    import { truncateDescription, jsonLdScriptTag } from "$lib/utils/seo";
 
     let { data }: PageProps = $props();
 
     const { partner, products, categories } = data;
+
+    const fullName = `${partner.firstname} ${partner.lastname}`;
+    const metaDescription = truncateDescription(
+        partner.bio || partner.quote || `${fullName} — ${partner.occupation}`,
+    );
+
+    const personJsonLd = jsonLdScriptTag({
+        "@context": "https://schema.org",
+        "@type": "Person",
+        name: fullName,
+        jobTitle: partner.occupation,
+        description: partner.bio || partner.quote || undefined,
+        url: page.url.href,
+        ...(partner.picture ? { image: partner.picture } : {}),
+        ...(categories.length > 0
+            ? { knowsAbout: categories.map((c: any) => c.name) }
+            : {}),
+        worksFor: {
+            "@type": "LocalBusiness",
+            name: "Leviosa Care",
+            url: page.url.origin,
+        },
+    });
 </script>
+
+<svelte:head>
+    <title>{fullName} — {partner.occupation} | Leviosa Care</title>
+    <meta name="description" content={metaDescription} />
+    {@html personJsonLd}
+</svelte:head>
 
 <div
     class="min-h-screen bg-white"
