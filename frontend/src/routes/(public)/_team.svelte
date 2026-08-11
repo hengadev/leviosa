@@ -1,35 +1,17 @@
 <script lang="ts">
     import { reveal } from "$lib/actions/reveal";
 
-    const experts = [
-        {
-            id: "p-001",
-            name: "Jane Smith",
-            occupation: "Ostéopathe D.O",
-            tags: ["Douleurs Chroniques", "Posturologie"],
-            quote: "Le corps garde en mémoire ce que l'esprit oublie. Mon approche vise à libérer ces tensions profondes.",
-            picture:
-                "https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=200&h=200&auto=format&fit=crop&q=80",
-        },
-        {
-            id: "p-002",
-            name: "Emma Davis",
-            occupation: "Psychologue Clinicienne",
-            tags: ["Gestion du stress", "Anxiété"],
-            quote: "Un espace sécurisant pour comprendre vos mécanismes et retrouver votre sérénité.",
-            picture:
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&auto=format&fit=crop&q=80",
-        },
-        {
-            id: "p-003",
-            name: "Alice Martin",
-            occupation: "Coach Exécutif",
-            tags: ["Leadership", "Prise de décision"],
-            quote: "Clarifier votre vision pour agir avec impact et confiance dans les moments critiques.",
-            picture:
-                "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&auto=format&fit=crop&q=80",
-        },
-    ];
+    type TeamMember = {
+        id: string;
+        firstname: string;
+        lastname: string;
+        occupation: string;
+        quote: string;
+        tags: string[];
+        picture?: string;
+    };
+
+    let { members }: { members: TeamMember[] } = $props();
 </script>
 
 <section class="py-20 lg:py-24 bg-background-section">
@@ -70,33 +52,41 @@
 
         <!-- Expert Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {#each experts as expert, i}
+            {#each members as member, i}
                 <div
                     class="group flex flex-col bg-white rounded-3xl border border-border-input hover:border-border-input-hover hover:shadow-card transition-all duration-300 overflow-hidden p-6 md:p-8"
                     use:reveal={{ preset: "fade-up", delay: 150 + i * 75 }}
                 >
                     <!-- Header: photo + name/occupation -->
                     <div class="flex gap-4 items-center mb-4">
-                        <img
-                            src={expert.picture}
-                            alt={expert.name}
-                            class="rounded-2xl aspect-square w-14 md:w-16 flex-shrink-0 object-cover"
-                        />
+                        {#if member.picture}
+                            <img
+                                src={member.picture}
+                                alt="{member.firstname} {member.lastname}"
+                                class="rounded-2xl aspect-square w-14 md:w-16 flex-shrink-0 object-cover"
+                            />
+                        {:else}
+                            <div
+                                class="bg-surface-hover rounded-2xl aspect-square w-14 md:w-16 flex-shrink-0 flex items-center justify-center text-sm font-semibold text-muted-foreground"
+                            >
+                                {member.firstname[0]}{member.lastname[0]}
+                            </div>
+                        {/if}
                         <div>
                             <h4
                                 class="text-foreground font-semibold text-lg tracking-tight"
                             >
-                                {expert.name}
+                                {member.firstname} {member.lastname}
                             </h4>
                             <p class="text-muted-foreground text-sm font-medium mt-0.5">
-                                {expert.occupation}
+                                {member.occupation}
                             </p>
                         </div>
                     </div>
 
                     <!-- Tags -->
                     <div class="flex flex-wrap gap-2 mb-4">
-                        {#each expert.tags as tag}
+                        {#each member.tags as tag}
                             <div
                                 class="inline-flex items-center bg-surface border border-border-input rounded-full px-3 py-1.5"
                             >
@@ -108,16 +98,18 @@
                     </div>
 
                     <!-- Quote -->
+                    {#if member.quote}
                     <p
                         class="text-muted-foreground text-sm leading-relaxed mb-6 flex-1"
                     >
-                        "{expert.quote}"
+                        "{member.quote}"
                     </p>
+                    {/if}
 
                     <!-- CTAs -->
                     <div class="flex flex-col sm:flex-row gap-3 mt-auto">
                         <a
-                            href="/book?partner={expert.id}"
+                            href="/book?partner={member.id}"
                             class="inline-flex justify-center items-center gap-2 bg-foreground hover:bg-foreground-alt text-white text-sm font-medium px-6 py-3 rounded-xl transition-all duration-200 shadow-mini hover:shadow-card"
                         >
                             Réserver
@@ -129,7 +121,7 @@
                             ></span>
                         </a>
                         <a
-                            href="/team/{expert.id}"
+                            href="/team/{member.id}"
                             class="inline-flex justify-center items-center gap-2 bg-transparent hover:bg-surface border border-border-input-hover hover:border-border-input-hover text-foreground-alt hover:text-foreground text-sm font-medium px-6 py-3 rounded-xl transition-all duration-200"
                         >
                             Voir le profil
