@@ -47,6 +47,12 @@
           : "";
 </script>
 
+<svelte:head>
+    <title>Réservation confirmée | Leviosa Care</title>
+    <meta name="description" content="Votre réservation Leviosa Care a été enregistrée avec succès. Retrouvez les détails de votre rendez-vous." />
+    <meta name="robots" content="noindex" />
+</svelte:head>
+
 <div class="bg-surface min-h-screen py-24 md:py-32 px-4 lg:px-8">
     <div class="max-w-2xl mx-auto" use:reveal={{ preset: "fade-up", delay: 100 }}>
         <!-- Success icon -->

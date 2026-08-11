@@ -7,6 +7,7 @@
 
 <svelte:head>
     <title>Leviosa — À Venir</title>
+    <meta name="description" content="Quelque chose est en préparation chez Leviosa Care — à venir." />
     <meta name="robots" content="noindex" />
     <meta http-equiv={httpEquivCacheControl} content="no-store, no-cache, must-revalidate" />
     <meta http-equiv={httpEquivPragma} content="no-cache" />
