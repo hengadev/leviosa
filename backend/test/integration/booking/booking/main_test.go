@@ -34,6 +34,7 @@ import (
 	pricePayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/price"
 	productPayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/product"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	authsession "github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
@@ -96,6 +97,8 @@ var (
 	realNotificationAdapter *bookingNotification.BookingNotificationAdapter
 	notificationSMSSpy      *IntegrationSMSSpy
 	notificationEmailSpy    *IntegrationEmailSpy
+
+	auditLogger *audit.PostgresLogger
 )
 
 func TestMain(m *testing.M) {
@@ -240,8 +243,10 @@ func TestMain(m *testing.M) {
 	catalogPriceService := priceService.New(catalogPriceRepo, sharedRepo, priceStripe)
 
 	notificationSpy = NewSpyNotificationService()
+	auditLogger = audit.NewPostgresLogger(testPool)
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
-		bookingService.WithTokenSecret(testTokenSecret))
+		bookingService.WithTokenSecret(testTokenSecret),
+		bookingService.WithAuditLogger(auditLogger))
 
 	// Wire a real BookingNotificationAdapter (real user/room/building/product
 	// fetchers against the test DB) backed by SMS/email spies, so tests can

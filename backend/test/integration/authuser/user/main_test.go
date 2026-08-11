@@ -19,6 +19,7 @@ import (
 	userHandler "github.com/Leviosa-care/leviosa/backend/internal/authuser/interface/user"
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
@@ -46,6 +47,7 @@ var (
 	authSessionRepo session.SessionRepository
 	sessionRepo     ports.SessionRepository
 	service         ports.UserService
+	auditLogger     *audit.PostgresLogger
 	handler         userHandler.Handler
 	testServerURL   string       // Global variable to hold the URL of the running test server
 	testServer      *http.Server // To allow graceful shutdown
@@ -187,7 +189,8 @@ func TestMain(m *testing.M) {
 
 	// Initialize application layers
 	repo = userRepository.New(ctx, testPool)
-	service = userService.New(repo, crypto, payment)
+	auditLogger = audit.NewPostgresLogger(testPool)
+	service = userService.New(repo, crypto, payment, auditLogger)
 
 	sessionRepo = sessionRepository.New(redisClient)
 
