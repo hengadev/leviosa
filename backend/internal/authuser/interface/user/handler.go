@@ -17,6 +17,7 @@ type Handler interface {
 	UpdateUserRole(w http.ResponseWriter, r *http.Request)
 	UpdateUser(w http.ResponseWriter, r *http.Request)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	GetBillingPortalLink(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {

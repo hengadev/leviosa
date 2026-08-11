@@ -34,4 +34,7 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 
 	// Changes the password of the authenticated user (requires old password).
 	router.HandleFunc("PATCH "+ChangePasswordEndpoint, RequireStandard(mw.EnableCORS(h.ChangePassword)))
+
+	// Get Stripe billing portal link for the authenticated user (payment-method management).
+	router.HandleFunc("POST "+GetBillingPortalLinkEndpoint, RequireStandard(mw.EnableCORS(h.GetBillingPortalLink)))
 }
