@@ -403,6 +403,51 @@ func ParseGetUserResponse(t *testing.T, resp *http.Response) *authDomain.UserRes
 	return user
 }
 
+// NewGetBillingPortalLinkRequest creates an HTTP request for the authenticated user's
+// Stripe billing portal link (payment-method management).
+func NewGetBillingPortalLinkRequest(t *testing.T, ctx context.Context, baseURL string, returnURL string, accessToken string) *http.Request {
+	t.Helper()
+
+	body := map[string]string{"return_url": returnURL}
+	jsonData, err := json.Marshal(body)
+	require.NoError(t, err, "Failed to marshal billing portal link request")
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodPost,
+		baseURL+userEndpoints.GetBillingPortalLinkEndpoint,
+		bytes.NewBuffer(jsonData),
+	)
+	require.NoError(t, err, "Failed to create HTTP request")
+
+	req.Header.Set("Content-Type", "application/json")
+
+	if accessToken != "" {
+		cookie := &http.Cookie{
+			Name:  ck.AccessTokenCookieName,
+			Value: accessToken,
+		}
+		req.AddCookie(cookie)
+	}
+
+	return req
+}
+
+// ParseGetBillingPortalLinkResponse parses the HTTP response for the billing portal link request
+func ParseGetBillingPortalLinkResponse(t *testing.T, resp *http.Response) string {
+	t.Helper()
+
+	var response struct {
+		URL string `json:"url"`
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	err := decoder.Decode(&response)
+	require.NoError(t, err, "Failed to decode billing portal link response")
+
+	return response.URL
+}
+
 // NewApproveUserRequest creates an HTTP request for approving a user
 func NewApproveUserRequest(t *testing.T, ctx context.Context, baseURL string, request authDomain.ApproveUserRequest, accessToken string) *http.Request {
 	t.Helper()
