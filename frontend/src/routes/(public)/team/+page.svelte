@@ -20,7 +20,16 @@
     );
 
     let heroPartners = $derived(data.categories.flatMap((c: any) => c.partners).slice(0, 3));
+
+    let metaDescription = $derived(
+        `Découvrez nos ${totalPartners} praticiens vérifiés répartis en ${data.categories.length} spécialités : ostéopathie, psychologie, coaching et plus.`,
+    );
 </script>
+
+<svelte:head>
+    <title>Notre équipe | Leviosa Care</title>
+    <meta name="description" content={metaDescription} />
+</svelte:head>
 
 <div
     class="min-h-screen bg-white"

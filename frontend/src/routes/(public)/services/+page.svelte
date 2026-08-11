@@ -45,7 +45,16 @@
             duration: p.duration,
         })),
     );
+
+    let metaDescription = $derived(
+        `Découvrez nos ${data.products.length} services de bien-être répartis en ${data.categories.length} catégories : massage, psychologie, coaching et plus. Réservez en ligne en quelques secondes.`,
+    );
 </script>
+
+<svelte:head>
+    <title>Nos services | Leviosa Care</title>
+    <meta name="description" content={metaDescription} />
+</svelte:head>
 
 <div
     class="min-h-screen bg-white"
