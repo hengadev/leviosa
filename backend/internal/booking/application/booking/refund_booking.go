@@ -7,6 +7,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/google/uuid"
 )
@@ -65,6 +66,19 @@ func (s *BookingService) RefundBooking(ctx context.Context, id uuid.UUID) (*doma
 	if err := s.bookingRepo.Update(ctx, bookingEncx); err != nil {
 		return nil, fmt.Errorf("update refunded booking: %w", err)
 	}
+
+	actorID, actorRole := audit.ActorFromContext(ctx)
+	audit.WriteOrLog(ctx, s.audit, audit.Entry{
+		ActorID:    actorID,
+		ActorRole:  actorRole,
+		Action:     "booking.refunded",
+		TargetType: "booking",
+		TargetID:   booking.ID.String(),
+		Payload: map[string]any{
+			"refund_id":         refundID,
+			"payment_intent_id": *booking.PaymentIntentID,
+		},
+	})
 
 	return booking, nil
 }
