@@ -2,6 +2,8 @@
     import { Clock, MapPin, Monitor, Shuffle, ChevronLeft, CalendarCheck } from "@lucide/svelte";
     import { reveal } from "$lib/actions/reveal";
     import type { PageProps } from "./$types";
+    import { page } from "$app/state";
+    import { truncateDescription, jsonLdScriptTag } from "$lib/utils/seo";
 
     let { data }: PageProps = $props();
 
@@ -29,7 +31,40 @@
     };
 
     const AvailIcon = availabilityIcon[product.availability] ?? MapPin;
+
+    const metaDescription = truncateDescription(product.description ?? product.name);
+
+    const serviceJsonLd = jsonLdScriptTag({
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: product.name,
+        description: product.description,
+        url: page.url.href,
+        ...(activeImage ? { image: activeImage } : {}),
+        provider: {
+            "@type": "LocalBusiness",
+            name: "Leviosa Care",
+            url: page.url.origin,
+        },
+        ...(product.category?.name ? { category: product.category.name } : {}),
+        ...(price != null
+            ? {
+                  offers: {
+                      "@type": "Offer",
+                      price: (price / 100).toFixed(2),
+                      priceCurrency: "EUR",
+                      availability: "https://schema.org/InStock",
+                  },
+              }
+            : {}),
+    });
 </script>
+
+<svelte:head>
+    <title>{product.name} | Leviosa Care</title>
+    <meta name="description" content={metaDescription} />
+    {@html serviceJsonLd}
+</svelte:head>
 
 <div
     class="min-h-screen bg-white"
