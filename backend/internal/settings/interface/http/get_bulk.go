@@ -106,6 +106,39 @@ func (h *handler) BulkSettingsHandler(w http.ResponseWriter, r *http.Request) {
 				Value: res.Instagram,
 			})
 
+		case settings.CompanyRegistrationNumber:
+			res, err := h.svc.GetCompanyRegistrationNumber(ctx)
+			if err != nil {
+				errs.Set(settings.CompanyRegistrationNumber, err)
+				continue
+			}
+			response = append(response, &settings.SettingDTO{
+				Key:   key,
+				Value: res.RegistrationNumber,
+			})
+
+		case settings.CompanyVatNumber:
+			res, err := h.svc.GetCompanyVatNumber(ctx)
+			if err != nil {
+				errs.Set(settings.CompanyVatNumber, err)
+				continue
+			}
+			response = append(response, &settings.SettingDTO{
+				Key:   key,
+				Value: res.VatNumber,
+			})
+
+		case settings.CompanyHostingProvider:
+			res, err := h.svc.GetCompanyHostingProvider(ctx)
+			if err != nil {
+				errs.Set(settings.CompanyHostingProvider, err)
+				continue
+			}
+			response = append(response, &settings.SettingDTO{
+				Key:   key,
+				Value: res.HostingProvider,
+			})
+
 		case settings.OTPDuration:
 			res, err := h.svc.GetOTPDuration(ctx)
 			if err != nil {
