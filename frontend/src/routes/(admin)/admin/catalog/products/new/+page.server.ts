@@ -4,7 +4,7 @@ import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate } from 'sveltekit-superforms';
 import { env } from '$env/dynamic/private';
 import { productSchema, productDefaults } from '../../schemas';
-import { mockAdminCategories, type Category } from "$lib/data/mockData";
+import { mockAdminCategories, type Category, type CancellationTier } from "$lib/data/mockData";
 
 interface BackendCategory {
 	id: string;
@@ -32,6 +32,7 @@ interface CreateProductRequest {
 	availability: 'online' | 'in-person' | 'hybrid';
 	bufferTime: number;
 	cancellationHours: number;
+	cancellationTiers?: CancellationTier[];
 	stripeProductId?: string;
 }
 
@@ -86,6 +87,7 @@ export const actions: Actions = {
 		const availability = formData.get('availability') as 'online' | 'in-person' | 'hybrid';
 		const bufferTime = formData.get('bufferTime') as string;
 		const cancellationHours = formData.get('cancellationHours') as string;
+		const cancellationTiersStr = formData.get('cancellationTiers') as string | null;
 		const stripeProductId = formData.get('stripeProductId') as string | null;
 
 		const requestBody: CreateProductRequest = {
@@ -102,6 +104,21 @@ export const actions: Actions = {
 
 		if (stripeProductId) {
 			requestBody.stripeProductId = stripeProductId;
+		}
+
+		if (cancellationTiersStr) {
+			try {
+				const parsed: CancellationTier[] = JSON.parse(cancellationTiersStr);
+				if (parsed.length > 0) {
+					requestBody.cancellationTiers = parsed.map((t) => ({
+						minHoursBefore: Number(t.minHoursBefore),
+						refundPercentage: Number(t.refundPercentage),
+					}));
+				}
+			} catch (e) {
+				console.error('Invalid cancellationTiers payload:', e);
+				return fail(400, { error: 'Paliers de remboursement invalides.' });
+			}
 		}
 
 		try {
