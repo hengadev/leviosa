@@ -43,6 +43,7 @@ func NewValidCreatePriceRequest() *domain.CreatePriceRequest {
 		Metadata: map[string]string{
 			"test_key": "test_value",
 		},
+		// TaxRatePercent intentionally left nil: default is exempt/unset.
 	}
 }
 
@@ -59,16 +60,22 @@ func NewValidUpdatePriceRequest() *domain.UpdatePriceRequest {
 	}
 }
 
+// Float64Ptr returns a pointer to the given float64, useful for optional
+// numeric fields such as Price.TaxRatePercent in tests.
+func Float64Ptr(v float64) *float64 {
+	return &v
+}
+
 // GetAllPricesForProduct retrieves all prices for a given product from the database
 func GetAllPricesForProduct(t *testing.T, ctx context.Context, productID uuid.UUID, pool *pgxpool.Pool) []*domain.Price {
 	t.Helper()
 
 	query := `
-		SELECT 
-			id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
-		FROM 
+		SELECT
+			id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
+		FROM
 			catalog.prices
-		WHERE 
+		WHERE
 			product_id = $1
 		ORDER BY created_at
 	`
@@ -87,6 +94,7 @@ func GetAllPricesForProduct(t *testing.T, ctx context.Context, productID uuid.UU
 			&price.Currency,
 			&price.Interval,
 			&price.IsActive,
+			&price.TaxRatePercent,
 			&price.CreatedAt,
 			&price.UpdatedAt,
 		)
@@ -102,9 +110,9 @@ func GetAllPricesForProduct(t *testing.T, ctx context.Context, productID uuid.UU
 func InsertPrice(t *testing.T, ctx context.Context, price *domain.Price, pool *pgxpool.Pool) {
 	query := `
 	INSERT INTO catalog.prices (
-		id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
+		id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
 	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 	)`
 	_, err := pool.Exec(ctx, query,
 		price.ID,
@@ -114,6 +122,7 @@ func InsertPrice(t *testing.T, ctx context.Context, price *domain.Price, pool *p
 		price.Currency,
 		price.Interval, // Example interval
 		price.IsActive,
+		price.TaxRatePercent,
 		price.CreatedAt,
 		price.UpdatedAt,
 	)
@@ -126,11 +135,11 @@ func GetPriceByID(t *testing.T, ctx context.Context, id uuid.UUID, pool *pgxpool
 	t.Helper()
 
 	query := `
-		SELECT 
-			id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
-		FROM 
+		SELECT
+			id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
+		FROM
 			catalog.prices
-		WHERE 
+		WHERE
 			id = $1
 	`
 	var price domain.Price
@@ -142,6 +151,7 @@ func GetPriceByID(t *testing.T, ctx context.Context, id uuid.UUID, pool *pgxpool
 		&price.Currency,
 		&price.Interval,
 		&price.IsActive,
+		&price.TaxRatePercent,
 		&price.CreatedAt,
 		&price.UpdatedAt,
 	)
