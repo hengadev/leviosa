@@ -80,5 +80,17 @@ func (h *handler) GetBooking(w http.ResponseWriter, r *http.Request) {
 		BookingFinancialStatus: financialStatus,
 	}
 
+	// Surface the Stripe-hosted receipt URL once payment has succeeded.
+	// Best-effort: a Stripe lookup failure should not fail the booking fetch.
+	if booking.PaymentStatus == domain.PaymentStatusPaid && booking.PaymentIntentID != nil {
+		paymentInfo, err := h.paymentService.RetrievePaymentIntent(ctx, *booking.PaymentIntentID)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to retrieve payment intent for receipt url",
+				"booking_id", booking.ID, "payment_intent_id", *booking.PaymentIntentID, "err", err)
+		} else {
+			response.ReceiptURL = paymentInfo.ReceiptURL
+		}
+	}
+
 	httpx.RespondWithJSON(w, response, http.StatusOK)
 }

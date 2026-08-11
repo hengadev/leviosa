@@ -20,6 +20,7 @@ type BookingResponse struct {
 	Currency           string                `json:"currency"`
 	PaymentStatus      PaymentStatus         `json:"payment_status"`
 	PaymentIntentID    *string               `json:"payment_intent_id,omitempty"`
+	ReceiptURL         string                `json:"receipt_url,omitempty"`
 	ClientNotes        string                `json:"client_notes,omitempty"`
 	PartnerNotes       string                `json:"partner_notes,omitempty"`
 	CancellationReason *string               `json:"cancellation_reason,omitempty"`
