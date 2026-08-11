@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { DollarSign, ArrowDown, TrendingUp, CreditCard, Calendar } from '@lucide/svelte';
+	import { DollarSign, ArrowDown, TrendingUp, CreditCard, Calendar, Download } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
@@ -104,15 +104,26 @@
 				Suivi des revenus et des transactions
 			</p>
 		</div>
-		<!-- Month selector -->
-		<div class="flex items-center gap-2">
-			<Calendar size={18} class="text-muted-foreground" />
-			<input
-				type="month"
-				value={selectedMonth}
-				onchange={onMonthChange}
-				class="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-			/>
+		<div class="flex items-center gap-3">
+			<!-- Month selector -->
+			<div class="flex items-center gap-2">
+				<Calendar size={18} class="text-muted-foreground" />
+				<input
+					type="month"
+					value={selectedMonth}
+					onchange={onMonthChange}
+					class="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+				/>
+			</div>
+			<!-- CSV export -->
+			<a
+				href={`/admin/compta/export?from=${data.from}&to=${data.to}`}
+				download
+				class="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+			>
+				<Download size={16} />
+				Exporter CSV
+			</a>
 		</div>
 	</div>
 
