@@ -32,6 +32,9 @@ import (
 	// Messaging HTTP handlers
 	messagingHandler "github.com/Leviosa-care/leviosa/backend/internal/messaging/interface"
 
+	// Notification HTTP handlers
+	notificationHandler "github.com/Leviosa-care/leviosa/backend/internal/notification/interface/http"
+
 	// Settings HTTP handlers
 	settingsHandler "github.com/Leviosa-care/leviosa/backend/internal/settings/interface/http"
 
@@ -126,6 +129,9 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 
 	// Settings routes
 	s.setupSettingsRoutes(mux)
+
+	// Notification routes (public contact form)
+	s.setupNotificationRoutes(mux)
 }
 
 func (s *Server) setupAuthuserRoutes(router *http.ServeMux) {
@@ -268,6 +274,13 @@ func (s *Server) setupSettingsRoutes(router *http.ServeMux) {
 	settingsH.RegisterRoutes(router)
 }
 
+func (s *Server) setupNotificationRoutes(router *http.ServeMux) {
+	notificationH := notificationHandler.New(
+		s.container.NotificationService,
+	)
+	notificationH.RegisterRoutes(router)
+}
+
 func (s *Server) applyMiddleware(handler http.Handler) http.Handler {
 	// Rate limiting on auth endpoints (innermost: applied before CORS so the
 	// rate limiter runs inside the CORS wrapper and 429 responses still carry
@@ -286,6 +299,13 @@ func (s *Server) applyMiddleware(handler http.Handler) http.Handler {
 			KeyPrefix:   "password_reset",
 			MaxRequests: s.container.Config.RateLimitPasswordResetMax,
 			Window:      time.Duration(s.container.Config.RateLimitPasswordResetWindowSeconds) * time.Second,
+		},
+		{
+			Method:      http.MethodPost,
+			Path:        "/contact",
+			KeyPrefix:   "contact",
+			MaxRequests: s.container.Config.RateLimitContactMax,
+			Window:      time.Duration(s.container.Config.RateLimitContactWindowSeconds) * time.Second,
 		},
 	}
 	handler = s.container.RateLimiter.RateLimitByPath(rateLimitRules)(handler)
