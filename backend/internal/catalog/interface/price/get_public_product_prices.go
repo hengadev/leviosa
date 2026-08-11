@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/httpx"
 )
@@ -46,11 +47,17 @@ func (h *handler) GetPublicProductPrices(w http.ResponseWriter, r *http.Request)
 	activePrices := make([]PublicPriceResponse, 0)
 	for _, p := range prices {
 		if p.IsActive {
+			// TODO(issue 001): once settings gains a VAT-number field, fetch
+			// it here and pass it to TaxLine so the computed tax line can
+			// reference it. Until then, an empty VAT number still yields
+			// correct display logic: a computed tax line when a rate is
+			// set, or the standard exemption note when it's null.
 			activePrices = append(activePrices, PublicPriceResponse{
 				ID:       p.ID.String(),
 				Amount:   p.Amount,
 				Currency: p.Currency,
 				Interval: string(p.Interval),
+				Tax:      p.TaxLine(""),
 			})
 		}
 	}
@@ -71,4 +78,7 @@ type PublicPriceResponse struct {
 	Amount   int    `json:"amount"`
 	Currency string `json:"currency"`
 	Interval string `json:"interval"`
+	// Tax carries the price's tax display/calculation info: either a
+	// computed tax line (rate set) or the VAT-exemption note (rate null).
+	Tax domain.TaxLine `json:"tax"`
 }
