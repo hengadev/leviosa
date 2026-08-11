@@ -6,8 +6,10 @@ import (
 
 // PaymentService defines the interface for payment processing
 type PaymentService interface {
-	// CreatePaymentIntent creates a Stripe payment intent for a booking
-	CreatePaymentIntent(ctx context.Context, amount int, currency, description string, metadata map[string]string) (string, string, error) // returns paymentIntentID, clientSecret, error
+	// CreatePaymentIntent creates a Stripe payment intent for a booking.
+	// receiptEmail, if non-empty, is set on the PaymentIntent so Stripe emails
+	// the client a hosted receipt automatically once payment succeeds.
+	CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) // returns paymentIntentID, clientSecret, error
 
 	// ConfirmPaymentIntent confirms a payment intent
 	ConfirmPaymentIntent(ctx context.Context, paymentIntentID string) error
@@ -57,6 +59,9 @@ type PaymentIntentInfo struct {
 	Description  string              `json:"description"`
 	Metadata     map[string]string   `json:"metadata"`
 	LastError    *PaymentIntentError `json:"last_error,omitempty"`
+	// ReceiptURL is the underlying charge's Stripe-hosted receipt URL, populated
+	// once the payment intent has a latest charge (typically once payment succeeds).
+	ReceiptURL string `json:"receipt_url,omitempty"`
 }
 
 // PaymentIntentError represents payment error information
