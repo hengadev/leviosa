@@ -34,6 +34,8 @@ func (s *SettingsService) SetRefreshTokenDuration(ctx context.Context, request *
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.RefreshTokenDuration, request.Duration)
+
 	return &domain.SetRefreshTokenDurationResponse{Success: true}, nil
 }
 

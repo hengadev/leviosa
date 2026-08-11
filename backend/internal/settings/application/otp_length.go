@@ -41,5 +41,7 @@ func (s *SettingsService) SetOTPLength(ctx context.Context, request *domain.SetO
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.OTPLength, request.Length)
+
 	return &domain.SetOTPLengthResponse{Success: true}, nil
 }

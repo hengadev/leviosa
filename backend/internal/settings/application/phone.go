@@ -61,5 +61,9 @@ func (s *SettingsService) SetCompanyTelephone(ctx context.Context, request *doma
 	// 	return nil, err
 	// }
 
+	// Note: the phone number itself is not included in the audit payload since
+	// it's an encrypted field; only the fact that it changed is recorded.
+	s.auditFieldUpdate(ctx, settings.CompanyPhone, "[redacted]")
+
 	return &domain.SetCompanyTelephoneResponse{Success: true}, nil
 }

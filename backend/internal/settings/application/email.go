@@ -34,5 +34,7 @@ func (s *SettingsService) SetCompanyEmail(ctx context.Context, request *domain.S
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.CompanyEmail, request.Email)
+
 	return &domain.SetCompanyEmailResponse{Success: true}, nil
 }
