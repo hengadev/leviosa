@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/notification/ports"
@@ -139,6 +140,44 @@ func (s *MailService) SendEventNotificationEmail(ctx context.Context, email, fir
 
 	if err := s.emailClient.SendEventNotificationEmail(ctx, request); err != nil {
 		return fmt.Errorf("failed to send event notification email: %w", err)
+	}
+
+	return nil
+}
+
+// SendContactFormEmail notifies staff (at the company inbox) of a public
+// contact-form submission. The visitor's email, when provided, is set as
+// Reply-To so staff can respond directly from their inbox.
+func (s *MailService) SendContactFormEmail(ctx context.Context, name, contactEmail, contactPhone, message string) error {
+	companyEmail, err := s.settingsProvider.GetCompanyEmail(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get company email for contact form: %w", err)
+	}
+
+	companyName, err := s.settingsProvider.GetCompanyName(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get company name for contact form: %w", err)
+	}
+
+	logoURL, err := s.settingsProvider.GetCompanyLogo(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get company logo for contact form: %w", err)
+	}
+
+	request := domain.ContactFormRequest{
+		ToEmail:      companyEmail,
+		FromEmail:    companyEmail,
+		Name:         name,
+		ContactEmail: contactEmail,
+		ContactPhone: contactPhone,
+		Message:      message,
+		CompanyName:  companyName,
+		LogoURL:      logoURL,
+		SubmittedAt:  time.Now().Format("02/01/2006 15:04"),
+	}
+
+	if err := s.emailClient.SendContactFormEmail(ctx, request); err != nil {
+		return fmt.Errorf("failed to send contact form email: %w", err)
 	}
 
 	return nil
