@@ -34,5 +34,7 @@ func (s *SettingsService) SetOTPMaxAttempts(ctx context.Context, request *domain
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.OTPMaxAttempts, request.MaxAttempts)
+
 	return &domain.SetOTPMaxAttemptsResponse{Success: true}, nil
 }

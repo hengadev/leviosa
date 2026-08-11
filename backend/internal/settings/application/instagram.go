@@ -34,5 +34,7 @@ func (s *SettingsService) SetCompanyInstagram(ctx context.Context, request *doma
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.CompanyInstagram, request.Instagram)
+
 	return &domain.SetCompanyInstagramResponse{Success: true}, nil
 }

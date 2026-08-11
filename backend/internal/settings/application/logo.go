@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/settings"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/Leviosa-care/leviosa/backend/internal/settings/domain"
 
@@ -44,6 +45,8 @@ func (s *SettingsService) SetCompanyLogo(ctx context.Context, file io.Reader, fi
 	// if err := s.publisher.PublishSettingUpdate(ctx, settings.CompanyLogo, imageKey); err != nil {
 	// 	return nil, err
 	// }
+
+	s.auditFieldUpdate(ctx, settings.CompanyLogo, imageKey)
 
 	return &domain.SetCompanyLogoResponse{Success: true}, nil
 }

@@ -34,5 +34,7 @@ func (s *SettingsService) SetAccessTokenDuration(ctx context.Context, request *d
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.AccessTokenDuration, request.Duration)
+
 	return &domain.SetAccessTokenDurationResponse{Success: true}, nil
 }

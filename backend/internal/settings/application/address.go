@@ -34,5 +34,7 @@ func (s *SettingsService) SetCompanyLegalAddress(ctx context.Context, request *d
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.CompanyLegalAddress, request.Address)
+
 	return &domain.SetCompanyLegalAddressResponse{Success: true}, nil
 }

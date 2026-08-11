@@ -33,5 +33,7 @@ func (s *SettingsService) SetCompanyName(ctx context.Context, request *domain.Se
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.CompanyName, request.Name)
+
 	return &domain.SetCompanyNameResponse{Success: true}, nil
 }

@@ -34,5 +34,7 @@ func (s *SettingsService) SetOTPDuration(ctx context.Context, request *domain.Se
 	// 	return nil, err
 	// }
 
+	s.auditFieldUpdate(ctx, settings.OTPDuration, request.Duration)
+
 	return &domain.SetOTPDurationResponse{Success: true}, nil
 }
