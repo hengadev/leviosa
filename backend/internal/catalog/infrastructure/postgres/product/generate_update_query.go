@@ -64,6 +64,15 @@ func generateUpdateQuery(schema, productID string, req *domain.UpdateProductRequ
 		args = append(args, *req.CancellationHours)
 		argCounter++
 	}
+	if req.CancellationTiers != nil {
+		tiersJSON, err := json.Marshal(req.CancellationTiers)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to marshal cancellation tiers to JSON: %w", err)
+		}
+		sets = append(sets, fmt.Sprintf("cancellation_tiers = $%d", argCounter))
+		args = append(args, tiersJSON)
+		argCounter++
+	}
 	// For map[string]any like Metadata, you'd typically store it as JSONB in PostgreSQL.
 	// Marshal it to JSON before adding to args.
 	if req.Metadata != nil {

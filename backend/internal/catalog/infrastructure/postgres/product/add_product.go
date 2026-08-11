@@ -16,6 +16,14 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		return "", errs.NewInvalidInputErr(fmt.Errorf("failed to encode product metadata: %w", err))
 	}
 
+	var tiersJSON []byte
+	if len(p.CancellationTiers) > 0 {
+		tiersJSON, err = json.Marshal(p.CancellationTiers)
+		if err != nil {
+			return "", errs.NewInvalidInputErr(fmt.Errorf("failed to encode product cancellation tiers: %w", err))
+		}
+	}
+
 	query := fmt.Sprintf(`
 	INSERT INTO %s.products (
 		id,
@@ -28,11 +36,12 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		availability,
 		buffer_time,
 		cancellation_hours,
+		cancellation_tiers,
 		stripe_product_id,
 		metadata
 	) VALUES (
 		$1, $2, $3, $4, $5, $6, $7,
-		$8, $9, $10, $11, $12
+		$8, $9, $10, $11, $12, $13
 	) RETURNING id`, r.schema)
 
 	var newID string
@@ -47,6 +56,7 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		p.Availability,
 		p.BufferTime,
 		p.CancellationHours,
+		tiersJSON,
 		p.StripeProductID,
 		metadataJSON,
 	).Scan(&newID)

@@ -10,26 +10,28 @@ import (
 )
 
 type CreateProductRequest struct {
-	Name              string           `json:"name"`
-	Description       string           `json:"description,omitempty"`
-	CategoryID        string           `json:"category"`
-	Duration          int              `json:"duration"` // in minutes
-	Availability      AvailabilityType `json:"availability"`
-	BufferTime        int              `json:"bufferTime"`         // in minutes
-	CancellationHours int              `json:"cancellationHours"`  // in hours
-	Metadata          map[string]any   `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	Name              string             `json:"name"`
+	Description       string             `json:"description,omitempty"`
+	CategoryID        string             `json:"category"`
+	Duration          int                `json:"duration"` // in minutes
+	Availability      AvailabilityType   `json:"availability"`
+	BufferTime        int                `json:"bufferTime"`        // in minutes
+	CancellationHours int                `json:"cancellationHours"` // in hours
+	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
+	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
 }
 
 type UpdateProductRequest struct {
-	Name              *string        `json:"name"`
-	Description       *string        `json:"description,omitempty"`
-	CategoryID        *string        `json:"category"`
-	Duration          *int           `json:"duration"` // in minutes
-	Status            *string        `json:"publishedStatus"`
-	Availability      *string        `json:"availability"`
-	BufferTime        *int           `json:"bufferTime"`         // in minutes
-	CancellationHours *int           `json:"cancellationHours"`  // in hours
-	Metadata          map[string]any `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	Name              *string            `json:"name"`
+	Description       *string            `json:"description,omitempty"`
+	CategoryID        *string            `json:"category"`
+	Duration          *int               `json:"duration"` // in minutes
+	Status            *string            `json:"publishedStatus"`
+	Availability      *string            `json:"availability"`
+	BufferTime        *int               `json:"bufferTime"`        // in minutes
+	CancellationHours *int               `json:"cancellationHours"` // in hours
+	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
+	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
 }
 
 func (u UpdateProductRequest) Valid(ctx context.Context) error {
@@ -67,22 +69,28 @@ func (u UpdateProductRequest) Valid(ctx context.Context) error {
 	if u.CancellationHours != nil && *u.CancellationHours < 0 { // Changed to non-negative as per your example
 		errs.Set("cancellationHours", "Cancellation hours cannot be negative.")
 	}
+	if u.CancellationTiers != nil {
+		if err := ValidateCancellationTiers(u.CancellationTiers); err != nil {
+			errs.Set("cancellationTiers", err.Error())
+		}
+	}
 
 	return errs.AsError()
 }
 
 type ProductRes struct {
-	ID                uuid.UUID        `json:"id"`
-	Name              string           `json:"name"`
-	Description       string           `json:"description,omitempty"`
-	Category          Category         `json:"category"`
-	Duration          int              `json:"duration"` // in minutes
-	CreatedAt         time.Time        `json:"createdAt"`
-	UpdatedAt         time.Time        `json:"updatedAt"`
-	Status            PublishedStatus  `json:"publishedStatus"`
-	Availability      AvailabilityType `json:"availability"`
-	BufferTime        int              `json:"bufferTime"`         // in minutes
-	CancellationHours int              `json:"cancellationHours"`  // in hours
-	Metadata          map[string]any   `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
-	StripeProductID   string           `json:"stripeProductId,omitempty"`
+	ID                uuid.UUID          `json:"id"`
+	Name              string             `json:"name"`
+	Description       string             `json:"description,omitempty"`
+	Category          Category           `json:"category"`
+	Duration          int                `json:"duration"` // in minutes
+	CreatedAt         time.Time          `json:"createdAt"`
+	UpdatedAt         time.Time          `json:"updatedAt"`
+	Status            PublishedStatus    `json:"publishedStatus"`
+	Availability      AvailabilityType   `json:"availability"`
+	BufferTime        int                `json:"bufferTime"`        // in minutes
+	CancellationHours int                `json:"cancellationHours"` // in hours
+	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
+	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	StripeProductID   string             `json:"stripeProductId,omitempty"`
 }
