@@ -49,7 +49,7 @@ func (h *handler) UpdatePrice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// You might add an early check if req is empty (no updatable fields provided)
-	if req.Active == nil && req.Metadata == nil && req.Nickname == nil {
+	if req.Active == nil && req.Metadata == nil && req.Nickname == nil && req.TaxRatePercent == nil {
 		httpx.RespondWithError(w, errors.New("no updatable fields provided in request body"), http.StatusBadRequest)
 		return
 	}

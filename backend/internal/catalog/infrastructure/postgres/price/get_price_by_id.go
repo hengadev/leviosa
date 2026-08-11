@@ -14,7 +14,7 @@ import (
 // GetPrice retrieves a single Price by its internal ID.
 func (r *PriceRepository) GetPrice(ctx context.Context, priceID string) (*domain.Price, error) {
 	query := fmt.Sprintf(`
-		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
+		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
 		FROM %s.prices
 		WHERE id = $1;
 	`, r.schema)
@@ -27,6 +27,7 @@ func (r *PriceRepository) GetPrice(ctx context.Context, priceID string) (*domain
 		&p.Currency,
 		&p.Interval,
 		&p.IsActive,
+		&p.TaxRatePercent,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 	)

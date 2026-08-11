@@ -12,8 +12,8 @@ import (
 // CreatePrice inserts a new Price into the database.
 func (r *PriceRepository) CreatePrice(ctx context.Context, price *domain.Price) error {
 	query := fmt.Sprintf(`
-		INSERT INTO %s.prices (id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW());
+		INSERT INTO %s.prices (id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW());
 	`, r.schema)
 
 	_, err := r.pool.Exec(ctx, query,
@@ -24,6 +24,7 @@ func (r *PriceRepository) CreatePrice(ctx context.Context, price *domain.Price) 
 		price.Currency,
 		price.Interval,
 		price.IsActive,
+		price.TaxRatePercent,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("create price", err)

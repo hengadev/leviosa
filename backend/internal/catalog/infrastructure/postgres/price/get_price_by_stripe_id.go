@@ -15,7 +15,7 @@ import (
 // This is often useful as Stripe's internal ID is what you'll get from their webhooks/APIs.
 func (r *PriceRepository) GetPriceByStripeID(ctx context.Context, stripePriceID string) (*domain.Price, error) {
 	query := fmt.Sprintf(`
-		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
+		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
 		FROM %s.prices
 		WHERE stripe_price_id = $1;
 	`, r.schema)
@@ -28,6 +28,7 @@ func (r *PriceRepository) GetPriceByStripeID(ctx context.Context, stripePriceID 
 		&p.Currency,
 		&p.Interval,
 		&p.IsActive,
+		&p.TaxRatePercent,
 		&p.CreatedAt,
 		&p.UpdatedAt,
 	)

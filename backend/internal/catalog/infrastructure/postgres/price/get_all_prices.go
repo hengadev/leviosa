@@ -12,7 +12,7 @@ import (
 // GetAllPrices retrieves ALL prices from the database.
 func (r *PriceRepository) GetAllPrices(ctx context.Context) ([]*domain.Price, error) {
 	query := fmt.Sprintf(`
-		SELECT 
+		SELECT
 			id,
 			product_id,
 			stripe_price_id,
@@ -20,11 +20,12 @@ func (r *PriceRepository) GetAllPrices(ctx context.Context) ([]*domain.Price, er
 			currency,
 			interval,
 			is_active,
+			tax_rate_percent,
 			created_at,
 			updated_at
-		FROM 
+		FROM
 			%s.prices
-		ORDER BY 
+		ORDER BY
 			created_at ASC
 	`, r.schema)
 
@@ -48,6 +49,7 @@ func (r *PriceRepository) GetAllPrices(ctx context.Context) ([]*domain.Price, er
 			&p.Currency,
 			&intervalStr,
 			&p.IsActive,
+			&p.TaxRatePercent,
 			&p.CreatedAt,
 			&p.UpdatedAt,
 		); err != nil {

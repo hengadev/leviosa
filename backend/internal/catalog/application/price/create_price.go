@@ -24,10 +24,11 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 	// For simplicity, let's assume `input` has relevant fields for `Price.Valid` check.
 	// A new `errs.Price` will be constructed for `Valid` call.
 	tempPrice := domain.Price{
-		ProductID: productID,
-		Amount:    request.Amount,
-		Currency:  request.Currency,
-		Interval:  domain.Interval(request.Interval),
+		ProductID:      productID,
+		Amount:         request.Amount,
+		Currency:       request.Currency,
+		Interval:       domain.Interval(request.Interval),
+		TaxRatePercent: request.TaxRatePercent,
 	}
 
 	if err := tempPrice.Valid(ctx); err != nil {
@@ -64,15 +65,16 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 	// 5. Store new Price details in your database.
 	now := time.Now()
 	newPrice := &domain.Price{
-		ID:            uuid.New(),      // Generate a new internal ID
-		ProductID:     productID,       // Your internal product ID
-		StripePriceID: paymentPrice.ID, // Stripe's price ID
-		Amount:        int(paymentPrice.Amount),
-		Currency:      paymentPrice.Currency,
-		Interval:      domain.Interval(paymentPrice.Interval),
-		IsActive:      paymentPrice.Active,
-		CreatedAt:     now, // DB will set this, but for returning, use now or Stripe's created time
-		UpdatedAt:     now,
+		ID:             uuid.New(),      // Generate a new internal ID
+		ProductID:      productID,       // Your internal product ID
+		StripePriceID:  paymentPrice.ID, // Stripe's price ID
+		Amount:         int(paymentPrice.Amount),
+		Currency:       paymentPrice.Currency,
+		Interval:       domain.Interval(paymentPrice.Interval),
+		IsActive:       paymentPrice.Active,
+		TaxRatePercent: request.TaxRatePercent, // Local-only field; not synced to Stripe
+		CreatedAt:      now,                    // DB will set this, but for returning, use now or Stripe's created time
+		UpdatedAt:      now,
 	}
 
 	if err := s.repo.CreatePrice(ctx, newPrice); err != nil {

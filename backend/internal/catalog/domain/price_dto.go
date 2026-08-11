@@ -10,6 +10,10 @@ type CreatePriceRequest struct {
 	Interval string            `json:"interval"`           // "month", "year", "one_time"
 	Nickname *string           `json:"nickname,omitempty"` // Optional nickname for the price
 	Metadata map[string]string `json:"metadata,omitempty"` // Optional metadata to attach
+	// TaxRatePercent is an optional VAT/tax rate as a percentage. Left unset
+	// (nil), the price defaults to null/exempt. Stored locally only — never
+	// sent to Stripe.
+	TaxRatePercent *float64 `json:"taxRatePercent,omitempty"`
 }
 
 // UpdatePriceRequest represents the fields that can be updated for an existing price.
@@ -18,4 +22,7 @@ type UpdatePriceRequest struct {
 	Active   *bool             `json:"active,omitempty"`   // Pointer for optional update (true/false)
 	Nickname *string           `json:"nickname,omitempty"` // Pointer for optional update
 	Metadata map[string]string `json:"metadata,omitempty"` // Full map replacement if provided
+	// TaxRatePercent, when provided, sets the price's VAT/tax rate. Stored
+	// locally only — never sent to Stripe.
+	TaxRatePercent *float64 `json:"taxRatePercent,omitempty"`
 }
