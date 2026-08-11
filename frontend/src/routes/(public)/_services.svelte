@@ -1,6 +1,20 @@
 <script lang="ts">
     import { reveal } from "$lib/actions/reveal";
     import { Zap, Check, Stethoscope, HandHeart, Activity } from "@lucide/svelte";
+
+    type FeaturedService = {
+        id: string;
+        name: string;
+        description: string;
+        duration: number;
+        category: string;
+    } | null;
+
+    let { service, price }: { service: FeaturedService; price: number | null } = $props();
+
+    let formattedPrice = $derived(
+        price != null ? (price / 100).toFixed(2).replace(/\.00$/, "") : null,
+    );
 </script>
 
 <section id="services" class="py-20 lg:py-24 bg-white">
@@ -28,6 +42,7 @@
         </div>
 
         <!-- Service Card: Single Item Layout -->
+        {#if service}
         <div
             class="group relative bg-white rounded-3xl border border-border-input-hover shadow-mini overflow-hidden hover:shadow-card transition-all duration-300"
             use:reveal={{ preset: "fade-up", delay: 150 }}
@@ -52,15 +67,13 @@
                     <h3
                         class="text-2xl md:text-3xl font-semibold text-foreground tracking-tight mb-4"
                     >
-                        Séance d'ostéopathie
+                        {service.name}
                     </h3>
 
                     <p
                         class="text-muted-foreground text-base md:text-lg leading-relaxed mb-8"
                     >
-                        Une séance de 60 minutes pour libérer vos tensions et
-                        retrouver de la mobilité. Idéale en cas de douleurs
-                        chroniques, de mauvaises postures ou après un effort.
+                        {service.description}
                     </p>
 
                     <div class="space-y-4 mb-10">
@@ -117,10 +130,23 @@
                         </div>
                     </div>
 
+                    <!-- Duration + price -->
+                    <div class="flex flex-wrap items-center gap-3 mb-8 -mt-2">
+                        <div class="inline-flex items-center gap-1.5 bg-surface border border-border-input rounded-full px-4 py-2">
+                            <span class="text-xs font-medium text-foreground-alt">{service.duration} min</span>
+                        </div>
+                        {#if formattedPrice}
+                            <div class="inline-flex items-baseline gap-0.5 bg-foreground text-white px-3 py-1.5 rounded-full">
+                                <span class="text-sm font-bold">{formattedPrice}</span>
+                                <span class="text-xs font-medium opacity-70">€</span>
+                            </div>
+                        {/if}
+                    </div>
+
                     <!-- Secondary CTA (Discovery) -->
                     <div class="flex flex-col sm:flex-row gap-4">
                         <a
-                            href="/services"
+                            href="/services/{service.id}"
                             class="inline-flex justify-center items-center gap-2 bg-white text-foreground border border-border-input-hover hover:border-border-input-hover hover:bg-surface text-sm font-medium px-6 py-3 rounded-xl transition-all duration-200 cursor-pointer"
                         >
                             Découvrir le service
@@ -218,5 +244,6 @@
                 </div>
             </div>
         </div>
+        {/if}
     </div>
 </section>

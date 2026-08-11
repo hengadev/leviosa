@@ -8,20 +8,19 @@
     import Testimonies from "./_testimonies.svelte";
     import Faq from "./_faq.svelte";
     import Ready from "./_ready.svelte";
+    import type { PageProps } from "./$types";
 
-    // TODO: After fetching from +page.server.ts page.
-    // import type { PageProps } from "./$types";
-    // let { data }: PageProps = $props();
-    // let { cards } = data
+    let { data }: PageProps = $props();
+    let { featuredService, featuredPrice, teamMembers } = data;
 </script>
 
 <main class="relative overflow-hidden">
     <Hero />
     <How />
-    <Services />
+    <Services service={featuredService} price={featuredPrice} />
     <Stats />
     <Why />
-    <Team />
+    <Team members={teamMembers} />
     <Testimonies />
     <Faq />
     <Ready />
