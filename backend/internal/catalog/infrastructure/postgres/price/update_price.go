@@ -25,8 +25,15 @@ func (r *PriceRepository) UpdatePrice(ctx context.Context, priceID string, patch
 		args = append(args, *patch.Active)
 		argCounter++
 	}
-	// Only 'is_active' is typically updatable directly in a price via API.
-	// If you allowed nickname/metadata updates locally, you'd add them here.
+
+	if patch.TaxRatePercent != nil {
+		sets = append(sets, fmt.Sprintf("tax_rate_percent = $%d", argCounter))
+		args = append(args, *patch.TaxRatePercent)
+		argCounter++
+	}
+	// 'is_active' and 'tax_rate_percent' are the only fields updatable
+	// directly on a price locally. If you allowed nickname/metadata updates
+	// locally, you'd add them here.
 
 	if len(sets) == 0 {
 		return errs.NewInvalidInputErr(errors.New("no updatable fields provided for price update"))

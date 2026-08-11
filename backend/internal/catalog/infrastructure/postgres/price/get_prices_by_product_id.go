@@ -12,7 +12,7 @@ import (
 // GetPricesByProductID retrieves a list of Prices for a given internal product ID.
 func (r *PriceRepository) GetPricesByProductID(ctx context.Context, productID string, activeOnly bool) ([]*domain.Price, error) {
 	baseQuery := `
-		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, created_at, updated_at
+		SELECT id, product_id, stripe_price_id, amount, currency, interval, is_active, tax_rate_percent, created_at, updated_at
 		FROM %s.prices
 		WHERE product_id = $1
 	`
@@ -41,6 +41,7 @@ func (r *PriceRepository) GetPricesByProductID(ctx context.Context, productID st
 			&p.Currency,
 			&p.Interval,
 			&p.IsActive,
+			&p.TaxRatePercent,
 			&p.CreatedAt,
 			&p.UpdatedAt,
 		); err != nil {
