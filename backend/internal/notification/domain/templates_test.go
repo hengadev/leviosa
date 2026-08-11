@@ -236,6 +236,75 @@ func TestPaymentFailedTemplateRenders(t *testing.T) {
 	}
 }
 
+func TestContactFormTemplateRenders(t *testing.T) {
+	tmpl := parseTemplateOrFail(t, "contact_form")
+
+	data := struct {
+		Name         string
+		ContactEmail string
+		ContactPhone string
+		Message      string
+		SubmittedAt  string
+		CompanyName  string
+		Year         int
+		LogoURL      string
+	}{
+		Name:         "Alice Dupont",
+		ContactEmail: "alice@example.com",
+		ContactPhone: "0612345678",
+		Message:      "Bonjour, je voudrais des informations sur vos tarifs.",
+		SubmittedAt:  "11/08/2026 14:30",
+		CompanyName:  "Leviosa",
+		Year:         2026,
+		LogoURL:      "https://example.com/logo.png",
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatalf("failed to execute contact_form template: %v", err)
+	}
+
+	assertContains(t, buf.String(), "Alice Dupont")
+	assertContains(t, buf.String(), "alice@example.com")
+	assertContains(t, buf.String(), "0612345678")
+	assertContains(t, buf.String(), "Bonjour, je voudrais des informations sur vos tarifs.")
+	assertContains(t, buf.String(), "11/08/2026 14:30")
+	assertContains(t, buf.String(), "Leviosa")
+	assertContains(t, buf.String(), "2026")
+}
+
+func TestContactFormTemplate_OmitsMissingContactFields(t *testing.T) {
+	tmpl := parseTemplateOrFail(t, "contact_form")
+
+	data := struct {
+		Name         string
+		ContactEmail string
+		ContactPhone string
+		Message      string
+		SubmittedAt  string
+		CompanyName  string
+		Year         int
+		LogoURL      string
+	}{
+		Name:         "Bob",
+		ContactPhone: "0612345678",
+		Message:      "Appelez-moi svp.",
+		SubmittedAt:  "11/08/2026 14:30",
+		CompanyName:  "Leviosa",
+		Year:         2026,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatalf("failed to execute contact_form template without email: %v", err)
+	}
+
+	if bytes.Contains(buf.Bytes(), []byte("Email</td>")) {
+		t.Error("email row should not render when ContactEmail is empty")
+	}
+	assertContains(t, buf.String(), "0612345678")
+}
+
 func parseTemplateOrFail(t *testing.T, name string) *template.Template {
 	t.Helper()
 	tmpl, err := template.ParseFS(EmailTemplates, "templates/"+name+".html")
