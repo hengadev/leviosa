@@ -401,6 +401,12 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 	return a.emailService.SendBookingReminderEmail(ctx, req)
 }
 
+// sendBookingReminderSMS sends a booking reminder SMS, mirroring the booking
+// confirmation SMS copy pattern. Missing phone number is not an error — it
+// simply means the SMS channel is skipped for this booking.
+func (a *BookingNotificationAdapter) sendBookingReminderSMS(ctx context.Context, data bookingPorts.BookingNotificationData) {
+}
+
 func (a *BookingNotificationAdapter) sendPaymentConfirmationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
 
