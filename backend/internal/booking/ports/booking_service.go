@@ -21,6 +21,13 @@ type BookingService interface {
 	// GetBooking retrieves a booking by ID
 	GetBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
+	// GetBookingFinancialStatus derives the plain-language-ready cancellation
+	// deadline and refund amount/date for an already-fetched booking. It looks
+	// up the booking's product to read the cancellation window (same policy
+	// enforced by CancelBooking) and infers refund amount/date from existing
+	// payment_status/timestamps. Used by the client booking detail endpoint.
+	GetBookingFinancialStatus(ctx context.Context, booking *domain.Booking) (*domain.BookingFinancialStatus, error)
+
 	// UpdateBookingNotes updates client or partner notes
 	UpdateBookingNotes(ctx context.Context, id uuid.UUID, clientNotes, partnerNotes string) (*domain.Booking, error)
 

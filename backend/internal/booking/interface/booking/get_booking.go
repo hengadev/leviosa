@@ -2,6 +2,7 @@ package bookingHandler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
@@ -39,6 +40,18 @@ func (h *handler) GetBooking(w http.ResponseWriter, r *http.Request) {
 		cancellationReason = &booking.CancellationReason
 	}
 
+	// Derive plain-language-ready cancellation deadline and refund status
+	// (issue 011). Best-effort: a failure here shouldn't hide the booking
+	// itself, so log and continue with an empty financial status.
+	financialStatus, err := h.svc.GetBookingFinancialStatus(ctx, booking)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to derive booking financial status",
+			"booking_id", booking.ID,
+			"err", err,
+		)
+		financialStatus = &domain.BookingFinancialStatus{}
+	}
+
 	response := domain.BookingResponse{
 		ID:                 booking.ID,
 		AvailabilityID:     booking.AvailabilityID,
@@ -63,6 +76,8 @@ func (h *handler) GetBooking(w http.ResponseWriter, r *http.Request) {
 		GuestEmail:         booking.GuestEmail,
 		GuestPhone:         booking.GuestPhone,
 		Token:              booking.Token,
+
+		BookingFinancialStatus: financialStatus,
 	}
 
 	httpx.RespondWithJSON(w, response, http.StatusOK)
