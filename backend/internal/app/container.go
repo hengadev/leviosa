@@ -61,6 +61,7 @@ import (
 	metricsSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/metrics"
 	reviewSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/review"
 	roomSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
+	waitlistSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/waitlist"
 
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
@@ -71,6 +72,7 @@ import (
 	metricsRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/metrics"
 	reviewRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/review"
 	roomRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
+	waitlistRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/waitlist"
 	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
 	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
 	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
@@ -156,6 +158,7 @@ type Container struct {
 	RoomScheduleRepo   bookingPorts.RoomScheduleRepository
 	BookingAuthuserCLi bookingPorts.AuthUserClient
 	ReviewRepo         bookingPorts.ReviewRepository
+	WaitlistRepo       bookingPorts.WaitlistRepository
 
 	// Authuser Services
 	UserService     authuserPorts.UserService
@@ -185,6 +188,7 @@ type Container struct {
 	PaymentService      bookingPorts.PaymentService
 	ReminderScheduler   *bookingSvc.ReminderScheduler
 	ReviewService       bookingPorts.ReviewService
+	WaitlistService     bookingPorts.WaitlistService
 
 	// Messaging Repositories
 	MessageRepo messagingPorts.MessageRepository
@@ -374,6 +378,7 @@ func (c *Container) setupRepositories(ctx context.Context) error {
 	c.MetricsRepo = metricsRepo.New(c.DB)
 	c.RoomScheduleRepo = roomScheduleRepo.NewRoomScheduleRepository(c.DB)
 	c.ReviewRepo = reviewRepo.New(ctx, c.DB)
+	c.WaitlistRepo = waitlistRepo.New(ctx, c.DB)
 
 	// Messaging repositories
 	c.MessageRepo = messagingRepo.New(ctx, c.DB)
@@ -545,6 +550,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 	// booking-relationship authorization check (booking must be `completed` and
 	// owned by the requesting client), mirroring ADR-0013's pattern.
 	c.ReviewService = reviewSvc.New(c.ReviewRepo, c.BookingService)
+	c.WaitlistService = waitlistSvc.New(c.WaitlistRepo, c.ProductService, c.Crypto)
 
 	// Booking reminder scheduler
 	c.ReminderScheduler = bookingSvc.NewReminderScheduler(
