@@ -21,6 +21,7 @@ import (
 	metricsHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/metrics"
 	reviewHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/review"
 	roomHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/room"
+	waitlistHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/waitlist"
 
 	// Catalog HTTP handlers
 	categoryHandler "github.com/Leviosa-care/leviosa/backend/internal/catalog/interface/category"
@@ -263,6 +264,12 @@ func (s *Server) setupBookingRoutes(router *http.ServeMux) {
 		s.container.AuthMw,
 	)
 	reviewH.RegisterRoutes(router)
+
+	// Waitlist handler
+	waitlistH := waitlistHandler.New(
+		s.container.WaitlistService,
+	)
+	waitlistH.RegisterRoutes(router)
 }
 
 func (s *Server) setupMessagingRoutes(router *http.ServeMux) {
