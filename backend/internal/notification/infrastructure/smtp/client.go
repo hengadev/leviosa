@@ -308,6 +308,38 @@ func (c *SMTPClient) SendBookingReminderEmail(ctx context.Context, req domain.Bo
 	return c.sendEmail(ctx, emailReq, "")
 }
 
+func (c *SMTPClient) SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error {
+	data := struct {
+		Name         string
+		ContactEmail string
+		ContactPhone string
+		Message      string
+		SubmittedAt  string
+		CompanyName  string
+		Year         int
+		LogoURL      string
+	}{
+		Name:         req.Name,
+		ContactEmail: req.ContactEmail,
+		ContactPhone: req.ContactPhone,
+		Message:      req.Message,
+		SubmittedAt:  req.SubmittedAt,
+		CompanyName:  req.CompanyName,
+		Year:         time.Now().Year(),
+		LogoURL:      req.LogoURL,
+	}
+
+	emailReq := &domain.EmailRequest{
+		To:       req.ToEmail,
+		ReplyTo:  req.ContactEmail, // lets staff reply directly to the visitor when they left an email
+		Subject:  fmt.Sprintf("Nouveau message de contact — %s", req.Name),
+		Template: "contact_form",
+		Data:     data,
+	}
+
+	return c.sendEmail(ctx, emailReq, req.FromEmail)
+}
+
 func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest, fromEmail string) error {
 	if request == nil {
 		return errs.ErrInvalidValue
@@ -329,6 +361,10 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 	m.SetHeader("From", fromEmail)
 	m.SetHeader("To", request.To)
 	m.SetHeader("Subject", request.Subject)
+
+	if request.ReplyTo != "" {
+		m.SetHeader("Reply-To", request.ReplyTo)
+	}
 
 	if len(request.CarbonCopy) > 0 {
 		addresses := make([]string, 0, len(request.CarbonCopy))

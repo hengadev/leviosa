@@ -19,4 +19,7 @@ type EmailService interface {
 	SendBookingConfirmationEmail(ctx context.Context, req domain.BookingConfirmationRequest) error
 	SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error
 	SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error
+
+	// SendContactFormEmail notifies staff of a public contact-form submission.
+	SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error
 }

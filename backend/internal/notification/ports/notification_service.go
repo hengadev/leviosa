@@ -11,6 +11,9 @@ type NotificationService interface {
 	SendEventNotificationEmail(ctx context.Context, email, firstName, lastName, eventName, eventDetails string) error
 	SendPaymentNotificationEmail(ctx context.Context, email, firstName, lastName, amount, product, paymentDate string) error
 
+	// SendContactFormNotification notifies staff of a public contact-form submission.
+	SendContactFormNotification(ctx context.Context, name, contactEmail, contactPhone, message string) error
+
 	// SMS methods
 	SendOTPBySMS(ctx context.Context, phoneNumber, otp string) error
 	SendGenericSMS(ctx context.Context, phoneNumber, message string) error

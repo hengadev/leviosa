@@ -47,6 +47,10 @@ func (n *NotificationService) SendPaymentNotificationEmail(ctx context.Context, 
 	return n.mailService.SendPaymentNotificationEmail(ctx, email, firstName, lastName, amount, product, paymentDate)
 }
 
+func (n *NotificationService) SendContactFormNotification(ctx context.Context, name, contactEmail, contactPhone, message string) error {
+	return n.mailService.SendContactFormEmail(ctx, name, contactEmail, contactPhone, message)
+}
+
 // SMS methods - delegate to SMSService
 func (n *NotificationService) SendOTPBySMS(ctx context.Context, phoneNumber, otp string) error {
 	if n.smsService == nil {
