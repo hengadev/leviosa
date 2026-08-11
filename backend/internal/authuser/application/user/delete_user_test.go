@@ -270,7 +270,7 @@ func TestDeleteUser(t *testing.T) {
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(&stripe.Customer{ID: stripeCustomerID}, nil)
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -300,7 +300,7 @@ func TestDeleteUser(t *testing.T) {
 		// Stripe should not be called when no customer ID
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -320,7 +320,7 @@ func TestDeleteUser(t *testing.T) {
 
 		mockRepo.On("GetUserByID", ctx, userID).Return(nil, errs.ErrRepositoryNotFound)
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -349,7 +349,7 @@ func TestDeleteUser(t *testing.T) {
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(nil, errs.ErrInvalidValue) // Stripe customer not found
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)                                       // Should still delete user
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -378,7 +378,7 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(nil, errs.NewExternalServiceErr(errors.New("stripe error"), "stripe unavailable"))
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -411,7 +411,7 @@ func TestDeleteUser(t *testing.T) {
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(&stripe.Customer{ID: stripeCustomerID}, nil)
 		mockRepo.On("DeleteUser", ctx, userID).Return(errs.ErrRepositoryNotFound)
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
@@ -439,7 +439,7 @@ func TestDeleteUser(t *testing.T) {
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
 		mockCrypto.On("DecryptStruct", ctx, testUser).Return(errors.New("decryption failed"))
 
-		service := userService.New(mockRepo, mockCrypto, mockStripe)
+		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Act
 		err := service.DeleteUser(ctx, userID)
