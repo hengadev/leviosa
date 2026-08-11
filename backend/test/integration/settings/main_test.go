@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 	settings "github.com/Leviosa-care/leviosa/backend/internal/settings/application"
 	"github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/noop"
@@ -54,6 +55,7 @@ var (
 	mediaRepo      ports.SettingsMedia
 	sessionRepo    session.SessionRepository
 	handler        settingsHandler.Handler
+	auditLogger    *audit.PostgresLogger
 	testServerURL  string           // Global variable to hold the URL of the running test server
 	testServer     *http.Server     // To allow graceful shutdown
 	testMQConn     *amqp.Connection // RabbitMQ connection for test verification
@@ -241,7 +243,8 @@ func TestMain(m *testing.M) {
 	// Create application service with NoOp publisher (event publishing disabled)
 	// See CLAUDE.local.md for details on why RabbitMQ integration is commented out
 	publisher := noop.NewPublisher()
-	service := settings.New(repo, mediaRepo, crypto, publisher)
+	auditLogger = audit.NewPostgresLogger(testPool)
+	service := settings.New(repo, mediaRepo, crypto, publisher, auditLogger)
 
 	// Create authentication middleware with Vault client
 	// For integration tests, we pass nil session repository since we're testing service auth
