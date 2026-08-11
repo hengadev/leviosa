@@ -208,7 +208,7 @@ func TestMain(m *testing.M) {
 
 	// Initialize application layers
 	userRepo = userRepository.New(ctx, testPool)
-	userSvc = user.New(userRepo, crypto, stripeAdapter)
+	userSvc = user.New(userRepo, crypto, stripeAdapter, nil)
 
 	partnerRepo = partnerRepository.New(ctx, testPool)
 
