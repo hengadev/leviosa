@@ -367,6 +367,10 @@ func (a *BookingNotificationAdapter) sendBookingCancellationEmail(ctx context.Co
 	return nil
 }
 
+// sendBookingReminderEmail sends the booking reminder email and SMS. The two
+// channels are independent: email is sent if an address is on file, SMS is
+// sent if a phone number is on file, regardless of whether the other channel
+// fires. A missing phone number is not an error — it just skips SMS.
 func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
 
@@ -374,37 +378,82 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 		slog.WarnContext(ctx, "no client email available for booking reminder",
 			"booking_id", data.BookingID,
 		)
-		return nil
+	} else {
+		formattedDate := data.SlotStartTime.Format("Monday, 02 January 2006")
+		formattedTime := fmt.Sprintf("%s – %s",
+			data.SlotStartTime.Format("15:04"),
+			data.SlotEndTime.Format("15:04"),
+		)
+
+		req := notificationDomain.BookingReminderRequest{
+			ToEmail:     data.ClientEmail,
+			ToFirstName: firstName(data.ClientName),
+			ToLastName:  lastName(data.ClientName),
+			BookingID:   data.BookingID.String(),
+			ProductName: data.ProductName,
+			RoomName:    data.RoomName,
+			Building:    data.BuildingName,
+			Address:     data.Address,
+			Date:        formattedDate,
+			Time:        formattedTime,
+			PartnerName: data.PartnerName,
+			Year:        time.Now().Year(),
+		}
+
+		if err := a.emailService.SendBookingReminderEmail(ctx, req); err != nil {
+			slog.ErrorContext(ctx, "failed to send booking reminder email",
+				"booking_id", data.BookingID,
+				"error", err,
+			)
+		}
 	}
 
-	formattedDate := data.SlotStartTime.Format("Monday, 02 January 2006")
-	formattedTime := fmt.Sprintf("%s – %s",
-		data.SlotStartTime.Format("15:04"),
-		data.SlotEndTime.Format("15:04"),
-	)
+	// Send reminder SMS if phone is available.
+	a.sendBookingReminderSMS(ctx, data)
 
-	req := notificationDomain.BookingReminderRequest{
-		ToEmail:     data.ClientEmail,
-		ToFirstName: firstName(data.ClientName),
-		ToLastName:  lastName(data.ClientName),
-		BookingID:   data.BookingID.String(),
-		ProductName: data.ProductName,
-		RoomName:    data.RoomName,
-		Building:    data.BuildingName,
-		Address:     data.Address,
-		Date:        formattedDate,
-		Time:        formattedTime,
-		PartnerName: data.PartnerName,
-		Year:        time.Now().Year(),
-	}
-
-	return a.emailService.SendBookingReminderEmail(ctx, req)
+	return nil
 }
 
 // sendBookingReminderSMS sends a booking reminder SMS, mirroring the booking
 // confirmation SMS copy pattern. Missing phone number is not an error — it
 // simply means the SMS channel is skipped for this booking.
 func (a *BookingNotificationAdapter) sendBookingReminderSMS(ctx context.Context, data bookingPorts.BookingNotificationData) {
+	phone := data.ClientPhone
+	if phone == "" {
+		return
+	}
+
+	formattedDate := data.SlotStartTime.Format("02/01/2006")
+	formattedTime := fmt.Sprintf("%s-%s",
+		data.SlotStartTime.Format("15:04"),
+		data.SlotEndTime.Format("15:04"),
+	)
+
+	message := fmt.Sprintf("Rappel: %s le %s de %s. ",
+		data.ProductName,
+		formattedDate,
+		formattedTime,
+	)
+
+	// Append token URL if available (legacy bookings may have an empty token)
+	if data.Token != "" {
+		message += fmt.Sprintf("Voir votre réservation: %s/bookings?token=%s",
+			a.frontendOrigin, data.Token)
+	}
+
+	if a.smsService == nil {
+		return
+	}
+
+	if err := a.smsService.SendSMS(ctx, notificationDomain.GenericSMSRequest{
+		PhoneNumber: phone,
+		Message:     message,
+	}); err != nil {
+		slog.ErrorContext(ctx, "failed to send booking reminder SMS",
+			"booking_id", data.BookingID,
+			"error", err,
+		)
+	}
 }
 
 func (a *BookingNotificationAdapter) sendPaymentConfirmationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
