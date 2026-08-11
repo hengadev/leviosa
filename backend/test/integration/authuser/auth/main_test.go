@@ -239,7 +239,7 @@ func TestMain(m *testing.M) {
 
 	// Initialize application layers
 	userRepo = userRepository.New(ctx, testPool)
-	userService := user.New(userRepo, crypto, payment)
+	userService := user.New(userRepo, crypto, payment, nil)
 
 	catalogCache = catalog.NewCatalogCache()
 	// Note: Old catalog service creation removed as it's no longer needed by partner service
