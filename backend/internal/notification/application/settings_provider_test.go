@@ -54,6 +54,15 @@ func (m *mockSettingsService) GetAccessTokenDuration(ctx context.Context) (*sett
 func (m *mockSettingsService) GetRefreshTokenDuration(ctx context.Context) (*settingsDomain.GetRefreshTokenDurationResponse, error) {
 	return nil, nil
 }
+func (m *mockSettingsService) GetCompanyRegistrationNumber(ctx context.Context) (*settingsDomain.GetCompanyRegistrationNumberResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetCompanyVatNumber(ctx context.Context) (*settingsDomain.GetCompanyVatNumberResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetCompanyHostingProvider(ctx context.Context) (*settingsDomain.GetCompanyHostingProviderResponse, error) {
+	return nil, nil
+}
 func (m *mockSettingsService) SetCompanyName(ctx context.Context, req *settingsDomain.SetCompanyNameRequest) (*settingsDomain.SetCompanyNameResponse, error) {
 	return nil, nil
 }
@@ -85,6 +94,15 @@ func (m *mockSettingsService) SetAccessTokenDuration(ctx context.Context, req *s
 	return nil, nil
 }
 func (m *mockSettingsService) SetRefreshTokenDuration(ctx context.Context, req *settingsDomain.SetRefreshTokenDurationRequest) (*settingsDomain.SetRefreshTokenDurationResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetCompanyRegistrationNumber(ctx context.Context, req *settingsDomain.SetCompanyRegistrationNumberRequest) (*settingsDomain.SetCompanyRegistrationNumberResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetCompanyVatNumber(ctx context.Context, req *settingsDomain.SetCompanyVatNumberRequest) (*settingsDomain.SetCompanyVatNumberResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetCompanyHostingProvider(ctx context.Context, req *settingsDomain.SetCompanyHostingProviderRequest) (*settingsDomain.SetCompanyHostingProviderResponse, error) {
 	return nil, nil
 }
 
