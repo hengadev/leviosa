@@ -441,3 +441,69 @@ func InsertTestCompanyAddress(t *testing.T, ctx context.Context, address string,
 func InsertTestOTPDuration(t *testing.T, ctx context.Context, duration int, pool *pgxpool.Pool) {
 	InsertOTPDuration(t, ctx, duration, pool)
 }
+
+// Company Registration Number (SIRET/SIREN) specific helpers
+func InsertCompanyRegistrationNumber(t *testing.T, ctx context.Context, registrationNumber string, pool *pgxpool.Pool) {
+	t.Helper()
+	query := `
+		INSERT INTO settings.plain (key, value)
+		VALUES ($1, $2)
+		ON CONFLICT (key) DO UPDATE SET
+			value = EXCLUDED.value,
+			updated_at = NOW()
+	`
+	_, err := pool.Exec(ctx, query, settings.CompanyRegistrationNumber, registrationNumber)
+	require.NoError(t, err)
+}
+
+func GetCompanyRegistrationNumber(t *testing.T, ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	t.Helper()
+	var registrationNumber string
+	query := `SELECT value FROM settings.plain WHERE key = $1`
+	err := pool.QueryRow(ctx, query, settings.CompanyRegistrationNumber).Scan(&registrationNumber)
+	return registrationNumber, err
+}
+
+// Company VAT Number specific helpers
+func InsertCompanyVatNumber(t *testing.T, ctx context.Context, vatNumber string, pool *pgxpool.Pool) {
+	t.Helper()
+	query := `
+		INSERT INTO settings.plain (key, value)
+		VALUES ($1, $2)
+		ON CONFLICT (key) DO UPDATE SET
+			value = EXCLUDED.value,
+			updated_at = NOW()
+	`
+	_, err := pool.Exec(ctx, query, settings.CompanyVatNumber, vatNumber)
+	require.NoError(t, err)
+}
+
+func GetCompanyVatNumber(t *testing.T, ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	t.Helper()
+	var vatNumber string
+	query := `SELECT value FROM settings.plain WHERE key = $1`
+	err := pool.QueryRow(ctx, query, settings.CompanyVatNumber).Scan(&vatNumber)
+	return vatNumber, err
+}
+
+// Company Hosting Provider specific helpers
+func InsertCompanyHostingProvider(t *testing.T, ctx context.Context, hostingProvider string, pool *pgxpool.Pool) {
+	t.Helper()
+	query := `
+		INSERT INTO settings.plain (key, value)
+		VALUES ($1, $2)
+		ON CONFLICT (key) DO UPDATE SET
+			value = EXCLUDED.value,
+			updated_at = NOW()
+	`
+	_, err := pool.Exec(ctx, query, settings.CompanyHostingProvider, hostingProvider)
+	require.NoError(t, err)
+}
+
+func GetCompanyHostingProvider(t *testing.T, ctx context.Context, pool *pgxpool.Pool) (string, error) {
+	t.Helper()
+	var hostingProvider string
+	query := `SELECT value FROM settings.plain WHERE key = $1`
+	err := pool.QueryRow(ctx, query, settings.CompanyHostingProvider).Scan(&hostingProvider)
+	return hostingProvider, err
+}

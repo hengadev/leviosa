@@ -94,6 +94,54 @@ func NewSetCompanyInstagramRequest(t *testing.T, ctx context.Context, serverURL 
 	return req
 }
 
+func NewGetCompanyRegistrationNumberRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyRegistrationNumberEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetCompanyRegistrationNumberRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetCompanyRegistrationNumberRequest) *http.Request {
+	jsonBody, err := json.Marshal(request)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyRegistrationNumberEndpoint, bytes.NewReader(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
+func NewGetCompanyVatNumberRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyVatNumberEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetCompanyVatNumberRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetCompanyVatNumberRequest) *http.Request {
+	jsonBody, err := json.Marshal(request)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyVatNumberEndpoint, bytes.NewReader(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
+func NewGetCompanyHostingProviderRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyHostingProviderEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetCompanyHostingProviderRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetCompanyHostingProviderRequest) *http.Request {
+	jsonBody, err := json.Marshal(request)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyHostingProviderEndpoint, bytes.NewReader(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
 func NewGetCompanyLogoRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetCompanyLogoEndpoint, nil)
 	require.NoError(t, err)
