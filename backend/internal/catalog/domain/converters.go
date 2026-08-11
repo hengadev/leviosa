@@ -18,6 +18,7 @@ func ToProductRes(p *Product, c *Category) *ProductRes {
 		Availability:      p.Availability,
 		BufferTime:        p.BufferTime,
 		CancellationHours: p.CancellationHours,
+		CancellationTiers: p.CancellationTiers,
 		Metadata:          p.Metadata,
 	}
 }

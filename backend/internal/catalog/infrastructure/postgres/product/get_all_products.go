@@ -24,6 +24,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 		p.availability,
 		p.buffer_time,
 		p.cancellation_hours,
+		p.cancellation_tiers,
 		p.metadata,
 		c.id,
 		c.name,
@@ -45,6 +46,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 		var (
 			pr          domain.ProductRes
 			metaProd    []byte
+			tiers       []byte
 			cat         domain.Category
 			description sql.NullString
 		)
@@ -60,6 +62,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 			&pr.Availability,
 			&pr.BufferTime,
 			&pr.CancellationHours,
+			&tiers,
 			&metaProd,
 			&cat.ID,
 			&cat.Name,
@@ -80,6 +83,12 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 			}
 		} else {
 			pr.Metadata = nil
+		}
+
+		if tiers != nil {
+			if err := json.Unmarshal(tiers, &pr.CancellationTiers); err != nil {
+				return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product cancellation tiers: %w", err))
+			}
 		}
 
 		pr.Category = cat

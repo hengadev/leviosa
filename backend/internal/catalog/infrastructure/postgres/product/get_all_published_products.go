@@ -23,6 +23,7 @@ func (r *ProductRepository) GetAllPublishedProducts(ctx context.Context) ([]*dom
 		p.availability,
 		p.buffer_time,
 		p.cancellation_hours,
+		p.cancellation_tiers,
 		p.metadata,
 		c.id,
 		c.name,
@@ -45,6 +46,7 @@ func (r *ProductRepository) GetAllPublishedProducts(ctx context.Context) ([]*dom
 		var (
 			pr       domain.ProductRes
 			metaProd []byte
+			tiers    []byte
 			cat      domain.Category
 		)
 
@@ -59,6 +61,7 @@ func (r *ProductRepository) GetAllPublishedProducts(ctx context.Context) ([]*dom
 			&pr.Availability,
 			&pr.BufferTime,
 			&pr.CancellationHours,
+			&tiers,
 			&metaProd,
 			&cat.ID,
 			&cat.Name,
@@ -74,6 +77,12 @@ func (r *ProductRepository) GetAllPublishedProducts(ctx context.Context) ([]*dom
 			}
 		} else {
 			pr.Metadata = make(map[string]any)
+		}
+
+		if tiers != nil {
+			if err := json.Unmarshal(tiers, &pr.CancellationTiers); err != nil {
+				return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product cancellation tiers: %w", err))
+			}
 		}
 
 		pr.Category = cat

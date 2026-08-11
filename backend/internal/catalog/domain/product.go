@@ -10,19 +10,20 @@ import (
 )
 
 type Product struct {
-	ID                uuid.UUID        `json:"id"`
-	Name              string           `json:"name"`
-	Description       string           `json:"description,omitempty"`
-	CategoryID        uuid.UUID        `json:"category"`
-	Duration          int              `json:"duration"` // in minutes
-	CreatedAt         time.Time        `json:"createdAt"`
-	UpdatedAt         time.Time        `json:"updatedAt"`
-	Status            PublishedStatus  `json:"publishedStatus"`
-	Availability      AvailabilityType `json:"availability"`
-	BufferTime        int              `json:"bufferTime"`                // in minutes
-	CancellationHours int              `json:"cancellationHours"`         // in hours
-	StripeProductID   string           `json:"stripeProductId,omitempty"` // ID of the product in Stripe
-	Metadata          map[string]any   `json:"metadata,omitempty"`        // Flexible storage for type-specific attributes
+	ID                uuid.UUID          `json:"id"`
+	Name              string             `json:"name"`
+	Description       string             `json:"description,omitempty"`
+	CategoryID        uuid.UUID          `json:"category"`
+	Duration          int                `json:"duration"` // in minutes
+	CreatedAt         time.Time          `json:"createdAt"`
+	UpdatedAt         time.Time          `json:"updatedAt"`
+	Status            PublishedStatus    `json:"publishedStatus"`
+	Availability      AvailabilityType   `json:"availability"`
+	BufferTime        int                `json:"bufferTime"`        // in minutes
+	CancellationHours int                `json:"cancellationHours"` // in hours
+	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
+	StripeProductID   string             `json:"stripeProductId,omitempty"` // ID of the product in Stripe
+	Metadata          map[string]any     `json:"metadata,omitempty"`        // Flexible storage for type-specific attributes
 }
 
 func (p Product) Valid(ctx context.Context) error {
@@ -42,6 +43,9 @@ func (p Product) Valid(ctx context.Context) error {
 	}
 	if p.CancellationHours < 0 {
 		errs.Set("cancellationHours", "Cancellation hours cannot be negative.")
+	}
+	if err := ValidateCancellationTiers(p.CancellationTiers); err != nil {
+		errs.Set("cancellationTiers", err.Error())
 	}
 	// Enum field validation using the IsValid() methods
 	if !p.Status.IsValid() {

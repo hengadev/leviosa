@@ -34,6 +34,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, request *domain.Crea
 		Availability:      request.Availability,
 		BufferTime:        request.BufferTime,
 		CancellationHours: request.CancellationHours,
+		CancellationTiers: request.CancellationTiers,
 		Metadata:          request.Metadata,
 	}
 
