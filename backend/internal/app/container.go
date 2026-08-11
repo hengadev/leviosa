@@ -59,6 +59,7 @@ import (
 	bookingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
 	metricsSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/metrics"
+	reviewSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/review"
 	roomSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
 
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
@@ -68,6 +69,7 @@ import (
 	bookingRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
 	buildingRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
 	metricsRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/metrics"
+	reviewRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/review"
 	roomRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
 	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
 	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
@@ -153,6 +155,7 @@ type Container struct {
 	MetricsRepo        bookingPorts.MetricsRepository
 	RoomScheduleRepo   bookingPorts.RoomScheduleRepository
 	BookingAuthuserCLi bookingPorts.AuthUserClient
+	ReviewRepo         bookingPorts.ReviewRepository
 
 	// Authuser Services
 	UserService     authuserPorts.UserService
@@ -181,6 +184,7 @@ type Container struct {
 	MetricsService      bookingPorts.MetricsService
 	PaymentService      bookingPorts.PaymentService
 	ReminderScheduler   *bookingSvc.ReminderScheduler
+	ReviewService       bookingPorts.ReviewService
 
 	// Messaging Repositories
 	MessageRepo messagingPorts.MessageRepository
@@ -369,6 +373,7 @@ func (c *Container) setupRepositories(ctx context.Context) error {
 	c.BookingRepo = bookingRepo.New(ctx, c.DB)
 	c.MetricsRepo = metricsRepo.New(c.DB)
 	c.RoomScheduleRepo = roomScheduleRepo.NewRoomScheduleRepository(c.DB)
+	c.ReviewRepo = reviewRepo.New(ctx, c.DB)
 
 	// Messaging repositories
 	c.MessageRepo = messagingRepo.New(ctx, c.DB)
@@ -535,6 +540,11 @@ func (c *Container) setupServices(ctx context.Context) error {
 	)
 
 	c.PaymentService = bookingStripe
+
+	// Review sub-module (issue 009) — depends on BookingService for the
+	// booking-relationship authorization check (booking must be `completed` and
+	// owned by the requesting client), mirroring ADR-0013's pattern.
+	c.ReviewService = reviewSvc.New(c.ReviewRepo, c.BookingService)
 
 	// Booking reminder scheduler
 	c.ReminderScheduler = bookingSvc.NewReminderScheduler(
