@@ -746,6 +746,150 @@ func TestSendBookingConfirmation_GuestBooking_SMSUsesGuestPhone(t *testing.T) {
 	}
 }
 
+// Reminder tests (email + SMS)
+
+func TestSendBookingReminder_EmailAndSMSBothSent(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Alice Smith"
+	data.ClientPhone = "+33612345678"
+	data.ProductName = "Massage Therapy"
+	data.Token = "abc123token"
+
+	users := map[uuid.UUID]*UserInfo{
+		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
+	}
+
+	emailSpy := &spyEmailService{}
+	smsSpy := &spySMSService{}
+	adapter := newTestAdapter(emailSpy, smsSpy, users, nil, nil, nil)
+
+	err := adapter.sendBookingReminderEmail(context.Background(), data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(emailSpy.bookingReminders) != 1 {
+		t.Fatalf("expected 1 reminder email, got %d", len(emailSpy.bookingReminders))
+	}
+	assertEqual(t, "ToEmail", "client@example.com", emailSpy.bookingReminders[0].ToEmail)
+
+	if len(smsSpy.messages) != 1 {
+		t.Fatalf("expected 1 reminder SMS, got %d", len(smsSpy.messages))
+	}
+	sms := smsSpy.messages[0]
+	assertEqual(t, "phone", "+33612345678", sms.PhoneNumber)
+	if !containsString(sms.Message, "Massage Therapy") {
+		t.Errorf("SMS should mention product name, got %q", sms.Message)
+	}
+	tokenURL := "https://app.leviosa.com/bookings?token=abc123token"
+	if !containsString(sms.Message, tokenURL) {
+		t.Errorf("SMS should contain token URL %q, got %q", tokenURL, sms.Message)
+	}
+}
+
+func TestSendBookingReminder_NoPhone_SkipsSMSButStillSendsEmail(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Alice Smith"
+	// No phone
+
+	users := map[uuid.UUID]*UserInfo{
+		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
+	}
+
+	emailSpy := &spyEmailService{}
+	smsSpy := &spySMSService{}
+	adapter := newTestAdapter(emailSpy, smsSpy, users, nil, nil, nil)
+
+	err := adapter.sendBookingReminderEmail(context.Background(), data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(emailSpy.bookingReminders) != 1 {
+		t.Fatalf("expected 1 reminder email even without phone, got %d", len(emailSpy.bookingReminders))
+	}
+
+	if len(smsSpy.messages) != 0 {
+		t.Fatalf("expected 0 SMS when no phone available, got %d", len(smsSpy.messages))
+	}
+}
+
+func TestSendBookingReminder_NoEmail_StillSendsSMS(t *testing.T) {
+	data := makeBookingData()
+	data.ClientPhone = "+33612345678"
+	data.ProductName = "Massage Therapy"
+	// No email, no matching user in fetcher either (ClientID lookup fails)
+
+	emailSpy := &spyEmailService{}
+	smsSpy := &spySMSService{}
+	adapter := newTestAdapter(emailSpy, smsSpy, nil, nil, nil, nil)
+
+	err := adapter.sendBookingReminderEmail(context.Background(), data)
+	if err != nil {
+		t.Fatalf("unexpected error (fire-and-forget): %v", err)
+	}
+
+	if len(emailSpy.bookingReminders) != 0 {
+		t.Fatalf("expected 0 reminder emails when client email is missing, got %d", len(emailSpy.bookingReminders))
+	}
+
+	if len(smsSpy.messages) != 1 {
+		t.Fatalf("expected 1 reminder SMS even without email, got %d", len(smsSpy.messages))
+	}
+	assertEqual(t, "phone", "+33612345678", smsSpy.messages[0].PhoneNumber)
+}
+
+func TestSendBookingReminder_SMSNoToken_SendsWithoutURL(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Alice Smith"
+	data.ClientPhone = "+33612345678"
+	data.ProductName = "Massage Therapy"
+	data.Token = "" // legacy booking, no token
+
+	users := map[uuid.UUID]*UserInfo{
+		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
+	}
+
+	emailSpy := &spyEmailService{}
+	smsSpy := &spySMSService{}
+	adapter := newTestAdapter(emailSpy, smsSpy, users, nil, nil, nil)
+
+	err := adapter.sendBookingReminderEmail(context.Background(), data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(smsSpy.messages) != 1 {
+		t.Fatalf("expected 1 SMS even without token, got %d", len(smsSpy.messages))
+	}
+	if containsString(smsSpy.messages[0].Message, "bookings?token=") {
+		t.Error("SMS should NOT contain token URL when token is empty")
+	}
+}
+
+func TestSendBookingReminder_FireAndForget(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Test Client"
+	data.ClientPhone = "+33612345678"
+
+	spy := &spyEmailService{}
+	smsSpy := &spySMSService{}
+	adapter := newTestAdapter(spy, smsSpy, nil, nil, nil, nil)
+
+	// SendBookingReminder returns nil immediately (fire-and-forget)
+	err := adapter.SendBookingReminder(context.Background(), data)
+	if err != nil {
+		t.Fatalf("expected nil error from fire-and-forget, got: %v", err)
+	}
+
+	// Wait for goroutine to execute
+	time.Sleep(100 * time.Millisecond)
+}
+
 func containsString(s, substr string) bool {
 	return strings.Contains(s, substr)
 }
