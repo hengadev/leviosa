@@ -99,8 +99,8 @@ func TestPrice_TaxLine_RateSetPath(t *testing.T) {
 		if assert.NotNil(t, line.RatePercent) {
 			assert.Equal(t, 20.0, *line.RatePercent)
 		}
-		assert.Equal(t, 2000, line.TaxAmount)     // 20% of 10000
-		assert.Equal(t, 12000, line.TotalAmount)  // 10000 + 2000
+		assert.Equal(t, 2000, line.TaxAmount)    // 20% of 10000
+		assert.Equal(t, 12000, line.TotalAmount) // 10000 + 2000
 		assert.Contains(t, line.Note, "20.00%")
 		assert.NotContains(t, line.Note, "VAT no.")
 	})
