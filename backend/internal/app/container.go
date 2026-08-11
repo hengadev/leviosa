@@ -93,6 +93,7 @@ import (
 	settingsPorts "github.com/Leviosa-care/leviosa/backend/internal/settings/ports"
 
 	// Common
+	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 
 	// Common auth session
@@ -130,6 +131,7 @@ type Container struct {
 	VaultClient *api.Client
 	AuthMw      auth.AuthMiddleware
 	RateLimiter *middleware.RateLimiter
+	AuditLogger audit.Logger
 
 	// Authuser Repositories
 	UserRepo      authuserPorts.UserRepository
@@ -348,6 +350,11 @@ func (c *Container) runMigrations(ctx context.Context) error {
 }
 
 func (c *Container) setupRepositories(ctx context.Context) error {
+	// Shared audit logger — a cross-cutting dependency injected directly into
+	// the domain services that need it (authuser, booking, settings), same
+	// pattern as encx.CryptoService.
+	c.AuditLogger = audit.NewPostgresLogger(c.DB)
+
 	// Authuser repositories
 	c.UserRepo = userRepo.New(ctx, c.DB)
 	c.PartnerRepo = partnerRepo.New(ctx, c.DB)
@@ -443,7 +450,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 	)
 
 	// Authuser services
-	c.UserService = userSvc.New(c.UserRepo, c.Crypto, c.StripeAdapter)
+	c.UserService = userSvc.New(c.UserRepo, c.Crypto, c.StripeAdapter, c.AuditLogger)
 
 	var err error
 
@@ -468,7 +475,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 	} else {
 		settingsPublisher = noopPublisher.NewPublisher()
 	}
-	c.SettingsService = settingsApp.New(c.SettingsRepo, c.SettingsMedia, c.Crypto, settingsPublisher)
+	c.SettingsService = settingsApp.New(c.SettingsRepo, c.SettingsMedia, c.Crypto, settingsPublisher, c.AuditLogger)
 
 	// Canonical notification service
 	notificationSettingsProvider := notificationApp.NewSettingsProvider(c.SettingsService)
@@ -542,6 +549,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithRoomService(c.RoomService),
 		bookingSvc.WithAuthUserClient(c.BookingAuthuserCLi),
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
+		bookingSvc.WithAuditLogger(c.AuditLogger),
 	)
 
 	c.PaymentService = bookingStripe
