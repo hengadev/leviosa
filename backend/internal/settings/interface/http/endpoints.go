@@ -40,6 +40,27 @@ const (
 	InternalGetCompanyInstagramEndpoint = InternalSettingsBasePath + CompanyInstagramPath
 	InternalGetCompanyLogoEndpoint     = InternalSettingsBasePath + CompanyLogoPath
 
+	// === Legal Identity Settings Resource Paths ===
+	// (mentions légales / GDPR compliance foundations)
+
+	// Legal identity resource identifiers (relative paths)
+	CompanyRegistrationNumberPath = "/registration-number"
+	CompanyVatNumberPath          = "/vat-number"
+	CompanyHostingProviderPath    = "/hosting-provider"
+
+	// Admin-only legal identity endpoints (Administrator role required)
+	AdminGetCompanyRegistrationNumberEndpoint = AdminSettingsBasePath + CompanyRegistrationNumberPath
+	AdminSetCompanyRegistrationNumberEndpoint = AdminSettingsBasePath + CompanyRegistrationNumberPath
+	AdminGetCompanyVatNumberEndpoint          = AdminSettingsBasePath + CompanyVatNumberPath
+	AdminSetCompanyVatNumberEndpoint          = AdminSettingsBasePath + CompanyVatNumberPath
+	AdminGetCompanyHostingProviderEndpoint    = AdminSettingsBasePath + CompanyHostingProviderPath
+	AdminSetCompanyHostingProviderEndpoint    = AdminSettingsBasePath + CompanyHostingProviderPath
+
+	// Internal legal identity endpoints (Service-to-service authentication)
+	InternalGetCompanyRegistrationNumberEndpoint = InternalSettingsBasePath + CompanyRegistrationNumberPath
+	InternalGetCompanyVatNumberEndpoint          = InternalSettingsBasePath + CompanyVatNumberPath
+	InternalGetCompanyHostingProviderEndpoint    = InternalSettingsBasePath + CompanyHostingProviderPath
+
 	// === OTP Settings Resource Paths ===
 
 	// OTP resource identifiers

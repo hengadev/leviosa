@@ -31,6 +31,14 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST "+SetCompanyInstagramEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyInstagram)))
 	router.HandleFunc("POST "+SetCompanyLogoEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyLogo)))
 
+	// Admin-only legal identity settings (mentions légales / GDPR compliance foundations)
+	router.HandleFunc("GET "+AdminGetCompanyRegistrationNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyRegistrationNumber)))
+	router.HandleFunc("POST "+AdminSetCompanyRegistrationNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyRegistrationNumber)))
+	router.HandleFunc("GET "+AdminGetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyVatNumber)))
+	router.HandleFunc("POST "+AdminSetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyVatNumber)))
+	router.HandleFunc("GET "+AdminGetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyHostingProvider)))
+	router.HandleFunc("POST "+AdminSetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyHostingProvider)))
+
 	// Admin-only OTP settings (all access)
 	router.HandleFunc("GET "+AdminGetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.GetOTPDuration)))
 	router.HandleFunc("POST "+AdminSetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.SetOTPDuration)))
@@ -61,6 +69,9 @@ func (h *handler) RegisterInternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET "+InternalGetCompanyInstagramEndpoint, RequireService(mw.EnableCORS(h.GetCompanyInstagram)))
 	router.HandleFunc("GET "+InternalGetCompanyLogoEndpoint, RequireService(mw.EnableCORS(h.GetCompanyLogo)))
 	router.HandleFunc("GET "+InternalGetCompanyPhoneEndpoint, RequireService(mw.EnableCORS(h.GetCompanyPhone)))
+	router.HandleFunc("GET "+InternalGetCompanyRegistrationNumberEndpoint, RequireService(mw.EnableCORS(h.GetCompanyRegistrationNumber)))
+	router.HandleFunc("GET "+InternalGetCompanyVatNumberEndpoint, RequireService(mw.EnableCORS(h.GetCompanyVatNumber)))
+	router.HandleFunc("GET "+InternalGetCompanyHostingProviderEndpoint, RequireService(mw.EnableCORS(h.GetCompanyHostingProvider)))
 
 	// OTP settings for authentication service
 	router.HandleFunc("GET "+InternalGetOTPDurationEndpoint, RequireService(mw.EnableCORS(h.GetOTPDuration)))

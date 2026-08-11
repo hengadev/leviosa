@@ -22,6 +22,13 @@ type Handler interface {
 	SetCompanyInstagram(w http.ResponseWriter, r *http.Request)
 	GetCompanyLogo(w http.ResponseWriter, r *http.Request)
 	SetCompanyLogo(w http.ResponseWriter, r *http.Request)
+	// Legal identity settings (mentions légales / GDPR compliance foundations)
+	GetCompanyRegistrationNumber(w http.ResponseWriter, r *http.Request)
+	SetCompanyRegistrationNumber(w http.ResponseWriter, r *http.Request)
+	GetCompanyVatNumber(w http.ResponseWriter, r *http.Request)
+	SetCompanyVatNumber(w http.ResponseWriter, r *http.Request)
+	GetCompanyHostingProvider(w http.ResponseWriter, r *http.Request)
+	SetCompanyHostingProvider(w http.ResponseWriter, r *http.Request)
 	// OTP settings
 	GetOTPDuration(w http.ResponseWriter, r *http.Request)
 	SetOTPDuration(w http.ResponseWriter, r *http.Request)
