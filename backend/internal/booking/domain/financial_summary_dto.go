@@ -1,6 +1,9 @@
 package domain
 
 import (
+	"bytes"
+	"encoding/csv"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,4 +32,72 @@ type FinancialTransaction struct {
 type FinancialSummaryResponse struct {
 	Summary      FinancialSummary      `json:"summary"`
 	Transactions []FinancialTransaction `json:"transactions"`
+}
+
+// ToCSV serializes an already-computed FinancialSummaryResponse into CSV bytes.
+// It performs no aggregation of its own — it is a pure presentation-layer
+// transform over the same result the JSON endpoint returns, per ADR-0007
+// (financial reporting stays booking-derived; this only changes the response
+// format, not how the numbers are computed).
+//
+// The output has two sections: a summary block with the period KPIs (gross
+// revenue, refunds, net revenue) that mirror the compta/finances UI cards,
+// followed by a blank line and the transaction detail rows. Amounts are
+// written in cents (integers) to avoid floating-point rounding when the
+// comptable imports the file into accounting software.
+func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
+	if r == nil {
+		r = &FinancialSummaryResponse{}
+	}
+
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+
+	summaryRows := [][]string{
+		{"section", "summary"},
+		{"gross_revenue_cents", fmt.Sprintf("%d", r.Summary.GrossRevenueCents)},
+		{"refunds_cents", fmt.Sprintf("%d", r.Summary.RefundsCents)},
+		{"net_revenue_cents", fmt.Sprintf("%d", r.Summary.NetRevenueCents)},
+		{},
+	}
+	if err := w.WriteAll(summaryRows); err != nil {
+		return nil, fmt.Errorf("write CSV summary rows: %w", err)
+	}
+
+	header := []string{
+		"id",
+		"slot_start_time",
+		"client_name",
+		"partner_name",
+		"product_name",
+		"amount_cents",
+		"payment_status",
+		"booking_status",
+	}
+	if err := w.Write(header); err != nil {
+		return nil, fmt.Errorf("write CSV transaction header: %w", err)
+	}
+
+	for _, t := range r.Transactions {
+		row := []string{
+			t.ID.String(),
+			t.SlotStartTime.UTC().Format(time.RFC3339),
+			t.ClientName,
+			t.PartnerName,
+			t.ProductName,
+			fmt.Sprintf("%d", t.AmountCents),
+			string(t.PaymentStatus),
+			string(t.BookingStatus),
+		}
+		if err := w.Write(row); err != nil {
+			return nil, fmt.Errorf("write CSV transaction row: %w", err)
+		}
+	}
+
+	w.Flush()
+	if err := w.Error(); err != nil {
+		return nil, fmt.Errorf("flush CSV writer: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
