@@ -182,6 +182,11 @@ func (m *mockStripeService) VerifyConnectWebhookSignature(_ []byte, _ string) (s
 	return "", false, false, nil
 }
 
+func (m *mockStripeService) CreateBillingPortalSession(ctx context.Context, customerID, returnURL string) (string, error) {
+	args := m.Called(ctx, customerID, returnURL)
+	return args.String(0), args.Error(1)
+}
+
 func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 	ctx := context.Background()
 

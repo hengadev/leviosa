@@ -429,6 +429,11 @@ func (m *mockStripeService) VerifyConnectWebhookSignature(payload []byte, signat
 	return args.String(0), args.Bool(1), args.Bool(2), args.Error(3)
 }
 
+func (m *mockStripeService) CreateBillingPortalSession(ctx context.Context, customerID, returnURL string) (string, error) {
+	args := m.Called(ctx, customerID, returnURL)
+	return args.String(0), args.Error(1)
+}
+
 // --- Helper to create a PartnerService with mocks ---
 
 func setupPartnerService(

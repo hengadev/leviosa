@@ -28,4 +28,9 @@ type UserService interface {
 	GetUserByGoogleID(ctx context.Context, googleID string) (*domain.UserResponse, error)
 	GetUserByAppleID(ctx context.Context, appleID string) (*domain.UserResponse, error)
 	UpdateLastLoginTime(ctx context.Context, userID uuid.UUID) error
+
+	// GetBillingPortalLink generates a Stripe Billing Portal session URL for the authenticated
+	// user to manage their saved payment method. Returns an error if the user has no
+	// associated Stripe customer ID.
+	GetBillingPortalLink(ctx context.Context, userID uuid.UUID, returnURL string) (string, error)
 }

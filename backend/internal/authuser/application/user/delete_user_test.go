@@ -242,6 +242,11 @@ func (m *MockStripeService) VerifyConnectWebhookSignature(payload []byte, signat
 	return args.String(0), args.Bool(1), args.Bool(2), args.Error(3)
 }
 
+func (m *MockStripeService) CreateBillingPortalSession(ctx context.Context, customerID, returnURL string) (string, error) {
+	args := m.Called(ctx, customerID, returnURL)
+	return args.String(0), args.Error(1)
+}
+
 func TestDeleteUser(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
