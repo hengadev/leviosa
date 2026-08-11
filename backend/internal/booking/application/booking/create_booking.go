@@ -185,11 +185,26 @@ func (s *BookingService) CreateBooking(
 			metadata["guest_phone"] = guestPhone
 		}
 
+		// Resolve the email Stripe should send the hosted receipt to: the guest's
+		// email for guest bookings, or the authenticated client's email otherwise.
+		// Best-effort — a lookup failure should not block booking creation.
+		receiptEmail := guestEmail
+		if receiptEmail == "" && clientID != nil && s.authUserClient != nil {
+			email, err := s.authUserClient.GetUserEmail(ctx, *clientID)
+			if err != nil {
+				slog.WarnContext(ctx, "failed to resolve client email for payment receipt",
+					"client_id", *clientID, "err", err)
+			} else {
+				receiptEmail = email
+			}
+		}
+
 		paymentIntentID, _, err := s.paymentService.CreatePaymentIntent(
 			ctx,
 			totalPriceCents,
 			booking.Currency,
 			description,
+			receiptEmail,
 			metadata,
 		)
 		if err != nil {

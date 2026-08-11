@@ -25,6 +25,12 @@ type AuthUserClient interface {
 	// GetUserName returns the display name ("FirstName LastName") for a user.
 	// Returns an empty string if the user is not found.
 	GetUserName(ctx context.Context, userID uuid.UUID) (string, error)
+
+	// GetUserEmail returns the email address for a user by their ID.
+	// Used to set receipt_email on Stripe payment intents for authenticated
+	// clients so Stripe emails them a hosted receipt automatically.
+	// Returns an empty string if the user is not found.
+	GetUserEmail(ctx context.Context, userID uuid.UUID) (string, error)
 }
 
 // PartnerInfo represents basic partner information needed by booking module
