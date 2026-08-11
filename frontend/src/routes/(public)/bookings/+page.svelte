@@ -74,7 +74,9 @@
 </script>
 
 <svelte:head>
-	<title>Mes Réservations | Leviosa</title>
+	<title>Mes Réservations | Leviosa Care</title>
+	<meta name="description" content="Retrouvez et gérez votre réservation Leviosa Care : détails, statut et annulation." />
+	<meta name="robots" content="noindex" />
 </svelte:head>
 
 <div class="min-h-screen bg-surface py-24 md:py-32 px-4 lg:px-8">

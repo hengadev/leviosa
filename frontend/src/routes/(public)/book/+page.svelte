@@ -270,7 +270,23 @@
             }
         }
     }
+
+    let pageTitle = $derived(
+        data.preselectedProduct
+            ? `Réserver ${data.preselectedProduct.name} | Leviosa Care`
+            : "Réserver un rendez-vous | Leviosa Care",
+    );
+    let pageDescription = $derived(
+        data.preselectedProduct
+            ? `Réservez ${data.preselectedProduct.name} en ligne : choisissez votre praticien et votre créneau en quelques secondes.`
+            : "Choisissez un service, un praticien et un créneau pour réserver votre rendez-vous en ligne en quelques secondes.",
+    );
 </script>
+
+<svelte:head>
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+</svelte:head>
 
 <div class="bg-surface min-h-screen py-24 md:py-32 px-4 lg:px-8">
     <div class="max-w-4xl mx-auto">
