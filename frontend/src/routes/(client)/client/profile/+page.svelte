@@ -2,7 +2,7 @@
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
 	import { Dialog } from 'bits-ui';
-	import { CheckCircle, ArrowLeft, Save, AlertTriangle, X } from '@lucide/svelte';
+	import { CheckCircle, ArrowLeft, Save, MessageSquareText, AlertTriangle, X } from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -17,6 +17,9 @@
 	let address2 = $state(user?.address2 ?? '');
 	let postalCode = $state(user?.postal_code ?? '');
 	let city = $state(user?.city ?? '');
+
+	// Issue 004: "request my data" affordance
+	let requestingData = $state(false);
 
 	// Issue 003: delete-account, guarded by a type-to-confirm dialog
 	const DELETE_CONFIRM_WORD = 'SUPPRIMER';
@@ -200,6 +203,61 @@
 				</button>
 			</div>
 		</form>
+
+		<!-- RGPD: request my data -->
+		<div class="bg-card rounded-lg border border-border p-6 space-y-4">
+			<div>
+				<h2 class="text-lg font-semibold text-foreground">Mes données personnelles</h2>
+				<p class="text-sm text-muted-foreground mt-1">
+					Vous pouvez demander une copie de vos données personnelles conformément au RGPD.
+					Votre demande sera transmise via votre messagerie et traitée sous un délai d'un mois.
+				</p>
+			</div>
+
+			{#if form?.dataRequestSent}
+				<div class="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4 flex items-start gap-3">
+					<CheckCircle size={18} class="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+					<div class="text-sm text-green-800 dark:text-green-300">
+						<p>Votre demande a été envoyée à votre praticien via la messagerie.</p>
+						<a href="/client/messages?thread={form.threadId}" class="underline font-medium">
+							Voir la conversation
+						</a>
+					</div>
+				</div>
+			{:else if form?.dataRequestNoThread}
+				<div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-300">
+					Vous n'avez pas encore de conversation active avec un praticien. Écrivez-nous
+					directement à
+					<a href="mailto:contact@leviosa.care" class="underline font-medium">contact@leviosa.care</a>
+					pour faire votre demande.
+				</div>
+			{:else if form?.dataRequestError}
+				<div class="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4 text-sm text-red-700 dark:text-red-400">
+					{form.dataRequestError}
+				</div>
+			{/if}
+
+			<form
+				method="POST"
+				action="?/requestData"
+				use:enhance={() => {
+					requestingData = true;
+					return async ({ update }) => {
+						await update();
+						requestingData = false;
+					};
+				}}
+			>
+				<button
+					type="submit"
+					disabled={requestingData}
+					class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-background text-foreground text-sm font-medium hover:bg-muted transition-colors disabled:opacity-50"
+				>
+					<MessageSquareText size={16} />
+					{requestingData ? 'Envoi en cours…' : 'Demander mes données'}
+				</button>
+			</form>
+		</div>
 
 		<!-- Danger zone: delete account -->
 		<div class="bg-card rounded-lg border border-destructive/30 p-6 space-y-4">
