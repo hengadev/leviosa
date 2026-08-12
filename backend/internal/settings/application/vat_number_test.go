@@ -22,7 +22,7 @@ func TestGetCompanyVatNumber(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyVatNumber).
 			Return(&domain.Setting[string]{Key: settings.CompanyVatNumber, Value: "FR12345678901"}, nil)
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		resp, err := svc.GetCompanyVatNumber(ctx)
 		require.NoError(t, err)
@@ -34,7 +34,7 @@ func TestGetCompanyVatNumber(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyVatNumber).
 			Return(&domain.Setting[string]{Key: settings.CompanyVatNumber, Value: ""}, nil)
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		resp, err := svc.GetCompanyVatNumber(ctx)
 		require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyVatNumber, "FR12345678901").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 
 		resp, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: "FR12345678901"})
 		require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyVatNumber, "").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 
 		resp, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: ""})
 		require.NoError(t, err)
@@ -92,7 +92,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyVatNumber, "").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 
 		resp, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: "   "})
 		require.NoError(t, err)
@@ -101,7 +101,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 
 	t.Run("rejects a malformed non-empty VAT number", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: "1"})
 		assert.Error(t, err)
@@ -110,7 +110,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 
 	t.Run("rejects a VAT number exceeding the max length", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: "FR123456789012345678901"})
 		assert.Error(t, err)
@@ -122,7 +122,7 @@ func TestSetCompanyVatNumber(t *testing.T) {
 		repo.On("SetString", ctx, mock.Anything).Return(errors.New("db error"))
 		publisher := &mockEventPublisher{}
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 		_, err := svc.SetCompanyVatNumber(ctx, &domain.SetCompanyVatNumberRequest{VatNumber: "FR12345678901"})
 		assert.Error(t, err)
 		publisher.AssertNotCalled(t, "PublishSettingUpdate", mock.Anything, mock.Anything, mock.Anything)

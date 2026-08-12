@@ -23,7 +23,7 @@ func TestGetCompanyHostingProvider(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyHostingProvider).
 			Return(&domain.Setting[string]{Key: settings.CompanyHostingProvider, Value: "OVH SAS, 2 rue Kellermann, 59100 Roubaix, France"}, nil)
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		resp, err := svc.GetCompanyHostingProvider(ctx)
 		require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestGetCompanyHostingProvider(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyHostingProvider).
 			Return(nil, errors.New("not found"))
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.GetCompanyHostingProvider(ctx)
 		assert.Error(t, err)
@@ -55,7 +55,7 @@ func TestSetCompanyHostingProvider(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyHostingProvider, value).Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 
 		resp, err := svc.SetCompanyHostingProvider(ctx, &domain.SetCompanyHostingProviderRequest{HostingProvider: value})
 		require.NoError(t, err)
@@ -66,7 +66,7 @@ func TestSetCompanyHostingProvider(t *testing.T) {
 
 	t.Run("rejects an empty hosting provider identity", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyHostingProvider(ctx, &domain.SetCompanyHostingProviderRequest{HostingProvider: ""})
 		assert.Error(t, err)
@@ -75,7 +75,7 @@ func TestSetCompanyHostingProvider(t *testing.T) {
 
 	t.Run("rejects a whitespace-only hosting provider identity", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyHostingProvider(ctx, &domain.SetCompanyHostingProviderRequest{HostingProvider: "   \n\t   "})
 		assert.Error(t, err)
@@ -84,7 +84,7 @@ func TestSetCompanyHostingProvider(t *testing.T) {
 
 	t.Run("rejects a hosting provider identity exceeding 500 characters", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyHostingProvider(ctx, &domain.SetCompanyHostingProviderRequest{HostingProvider: strings.Repeat("A", 501)})
 		assert.Error(t, err)
@@ -96,7 +96,7 @@ func TestSetCompanyHostingProvider(t *testing.T) {
 		repo.On("SetString", ctx, mock.Anything).Return(errors.New("db error"))
 		publisher := &mockEventPublisher{}
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 		_, err := svc.SetCompanyHostingProvider(ctx, &domain.SetCompanyHostingProviderRequest{HostingProvider: "OVH SAS, Roubaix, France"})
 		assert.Error(t, err)
 		publisher.AssertNotCalled(t, "PublishSettingUpdate", mock.Anything, mock.Anything, mock.Anything)

@@ -253,7 +253,7 @@ func TestMain(m *testing.M) {
 	// assert that an SMS send is actually attempted end-to-end, not just that
 	// the notification port was invoked.
 	authUserRepo := authuserUserPostgres.New(ctx, testPool)
-	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil)
+	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil, nil)
 
 	realBuildingRepo := buildingPostgres.New(ctx, testPool)
 	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
