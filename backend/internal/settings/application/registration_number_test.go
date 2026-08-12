@@ -22,7 +22,7 @@ func TestGetCompanyRegistrationNumber(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyRegistrationNumber).
 			Return(&domain.Setting[string]{Key: settings.CompanyRegistrationNumber, Value: "12345678901234"}, nil)
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		resp, err := svc.GetCompanyRegistrationNumber(ctx)
 		require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestGetCompanyRegistrationNumber(t *testing.T) {
 		repo.On("GetString", ctx, settings.CompanyRegistrationNumber).
 			Return(nil, errors.New("not found"))
 
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.GetCompanyRegistrationNumber(ctx)
 		assert.Error(t, err)
@@ -54,7 +54,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyRegistrationNumber, "12345678901234").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 
 		resp, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "12345678901234"})
 		require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyRegistrationNumber, "123456789").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 		resp, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "123456789"})
 		require.NoError(t, err)
 		assert.True(t, resp.Success)
@@ -83,7 +83,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 		publisher := &mockEventPublisher{}
 		publisher.On("PublishSettingUpdate", ctx, settings.CompanyRegistrationNumber, "123456789").Return(nil)
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 		resp, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "  123456789  "})
 		require.NoError(t, err)
 		assert.True(t, resp.Success)
@@ -91,7 +91,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 
 	t.Run("rejects an empty registration number", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: ""})
 		assert.Error(t, err)
@@ -100,7 +100,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 
 	t.Run("rejects a registration number containing letters", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "1234ABCD9012"})
 		assert.Error(t, err)
@@ -109,7 +109,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 
 	t.Run("rejects a registration number of the wrong length", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
-		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{})
+		svc := settingsApp.New(repo, nil, nil, &mockEventPublisher{}, nil)
 
 		_, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "12345"})
 		assert.Error(t, err)
@@ -121,7 +121,7 @@ func TestSetCompanyRegistrationNumber(t *testing.T) {
 		repo.On("SetString", ctx, mock.Anything).Return(errors.New("db error"))
 		publisher := &mockEventPublisher{}
 
-		svc := settingsApp.New(repo, nil, nil, publisher)
+		svc := settingsApp.New(repo, nil, nil, publisher, nil)
 		_, err := svc.SetCompanyRegistrationNumber(ctx, &domain.SetCompanyRegistrationNumberRequest{RegistrationNumber: "123456789"})
 		assert.Error(t, err)
 		publisher.AssertNotCalled(t, "PublishSettingUpdate", mock.Anything, mock.Anything, mock.Anything)

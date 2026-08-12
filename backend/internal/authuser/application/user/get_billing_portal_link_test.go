@@ -204,7 +204,7 @@ func TestGetBillingPortalLink(t *testing.T) {
 
 		mockStripe.On("CreateBillingPortalSession", ctx, stripeCustomerID, returnURL).Return(expectedURL, nil)
 
-		svc := user.New(mockRepo, mockCrypto, mockStripe)
+		svc := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		url, err := svc.GetBillingPortalLink(ctx, userID, returnURL)
 
@@ -226,7 +226,7 @@ func TestGetBillingPortalLink(t *testing.T) {
 		mockRepo.On("GetUserByID", ctx, userID).Return(userEncx, nil)
 		mockCrypto.On("DecryptDEKWithVersion", ctx, mock.Anything, mock.Anything).Return([]byte("test-dek-32-bytes-long-enough!!!"), nil)
 
-		svc := user.New(mockRepo, mockCrypto, mockStripe)
+		svc := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		url, err := svc.GetBillingPortalLink(ctx, userID, returnURL)
 
@@ -245,7 +245,7 @@ func TestGetBillingPortalLink(t *testing.T) {
 
 		mockRepo.On("GetUserByID", ctx, userID).Return(nil, errors.New("not found"))
 
-		svc := user.New(mockRepo, mockCrypto, mockStripe)
+		svc := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		url, err := svc.GetBillingPortalLink(ctx, userID, returnURL)
 
@@ -269,7 +269,7 @@ func TestGetBillingPortalLink(t *testing.T) {
 
 		mockStripe.On("CreateBillingPortalSession", ctx, stripeCustomerID, returnURL).Return("", errors.New("stripe billing portal error"))
 
-		svc := user.New(mockRepo, mockCrypto, mockStripe)
+		svc := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		url, err := svc.GetBillingPortalLink(ctx, userID, returnURL)
 
