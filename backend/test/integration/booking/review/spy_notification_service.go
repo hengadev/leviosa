@@ -41,3 +41,7 @@ func (s *SpyNotificationService) SendBookingCancellation(ctx context.Context, da
 func (s *SpyNotificationService) SendBookingReminder(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	return nil
 }
+
+func (s *SpyNotificationService) SendPaymentDisputeAlert(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	return nil
+}
