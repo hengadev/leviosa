@@ -16,6 +16,15 @@ leviosa.care, www.leviosa.care {
 }
 
 
+# Self-hosted, cookieless analytics (Plausible) — commented out until the
+# analytics_enabled flag is turned on post owner sign-off; see
+# infra/ansible/roles/analytics and infra/ansible/roles/caddy/templates/Caddyfile.j2
+# for the Ansible-managed version of this block, which is the source of truth.
+# analytics.leviosa.care {
+#         reverse_proxy localhost:8000
+# }
+
+
 # use 'caddy hash-password --plaintext "yourpassword"' to generate.
 admin-staging.leviosa.care, staff-staging.leviosa.care {
         reverse_proxy localhost:3001
