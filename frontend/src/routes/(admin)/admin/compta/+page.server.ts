@@ -7,6 +7,7 @@ import type { PageServerLoad } from './$types';
 interface APISummary {
 	gross_revenue_cents: number;
 	refunds_cents: number;
+	disputed_cents: number;
 	net_revenue_cents: number;
 }
 
@@ -17,7 +18,7 @@ interface APITransaction {
 	partner_name: string;
 	product_name: string;
 	amount_cents: number;
-	payment_status: 'paid' | 'refunded';
+	payment_status: 'paid' | 'refunded' | 'disputed';
 	booking_status: 'completed' | 'cancelled' | 'confirmed' | 'no_show';
 }
 
@@ -31,6 +32,7 @@ interface APIFinancialSummary {
 export interface SummaryKPIs {
 	grossRevenueInCents: number;
 	refundsInCents: number;
+	disputedInCents: number;
 	netRevenueInCents: number;
 }
 
@@ -42,7 +44,7 @@ export interface Transaction {
 	partnerName: string;
 	amountInCents: number;
 	type: 'payment' | 'refund';
-	paymentStatus: 'paid' | 'refunded';
+	paymentStatus: 'paid' | 'refunded' | 'disputed';
 	bookingStatus: string;
 }
 
@@ -59,6 +61,7 @@ async function getMockComptaData(from: string, to: string): Promise<ComptaData> 
 	const summary: SummaryKPIs = {
 		grossRevenueInCents: 52300,
 		refundsInCents: 2150,
+		disputedInCents: 5000,
 		netRevenueInCents: 50150
 	};
 
@@ -71,6 +74,7 @@ async function getMockComptaData(from: string, to: string): Promise<ComptaData> 
 		{ id: 'TXN-006', date: new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Camille Simon', partnerName: 'Dr. Dupont', amountInCents: 5000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
 		{ id: 'TXN-007', date: new Date(now.getTime() - 96 * 60 * 60 * 1000).toISOString(), description: 'Remboursement', clientName: 'Louis Laurent', partnerName: 'Dr. Martin', amountInCents: 6500, type: 'refund', paymentStatus: 'refunded', bookingStatus: 'cancelled' },
 		{ id: 'TXN-008', date: new Date(now.getTime() - 120 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 90min', clientName: 'Lola Bernard', partnerName: 'Dr. Dupont', amountInCents: 7000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-009', date: new Date(now.getTime() - 144 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Nora Girard', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentStatus: 'disputed', bookingStatus: 'completed' },
 	];
 
 	return { summary, transactions, from, to };
@@ -98,6 +102,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 		const summary: SummaryKPIs = {
 			grossRevenueInCents: api.summary.gross_revenue_cents,
 			refundsInCents: api.summary.refunds_cents,
+			disputedInCents: api.summary.disputed_cents,
 			netRevenueInCents: api.summary.net_revenue_cents
 		};
 
