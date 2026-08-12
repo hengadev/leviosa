@@ -1,0 +1,25 @@
+<!--
+  Low-resource ClickHouse config for the analytics stack, adapted from Plausible's
+  self-hosting guidance for small VPS deployments. Disables ClickHouse's internal
+  diagnostic logging tables (query_log, trace_log, etc.) — useful for debugging
+  ClickHouse itself, not needed to run Plausible, and they otherwise grow
+  unbounded on disk on a small server. Mounted read-only into config.d/.
+  Managed by Ansible - DO NOT EDIT MANUALLY
+-->
+<clickhouse>
+    <logger>
+        <level>warning</level>
+        <console>true</console>
+    </logger>
+    <!-- Caps total server memory (not just per-query) — belongs at server level,
+         not in the per-profile user settings below. -->
+    <max_server_memory_usage_to_ram_ratio>0.5</max_server_memory_usage_to_ram_ratio>
+    <query_thread_log remove="remove"/>
+    <query_log remove="remove"/>
+    <text_log remove="remove"/>
+    <trace_log remove="remove"/>
+    <metric_log remove="remove"/>
+    <asynchronous_metric_log remove="remove"/>
+    <session_log remove="remove"/>
+    <part_log remove="remove"/>
+</clickhouse>

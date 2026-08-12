@@ -1,0 +1,74 @@
+---
+# Analytics Stack Tasks (self-hosted, cookieless — Plausible Community Edition)
+# - Deploy Plausible + ClickHouse (event store) + Postgres (Plausible's own admin DB)
+# - Unlike the monitoring stack (cAdvisor/Prometheus/Grafana), this needs to be
+#   publicly reachable — the tracking script and event API are called from visitor
+#   browsers. The Plausible container joins the app role's external
+#   {{ app_name }}_network so Caddy (see roles/caddy) can reverse-proxy to it at
+#   analytics.{{ app_domain }}; ClickHouse/Postgres stay on a private network.
+# - Managed via systemd, mirroring the monitoring role's shape.
+
+- name: Create analytics directory
+  ansible.builtin.file:
+    path: "{{ app_base_dir }}/analytics"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0750'
+
+- name: Deploy ClickHouse low-resource logging config
+  ansible.builtin.template:
+    src: clickhouse-config.xml.j2
+    dest: "{{ app_base_dir }}/analytics/clickhouse-config.xml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0640'
+  notify: restart analytics
+
+- name: Deploy ClickHouse low-resource user config
+  ansible.builtin.template:
+    src: clickhouse-user-config.xml.j2
+    dest: "{{ app_base_dir }}/analytics/clickhouse-user-config.xml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0640'
+  notify: restart analytics
+
+- name: Deploy analytics Docker Compose configuration
+  ansible.builtin.template:
+    src: docker-compose.analytics.yml.j2
+    dest: "{{ app_base_dir }}/analytics/docker-compose.yml"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: '0640'
+  notify: restart analytics
+
+- name: Create analytics systemd service
+  ansible.builtin.template:
+    src: analytics.service.j2
+    dest: /etc/systemd/system/{{ app_name }}-analytics.service
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart analytics
+
+- name: Enable and start analytics service
+  ansible.builtin.systemd:
+    name: "{{ app_name }}-analytics"
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Display analytics configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "==========================================="
+      - "Analytics Stack Deployed (Plausible, cookieless)"
+      - "==========================================="
+      - "Public URL: https://analytics.{{ app_domain }}"
+      - "Registration is invite-only — create the owner account once, at"
+      - "  https://analytics.{{ app_domain }}/register"
+      - "Add the analytics.{{ app_domain }} DNS record (infra/terraform/cloudflare.tf)"
+      - "before enabling this role, and add the site to leviosa's Plausible"
+      - "dashboard as https://{{ app_domain }}."
+      - "==========================================="
