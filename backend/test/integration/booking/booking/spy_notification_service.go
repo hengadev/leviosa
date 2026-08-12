@@ -132,3 +132,9 @@ func (s *IntegrationEmailSpy) SendBookingReminderEmail(ctx context.Context, req 
 	s.BookingReminders = append(s.BookingReminders, req)
 	return nil
 }
+func (s *IntegrationEmailSpy) SendContactFormEmail(ctx context.Context, req notificationDomain.ContactFormRequest) error {
+	return nil
+}
+func (s *IntegrationEmailSpy) SendPaymentDisputeAlertEmail(ctx context.Context, req notificationDomain.PaymentDisputeAlertRequest) error {
+	return nil
+}
