@@ -10,9 +10,15 @@ import (
 )
 
 // FinancialSummary holds the aggregate KPIs for a date range.
+//
+// DisputedCents is tracked separately from GrossRevenueCents/NetRevenueCents: a disputed
+// payment's final outcome (won/lost) is not yet known, so it is excluded from both until
+// the dispute closes (at which point the booking's payment status resolves back to paid or
+// refunded, per ADR-0007 — booking-derived, no Stripe Balance/Payout integration).
 type FinancialSummary struct {
 	GrossRevenueCents int `json:"gross_revenue_cents"`
 	RefundsCents      int `json:"refunds_cents"`
+	DisputedCents     int `json:"disputed_cents"`
 	NetRevenueCents   int `json:"net_revenue_cents"`
 }
 

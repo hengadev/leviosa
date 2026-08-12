@@ -203,6 +203,25 @@ func (s *Service) VerifyWebhookSignature(payload []byte, signature string) (*por
 		webhookEvent.Amount = int(charge.Amount)
 		webhookEvent.Currency = string(charge.Currency)
 		webhookEvent.Metadata = charge.Metadata
+
+	case "charge.dispute.created", "charge.dispute.closed":
+		var dispute stripe.Dispute
+		if err := json.Unmarshal(event.Data.Raw, &dispute); err != nil {
+			return nil, errs.NewInvalidValueErr(fmt.Sprintf("failed to parse dispute from webhook: %s", err.Error()))
+		}
+
+		// Dispute metadata is the dispute's own metadata, not the original PaymentIntent's
+		// (which carries booking_id) — so the booking is looked up by payment intent ID
+		// instead of metadata (see HandlePaymentWebhook).
+		if dispute.PaymentIntent != nil {
+			webhookEvent.PaymentIntentID = dispute.PaymentIntent.ID
+		}
+		webhookEvent.Amount = int(dispute.Amount)
+		webhookEvent.Currency = string(dispute.Currency)
+		webhookEvent.Metadata = dispute.Metadata
+		webhookEvent.Status = string(dispute.Status)
+		webhookEvent.DisputeID = dispute.ID
+		webhookEvent.DisputeReason = string(dispute.Reason)
 	}
 
 	return webhookEvent, nil

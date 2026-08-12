@@ -20,53 +20,89 @@ import (
 //   - payment_intent.payment_failed: Marks the booking payment as failed
 //   - payment_intent.canceled: Marks the booking payment as failed and cancels the booking
 //   - charge.refunded: Marks the booking payment as refunded
+//   - charge.dispute.created: Marks the booking payment as disputed and alerts admin
+//   - charge.dispute.closed: Resolves the disputed booking back to paid/refunded
 //
-// The booking is identified via the metadata attached to the payment intent during creation.
+// The booking is identified via the metadata attached to the payment intent during creation,
+// except for dispute events: a Dispute's own metadata is separate from the PaymentIntent's
+// (which carries booking_id), so dispute events look the booking up by payment intent ID.
 func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.WebhookEvent) error {
-	// Extract booking ID from payment intent metadata
-	bookingIDStr, ok := event.Metadata["booking_id"]
-	if !ok || bookingIDStr == "" {
-		// Payment intent not associated with a booking (might be a test or external payment)
-		return nil
-	}
+	var bookingEncx *domain.BookingEncx
+	var err error
 
-	bookingID, err := uuid.Parse(bookingIDStr)
-	if err != nil {
-		slog.ErrorContext(ctx, "invalid booking ID in webhook metadata",
-			"stripe_event_id", event.ID,
-			"stripe_event_type", event.Type,
-			"error", err,
-		)
-		return errs.NewInvalidValueErr(fmt.Sprintf("invalid booking ID in webhook metadata: %s", bookingIDStr))
-	}
+	switch event.Type {
+	case ports.WebhookEventChargeDisputeCreated, ports.WebhookEventChargeDisputeClosed:
+		if event.PaymentIntentID == "" {
+			// Dispute not linked to a payment intent we can resolve to a booking.
+			return nil
+		}
 
-	// Fetch the booking
-	bookingEncx, err := s.bookingRepo.GetByID(ctx, bookingID)
-	if err != nil {
-		if errors.Is(err, errs.ErrRepositoryNotFound) {
-			// Booking might have been deleted, log and continue
-			slog.ErrorContext(ctx, "booking not found for webhook",
+		bookingEncx, err = s.bookingRepo.GetByPaymentIntentID(ctx, event.PaymentIntentID)
+		if err != nil {
+			if errors.Is(err, errs.ErrRepositoryNotFound) {
+				slog.ErrorContext(ctx, "booking not found for dispute webhook",
+					"payment_intent_id", event.PaymentIntentID,
+					"stripe_event_id", event.ID,
+					"stripe_event_type", event.Type,
+					"error", err,
+				)
+				return fmt.Errorf("booking not found for webhook: %w", errs.ErrRepositoryNotFound)
+			}
+			slog.ErrorContext(ctx, "failed to get booking for dispute webhook",
+				"payment_intent_id", event.PaymentIntentID,
+				"stripe_event_id", event.ID,
+				"stripe_event_type", event.Type,
+				"error", err,
+			)
+			return fmt.Errorf("get booking for webhook: %w", err)
+		}
+
+	default:
+		// Extract booking ID from payment intent metadata
+		bookingIDStr, ok := event.Metadata["booking_id"]
+		if !ok || bookingIDStr == "" {
+			// Payment intent not associated with a booking (might be a test or external payment)
+			return nil
+		}
+
+		bookingID, parseErr := uuid.Parse(bookingIDStr)
+		if parseErr != nil {
+			slog.ErrorContext(ctx, "invalid booking ID in webhook metadata",
+				"stripe_event_id", event.ID,
+				"stripe_event_type", event.Type,
+				"error", parseErr,
+			)
+			return errs.NewInvalidValueErr(fmt.Sprintf("invalid booking ID in webhook metadata: %s", bookingIDStr))
+		}
+
+		// Fetch the booking
+		bookingEncx, err = s.bookingRepo.GetByID(ctx, bookingID)
+		if err != nil {
+			if errors.Is(err, errs.ErrRepositoryNotFound) {
+				// Booking might have been deleted, log and continue
+				slog.ErrorContext(ctx, "booking not found for webhook",
+					"booking_id", bookingID,
+					"stripe_event_id", event.ID,
+					"stripe_event_type", event.Type,
+					"error", err,
+				)
+				return fmt.Errorf("booking not found for webhook: %w", errs.ErrRepositoryNotFound)
+			}
+			slog.ErrorContext(ctx, "failed to get booking for webhook",
 				"booking_id", bookingID,
 				"stripe_event_id", event.ID,
 				"stripe_event_type", event.Type,
 				"error", err,
 			)
-			return fmt.Errorf("booking not found for webhook: %w", errs.ErrRepositoryNotFound)
+			return fmt.Errorf("get booking for webhook: %w", err)
 		}
-		slog.ErrorContext(ctx, "failed to get booking for webhook",
-			"booking_id", bookingID,
-			"stripe_event_id", event.ID,
-			"stripe_event_type", event.Type,
-			"error", err,
-		)
-		return fmt.Errorf("get booking for webhook: %w", err)
 	}
 
 	// Decrypt booking
 	booking, err := domain.DecryptBookingEncx(ctx, s.crypto, bookingEncx)
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to decrypt booking for webhook",
-			"booking_id", bookingID,
+			"booking_id", bookingEncx.ID,
 			"stripe_event_id", event.ID,
 			"stripe_event_type", event.Type,
 			"error", err,
@@ -83,6 +119,7 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 	var updated bool
 	var sendPaymentConfirmation bool
 	var sendPaymentFailed bool
+	var sendDisputeAlert bool
 
 	switch event.Type {
 	case ports.WebhookEventPaymentIntentSucceeded:
@@ -122,6 +159,40 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 			updated = true
 		}
 
+	case ports.WebhookEventChargeDisputeCreated:
+		if booking.PaymentStatus != domain.PaymentStatusDisputed {
+			if err := booking.MarkPaymentDisputed(); err != nil {
+				// Booking isn't in a paid state (e.g. duplicate delivery after the dispute
+				// was already resolved) — log and skip the status transition, but the
+				// event itself is not an error worth failing the webhook over.
+				slog.WarnContext(ctx, "cannot mark booking as disputed",
+					"booking_id", booking.ID,
+					"payment_status", booking.PaymentStatus,
+					"stripe_event_id", event.ID,
+					"stripe_dispute_id", event.DisputeID,
+					"error", err,
+				)
+			} else {
+				updated = true
+				sendDisputeAlert = true
+			}
+		}
+
+	case ports.WebhookEventChargeDisputeClosed:
+		if booking.PaymentStatus == domain.PaymentStatusDisputed {
+			if err := booking.ResolveDispute(event.Status); err != nil {
+				slog.WarnContext(ctx, "cannot resolve dispute for booking",
+					"booking_id", booking.ID,
+					"payment_status", booking.PaymentStatus,
+					"stripe_event_id", event.ID,
+					"stripe_dispute_id", event.DisputeID,
+					"error", err,
+				)
+			} else {
+				updated = true
+			}
+		}
+
 	default:
 		// Unknown event type, ignore
 		return nil
@@ -159,6 +230,19 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 			if err := s.notificationService.SendPaymentFailed(ctx, notificationData); err != nil {
 				// Log error but don't fail the webhook processing
 				slog.ErrorContext(ctx, "failed to send payment failed notification",
+					"booking_id", booking.ID,
+					"stripe_event_id", event.ID,
+					"stripe_event_type", event.Type,
+					"error", err,
+				)
+			}
+		}
+
+		if sendDisputeAlert {
+			notificationData.DisputeReason = event.DisputeReason
+			if err := s.notificationService.SendPaymentDisputeAlert(ctx, notificationData); err != nil {
+				// Log error but don't fail the webhook processing
+				slog.ErrorContext(ctx, "failed to send payment dispute alert notification",
 					"booking_id", booking.ID,
 					"stripe_event_id", event.ID,
 					"stripe_event_type", event.Type,
