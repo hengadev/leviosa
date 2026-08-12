@@ -48,13 +48,18 @@ const (
 	CompanyVatNumberPath          = "/vat-number"
 	CompanyHostingProviderPath    = "/hosting-provider"
 
+	// Public legal identity endpoints (GET only, no authentication) — these
+	// values are legally required to be publicly displayed (mentions
+	// légales), so they follow the same public-GET pattern as company
+	// name/email/address/instagram/logo, not the admin-only pattern.
+	GetCompanyRegistrationNumberEndpoint = SettingsBasePath + CompanyRegistrationNumberPath
+	GetCompanyVatNumberEndpoint          = SettingsBasePath + CompanyVatNumberPath
+	GetCompanyHostingProviderEndpoint    = SettingsBasePath + CompanyHostingProviderPath
+
 	// Admin-only legal identity endpoints (Administrator role required)
-	AdminGetCompanyRegistrationNumberEndpoint = AdminSettingsBasePath + CompanyRegistrationNumberPath
-	AdminSetCompanyRegistrationNumberEndpoint = AdminSettingsBasePath + CompanyRegistrationNumberPath
-	AdminGetCompanyVatNumberEndpoint          = AdminSettingsBasePath + CompanyVatNumberPath
-	AdminSetCompanyVatNumberEndpoint          = AdminSettingsBasePath + CompanyVatNumberPath
-	AdminGetCompanyHostingProviderEndpoint    = AdminSettingsBasePath + CompanyHostingProviderPath
-	AdminSetCompanyHostingProviderEndpoint    = AdminSettingsBasePath + CompanyHostingProviderPath
+	SetCompanyRegistrationNumberEndpoint = AdminSettingsBasePath + CompanyRegistrationNumberPath
+	SetCompanyVatNumberEndpoint          = AdminSettingsBasePath + CompanyVatNumberPath
+	SetCompanyHostingProviderEndpoint    = AdminSettingsBasePath + CompanyHostingProviderPath
 
 	// Internal legal identity endpoints (Service-to-service authentication)
 	InternalGetCompanyRegistrationNumberEndpoint = InternalSettingsBasePath + CompanyRegistrationNumberPath

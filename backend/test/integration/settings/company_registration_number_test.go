@@ -21,15 +21,23 @@ func TestGetCompanyRegistrationNumber(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	t.Run("should return 401 when not authenticated as admin", func(t *testing.T) {
+	t.Run("is publicly readable without authentication (mentions légales must be public)", func(t *testing.T) {
 		th.ClearSettingTestData(t, ctx, testPool, s3Client)
+
+		registrationNumber := "12345678901234"
+		th.InsertCompanyRegistrationNumber(t, ctx, registrationNumber, testPool)
 
 		req := th.NewGetCompanyRegistrationNumberRequest(t, ctx, testServerURL)
 		resp, err := client.Do(req)
 		assert.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.NotEqual(t, http.StatusOK, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var respBody domain.GetCompanyRegistrationNumberResponse
+		err = json.NewDecoder(resp.Body).Decode(&respBody)
+		assert.NoError(t, err)
+		assert.Equal(t, registrationNumber, respBody.RegistrationNumber)
 	})
 
 	t.Run("should return 404 when company registration number not set", func(t *testing.T) {
