@@ -96,6 +96,19 @@ sentry_dsn: ""
 use_scheduler: "false"
 
 # ============================================
+# Analytics (self-hosted, cookieless — Plausible)
+# HITL: only set analytics_enabled: true in group_vars/all.yml (or override
+# here) after business-owner sign-off — see docs/issues/008-cookieless-analytics.md.
+# Generate secrets with:
+#   openssl rand -base64 64 | tr -d '\n'   # plausible_secret_key_base
+#   openssl rand -base64 32 | tr -d '\n'   # plausible_totp_vault_key
+# ============================================
+plausible_db_password: "your_secure_plausible_db_password_here"
+plausible_clickhouse_password: "your_secure_plausible_clickhouse_password_here"
+plausible_secret_key_base: "generate_with_openssl_rand_-base64_64"
+plausible_totp_vault_key: "generate_with_openssl_rand_-base64_32"
+
+# ============================================
 # Caddy Cloudflare API Token (for DNS-01 challenge)
 # ============================================
 caddy_cloudflare_api_token: "your_cloudflare_api_token_here"

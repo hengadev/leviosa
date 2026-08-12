@@ -64,6 +64,10 @@
       tags: ['monitoring', 'setup']
       when: monitoring_enabled | default(false)
 
+    - role: analytics
+      tags: ['analytics', 'setup']
+      when: analytics_enabled | default(false)
+
   post_tasks:
     - name: Display setup completion message
       ansible.builtin.debug:
