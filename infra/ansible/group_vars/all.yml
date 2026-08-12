@@ -166,3 +166,17 @@ monitoring_grafana_port: 3001
 # Set grafana_admin_password in secrets.yml (the monitoring template falls back
 # to an insecure default). Do not define it here as "{{ grafana_admin_password }}":
 # a self-reference is a recursive templating loop.
+
+# ============================================
+# Analytics (self-hosted, cookieless — Plausible)
+# ============================================
+# docs/issues/008-cookieless-analytics.md: HITL — this new self-hosted service
+# (deployment, resourcing, DNS/subdomain, ongoing operational ownership) needs
+# explicit business-owner sign-off. Leave false until that sign-off happens;
+# then set analytics_enabled: true (and add the analytics.leviosa.care DNS
+# record via infra/terraform/cloudflare.tf) in leviosa_production.yml.
+# Single production instance only — staging does not get its own.
+analytics_enabled: false
+# Set plausible_db_password, plausible_secret_key_base, plausible_totp_vault_key
+# in leviosa_production.yml (see leviosa_production.example.yml for how to
+# generate them) — used directly by infra/ansible/roles/analytics templates.
