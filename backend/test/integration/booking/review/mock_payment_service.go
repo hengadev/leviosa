@@ -19,7 +19,7 @@ func NewMockPaymentService() *MockPaymentService {
 	}
 }
 
-func (m *MockPaymentService) CreatePaymentIntent(ctx context.Context, amount int, currency, description string, metadata map[string]string) (string, string, error) {
+func (m *MockPaymentService) CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) {
 	paymentIntentID := "pi_test_" + uuid.New().String()[:8]
 	clientSecret := "pi_test_secret_" + uuid.New().String()[:8]
 
