@@ -77,3 +77,15 @@ resource "cloudflare_dns_record" "staff_staging_leviosa_care" {
   proxied = true
   ttl     = 1
 }
+
+# Analytics subdomain (self-hosted, cookieless Plausible instance — see
+# infra/ansible/roles/analytics). HITL per docs/issues/008-cookieless-analytics.md:
+# only apply this once the business owner has signed off on the new service.
+resource "cloudflare_dns_record" "analytics_leviosa_care" {
+  zone_id = var.zone_id
+  name    = "analytics.${var.domain_name}"
+  type    = "CNAME"
+  content = var.domain_name
+  proxied = true
+  ttl     = 1
+}
