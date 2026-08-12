@@ -76,6 +76,35 @@ leviosa.care, www.leviosa.care {
         }
 }
 
+{% if analytics_enabled | default(false) %}
+# Self-hosted, cookieless analytics (Plausible) — public: the tracking script
+# and event API are called directly from visitor browsers on leviosa.care.
+analytics.leviosa.care {
+        tls {
+                dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+        }
+
+        reverse_proxy {{ app_name }}_plausible:8000
+
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "SAMEORIGIN"
+                Referrer-Policy "strict-origin-when-cross-origin"
+                -Server
+        }
+
+        log {
+                output file /var/log/caddy/analytics-access.log {
+                        roll_size 100mb
+                        roll_keep 5
+                        roll_keep_for 720h
+                }
+                format json
+        }
+}
+{% endif %}
+
 # ============================================
 # Staging sites
 # ============================================
