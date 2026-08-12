@@ -228,7 +228,7 @@
 				<div class="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-sm text-amber-800 dark:text-amber-300">
 					Vous n'avez pas encore de conversation active avec un praticien. Écrivez-nous
 					directement à
-					<a href="mailto:contact@leviosa.care" class="underline font-medium">contact@leviosa.care</a>
+					<a href="mailto:{data.companyEmail}" class="underline font-medium">{data.companyEmail}</a>
 					pour faire votre demande.
 				</div>
 			{:else if form?.dataRequestError}
