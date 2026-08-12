@@ -13,7 +13,7 @@
     import { jsonLdScriptTag } from "$lib/utils/seo";
 
     let { data }: PageProps = $props();
-    let { featuredService, featuredPrice, teamMembers } = data;
+    let { featuredService, featuredPrice, teamMembers, companyEmail, instagramUrl } = data;
 
     const description =
         "Réservez instantanément une consultation avec un praticien vérifié : ostéopathie, psychologie, coaching. Créneaux disponibles, réservation en quelques secondes.";
@@ -25,8 +25,8 @@
         url: page.url.origin,
         description,
         image: `${page.url.origin}/pwa-512x512.png`,
-        email: "contact@leviosa.care",
-        sameAs: ["https://www.instagram.com/leviosa_care"],
+        email: companyEmail,
+        sameAs: [instagramUrl],
     });
 </script>
 

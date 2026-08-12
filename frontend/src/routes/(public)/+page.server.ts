@@ -2,6 +2,9 @@ import type { PageServerLoad } from "./$types";
 import { env } from "$env/dynamic/private";
 import { mockCategories, mockProducts, mockPrices, mockPartners, mockUsers } from "$lib/data/mockData";
 
+const FALLBACK_COMPANY_EMAIL = "contact@leviosa.care";
+const FALLBACK_INSTAGRAM_URL = "https://www.instagram.com/leviosa_care";
+
 // Homepage highlight sections (Services, Team) reuse the same catalog/partner
 // data already powering the dedicated (public)/services and (public)/team
 // listing pages — just trimmed down to the single flagship service and the
@@ -47,8 +50,23 @@ export const load: PageServerLoad = async ({ fetch }) => {
                 : null,
             featuredPrice,
             teamMembers,
+            companyEmail: FALLBACK_COMPANY_EMAIL,
+            instagramUrl: FALLBACK_INSTAGRAM_URL,
         };
     }
+
+    // Best-effort: public settings endpoints, used for the LocalBusiness
+    // JSON-LD rather than hardcoding contact details that could drift out of
+    // sync with what's actually configured in settings.
+    const companyEmail = await fetch(`${env.API_URL}/settings/email`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body) => body?.email || FALLBACK_COMPANY_EMAIL)
+        .catch(() => FALLBACK_COMPANY_EMAIL);
+
+    const instagramUrl = await fetch(`${env.API_URL}/settings/instagram`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((body) => body?.instagram || FALLBACK_INSTAGRAM_URL)
+        .catch(() => FALLBACK_INSTAGRAM_URL);
 
     // Fetch published products, use the first as the homepage's flagship service
     const productsRes = await fetch(`${env.API_URL}/products`);
@@ -97,5 +115,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
             : null,
         featuredPrice,
         teamMembers,
+        companyEmail,
+        instagramUrl,
     };
 };
