@@ -44,6 +44,7 @@
         { link: "/services", title: "Services" },
         { link: "/team", title: "L’équipe" },
         { link: "/about", title: "À propos" },
+        { link: "/contact", title: "Contact" },
         { link: "/bookings", title: "Mes réservations" },
     ];
 
