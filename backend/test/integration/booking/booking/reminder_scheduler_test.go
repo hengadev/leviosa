@@ -241,6 +241,9 @@ func (e *errorNotificationService) SendPaymentConfirmation(_ context.Context, _ 
 func (e *errorNotificationService) SendPaymentFailed(_ context.Context, _ ports.BookingNotificationData) error {
 	return assert.AnError
 }
+func (e *errorNotificationService) SendPaymentDisputeAlert(_ context.Context, _ ports.BookingNotificationData) error {
+	return assert.AnError
+}
 
 // compile-time check
 var _ ports.BookingNotificationService = (*errorNotificationService)(nil)

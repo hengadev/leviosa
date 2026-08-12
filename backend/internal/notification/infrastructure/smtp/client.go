@@ -340,6 +340,33 @@ func (c *SMTPClient) SendContactFormEmail(ctx context.Context, req domain.Contac
 	return c.sendEmail(ctx, emailReq, req.FromEmail)
 }
 
+func (c *SMTPClient) SendPaymentDisputeAlertEmail(ctx context.Context, req domain.PaymentDisputeAlertRequest) error {
+	data := struct {
+		BookingID     string
+		ClientName    string
+		ProductName   string
+		Amount        string
+		DisputeReason string
+		Year          int
+	}{
+		BookingID:     req.BookingID,
+		ClientName:    req.ClientName,
+		ProductName:   req.ProductName,
+		Amount:        req.Amount,
+		DisputeReason: req.DisputeReason,
+		Year:          time.Now().Year(),
+	}
+
+	emailReq := &domain.EmailRequest{
+		To:       req.ToEmail,
+		Subject:  fmt.Sprintf("Payment dispute opened — booking %s", req.BookingID),
+		Template: "payment_dispute_alert",
+		Data:     data,
+	}
+
+	return c.sendEmail(ctx, emailReq, req.FromEmail)
+}
+
 func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest, fromEmail string) error {
 	if request == nil {
 		return errs.ErrInvalidValue

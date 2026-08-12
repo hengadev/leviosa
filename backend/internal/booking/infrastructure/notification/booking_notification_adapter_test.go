@@ -40,6 +40,7 @@ type spyEmailService struct {
 	bookingCancellations []notificationDomain.BookingCancellationRequest
 	bookingReminders     []notificationDomain.BookingReminderRequest
 	paymentNotifications []notificationDomain.PaymentNotificationRequest
+	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
 }
 
 func (s *spyEmailService) SendOTPEmail(ctx context.Context, req notificationDomain.OTPEmailRequest) error {
@@ -82,6 +83,12 @@ func (s *spyEmailService) SendBookingReminderEmail(ctx context.Context, req noti
 	return nil
 }
 func (s *spyEmailService) SendContactFormEmail(ctx context.Context, req notificationDomain.ContactFormRequest) error {
+	return nil
+}
+func (s *spyEmailService) SendPaymentDisputeAlertEmail(ctx context.Context, req notificationDomain.PaymentDisputeAlertRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.disputeAlerts = append(s.disputeAlerts, req)
 	return nil
 }
 
@@ -141,6 +148,33 @@ func (f *stubProductFetcher) GetAllProducts(ctx context.Context) ([]*catalogDoma
 	return nil, nil
 }
 
+// ---- Stub settings provider ----
+
+type stubSettingsProvider struct {
+	companyEmail string
+}
+
+func (s *stubSettingsProvider) GetCompanyEmail(ctx context.Context) (string, error) {
+	return s.companyEmail, nil
+}
+func (s *stubSettingsProvider) GetCompanyLegalAddress(ctx context.Context) (string, error) {
+	return "", nil
+}
+func (s *stubSettingsProvider) GetCompanyInstagram(ctx context.Context) (string, error) {
+	return "", nil
+}
+func (s *stubSettingsProvider) GetCompanyLogo(ctx context.Context) (string, error) {
+	return "", nil
+}
+func (s *stubSettingsProvider) GetCompanyTelephone(ctx context.Context) (string, error) {
+	return "", nil
+}
+func (s *stubSettingsProvider) GetCompanyName(ctx context.Context) (string, error) {
+	return "", nil
+}
+func (s *stubSettingsProvider) InvalidateCache(key string) {}
+func (s *stubSettingsProvider) InvalidateAllCache()        {}
+
 // ---- Helpers ----
 
 func newTestAdapter(
@@ -159,6 +193,7 @@ func newTestAdapter(
 		&stubRoomFetcher{rooms: rooms},
 		&stubBuildingFetcher{buildings: buildings},
 		&stubProductFetcher{products: products},
+		&stubSettingsProvider{companyEmail: "admin@leviosa.test"},
 	)
 }
 

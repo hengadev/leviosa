@@ -517,6 +517,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingNotification.NewInProcessRoomFetcher(c.RoomService),
 		bookingNotification.NewInProcessBuildingFetcher(c.BuildingService),
 		c.ProductService,
+		notificationSettingsProvider,
 	)
 	c.BookingNotificationService = notificationAdapter
 

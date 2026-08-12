@@ -29,13 +29,14 @@ func detach(ctx context.Context) context.Context {
 // propagated to the caller, ensuring booking transactions are never rolled
 // back due to a notification failure.
 type BookingNotificationAdapter struct {
-	emailService    notificationPorts.EmailService
-	smsService      notificationPorts.SMSService
-	frontendOrigin  string
-	userFetcher     UserFetcher
-	roomFetcher     RoomFetcher
-	buildingFetcher BuildingFetcher
-	productFetcher  catalogPorts.PublicProductService
+	emailService     notificationPorts.EmailService
+	smsService       notificationPorts.SMSService
+	frontendOrigin   string
+	userFetcher      UserFetcher
+	roomFetcher      RoomFetcher
+	buildingFetcher  BuildingFetcher
+	productFetcher   catalogPorts.PublicProductService
+	settingsProvider notificationPorts.SettingsProvider
 }
 
 // UserFetcher retrieves user details by ID.
@@ -82,15 +83,17 @@ func NewBookingNotificationAdapter(
 	roomFetcher RoomFetcher,
 	buildingFetcher BuildingFetcher,
 	productFetcher catalogPorts.PublicProductService,
+	settingsProvider notificationPorts.SettingsProvider,
 ) *BookingNotificationAdapter {
 	return &BookingNotificationAdapter{
-		emailService:    emailService,
-		smsService:      smsService,
-		frontendOrigin:  frontendOrigin,
-		userFetcher:     userFetcher,
-		roomFetcher:     roomFetcher,
-		buildingFetcher: buildingFetcher,
-		productFetcher:  productFetcher,
+		emailService:     emailService,
+		smsService:       smsService,
+		frontendOrigin:   frontendOrigin,
+		userFetcher:      userFetcher,
+		roomFetcher:      roomFetcher,
+		buildingFetcher:  buildingFetcher,
+		productFetcher:   productFetcher,
+		settingsProvider: settingsProvider,
 	}
 }
 
@@ -121,6 +124,12 @@ func (a *BookingNotificationAdapter) SendPaymentConfirmation(ctx context.Context
 // SendPaymentFailed sends a payment failed email (fire-and-forget).
 func (a *BookingNotificationAdapter) SendPaymentFailed(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "payment failed", data, a.sendPaymentFailedEmail)
+	return nil
+}
+
+// SendPaymentDisputeAlert notifies admin/staff of a Stripe dispute (fire-and-forget).
+func (a *BookingNotificationAdapter) SendPaymentDisputeAlert(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	go a.sendAsync(detach(ctx), "payment dispute alert", data, a.sendPaymentDisputeAlertEmail)
 	return nil
 }
 
@@ -493,6 +502,40 @@ func (a *BookingNotificationAdapter) sendPaymentFailedEmail(ctx context.Context,
 	}
 
 	return a.emailService.SendPaymentFailedEmail(ctx, req)
+}
+
+// sendPaymentDisputeAlertEmail sends the admin dispute alert to the company/support
+// inbox (the only "admin recipient" concept this system has today — see GetCompanyEmail).
+func (a *BookingNotificationAdapter) sendPaymentDisputeAlertEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	a.enrichData(ctx, &data)
+
+	if a.settingsProvider == nil {
+		return fmt.Errorf("no settings provider configured, cannot resolve admin recipient for dispute alert")
+	}
+
+	adminEmail, err := a.settingsProvider.GetCompanyEmail(ctx)
+	if err != nil {
+		return fmt.Errorf("resolve admin email for dispute alert: %w", err)
+	}
+	if adminEmail == "" {
+		return fmt.Errorf("no admin email configured for dispute alert")
+	}
+
+	clientName := data.ClientName
+	if data.IsGuestBooking {
+		clientName = fmt.Sprintf("%s (guest)", clientName)
+	}
+
+	req := notificationDomain.PaymentDisputeAlertRequest{
+		ToEmail:       adminEmail,
+		BookingID:     data.BookingID.String(),
+		ClientName:    clientName,
+		ProductName:   data.ProductName,
+		Amount:        formatAmount(data.TotalPriceCents, data.Currency),
+		DisputeReason: data.DisputeReason,
+	}
+
+	return a.emailService.SendPaymentDisputeAlertEmail(ctx, req)
 }
 
 // buildTokenURL constructs the guest booking URL from a token.
