@@ -2,11 +2,17 @@
     import { reveal } from "$lib/actions/reveal";
     import Button from "$lib/ui/Button.svelte";
     import GuestClaimCard from "./GuestClaimCard.svelte";
+    import { trackEvent } from "$lib/utils/analytics";
     import type { PageProps } from "./$types";
 
     let { data }: PageProps = $props();
 
     const { booking, product, priceDisplay, user, guestInfo } = data;
+
+    // Funnel completion — pairs with the "Booking Step" events fired on /book
+    // (docs/issues/008-cookieless-analytics.md). Fires once per page render;
+    // no-op if analytics isn't configured (see $lib/utils/analytics.ts).
+    trackEvent("Booking Confirmed", { guest: !user });
 
     // Guard against null/invalid dates from the URL-param fallback path
     const rawStart = booking.slot_start_time;
