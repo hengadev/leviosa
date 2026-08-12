@@ -1,0 +1,14 @@
+<!--
+  Caps ClickHouse memory usage for small VPS deployments, per Plausible's
+  self-hosting guidance for low-memory servers. Mounted read-only into users.d/.
+  Managed by Ansible - DO NOT EDIT MANUALLY
+-->
+<clickhouse>
+    <profiles>
+        <default>
+            <max_memory_usage>{{ analytics_clickhouse_max_memory_usage | default('300000000') }}</max_memory_usage>
+            <max_bytes_before_external_group_by>{{ analytics_clickhouse_max_memory_usage | default('300000000') }}</max_bytes_before_external_group_by>
+            <max_bytes_before_external_sort>{{ analytics_clickhouse_max_memory_usage | default('300000000') }}</max_bytes_before_external_sort>
+        </default>
+    </profiles>
+</clickhouse>

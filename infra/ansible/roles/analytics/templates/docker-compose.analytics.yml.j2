@@ -1,0 +1,119 @@
+# Analytics Stack - Docker Compose (self-hosted, cookieless — Plausible Community Edition)
+# Managed by Ansible - DO NOT EDIT MANUALLY
+#
+# plausible joins both the private "analytics" network (to reach its own
+# ClickHouse/Postgres) and the app role's external {{ app_name }}_network, so
+# Caddy can reverse-proxy https://analytics.{{ app_domain }} to it by container
+# name — the same way it reaches {{ app_name }}_frontend / {{ app_name }}_backend.
+
+services:
+  plausible_events_db:
+    image: {{ clickhouse_image | default('clickhouse/clickhouse-server:24.12-alpine') }}
+    container_name: {{ app_name }}_plausible_events_db
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      # Without a password, ClickHouse's default user only accepts connections
+      # from inside its own container — plausible (a different container) needs
+      # network access, which requires an explicit password.
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: {{ plausible_clickhouse_password | default('change_me') }}
+    volumes:
+      - plausible_events_db_data:/var/lib/clickhouse
+      - plausible_events_db_logs:/var/log/clickhouse-server
+      - {{ app_base_dir }}/analytics/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - {{ app_base_dir }}/analytics/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/low-resources.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - analytics
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O /dev/null http://127.0.0.1:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  plausible_db:
+    image: postgres:17-alpine
+    container_name: {{ app_name }}_plausible_db
+    restart: unless-stopped
+    mem_limit: 256m
+    environment:
+      POSTGRES_USER: plausible
+      POSTGRES_PASSWORD: {{ plausible_db_password | default('change_me') }}
+      POSTGRES_DB: plausible_db
+    volumes:
+      - plausible_db_data:/var/lib/postgresql/data
+    networks:
+      - analytics
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plausible -d plausible_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  plausible:
+    image: {{ plausible_image | default('plausible/analytics:v2') }}
+    container_name: {{ app_name }}_plausible
+    restart: unless-stopped
+    mem_limit: 256m
+    # init-admin is a deprecated no-op on current images — first-user registration
+    # happens through the web UI (/register) instead, gated by DISABLE_REGISTRATION below.
+    command: sh -c "/entrypoint.sh db createdb && /entrypoint.sh db migrate && /entrypoint.sh run"
+    environment:
+      BASE_URL: https://analytics.{{ app_domain }}
+      SECRET_KEY_BASE: {{ plausible_secret_key_base | default('change_me_generate_with_openssl_rand_-base64_64') }}
+      TOTP_VAULT_KEY: {{ plausible_totp_vault_key | default('change_me_generate_with_openssl_rand_-base64_32') }}
+      # invite_only (not "true"): keeps public sign-up closed while still letting
+      # the business owner create the one admin account via /register on first boot.
+      DISABLE_REGISTRATION: "invite_only"
+      DATABASE_URL: postgres://plausible:{{ plausible_db_password | default('change_me') }}@plausible_db:5432/plausible_db
+      CLICKHOUSE_DATABASE_URL: http://default:{{ plausible_clickhouse_password | default('change_me') }}@plausible_events_db:8123/plausible_events_db
+    expose:
+      - "8000"
+    depends_on:
+      plausible_events_db:
+        condition: service_healthy
+      plausible_db:
+        condition: service_healthy
+    networks:
+      analytics:
+      {{ app_name }}_network:
+        aliases:
+          - plausible
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  analytics:
+    driver: bridge
+  # Shared with the app role's Caddy — created by roles/app (community.docker.docker_network).
+  {{ app_name }}_network:
+    external: true
+
+volumes:
+  plausible_events_db_data:
+  plausible_events_db_logs:
+  plausible_db_data:
