@@ -47,6 +47,9 @@
                     <a href="/book" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
                         Réserver
                     </a>
+                    <a href="/contact" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
+                        Contact
+                    </a>
                 </nav>
             </div>
 
