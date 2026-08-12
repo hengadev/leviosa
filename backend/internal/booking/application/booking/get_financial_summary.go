@@ -26,6 +26,7 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		PaymentStatus: []domain.PaymentStatus{
 			domain.PaymentStatusPaid,
 			domain.PaymentStatusRefunded,
+			domain.PaymentStatusDisputed,
 		},
 		CreatedAfter:   &from,
 		OrderBy:        "created_at",
@@ -64,14 +65,18 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		}
 	}
 
-	// Compute aggregates.
-	var grossRevenueCents, refundsCents int
+	// Compute aggregates. Disputed bookings are tracked separately (DisputedCents) and
+	// excluded from gross/net revenue until the dispute closes and the payment status
+	// resolves back to paid or refunded — see FinancialSummary doc comment.
+	var grossRevenueCents, refundsCents, disputedCents int
 	for _, b := range inRange {
 		switch b.PaymentStatus {
 		case domain.PaymentStatusPaid:
 			grossRevenueCents += b.TotalPriceCents
 		case domain.PaymentStatusRefunded:
 			refundsCents += b.TotalPriceCents
+		case domain.PaymentStatusDisputed:
+			disputedCents += b.TotalPriceCents
 		}
 	}
 
@@ -115,6 +120,7 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		Summary: domain.FinancialSummary{
 			GrossRevenueCents: grossRevenueCents,
 			RefundsCents:      refundsCents,
+			DisputedCents:     disputedCents,
 			NetRevenueCents:   grossRevenueCents - refundsCents,
 		},
 		Transactions: transactions,
