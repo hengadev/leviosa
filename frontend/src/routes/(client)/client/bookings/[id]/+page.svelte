@@ -12,6 +12,8 @@
 		XCircle,
 		ArrowLeft,
 		MessageSquare,
+		CalendarClock,
+		Undo2,
 	} from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
@@ -43,6 +45,43 @@
 	function formatCents(cents: number): string {
 		return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 	}
+
+	function formatDateTime(iso: string): string {
+		return new Date(iso).toLocaleString('fr-FR', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+	}
+
+	// Plain-language cancellation-deadline copy, derived from the booking's
+	// cancellation_deadline (product's cancellation window applied to the
+	// slot). Shown ahead of the cancel action so the client understands the
+	// consequence before acting, not after (issue 011).
+	let cancellationNotice = $derived.by(() => {
+		if (!booking.cancellation_deadline) return null;
+		const deadline = new Date(booking.cancellation_deadline);
+		const feeApplies = now >= deadline;
+		return {
+			feeApplies,
+			text: feeApplies
+				? `Des frais d'annulation s'appliquent depuis le ${formatDateTime(booking.cancellation_deadline)}.`
+				: `Annulation gratuite jusqu'au ${formatDateTime(booking.cancellation_deadline)}.`,
+		};
+	});
+
+	// Plain-language refund status. Written to read a generic amount/date pair
+	// rather than assuming "full refund or nothing", so it renders correctly
+	// once a graduated refund policy populates a partial amount here too.
+	let refundNotice = $derived.by(() => {
+		if (!booking.refund_amount_cents) return null;
+		const amount = formatCents(booking.refund_amount_cents);
+		return booking.refunded_at
+			? `Remboursé de ${amount} le ${formatDate(booking.refunded_at)}.`
+			: `Remboursé de ${amount}.`;
+	});
 
 	function statusBadge(status: string): string {
 		switch (status) {
@@ -202,6 +241,17 @@
 			</div>
 		{/if}
 
+		<!-- Refund status -->
+		{#if refundNotice}
+			<div class="flex items-start gap-3">
+				<Undo2 size={18} class="text-sky-600 dark:text-sky-400 mt-0.5 flex-shrink-0" />
+				<div>
+					<p class="text-sm font-medium text-muted-foreground">Remboursement</p>
+					<p class="text-foreground text-sm">{refundNotice}</p>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Completed info -->
 		{#if booking.status === 'completed' && booking.completed_at}
 			<div class="flex items-start gap-3">
@@ -294,6 +344,16 @@
 
 	<!-- Cancel action -->
 	{#if isCancellable()}
+		{#if cancellationNotice}
+			<div
+				class="flex items-center gap-2 px-4 py-3 rounded-lg text-sm border {cancellationNotice.feeApplies
+					? 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-400'
+					: 'bg-muted border-border text-muted-foreground'}"
+			>
+				<CalendarClock size={16} class="flex-shrink-0" />
+				{cancellationNotice.text}
+			</div>
+		{/if}
 		{#if cancelError}
 			<div class="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
 				<AlertCircle size={16} class="flex-shrink-0" />
