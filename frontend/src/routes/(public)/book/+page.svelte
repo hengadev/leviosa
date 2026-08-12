@@ -1,6 +1,7 @@
 <script lang="ts">
     import { reveal } from "$lib/actions/reveal";
     import Button from "$lib/ui/Button.svelte";
+    import { trackEvent } from "$lib/utils/analytics";
     import type { PageProps } from "./$types";
     import type { Category, Product, Price, Partner, Availability } from "$lib/types/booking-flow.ts";
 
@@ -61,6 +62,16 @@
         if (!selectedAvailabilityId) return 4;
         if (!data.user && (!guestFirstName || !guestLastName || (!guestEmail && !guestPhone))) return 5;
         return 6;
+    });
+
+    // --- Funnel tracking: one event per step reached, so drop-off between
+    // steps is visible in Plausible (docs/issues/008-cookieless-analytics.md).
+    // No-op if analytics isn't configured (see $lib/utils/analytics.ts).
+    let trackedStep = $state(0);
+    $effect(() => {
+        if (step <= trackedStep) return;
+        trackedStep = step;
+        trackEvent("Booking Step", { step });
     });
 
     // --- Pre-load on mount if product is preselected ---
