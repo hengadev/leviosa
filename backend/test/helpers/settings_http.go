@@ -95,7 +95,7 @@ func NewSetCompanyInstagramRequest(t *testing.T, ctx context.Context, serverURL 
 }
 
 func NewGetCompanyRegistrationNumberRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyRegistrationNumberEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetCompanyRegistrationNumberEndpoint, nil)
 	require.NoError(t, err)
 	return req
 }
@@ -104,14 +104,14 @@ func NewSetCompanyRegistrationNumberRequest(t *testing.T, ctx context.Context, s
 	jsonBody, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyRegistrationNumberEndpoint, bytes.NewReader(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.SetCompanyRegistrationNumberEndpoint, bytes.NewReader(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req
 }
 
 func NewGetCompanyVatNumberRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyVatNumberEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetCompanyVatNumberEndpoint, nil)
 	require.NoError(t, err)
 	return req
 }
@@ -120,14 +120,14 @@ func NewSetCompanyVatNumberRequest(t *testing.T, ctx context.Context, serverURL 
 	jsonBody, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyVatNumberEndpoint, bytes.NewReader(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.SetCompanyVatNumberEndpoint, bytes.NewReader(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req
 }
 
 func NewGetCompanyHostingProviderRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetCompanyHostingProviderEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetCompanyHostingProviderEndpoint, nil)
 	require.NoError(t, err)
 	return req
 }
@@ -136,7 +136,7 @@ func NewSetCompanyHostingProviderRequest(t *testing.T, ctx context.Context, serv
 	jsonBody, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetCompanyHostingProviderEndpoint, bytes.NewReader(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, serverURL+settingsEndpoints.SetCompanyHostingProviderEndpoint, bytes.NewReader(jsonBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	return req

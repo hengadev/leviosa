@@ -21,6 +21,11 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET "+GetCompanyAddressEndpoint, mw.EnableCORS(h.GetCompanyAddress))
 	router.HandleFunc("GET "+GetCompanyInstagramEndpoint, mw.EnableCORS(h.GetCompanyInstagram))
 	router.HandleFunc("GET "+GetCompanyLogoEndpoint, mw.EnableCORS(h.GetCompanyLogo))
+	// Legal identity fields are legally required to be publicly displayed
+	// (mentions légales) — see docs/prd/legal-compliance-gdpr-foundations.md.
+	router.HandleFunc("GET "+GetCompanyRegistrationNumberEndpoint, mw.EnableCORS(h.GetCompanyRegistrationNumber))
+	router.HandleFunc("GET "+GetCompanyVatNumberEndpoint, mw.EnableCORS(h.GetCompanyVatNumber))
+	router.HandleFunc("GET "+GetCompanyHostingProviderEndpoint, mw.EnableCORS(h.GetCompanyHostingProvider))
 
 	// Admin-only company settings (GET sensitive + all POST)
 	router.HandleFunc("GET "+AdminGetCompanyPhoneEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyPhone)))
@@ -31,13 +36,10 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST "+SetCompanyInstagramEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyInstagram)))
 	router.HandleFunc("POST "+SetCompanyLogoEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyLogo)))
 
-	// Admin-only legal identity settings (mentions légales / GDPR compliance foundations)
-	router.HandleFunc("GET "+AdminGetCompanyRegistrationNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyRegistrationNumber)))
-	router.HandleFunc("POST "+AdminSetCompanyRegistrationNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyRegistrationNumber)))
-	router.HandleFunc("GET "+AdminGetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyVatNumber)))
-	router.HandleFunc("POST "+AdminSetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyVatNumber)))
-	router.HandleFunc("GET "+AdminGetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.GetCompanyHostingProvider)))
-	router.HandleFunc("POST "+AdminSetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyHostingProvider)))
+	// Admin-only legal identity settings (writes only — reads are public, above)
+	router.HandleFunc("POST "+SetCompanyRegistrationNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyRegistrationNumber)))
+	router.HandleFunc("POST "+SetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyVatNumber)))
+	router.HandleFunc("POST "+SetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyHostingProvider)))
 
 	// Admin-only OTP settings (all access)
 	router.HandleFunc("GET "+AdminGetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.GetOTPDuration)))
