@@ -53,6 +53,15 @@ func (s *stubSettingsService) GetCompanyLegalAddress(ctx context.Context) (*sett
 func (s *stubSettingsService) GetCompanyInstagram(ctx context.Context) (*settingsDomain.GetCompanyInstagramResponse, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetCompanyRegistrationNumber(ctx context.Context) (*settingsDomain.GetCompanyRegistrationNumberResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetCompanyVatNumber(ctx context.Context) (*settingsDomain.GetCompanyVatNumberResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetCompanyHostingProvider(ctx context.Context) (*settingsDomain.GetCompanyHostingProviderResponse, error) {
+	return nil, nil
+}
 func (s *stubSettingsService) GetOTPDuration(ctx context.Context) (*settingsDomain.GetOTPDurationResponse, error) {
 	return nil, nil
 }
@@ -101,6 +110,15 @@ func (s *stubSettingsService) SetAccessTokenDuration(ctx context.Context, req *s
 func (s *stubSettingsService) SetRefreshTokenDuration(ctx context.Context, req *settingsDomain.SetRefreshTokenDurationRequest) (*settingsDomain.SetRefreshTokenDurationResponse, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) SetCompanyRegistrationNumber(ctx context.Context, req *settingsDomain.SetCompanyRegistrationNumberRequest) (*settingsDomain.SetCompanyRegistrationNumberResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetCompanyVatNumber(ctx context.Context, req *settingsDomain.SetCompanyVatNumberRequest) (*settingsDomain.SetCompanyVatNumberResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetCompanyHostingProvider(ctx context.Context, req *settingsDomain.SetCompanyHostingProviderRequest) (*settingsDomain.SetCompanyHostingProviderResponse, error) {
+	return nil, nil
+}
 
 // fakeEmailClient implements ports.EmailService, recording the last
 // ContactFormRequest it received so tests can assert on it.
@@ -141,6 +159,9 @@ func (f *fakeEmailClient) SendBookingReminderEmail(ctx context.Context, req doma
 func (f *fakeEmailClient) SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error {
 	f.lastContactForm = req
 	return f.contactFormErr
+}
+func (f *fakeEmailClient) SendPaymentDisputeAlertEmail(ctx context.Context, req domain.PaymentDisputeAlertRequest) error {
+	return nil
 }
 
 func TestMailService_SendContactFormEmail_Success(t *testing.T) {

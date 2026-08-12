@@ -266,6 +266,7 @@ func TestMain(m *testing.M) {
 		bookingNotification.NewInProcessRoomFetcher(realRoomService),
 		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
 		catalogProductService,
+		&stubSettingsProvider{},
 	)
 
 	// Pre-compute the hash of the test service key so the mock secret reader can
