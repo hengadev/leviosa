@@ -24,6 +24,11 @@ type BookingNotificationService interface {
 
 	// SendPaymentFailed sends a notification when payment processing fails.
 	SendPaymentFailed(ctx context.Context, data BookingNotificationData) error
+
+	// SendPaymentDisputeAlert notifies admin/staff that a client has disputed a charge
+	// with their bank, linked to the specific booking. No automatic action (refund or
+	// cancellation) is taken — this only makes the dispute visible for manual response.
+	SendPaymentDisputeAlert(ctx context.Context, data BookingNotificationData) error
 }
 
 // BookingNotificationData contains information needed to send booking notifications.
@@ -69,4 +74,7 @@ type BookingNotificationData struct {
 	// Cancellation details (only for cancellation notifications)
 	CancellationReason string
 	CancelledAt        *time.Time
+
+	// Dispute details (only for dispute alert notifications)
+	DisputeReason string
 }

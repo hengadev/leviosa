@@ -118,6 +118,9 @@ func (m *mockReminderNotification) SendPaymentConfirmation(_ context.Context, _ 
 func (m *mockReminderNotification) SendPaymentFailed(_ context.Context, _ ports.BookingNotificationData) error {
 	return nil
 }
+func (m *mockReminderNotification) SendPaymentDisputeAlert(_ context.Context, _ ports.BookingNotificationData) error {
+	return nil
+}
 
 var _ ports.BookingNotificationService = (*mockReminderNotification)(nil)
 

@@ -22,4 +22,8 @@ type EmailService interface {
 
 	// SendContactFormEmail notifies staff of a public contact-form submission.
 	SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error
+
+	// SendPaymentDisputeAlertEmail notifies admin/staff of a Stripe charge dispute
+	// (chargeback) linked to a booking.
+	SendPaymentDisputeAlertEmail(ctx context.Context, req domain.PaymentDisputeAlertRequest) error
 }

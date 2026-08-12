@@ -117,6 +117,17 @@ type ContactFormRequest struct {
 	SubmittedAt  string `json:"submitted_at"`
 }
 
+// Payment Dispute Alert Email (admin-facing)
+type PaymentDisputeAlertRequest struct {
+	ToEmail       string `json:"to_email"`
+	BookingID     string `json:"booking_id"`
+	ClientName    string `json:"client_name"`
+	ProductName   string `json:"product_name"`
+	Amount        string `json:"amount"`
+	DisputeReason string `json:"dispute_reason"`
+	FromEmail     string `json:"from_email"`
+}
+
 // EmailRequest is the generic email structure used by SMTP client
 type EmailRequest struct {
 	To         string

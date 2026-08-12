@@ -17,6 +17,7 @@ type SpyNotificationService struct {
 	PaymentFailed         []bookingPorts.BookingNotificationData
 	BookingCancellations  []bookingPorts.BookingNotificationData
 	BookingReminders      []bookingPorts.BookingNotificationData
+	DisputeAlerts         []bookingPorts.BookingNotificationData
 }
 
 func NewSpyNotificationService() *SpyNotificationService {
@@ -55,6 +56,13 @@ func (s *SpyNotificationService) SendBookingReminder(ctx context.Context, data b
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.BookingReminders = append(s.BookingReminders, data)
+	return nil
+}
+
+func (s *SpyNotificationService) SendPaymentDisputeAlert(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.DisputeAlerts = append(s.DisputeAlerts, data)
 	return nil
 }
 
