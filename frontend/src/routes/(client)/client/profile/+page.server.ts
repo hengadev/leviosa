@@ -17,19 +17,30 @@ interface ThreadSummary {
 const DATA_REQUEST_MESSAGE =
 	"Bonjour,\n\nJe souhaite exercer mon droit d'accès à mes données personnelles (RGPD, article 15) et en recevoir une copie. Merci de me confirmer la réception de cette demande.\n\n— Demande envoyée automatiquement depuis mon espace client.";
 
+const FALLBACK_COMPANY_EMAIL = 'contact@leviosa.care';
+
 export const load: PageServerLoad = async ({ fetch, locals }) => {
 	if (env.USE_MOCK_DATA === 'true') {
-		return { user: locals.user ?? null };
+		return { user: locals.user ?? null, companyEmail: FALLBACK_COMPANY_EMAIL };
 	}
+
+	// Best-effort: this is a public settings endpoint (see
+	// docs/prd/legal-compliance-gdpr-foundations.md). Used as the "no active
+	// conversation" fallback contact for the RGPD data-request below — if it
+	// fails, the hardcoded fallback keeps that path from breaking.
+	const companyEmail = await fetch(`${env.API_URL}/settings/email`)
+		.then((res) => (res.ok ? res.json() : null))
+		.then((body) => body?.email ?? FALLBACK_COMPANY_EMAIL)
+		.catch(() => FALLBACK_COMPANY_EMAIL);
 
 	const res = await fetch(`${env.API_URL}/users/me`);
 
 	if (!res.ok) {
-		return { user: null };
+		return { user: null, companyEmail };
 	}
 
 	const user = await res.json();
-	return { user };
+	return { user, companyEmail };
 };
 
 export const actions: Actions = {
