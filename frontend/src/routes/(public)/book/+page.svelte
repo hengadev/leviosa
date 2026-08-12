@@ -54,6 +54,19 @@
     let guestPhone = $state("");
     let guestFormErrors = $state<Record<string, string>>({});
 
+    // Waitlist — shown when the selected practitioner has no available slot
+    // (issue 014). Reuses the guest contact fields above when the visitor
+    // isn't logged in, same identity rule as booking (ADR-0008).
+    function isoDateInDays(days: number): string {
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        return d.toISOString().slice(0, 10);
+    }
+    let showWaitlistForm = $state(false);
+    let waitlistRangeStart = $state(isoDateInDays(1));
+    let waitlistRangeEnd = $state(isoDateInDays(30));
+    let waitlistNotes = $state("");
+
     // --- Derived: which step to show ---
     let step = $derived.by(() => {
         if (!selectedCategoryId) return 1;
@@ -422,7 +435,14 @@
                     {#if loadingSlots}
                         <p class="text-muted-foreground">Chargement des disponibilités...</p>
                     {:else if availabilities.length === 0}
-                        <p class="text-muted-foreground">Aucun créneau disponible pour ce praticien</p>
+                        <p class="text-muted-foreground mb-4">Aucun créneau disponible pour ce praticien actuellement</p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onclick={() => (showWaitlistForm = !showWaitlistForm)}
+                        >
+                            {showWaitlistForm ? "Masquer" : "Rejoindre la liste d'attente"}
+                        </Button>
                     {:else}
                         <div class="grid gap-6">
                             {#each Object.entries(availabilitiesByDay) as [day, slots]}
@@ -580,5 +600,137 @@
                 </section>
             {/if}
         </form>
+
+        <!-- Waitlist join — shown when the selected practitioner has no
+             available slot for the chosen soin (issue 014). A separate,
+             sibling <form> since it can't nest inside the booking form above. -->
+        {#if showWaitlistForm && selectedPartnerId && !loadingSlots && availabilities.length === 0}
+            <section class="bg-white rounded-3xl p-6 md:p-8 mt-8" use:reveal={{ preset: "fade-up", delay: 100 }}>
+                <h3 class="text-xl font-bold text-foreground mb-2">Rejoindre la liste d'attente</h3>
+                <p class="text-sm text-foreground-alt mb-6">
+                    Indiquez la période qui vous convient — nous vous préviendrons dès qu'un créneau se libère{selectedProductName ? ` pour ${selectedProductName}` : ""}.
+                </p>
+
+                {#if form?.waitlistSuccess}
+                    <div class="bg-green-50 border border-green-200 text-green-700 rounded-2xl p-4">
+                        Vous êtes inscrit·e sur la liste d'attente. Nous vous contacterons dès qu'un créneau se libère.
+                    </div>
+                {:else}
+                    {#if form?.waitlistErrors?._form}
+                        <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 mb-6">
+                            {form.waitlistErrors._form}
+                        </div>
+                    {/if}
+                    <form method="POST" action="/book?/joinWaitlist" class="grid gap-4">
+                        <input type="hidden" name="product_id" value={selectedProductId ?? ""} />
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="desired_range_start" class="block text-sm font-medium text-foreground-alt mb-1">À partir du</label>
+                                <input
+                                    id="desired_range_start"
+                                    name="desired_range_start"
+                                    type="date"
+                                    bind:value={waitlistRangeStart}
+                                    required
+                                    class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label for="desired_range_end" class="block text-sm font-medium text-foreground-alt mb-1">Jusqu'au</label>
+                                <input
+                                    id="desired_range_end"
+                                    name="desired_range_end"
+                                    type="date"
+                                    bind:value={waitlistRangeEnd}
+                                    required
+                                    class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        {#if !data.user}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="wl_guest_first_name" class="block text-sm font-medium text-foreground-alt mb-1">Prénom *</label>
+                                    <input
+                                        id="wl_guest_first_name"
+                                        name="guest_first_name"
+                                        type="text"
+                                        bind:value={guestFirstName}
+                                        required
+                                        class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                        placeholder="Jean"
+                                    />
+                                    {#if form?.waitlistErrors?.guest_first_name}
+                                        <p class="text-red-500 text-sm mt-1">{form.waitlistErrors.guest_first_name}</p>
+                                    {/if}
+                                </div>
+                                <div>
+                                    <label for="wl_guest_last_name" class="block text-sm font-medium text-foreground-alt mb-1">Nom *</label>
+                                    <input
+                                        id="wl_guest_last_name"
+                                        name="guest_last_name"
+                                        type="text"
+                                        bind:value={guestLastName}
+                                        required
+                                        class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                        placeholder="Dupont"
+                                    />
+                                    {#if form?.waitlistErrors?.guest_last_name}
+                                        <p class="text-red-500 text-sm mt-1">{form.waitlistErrors.guest_last_name}</p>
+                                    {/if}
+                                </div>
+                                <div>
+                                    <label for="wl_guest_email" class="block text-sm font-medium text-foreground-alt mb-1">Email</label>
+                                    <input
+                                        id="wl_guest_email"
+                                        name="guest_email"
+                                        type="email"
+                                        bind:value={guestEmail}
+                                        class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                        placeholder="jean@exemple.com"
+                                    />
+                                    {#if form?.waitlistErrors?.guest_email}
+                                        <p class="text-red-500 text-sm mt-1">{form.waitlistErrors.guest_email}</p>
+                                    {/if}
+                                </div>
+                                <div>
+                                    <label for="wl_guest_phone" class="block text-sm font-medium text-foreground-alt mb-1">Téléphone</label>
+                                    <input
+                                        id="wl_guest_phone"
+                                        name="guest_phone"
+                                        type="tel"
+                                        bind:value={guestPhone}
+                                        class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                        placeholder="+33 6 12 34 56 78"
+                                    />
+                                    {#if form?.waitlistErrors?.guest_phone}
+                                        <p class="text-red-500 text-sm mt-1">{form.waitlistErrors.guest_phone}</p>
+                                    {/if}
+                                </div>
+                            </div>
+                            <p class="text-sm text-muted-foreground">* Au moins un moyen de contact (email ou téléphone) est requis</p>
+                        {/if}
+
+                        <div>
+                            <label for="wl_notes" class="block text-sm font-medium text-foreground-alt mb-1">Notes (optionnel)</label>
+                            <input
+                                id="wl_notes"
+                                name="notes"
+                                type="text"
+                                bind:value={waitlistNotes}
+                                class="w-full px-4 py-3 border border-border-input-hover rounded-xl focus:ring-2 focus:ring-foreground focus:ring-offset-2 focus:outline-none"
+                                placeholder="Précisions sur vos disponibilités"
+                            />
+                        </div>
+
+                        <Button type="submit" class="w-full text-white px-8 py-4 rounded-2xl font-semibold cursor-pointer">
+                            S'inscrire sur la liste d'attente
+                        </Button>
+                    </form>
+                {/if}
+            </section>
+        {/if}
     </div>
 </div>
