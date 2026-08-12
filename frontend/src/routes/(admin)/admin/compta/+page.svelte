@@ -1,6 +1,14 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { DollarSign, ArrowDown, TrendingUp, CreditCard, Calendar, Download } from '@lucide/svelte';
+	import {
+		DollarSign,
+		ArrowDown,
+		TrendingUp,
+		CreditCard,
+		Calendar,
+		Download,
+		AlertTriangle
+	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
 	let { data }: PageProps = $props();
@@ -61,6 +69,8 @@
 				return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
 			case 'refunded':
 				return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
+			case 'disputed':
+				return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
 			default:
 				return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 		}
@@ -70,6 +80,7 @@
 		switch (status) {
 			case 'paid': return 'Payé';
 			case 'refunded': return 'Remboursé';
+			case 'disputed': return 'Contesté';
 			default: return status;
 		}
 	}
@@ -128,7 +139,7 @@
 	</div>
 
 	<!-- Summary KPIs -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 		<!-- Gross Revenue -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<div class="flex items-center justify-between mb-4">
@@ -153,6 +164,19 @@
 				-{formatCents(data.summary.refundsInCents)}
 			</div>
 			<p class="text-sm text-muted-foreground">Remboursements</p>
+		</div>
+
+		<!-- Disputed (open Stripe chargebacks — no automatic refund/cancellation, manual response required) -->
+		<div class="bg-card rounded-lg border border-border p-6">
+			<div class="flex items-center justify-between mb-4">
+				<div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+					<AlertTriangle size={24} class="text-red-600 dark:text-red-400" />
+				</div>
+			</div>
+			<div class="text-3xl font-bold text-foreground mb-1">
+				{formatCents(data.summary.disputedInCents)}
+			</div>
+			<p class="text-sm text-muted-foreground">En litige</p>
 		</div>
 
 		<!-- Net Revenue -->
