@@ -116,3 +116,8 @@ Leviosa is a **modular monolith**: one deployed binary, five internal services w
 | `production` | Public users | Real cookies, production KEK and pepper |
 
 Cookie names, KEKs and peppers differ per environment to prevent cross-contamination.
+
+| Term | Definition |
+|------|------------|
+| **Release** | One commit SHA on `main`, shipped as a backend image and a frontend image built from it. Both apps always run the same release. |
+| **Promote** | Shipping to production the exact release staging is currently running. A rollback is promoting an older release. |
