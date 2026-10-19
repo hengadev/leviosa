@@ -27,7 +27,7 @@ CLIENT_IP_HEADER ?= x-client-ip
 BACKEND_PORT ?= 3500
 
 .PHONY: help \
-		local-dev local-start local-stop local-restart \
+		local-dev local-start local-stop local-restart stripe-listen \
 		image-build-front image-build-back image-build \
 		image-build-staging-front image-build-staging-back image-build-staging \
 		image-push-front image-push-back image-push \
@@ -54,6 +54,7 @@ help:
 	@echo "  make local-start      - Start the whole app in Docker (prod-like build, no hot reload)"
 	@echo "  make local-stop       - Stop the local Docker stack"
 	@echo "  make local-restart    - Restart the local Docker stack"
+	@echo "  make stripe-listen    - Forward Stripe test-mode webhooks to the local backend (run beside local-dev)"
 	@echo ""
 	@echo "Docker Images (build locally):"
 	@echo "  make image-build      - Build frontend and backend images (prod)"
@@ -126,6 +127,15 @@ local-dev:
 	@echo "Starting frontend and backend in dev mode..."
 	@cd frontend && pnpm run dev &
 	@cd backend && docker compose up --build
+
+# Forward Stripe test-mode webhooks to the local backend (run alongside local-dev).
+# Prints a whsec_... signing secret on startup — put it in backend/development.env
+# as STRIPE_WEBHOOK_SECRET (booking/payment events) and STRIPE_CONNECT_WEBHOOK_SECRET
+# (Connect account events), then restart the backend container to pick it up.
+stripe-listen:
+	stripe listen \
+		--forward-to localhost:3500/webhooks/stripe \
+		--forward-connect-to localhost:3500/webhooks/stripe/connect
 
 local-start:
 	@if [ ! -f .env ]; then \
