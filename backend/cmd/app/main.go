@@ -5,87 +5,43 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
-	"github.com/Leviosa-care/leviosa/backend/internal/app"
+	"slices"
+	"strings"
 )
+
+// mode is one way of running the binary: `leviosa [mode] [args...]`. Each mode lives in
+// its own file in this package and is registered in modes below.
+type mode func(ctx context.Context, args []string) error
+
+// modes maps each run mode name to its entry point. With no argument the binary serves.
+var modes = map[string]mode{
+	"serve": serve,
+}
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx); err != nil {
+	if err := dispatch(ctx, os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context) error {
-	// Setup logger
-	logger := setupLogger()
-
-	// Load configuration
-	cfg, err := app.LoadConfig(ctx)
-	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+func dispatch(ctx context.Context, args []string) error {
+	name := "serve"
+	if len(args) > 0 {
+		name, args = args[0], args[1:]
 	}
 
-	logger.InfoContext(ctx, "Starting Leviosa modular monolith",
-		"environment", cfg.Environment,
-		"port", cfg.ServerPort,
-	)
-
-	// Create dependency injection container
-	container, err := app.NewContainer(ctx, cfg)
-	if err != nil {
-		return fmt.Errorf("create container: %w", err)
-	}
-
-	// Create HTTP server
-	server := app.NewServer(container, logger)
-
-	// Start background workers
-	reminderCtx, reminderCancel := context.WithCancel(context.Background())
-	go container.ReminderScheduler.Start(reminderCtx)
-
-	// Setup graceful shutdown
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
-	// Start server in goroutine
-	serverErrCh := make(chan error, 1)
-	go func() {
-		if err := server.Start(ctx); err != nil {
-			serverErrCh <- err
+	run, ok := modes[name]
+	if !ok {
+		names := make([]string, 0, len(modes))
+		for n := range modes {
+			names = append(names, n)
 		}
-	}()
-
-	// Wait for shutdown signal or server error
-	select {
-	case <-ctx.Done():
-		logger.InfoContext(ctx, "Shutdown signal received")
-
-		// Stop background workers
-		reminderCancel()
-		container.ReminderScheduler.Stop()
-
-		// Give server 30 seconds to shutdown gracefully
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer shutdownCancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			return fmt.Errorf("shutdown server: %w", err)
-		}
-
-		logger.InfoContext(ctx, "Server stopped gracefully")
-		return nil
-
-	case err := <-serverErrCh:
-		// Stop background workers on server error
-		reminderCancel()
-		container.ReminderScheduler.Stop()
-		return fmt.Errorf("server error: %w", err)
+		slices.Sort(names)
+		return fmt.Errorf("unknown mode %q (available: %s)", name, strings.Join(names, ", "))
 	}
+	return run(ctx, args)
 }
 
 func setupLogger() *slog.Logger {

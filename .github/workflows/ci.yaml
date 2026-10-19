@@ -71,7 +71,7 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOOS: linux
-        run: go build -ldflags="-s" -v -o leviosa ./cmd/app/main.go
+        run: go build -ldflags="-s" -v -o leviosa ./cmd/app
 
       - name: 🧪 Run unit tests
         working-directory: ./backend
