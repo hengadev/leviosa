@@ -119,6 +119,10 @@ local-dev:
 		echo "No backend/development.env found — copying backend/example.env (edit it to add real Stripe/Twilio/SMTP creds if needed)."; \
 		cp backend/example.env backend/development.env; \
 	fi
+	@if [ ! -f frontend/.env ]; then \
+		echo "No frontend/.env found — copying frontend/.env.example (defaults point at the local backend; set USE_MOCK_DATA=true to demo the UI without it)."; \
+		cp frontend/.env.example frontend/.env; \
+	fi
 	@echo "Starting frontend and backend in dev mode..."
 	@cd frontend && pnpm run dev &
 	@cd backend && docker compose up --build
