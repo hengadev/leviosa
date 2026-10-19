@@ -62,7 +62,8 @@ These are the canonical terms used in code, documentation, and conversation. Use
 |------|------------|
 | **Session** | An authenticated user's server-side state, stored in Redis and referenced by a secure cookie. |
 | **OTP** | One-time password used for email/phone verification steps. Cached in Redis with a TTL. |
-| **Pepper** | A per-service encryption secret stored in HashiCorp Vault. Used by `encx` to encrypt sensitive fields at rest. |
+| **Pepper** | A 32-byte secret, one per environment, used by `encx` for searchable hashes and password hashing. Kept in Infisical. Losing it invalidates every password. |
+| **KEK** | Key-encryption key: the master key, one per environment, held in AWS KMS, that wraps the per-record keys `encx` uses to encrypt fields. Never leaves KMS. |
 | **encx** | The internal encryption library. Fields tagged `encx:"encrypt"` are transparently encrypted before persistence. |
 | **Contract** | A typed message struct exchanged over RabbitMQ between services. Defined in `internal/common/messaging/contracts/`. |
 
@@ -111,7 +112,7 @@ Leviosa is a **modular monolith**: one deployed binary, five internal services w
 | Environment | Purpose | Auth |
 |-------------|---------|------|
 | `development` | Local dev, mock user, mock data | `USE_MOCK_DATA=true` |
-| `staging` | Integration testing, real services, password-protected | Real cookies, staging Vault |
-| `production` | Public users | Real cookies, production Vault |
+| `staging` | Integration testing, real services, password-protected | Real cookies, staging KEK and pepper |
+| `production` | Public users | Real cookies, production KEK and pepper |
 
-Cookie names and Vault paths differ per environment to prevent cross-contamination.
+Cookie names, KEKs and peppers differ per environment to prevent cross-contamination.
