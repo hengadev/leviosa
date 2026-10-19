@@ -1,6 +1,6 @@
 # ADR-0003: Field-Level Encryption at Rest with encx and HashiCorp Vault
 
-**Status**: Accepted  
+**Status**: Accepted — key management superseded by ADR-0015  
 **Date**: 2025-07
 
 ---
