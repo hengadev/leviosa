@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/app"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption/canary"
 )
 
 // serve runs the HTTP server and background workers until SIGINT/SIGTERM. It is the
@@ -36,6 +37,17 @@ func serve(ctx context.Context, args []string) error {
 	container, err := app.NewContainer(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("create container: %w", err)
+	}
+
+	// Write the pepper canary if this database has none yet; an existing one is
+	// never touched. The verify mode checks a database's KMS key and pepper
+	// against it (see backend/CLAUDE.md).
+	canaryWritten, err := canary.Ensure(ctx, container.DB, container.Crypto)
+	if err != nil {
+		return fmt.Errorf("ensure pepper canary: %w", err)
+	}
+	if canaryWritten {
+		logger.InfoContext(ctx, "pepper canary written", "table", canary.Table)
 	}
 
 	// Create HTTP server
