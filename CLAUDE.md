@@ -39,8 +39,7 @@ Run from `/backend` (see `make test-help` for the full list):
 ├── frontend/           # SvelteKit 5 application
 ├── backend/           # Go modular monolith
 ├── config/            # Infrastructure configuration (Caddy, Loki, Vault, etc.)
-├── infra/             # Terraform and Ansible deployment scripts
-└── compose.yaml       # Production docker-compose configuration
+└── infra/             # Terraform and Ansible deployment scripts
 ```
 
 ### Frontend Architecture (SvelteKit 5)
@@ -134,7 +133,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 - **Development**: Uses `.env` files and mock data
 - **Production**: Environment variables with real services
 - **Required Services**: PostgreSQL, Redis, RabbitMQ, AWS S3, Vault
-- **Docker**: Full containerized setup available via compose.yaml
+- **Docker**: Full containerized setup available via `local.compose.yaml` (`make local-start`)
 
 ### Testing Approach
 - **Backend**: Unit tests alongside source files, integration tests in `test/integration/`
