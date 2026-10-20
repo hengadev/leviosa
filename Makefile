@@ -33,6 +33,7 @@ help:
 	@echo "Local deploy harnesses (Docker / shell only, nothing remote):"
 	@echo "  make deploy-harness   - Drive infra/compose/deploy against the real compose file"
 	@echo "  make deploy-gate-test - Test the deploy gate, root runner, sudoers rule and CI keys"
+	@echo "  make infisical-agent-test - Test the Infisical Agent role's templates, recreate behaviour and no_log"
 	@echo "  make promote-preflight-test - Test Promote's preflight (which SHA ships, its checks)"
 	@echo ""
 	@echo "Server setup (Ansible; needs this computer's key in the keys file and 'infisical login'):"
@@ -127,6 +128,15 @@ deploy-harness:
 .PHONY: deploy-gate-test
 deploy-gate-test:
 	infra/ansible/roles/deploy_gate/tests/run-tests.sh
+
+# Infisical Agent role tests (roles/infisical_agent): render the role's
+# templates with its own defaults and check the config/unit/helper (including
+# the helper's recreate behaviour against a stub docker), then prove the
+# leviosa-vps credential never reaches Ansible output. No root, no server, no
+# Infisical, no network. See infra/ansible/roles/infisical_agent/README.md.
+.PHONY: infisical-agent-test
+infisical-agent-test:
+	infra/ansible/roles/infisical_agent/tests/run-tests.sh
 
 # Promote's preflight (.github/workflows/promote.yaml): which SHA ships and the
 # checks before the deploy, against a fake staging /healthz and a fake Docker
