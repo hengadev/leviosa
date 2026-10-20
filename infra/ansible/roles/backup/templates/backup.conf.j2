@@ -1,5 +1,6 @@
 # {{ ansible_managed }}
-# shellcheck shell=bash
+# shellcheck shell=bash disable=SC2034
+# ^ read by the scripts that source this file.
 #
 # roles/backup (issue 028): what leviosa-backup, leviosa-snapshot and
 # leviosa-restore-test read. Paths and names only — no secret: the
