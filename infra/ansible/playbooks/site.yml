@@ -192,7 +192,8 @@
       tags: ['infisical', 'agent']
       when: leviosa_infisical_credential_present
 
-    # Still to come, in this order:
+    # Still to come, in this order (caddy slots in above infisical_agent,
+    # which its rendered caddy.env feeds):
     #   caddy            the Caddyfile into the prod stack root       (issue 026)
     #   shared_services  Postgres, RabbitMQ and Caddy up, staging
     #                    database role, RabbitMQ vhosts and users     (issue 026)
