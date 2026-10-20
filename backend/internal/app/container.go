@@ -113,7 +113,6 @@ import (
 	hashicorpkeys "github.com/hengadev/encx/providers/keys/hashicorp"
 	hashicorpsecrets "github.com/hengadev/encx/providers/secrets/hashicorp"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pressly/goose/v3"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
@@ -220,9 +219,11 @@ func NewContainer(ctx context.Context, cfg *Config) (*Container, error) {
 		return nil, fmt.Errorf("setup infrastructure: %w", err)
 	}
 
-	// Run migrations
-	if err := c.runMigrations(ctx); err != nil {
-		return nil, fmt.Errorf("run migrations: %w", err)
+	// Check the schema version: deploys run the migrate mode before the new
+	// container starts (see backend/CLAUDE.md's migration rule), so serve
+	// never migrates itself — it only refuses an out-of-date schema.
+	if err := c.checkSchemaVersion(ctx); err != nil {
+		return nil, fmt.Errorf("check schema version: %w", err)
 	}
 
 	// Setup repositories
@@ -330,23 +331,17 @@ func (c *Container) setupInfrastructure(ctx context.Context) error {
 	return nil
 }
 
-func (c *Container) runMigrations(ctx context.Context) error {
-	goose.SetBaseFS(migrations.FS)
-	if err := goose.SetDialect("pgx"); err != nil {
-		return fmt.Errorf("set goose dialect: %w", err)
-	}
-
-	gooseDB, err := sql.Open("pgx", c.DB.Config().ConnString())
+// checkSchemaVersion verifies the database is not older than the embedded
+// migrations. A newer version is accepted, so rolling back to an older
+// release keeps serving.
+func (c *Container) checkSchemaVersion(ctx context.Context) error {
+	db, err := sql.Open("pgx", c.DB.Config().ConnString())
 	if err != nil {
-		return fmt.Errorf("open sql.DB for migrations: %w", err)
+		return fmt.Errorf("open sql.DB for schema check: %w", err)
 	}
-	defer gooseDB.Close()
+	defer db.Close()
 
-	if err := goose.Up(gooseDB, "."); err != nil {
-		return fmt.Errorf("run migrations: %w", err)
-	}
-
-	return nil
+	return migrations.EnsureCurrent(ctx, db)
 }
 
 func (c *Container) setupRepositories(ctx context.Context) error {

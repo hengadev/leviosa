@@ -116,6 +116,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 ### Database Migrations
 - Convention: `{timestamp}_{service}_{action}_{entity_or_scope}.sql`
 - Managed through Go embed system
+- Applied only by the backend's `migrate` run mode, never on `serve` startup; every migration must work with the previous release (see the migration rule in `backend/CLAUDE.md`)
 
 ### Error Handling
 - Centralized error definitions in `internal/common/errs` package

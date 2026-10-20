@@ -103,7 +103,7 @@ func TestGetProductReviews(t *testing.T) {
 		fixture := newCompletedBooking(t, ctx, client)
 		createReviewDirect(t, ctx, fixture.BookingID, fixture.ClientID, fixture.PartnerID, fixture.ProductID, 4, "Good", false)
 
-		resp, err := client.Get(testServerURL + "/products/reviews/" + fixture.ProductID.String())
+		resp, err := client.Get(testServerURL + "/products/" + fixture.ProductID.String() + "/reviews")
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
