@@ -27,6 +27,7 @@ help:
 	@echo "Local deploy harnesses (Docker / shell only, nothing remote):"
 	@echo "  make deploy-harness   - Drive infra/compose/deploy against the real compose file"
 	@echo "  make deploy-gate-test - Test the deploy gate, root runner, sudoers rule and CI keys"
+	@echo "  make promote-preflight-test - Test Promote's preflight (which SHA ships, its checks)"
 	@echo ""
 	@echo "Server setup (Ansible; needs this computer's key in the keys file and 'infisical login'):"
 	@echo "  make setup            - Set the VPS up (run twice: the second run must report changed=0)"
@@ -43,7 +44,7 @@ help:
 	@echo "  make infra-destroy    - Destroy all infrastructure"
 	@echo ""
 	@echo "Releases are not make targets: a push to main deploys staging through CI,"
-	@echo "and production is promoted from staging (infra/compose/README.md)."
+	@echo "and production is promoted from staging (docs/deployment/promote.md)."
 
 # ===========================================
 # Local Development
