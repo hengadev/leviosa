@@ -20,7 +20,7 @@ func (h *handler) GetProductReviews(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	productID, err := uuid.Parse(r.PathValue("productId"))
+	productID, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		httpx.RespondWithError(w, errs.NewInvalidValueErr("invalid product ID format"), http.StatusBadRequest)
 		return
