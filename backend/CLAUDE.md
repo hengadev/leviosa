@@ -8,6 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `docker compose up --build` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ, and LocalStack for S3 and KMS — its init container creates the bucket and the encx KEK alias); builds from `local.Dockerfile`, which runs `air` for live reload — the source tree is bind-mounted, so edits rebuild and restart the server automatically. Needs `development.env` (copy from `example.env`; `make local-dev` from the repo root does this for you).
 - `go run ./cmd/app migrate` - Apply pending database migrations (`serve` never migrates; see Database Migrations below)
 - `go run ./cmd/app` - Run the backend binary (`serve` mode) directly against already-running, migrated dependencies
+- `go run ./cmd/app verify` - Read-only check that the database is readable with the configured KMS key and pepper (see Pepper Canary below)
 - `go run ./cmd/seed` - Seed data (configured via `cmd/seed/seed_data.example.json`)
 
 ### Testing
@@ -72,6 +73,9 @@ Each domain package follows the ports & adapters pattern:
 - Add tables, and add columns as nullable or with a default. Don't add a constraint (`NOT NULL`, `CHECK`, unique) that the previous release's writes would violate.
 - Rename or drop in steps: add the new column/table, ship the code that uses it and stops using the old one, and only drop the old one in a later release, once no release you might roll back to reads it.
 - Never edit a migration that has already been applied anywhere; write a new one.
+
+### Pepper Canary
+`encryption.canary` holds one row: a fixed public constant encrypted through encx (DEK wrapped by the KMS KEK) and its argon2id `HashSecure`, which mixes in the pepper. encx's searchable hashes (`email_hash`, ...) are plain SHA-256 without the pepper, so the canary is the only record that proves a database is readable with a given pepper. `serve` writes it at startup when it is absent and never updates it (`internal/common/encryption/canary`); the `verify` run mode decrypts one `auth.users` record and checks the canary inside a read-only transaction, exiting 3 (nothing to verify), 4 (canary missing: start `serve` once), 5 (decryption failed: wrong KMS key) or 6 (canary mismatch: wrong pepper). **Never delete or rewrite the canary row**: one rewritten under another pepper would vouch for the wrong pepper.
 
 ### Testing Structure
 - **Unit tests**: Alongside source files (`*_test.go`)
