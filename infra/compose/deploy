@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# deploy <stack> <sha> — the single release entry point for Leviosa: staging
+# deploys, promotions and rollbacks all run it (a rollback is just a deploy
+# of an older SHA). This version implements the `prod` stack; `staging` is a
+# second branch of the `case` below (issue 019).
+#
+# On the server the root runner (issue 022) extracts this script and the
+# stack's compose file from the deployed commit, installs the compose file as
+# <stack root>/docker-compose.yml and runs this script as root with an empty
+# environment (the Agent-rendered env files are root-only 0600). CI asks for
+# it through the deploy gate:  ssh <deploy-user>@<host> 'deploy prod <sha>'
+#
+# Sequence — each step gates the next; a failure exits non-zero at once:
+#   1. pull leviosa-backend:<sha> and leviosa-frontend:<sha>, then re-point
+#      the stack's local pins (:prod) at them
+#   2. ensure Postgres, RabbitMQ and Redis are up (no-op when running; never
+#      recreated here)
+#   3. `migrate` one-off — on failure the pins move back and the running
+#      containers keep serving
+#   4. `admin` one-off (bootstrap-admin; idempotent, so it runs every time)
+#   5. recreate the backend, then the frontend (never their dependencies)
+#   6. wait until both are healthy and /healthz reports <sha> for both apps
+#
+# Knobs (production defaults; the harness overrides them, the root runner
+# never sets them):
+#   LEVIOSA_PROD_ROOT       stack root                 /opt/leviosa
+#   LEVIOSA_BACKEND_REPO    backend image repository   henga/leviosa-backend
+#   LEVIOSA_FRONTEND_REPO   frontend image repository  henga/leviosa-frontend
+#   LEVIOSA_NETWORK         external network name      leviosa_network
+#   LEVIOSA_HEALTH_TIMEOUT  seconds per health wait    180
+#   LEVIOSA_SKIP_PULL=1     use images already present locally instead of
+#                           pulling — local harness ONLY
+set -euo pipefail
+
+log() { printf 'deploy: %s\n' "$*"; }
+die() {
+	printf 'deploy: ERROR: %s\n' "$*" >&2
+	exit 1
+}
+usage() {
+	echo "usage: deploy prod <sha>" >&2
+	exit 2
+}
+
+[ $# -eq 2 ] || usage
+stack=$1
+sha=$2
+# A commit SHA, never a tag name: deploying "prod" would pin the stack to
+# itself. The deploy gate (issue 022) only lets full 40-hex SHAs through.
+[[ $sha =~ ^[0-9a-f]{7,40}$ ]] || die "invalid sha '$sha' (expected 7 to 40 lowercase hex characters)"
+
+# ── stack definitions ────────────────────────────────────────────────────────
+case $stack in
+	prod)
+		root=${LEVIOSA_PROD_ROOT:-/opt/leviosa}
+		pin_tag=prod
+		backend_service=backend
+		frontend_service=frontend
+		migrate_service=migrate
+		admin_service=admin
+		# Step 2's services: production owns the shared Postgres and RabbitMQ.
+		dependencies=(postgres rabbitmq redis)
+		env_files=(backend frontend admin postgres rabbitmq redis caddy)
+		;;
+	*)
+		die "unknown stack '$stack' (expected: prod)"
+		;;
+esac
+
+backend_repo=${LEVIOSA_BACKEND_REPO:-henga/leviosa-backend}
+frontend_repo=${LEVIOSA_FRONTEND_REPO:-henga/leviosa-frontend}
+network=${LEVIOSA_NETWORK:-leviosa_network}
+health_timeout=${LEVIOSA_HEALTH_TIMEOUT:-180}
+[[ $health_timeout =~ ^[1-9][0-9]*$ ]] || die "LEVIOSA_HEALTH_TIMEOUT must be a positive number of seconds"
+
+backend_image=$backend_repo:$sha
+frontend_image=$frontend_repo:$sha
+backend_pin=$backend_repo:$pin_tag
+frontend_pin=$frontend_repo:$pin_tag
+
+compose=(docker compose --project-directory "$root")
+
+# ── preflight: the layout this deploy drives must exist ─────────────────────
+[ -d "$root" ] || die "stack root $root missing (Ansible's app layout role creates it)"
+[ -f "$root/docker-compose.yml" ] ||
+	die "$root/docker-compose.yml missing (the root runner installs it from the deployed commit)"
+for f in "${env_files[@]}"; do
+	[ -f "$root/env/$f.env" ] ||
+		die "$root/env/$f.env missing (the Infisical Agent renders it)"
+done
+docker network inspect "$network" >/dev/null 2>&1 ||
+	die "docker network $network missing (Ansible's docker role creates it)"
+"${compose[@]}" config -q || die "$root/docker-compose.yml does not validate"
+
+# One deploy per stack at a time: two interleaved deploys would race on the pins.
+exec 9>"$root/.deploy.lock"
+flock -n 9 || die "another deploy of $stack is running"
+
+log "deploying $stack at $sha"
+
+# ── 1. pull both images and re-point the pins ────────────────────────────────
+if [ "${LEVIOSA_SKIP_PULL:-0}" = 1 ]; then
+	log "LEVIOSA_SKIP_PULL=1: using local $backend_image and $frontend_image"
+else
+	for image in "$backend_image" "$frontend_image"; do
+		log "pulling $image"
+		docker pull --quiet "$image" >/dev/null || die "pull of $image failed"
+	done
+fi
+for image in "$backend_image" "$frontend_image"; do
+	docker image inspect "$image" >/dev/null 2>&1 ||
+		die "$image is not present locally, deploy refused"
+done
+
+# Until the backend is recreated (step 5), any failure moves the pins back
+# to the images the running containers use: otherwise the next recreate (an
+# Agent config change) would start a release whose migration failed.
+previous_backend=$(docker image inspect --format '{{.Id}}' "$backend_pin" 2>/dev/null || true)
+previous_frontend=$(docker image inspect --format '{{.Id}}' "$frontend_pin" 2>/dev/null || true)
+restore_pin() { # $1 pin, $2 previous image id (empty on a first deploy)
+	if [ -n "$2" ]; then
+		docker tag "$2" "$1" && log "pin $1 restored to the previous image"
+	else
+		docker image rm "$1" >/dev/null 2>&1 || true
+	fi
+}
+restore_pins() {
+	restore_pin "$backend_pin" "$previous_backend"
+	restore_pin "$frontend_pin" "$previous_frontend"
+}
+trap restore_pins EXIT
+
+docker tag "$backend_image" "$backend_pin" || die "failed to pin $backend_pin"
+docker tag "$frontend_image" "$frontend_pin" || die "failed to pin $frontend_pin"
+log "pinned $backend_pin and $frontend_pin to $sha"
+
+# ── 2. shared dependencies ───────────────────────────────────────────────────
+# Starts what is missing or stopped (the first deploy, on empty data
+# directories) and leaves running containers alone: --no-recreate, so an
+# env file the Agent rewrote never restarts Postgres or RabbitMQ from here.
+log "ensuring ${dependencies[*]} are up"
+"${compose[@]}" up -d --no-recreate --wait --wait-timeout "$health_timeout" "${dependencies[@]}" ||
+	die "${dependencies[*]} did not become healthy"
+
+# ── 3. migrations ────────────────────────────────────────────────────────────
+log "running migrations ($migrate_service one-off)"
+"${compose[@]}" --profile oneoff run --rm --no-deps -T "$migrate_service" ||
+	die "migration failed: NOT recreating anything, the running containers keep serving"
+
+# ── 4. admin bootstrap ───────────────────────────────────────────────────────
+log "running the admin bootstrap ($admin_service one-off)"
+"${compose[@]}" --profile oneoff run --rm --no-deps -T "$admin_service" ||
+	die "admin bootstrap failed: NOT recreating anything, the running containers keep serving"
+
+# ── 5. recreate the backend, then the frontend ───────────────────────────────
+# From here on the new release is the stack's release, even if a check below
+# fails: recovering is deploying another SHA.
+trap - EXIT
+for service in "$backend_service" "$frontend_service"; do
+	log "recreating $service"
+	"${compose[@]}" up -d --no-deps --force-recreate --wait --wait-timeout "$health_timeout" "$service" ||
+		die "$service did not become healthy after recreate"
+done
+
+# ── 6. both apps report <sha> ────────────────────────────────────────────────
+# Asked from inside the frontend container (no service publishes a host
+# port): its /healthz reports its own SHA and the one the backend reports
+# over the network. Exit codes: 0 both match, 3 answered with another SHA,
+# anything else not answering (yet).
+healthz_check() {
+	"${compose[@]}" exec -T "$frontend_service" /nodejs/bin/node -e '
+		const want = process.argv[1];
+		fetch("http://127.0.0.1:3000/healthz", { signal: AbortSignal.timeout(5000) })
+			.then(async (res) => {
+				const text = await res.text();
+				console.log(`HTTP ${res.status} ${text}`);
+				if (!res.ok) process.exit(1);
+				const body = JSON.parse(text);
+				process.exit(body.frontend === want && body.backend === want ? 0 : 3);
+			})
+			.catch((err) => { console.log(`unreachable: ${err.message}`); process.exit(1); });
+	' "$sha"
+}
+
+log "waiting for /healthz to report $sha for both apps"
+waited=0
+while :; do
+	status=0
+	answer=$(healthz_check 2>&1) || status=$?
+	case $status in
+		0) break ;;
+		# Both containers are healthy and their SHAs are baked into the
+		# images: another SHA cannot fix itself by waiting.
+		3) die "/healthz does not report $sha for both apps ($answer): deploy failed" ;;
+	esac
+	[ "$waited" -lt "$health_timeout" ] ||
+		die "/healthz does not report $sha after ${waited}s ($answer): deploy failed"
+	sleep 2
+	waited=$((waited + 2))
+done
+
+log "OK: $stack is serving $sha (backend and frontend)"
