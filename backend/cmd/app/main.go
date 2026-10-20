@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -20,14 +21,25 @@ var modes = map[string]mode{
 	"serve":           serve,
 	"migrate":         migrate,
 	"bootstrap-admin": bootstrapAdmin,
+	"verify":          verify,
 }
 
 func main() {
 	ctx := context.Background()
 	if err := dispatch(ctx, os.Args[1:]); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(exitCode(err))
 	}
+}
+
+// exitCode is the process exit status for a mode's error: 1, unless the error
+// carries its own positive status (a mode with distinct failures, like verify).
+func exitCode(err error) int {
+	var coded interface{ ExitCode() int }
+	if errors.As(err, &coded) && coded.ExitCode() > 0 {
+		return coded.ExitCode()
+	}
+	return 1
 }
 
 func dispatch(ctx context.Context, args []string) error {
