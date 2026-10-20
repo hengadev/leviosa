@@ -1,0 +1,6 @@
+---
+# What a CI key in deploy_gate_ci_keys must look like: a single bare public
+# key ("<type> <base64> [comment]"), no options, no second line. A role var,
+# not a default: the check is not meant to be overridden.
+deploy_gate_ssh_key_types: 'ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh[.]com|sk-ecdsa-sha2-nistp256@openssh[.]com'
+deploy_gate_ssh_key_pattern: '^({{ deploy_gate_ssh_key_types }}) [A-Za-z0-9+/]+=*( [^\r\n]*)?$'

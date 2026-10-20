@@ -1,10 +1,9 @@
 ---
 # Docker Installation Tasks
-# - Remove old Docker packages
-# - Add Docker GPG key and repository
-# - Install Docker and Docker Compose plugin
-# - Configure Docker daemon
-# - Add users to docker group
+# - Docker Engine and the Compose plugin from Docker's apt repository
+# - Daemon hardening (daemon.json), metrics on localhost only
+# - Nobody in the docker group: it is root-equivalent
+# - The external network both compose stacks join
 
 - name: Ensure old versions of Docker are removed
   ansible.builtin.apt:
@@ -22,19 +21,26 @@
     state: directory
     mode: '0755'
 
+# The armored key, referenced by signed-by (no apt-key, removed from newer
+# apt). Downloaded once: get_url leaves an existing file alone.
 - name: Add Docker GPG key
-  ansible.builtin.apt_key:
+  ansible.builtin.get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    keyring: /etc/apt/keyrings/docker.gpg
-    state: present
+    dest: /etc/apt/keyrings/docker.asc
+    mode: '0644'
 
 - name: Add Docker repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    repo: >-
+      deb [arch={{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}
+      signed-by=/etc/apt/keyrings/docker.asc]
+      https://download.docker.com/linux/ubuntu {{ ansible_facts['distribution_release'] }} stable
     filename: docker
     state: present
     update_cache: true
 
+# python3-requests: community.docker's modules (the network below) talk to
+# the Docker API through it.
 - name: Install Docker packages
   ansible.builtin.apt:
     name:
@@ -43,15 +49,15 @@
       - containerd.io
       - docker-buildx-plugin
       - docker-compose-plugin
+      - python3-requests
     state: present
-    update_cache: true
 
 - name: Configure Docker daemon
   ansible.builtin.template:
     src: daemon.json.j2
     dest: /etc/docker/daemon.json
     mode: '0644'
-  notify: restart docker
+  notify: Restart docker
 
 - name: Ensure Docker is enabled and started
   ansible.builtin.service:
@@ -65,8 +71,57 @@
     state: started
     enabled: true
 
-- name: Add user to the 'docker' group
-  ansible.builtin.user:
-    name: "{{ deploy_user }}"
-    groups: docker
-    append: yes
+# Membership of `docker` is root: nobody gets it. Everything that runs
+# `docker compose` (the deploy runner, the Infisical Agent, the operator)
+# runs as root. roles/user keeps the deploy user out; this catches anyone
+# added by hand.
+- name: Read the docker group
+  ansible.builtin.getent:
+    database: group
+    key: docker
+    fail_key: false
+
+- name: Check that nobody is in the docker group
+  ansible.builtin.assert:
+    that:
+      - (ansible_facts.getent_group.docker[2] | default('', true)) | length == 0
+    fail_msg: >-
+      The docker group has members ({{ ansible_facts.getent_group.docker[2] }}):
+      it is root-equivalent. Remove them (gpasswd -d <user> docker) and re-run.
+    quiet: true
+  when: ansible_facts.getent_group.docker is not none
+
+# External to both compose files (infra/compose): created here, so a
+# `docker compose down` of either stack never removes the network the other
+# depends on. Every service name is a DNS alias on it.
+- name: Create the Docker network shared by both stacks
+  community.docker.docker_network:
+    name: "{{ docker_network_name }}"
+    state: present
+
+- name: Verify Docker installation
+  ansible.builtin.command:
+    cmd: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Verify Docker Compose installation
+  ansible.builtin.command:
+    cmd: docker compose version --short
+  register: docker_compose_version
+  changed_when: false
+
+- name: Display Docker versions and security info
+  ansible.builtin.debug:
+    msg:
+      - "==========================================="
+      - "Docker Installation Complete"
+      - "==========================================="
+      # 'or': in --check the verify commands above are skipped and their
+      # stdout exists but is empty.
+      - "Docker: {{ docker_version.stdout | default('', true) or 'skipped (check mode)' }}"
+      - "Docker Compose: {{ docker_compose_version.stdout | default('', true) or 'skipped (check mode)' }}"
+      - "Network: {{ docker_network_name }} (external, shared by both stacks)"
+      - "Metrics endpoint: {{ docker_daemon_options['metrics-addr'] | default('disabled') }}"
+      - "docker group: nobody (root-equivalent)"
+      - "==========================================="

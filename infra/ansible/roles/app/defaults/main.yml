@@ -1,21 +1,64 @@
 ---
-# Default variables for app role
+# roles/app defaults: the directory layout the compose stacks need on the
+# VPS. It MUST match infra/compose/README.md and the compose files' relative
+# paths:
+#
+#   /opt/leviosa/                         PROD (compose project `leviosa`)
+#   ├── docker-compose.yml                installed by the deploy runner
+#   ├── env/                              Agent-rendered, root 0700 / files 0600
+#   ├── data/postgres/                    postgres:17-alpine  (uid 70)
+#   ├── data/rabbitmq/                    rabbitmq:3-management-alpine (uid 100)
+#   ├── data/redis/                       redis:7-alpine      (uid 999)
+#   └── caddy/{etc,data,config,logs}/     Caddyfile (roles/caddy), certificates,
+#                                         autosave, access logs
+#   /opt/leviosa-staging/                 STAGING (compose project `leviosa-staging`)
+#   ├── docker-compose.yml                installed by the deploy runner
+#   ├── env/                              Agent-rendered, root 0700 / files 0600
+#   └── data/redis/                       staging's own Redis
+#
+# Everything is root's except the data directories, which belong to the
+# user each image runs as. Nothing belongs to the deploy user: the deploy
+# runner and the Infisical Agent run `docker compose` here as root, so a
+# deploy user able to replace a compose file, or to swap a bind-mounted
+# directory for a symlink, would be root again.
 
-# Application
-app_name: leviosa
-app_base_dir: "/opt/{{ app_name }}"
-app_data_dir: "/opt/{{ app_name }}/data"
-app_logs_dir: "/opt/{{ app_name }}/logs"
-app_backup_dir: "/opt/{{ app_name }}/backups"
+# The stack roots. group_vars/all.yml sets the same values (roles/
+# deploy_gate needs them too); these are only the fallback.
+app_prod_root: /opt/leviosa
+app_staging_root: /opt/leviosa-staging
 
-# Docker images — override per environment in group_vars
-# Production: henga/leviosa:frontend-latest  / henga/leviosa:backend-latest
-# Staging:    henga/leviosa:frontend-staging / henga/leviosa:backend-staging
-docker_registry: "henga"
-frontend_docker_image: "{{ docker_registry }}/leviosa:frontend-latest"
-backend_docker_image: "{{ docker_registry }}/leviosa:backend-latest"
+# The users the data services run as, by their image's /etc/passwd. Each
+# image's entrypoint chowns its data directory to that user on start (owner
+# only), so Ansible sets the same owner and a second run changes nothing.
+# Change them together with the image (infra/compose/docker-compose.*.yml).
+app_postgres_uid: "70"
+app_postgres_gid: "70"
+app_rabbitmq_uid: "100"
+app_rabbitmq_gid: "101"
+app_redis_uid: "999"
+app_redis_gid: "1000"
 
-# Monitoring
-monitoring_enabled: false
-monitoring_cadvisor_port: 9323
-monitoring_node_exporter_port: 9100
+# owner/group default to root, mode to 0750. Order matters: parents first.
+app_stack_directories:
+  # Production
+  - { path: "{{ app_prod_root }}" }
+  # Infisical Agent renderings (issue 027): root-only, files 0600.
+  - { path: "{{ app_prod_root }}/env", mode: "0700" }
+  - { path: "{{ app_prod_root }}/data" }
+  # Postgres' entrypoint also enforces 0700 on its data directory.
+  - { path: "{{ app_prod_root }}/data/postgres", owner: "{{ app_postgres_uid }}", group: "{{ app_postgres_gid }}", mode: "0700" }
+  - { path: "{{ app_prod_root }}/data/rabbitmq", owner: "{{ app_rabbitmq_uid }}", group: "{{ app_rabbitmq_gid }}" }
+  - { path: "{{ app_prod_root }}/data/redis", owner: "{{ app_redis_uid }}", group: "{{ app_redis_gid }}" }
+  # Caddy runs as root in its container. etc/ holds the Caddyfile (read-only
+  # mount); data/ the certificates and their private keys.
+  - { path: "{{ app_prod_root }}/caddy" }
+  - { path: "{{ app_prod_root }}/caddy/etc", mode: "0755" }
+  - { path: "{{ app_prod_root }}/caddy/data", mode: "0700" }
+  - { path: "{{ app_prod_root }}/caddy/config", mode: "0700" }
+  - { path: "{{ app_prod_root }}/caddy/logs" }
+  # Staging: its backend, frontend and Redis; Postgres, RabbitMQ and Caddy
+  # are production's (ADR-0016).
+  - { path: "{{ app_staging_root }}" }
+  - { path: "{{ app_staging_root }}/env", mode: "0700" }
+  - { path: "{{ app_staging_root }}/data" }
+  - { path: "{{ app_staging_root }}/data/redis", owner: "{{ app_redis_uid }}", group: "{{ app_redis_gid }}" }

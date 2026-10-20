@@ -5,14 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Root Level Commands
-- `make help` - Show all available commands (local dev, Docker image builds, VPS deploy, Terraform, Ansible)
+- `make help` - Show all available commands (local dev, local deploy harnesses, server setup, Terraform)
 - `make local-dev` - Frontend natively (`pnpm run dev`) + backend and its dependencies via Docker (`backend/compose.yaml`: Postgres, Redis, RabbitMQ, and LocalStack for S3 and KMS), live reload via `air` (see `backend/local.Dockerfile`). Fastest loop for day-to-day work — edits under `backend/` rebuild and restart the server automatically via a bind mount.
 - `make local-start` - Run the entire app (frontend, backend, Postgres, Redis, RabbitMQ, and LocalStack for S3 and KMS) in containers, built from the real production Dockerfiles and mirroring `infra/ansible/roles/app/templates/docker-compose.yml.j2` + `env.j2` (same image pins, same service shape minus Caddy) (`local.compose.yaml`). No hot reload — closest simulation of what actually ships to staging/production. Copies `.env.example` to `.env` on first run.
 - `make local-stop` / `make local-restart` - Stop/restart the `local-start` stack
 
 Both the `local-dev` backend stack and the `local-start` stack are intentionally ephemeral (no named volumes): stopping either wipes its Postgres and LocalStack (the S3 bucket and the KMS key holding encx's KEK) together, so a restart never has Postgres pointing at data encrypted under a KMS key that no longer exists. Each stack's LocalStack init container creates the bucket and the KEK alias (`alias/leviosa-dev`); the dev pepper is a public value in `backend/example.env` / `.env.example`. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data.
 
-Deployment to the VPS (image build/push, Ansible, Terraform) is also driven from this Makefile — see `make help` for the full list (`image-*`, `deploy*`, `prod-*`, `staging-*`, `infra-*`, `ansible-*`).
+Server setup (`make setup`: Ansible, see `infra/ansible/README.md`) and infrastructure (`make infra-*`: Terraform through `infra/terraform/tf.sh`) are also driven from this Makefile, as are the local deploy harnesses (`make deploy-harness`, `make deploy-gate-test`). Releases are not make targets: CI runs `deploy <stack> <sha>` through the deploy gate (`infra/compose/README.md`).
 
 ### Frontend Commands (from /frontend)
 - `pnpm run dev` - Start SvelteKit development server
@@ -38,7 +38,7 @@ Run from `/backend` (see `make test-help` for the full list):
 ```
 ├── frontend/           # SvelteKit 5 application
 ├── backend/           # Go modular monolith
-├── config/            # Infrastructure configuration (Caddy, Loki, Prometheus, etc.)
+├── config/            # Legacy Caddy configuration (moving to infra/compose/caddy/)
 └── infra/             # Terraform and Ansible deployment scripts
 ```
 
@@ -101,8 +101,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 **Infrastructure**:
 - Docker with docker-compose
 - Caddy reverse proxy
-- Grafana + Loki for logging
-- Prometheus for monitoring
+- Ansible (server setup only) and Terraform (infrastructure); no Ansible Vault — configuration lives in Infisical (ADR-0017)
 
 ### Key Business Domains
 - **User Management**: Authentication, OTP verification, sessions
@@ -149,6 +148,6 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 - Backend integration tests: `make test-integration` (from `/backend`; dependencies are spun up per-test via testcontainers)
 - Security: Go vulnerability scanning (`govulncheck`)
 
-There is no automated deployment workflow. Deployment to staging/production VPS environments is manual, driven by the root `Makefile` (Docker image build/push to Docker Hub, then Ansible playbooks or quick SSH-based `make deploy`/`make deploy-staging`) and Terraform for infrastructure provisioning. See `make help` at the repo root for the full command list.
+Releases never go through Ansible or an operator's computer: the single release entry point is `deploy <stack> <sha>`, which the CI key can run only through the deploy gate (`infra/compose/README.md`, `infra/ansible/roles/deploy_gate/README.md`). Ansible (`make setup`) only sets the server up; Terraform (`make infra-*`) only creates infrastructure. See `make help` at the repo root for the full command list.
 
 **Merge Strategy:** Rebase and merge only (preserves full commit history)

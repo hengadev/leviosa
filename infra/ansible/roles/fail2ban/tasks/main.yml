@@ -1,40 +1,47 @@
 ---
 # Fail2ban Configuration Tasks
-# - Deploy jail configuration for SSH and Caddy
-# - Configure email notifications
-# - Enable and start fail2ban service
+# - SSH jails (brute force and connection floods)
+# - Caddy jail, off until Caddy writes its access log (issue 026)
+# - Notifications to the email read from Infisical prod /host
 
 - name: Install fail2ban
   ansible.builtin.apt:
     name: fail2ban
     state: present
-    update_cache: yes
-
-- name: Ensure fail2ban configuration directory exists
-  ansible.builtin.file:
-    path: /etc/fail2ban
-    state: directory
-    owner: root
-    group: root
-    mode: '0755'
 
 - name: Deploy fail2ban jail configuration
   ansible.builtin.template:
     src: jail.local.j2
     dest: /etc/fail2ban/jail.d/local.conf
+    owner: root
+    group: root
     mode: '0644'
-  notify: restart fail2ban
+  notify: Restart fail2ban
 
 - name: Deploy Caddy rate-limit filter
   ansible.builtin.template:
     src: caddy-rate-limit.conf.j2
     dest: /etc/fail2ban/filter.d/caddy-rate-limit.conf
+    owner: root
+    group: root
     mode: '0644'
-  when: caddy_enabled | default(false)
-  notify: restart fail2ban
+  when: fail2ban_caddy_enabled
+  notify: Restart fail2ban
 
-- name: Ensure fail2ban service is enabled and running
+- name: Ensure fail2ban is enabled and started
   ansible.builtin.service:
     name: fail2ban
-    state: started
-    enabled: yes
+    state: "{{ 'started' if fail2ban_enabled else 'stopped' }}"
+    enabled: "{{ fail2ban_enabled }}"
+
+- name: Display fail2ban configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "==========================================="
+      - "Fail2ban Configuration Applied"
+      - "==========================================="
+      - "SSH jail: maxretry={{ fail2ban_ssh_maxretry }}, bantime={{ fail2ban_ssh_bantime }}s"
+      - "SSH DDoS jail: maxretry={{ fail2ban_ddos_maxretry }}, bantime={{ fail2ban_ddos_bantime }}s"
+      - "Caddy jail: {{ 'enabled (' ~ fail2ban_caddy_log_path ~ ')' if fail2ban_caddy_enabled else 'disabled until issue 026' }}"
+      - "Notifications: {{ fail2ban_notify_email }}"
+      - "==========================================="

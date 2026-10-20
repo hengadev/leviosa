@@ -1,0 +1,48 @@
+# SSH hardening - Managed by Ansible (roles/ssh) - DO NOT EDIT MANUALLY
+#
+# A drop-in read before everything else: sshd keeps the first value it reads
+# for a keyword, and /etc/ssh/sshd_config includes sshd_config.d/*.conf at
+# its top, so these settings win over the main file and over other drop-ins
+# (cloud-init's 50-cloud-init.conf included).
+
+Port {{ ssh_port }}
+
+# Keys only. Root logs in with each operator computer's own key; the deploy
+# user with an operator key (shell) or a CI key (forced to the deploy gate).
+PermitRootLogin {{ ssh_permit_root_login }}
+PasswordAuthentication {{ 'yes' if ssh_password_authentication else 'no' }}
+KbdInteractiveAuthentication no
+PermitEmptyPasswords no
+PubkeyAuthentication yes
+AuthenticationMethods publickey
+UsePAM yes
+{% if ssh_allowed_users | length > 0 %}
+AllowUsers {{ ssh_allowed_users | join(' ') }}
+{% endif %}
+
+# Limits and timeouts
+MaxAuthTries 3
+LoginGraceTime 60
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+# No forwarding of any kind, no tunnels, no X11
+X11Forwarding no
+AllowTcpForwarding no
+AllowAgentForwarding no
+AllowStreamLocalForwarding no
+PermitTunnel no
+
+# Modern cryptographic algorithms
+# Key exchange: hybrid post-quantum (sntrup761) and Curve25519 only
+KexAlgorithms sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org
+# Ciphers: ChaCha20 and AES-GCM only (authenticated encryption)
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+# MACs: encrypt-then-MAC only
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+# Host keys: Ed25519, and RSA with SHA-2 signatures
+HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256
+# User keys: the key types the keys file accepts (roles/user)
+PubkeyAcceptedAlgorithms ssh-ed25519,sk-ssh-ed25519@openssh.com,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,sk-ecdsa-sha2-nistp256@openssh.com,rsa-sha2-512,rsa-sha2-256
+
+Banner /etc/ssh/banner.txt

@@ -1,233 +1,98 @@
 # Leviosa Ansible Makefile
 # Usage: make <target>
 #
-# Workspace-aware deployment for staging and production on the same VPS
+# This Makefile sets the server up; it never releases. Releases are
+# `deploy <stack> <sha>` through the deploy gate (roles/deploy_gate,
+# infra/compose/README.md), run by CI.
 
-.PHONY: help help-deploy help-ops \
-        setup setup-staging setup-production \
-        deploy deploy-staging deploy-production \
-        restart restart-frontend restart-backend \
-        restart-staging restart-staging-frontend restart-staging-backend \
-        backup check-clean lint \
-        ssh-info status staging-status production-status \
-        logs staging-logs production-logs \
-        health-check install-deps vars-test
+.PHONY: help setup check-clean lint \
+        ssh-info status staging-status logs staging-logs \
+        install-deps terraform-outputs
 
 # Default target
 help:
 	@echo "Leviosa Ansible Commands"
 	@echo "============================"
 	@echo ""
-	@echo "Setup (first time only):"
-	@echo "  make setup-staging      - Complete VPS setup for staging"
-	@echo "  make setup-production   - Complete VPS setup for production"
+	@echo "Setup (needs only this computer's SSH key, listed in the keys file, and 'infisical login'):"
+	@echo "  make setup           - Complete VPS setup (fresh server, and after any change here)"
+	@echo "                         KEYS_FILE=<path> overrides ~/leviosa-deploy-keys.yml"
 	@echo ""
-	@echo "Deployment:"
-	@echo "  make deploy-staging     - Deploy/update staging environment"
-	@echo "  make deploy-production  - Deploy/update production environment"
-	@echo ""
-	@echo "Quick Deploy (restart only):"
-	@echo "  make restart                    - Pull latest images and restart all production services"
-	@echo "  make restart-frontend           - Pull and restart production frontend only"
-	@echo "  make restart-backend            - Pull and restart production backend only"
-	@echo "  make restart-staging             - Pull latest images and restart all staging services"
-	@echo "  make restart-staging-frontend    - Pull and restart staging frontend only"
-	@echo "  make restart-staging-backend     - Pull and restart staging backend only"
-	@echo ""
-	@echo "Operations:"
-	@echo "  make backup             - Configure database backups"
-	@echo "  make status             - Check production service status"
-	@echo "  make staging-status     - Check staging service status"
-	@echo "  make logs               - View production logs"
-	@echo "  make staging-logs       - View staging logs"
+	@echo "Releases: NOT here. CI runs 'deploy <stack> <sha>' through the deploy gate."
 	@echo ""
 	@echo "Verification:"
-	@echo "  make check-clean        - Check for syntax errors"
-	@echo "  make lint               - Run ansible-lint"
-	@echo "  make vars-test          - Display effective variables"
+	@echo "  make check-clean     - Check playbooks for syntax errors"
+	@echo "  make lint            - Run ansible-lint"
 	@echo ""
-	@echo "Server:"
-	@echo "  make ssh-info           - Display SSH connection details"
-	@echo "  make health-check       - Run health check on server"
+	@echo "Server Operations (read-only, as root):"
+	@echo "  make ssh-info        - Display SSH connection details"
+	@echo "  make status          - Check production service status"
+	@echo "  make staging-status  - Check staging service status"
+	@echo "  make logs            - View production logs"
+	@echo "  make staging-logs    - View staging logs"
 	@echo ""
 	@echo "Dependencies:"
-	@echo "  make install-deps       - Install Ansible dependencies"
-	@echo ""
-	@echo "For more commands: make help-deploy or make help-ops"
+	@echo "  make install-deps    - Install Ansible and the required collections"
+	@echo "  make terraform-outputs - Show Terraform outputs (through tf.sh)"
 
-# Get VPS IP from Terraform output (uses default workspace)
-VPS_IP=$(shell cd ../terraform && AWS_PROFILE=terraform-leviosa terraform workspace select default >/dev/null 2>&1 && AWS_PROFILE=terraform-leviosa terraform output -raw server_ipv4_address 2>/dev/null || echo "")
-DOMAIN=$(shell cd ../terraform && AWS_PROFILE=terraform-leviosa terraform workspace select default >/dev/null 2>&1 && AWS_PROFILE=terraform-leviosa terraform output -raw domain_name 2>/dev/null || echo "")
+# VPS IP and domain from Terraform, through ../terraform/tf.sh (plain
+# `terraform` has no credentials). Recursive variables: evaluated only by the
+# targets that use them.
+VPS_IP = $(shell ../terraform/tf.sh output -raw server_ipv4_address 2>/dev/null || echo "")
+DOMAIN = $(shell ../terraform/tf.sh output -raw domain_name 2>/dev/null || echo "")
 
-# Get SSH public key
-SSH_KEY=$(shell cat ~/.ssh/leviosa.pub 2>/dev/null || cat ~/.ssh/id_rsa.pub 2>/dev/null || echo "")
+# Operator keys (one per computer) and the CI key, kept outside the repo:
+#   deploy_ssh_public_keys: [...]      deploy_ci_ssh_public_keys: [...]
+# See deploy-keys.example.yml.
+KEYS_FILE ?= $(HOME)/leviosa-deploy-keys.yml
 
 # ============================================
-# Setup Commands (first time only)
+# Setup
 # ============================================
 
-# Complete VPS setup for staging (run once on fresh server)
-setup-staging:
+# Complete VPS setup (fresh server, and every later setup change). Run it
+# twice: the second run must report changed=0.
+setup:
 	@echo "==========================================="
-	@echo "Leviosa Staging VPS Setup"
+	@echo "Leviosa VPS Setup"
 	@echo "==========================================="
 	@echo ""
-	@if [ -z "$(VPS_IP)" ]; then \
-		echo "Error: Could not get VPS IP from Terraform."; \
-		echo "Run 'cd ../terraform && make apply-staging' first"; \
+	@test -f "$(KEYS_FILE)" || { echo "Error: keys file $(KEYS_FILE) not found (see deploy-keys.example.yml and README.md)."; exit 1; }
+	@vps_ip="$(VPS_IP)"; domain="$(DOMAIN)"; \
+	if [ -z "$$vps_ip" ]; then \
+		echo "Error: could not read the VPS IP from Terraform."; \
+		echo "Run 'infisical login', then 'cd ../terraform && ./tf.sh output server_ipv4_address'."; \
 		exit 1; \
-	fi
-	@echo "VPS IP: $(VPS_IP)"
-	@echo "Domain: $(DOMAIN)"
-	@echo "SSH Key: $(SSH_KEY)"
-	@echo ""
-	@read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	@echo ""
-	@echo "Running staging setup playbook..."
+	fi; \
+	echo "VPS IP:    $$vps_ip"; \
+	echo "Domain:    $${domain:-(default)}"; \
+	echo "Keys file: $(KEYS_FILE)"; \
+	echo ""; \
+	printf 'Continue? [y/N] '; read confirm; [ "$$confirm" = "y" ] || exit 1; \
+	echo ""; \
 	ansible-playbook -i inventory/hosts.yml playbooks/site.yml \
-		-e "ansible_host=$(VPS_IP)" \
-		-e "app_domain=$(DOMAIN)" \
-		-e "@group_vars/all.yml" \
-		-e "@group_vars/leviosa_staging.yml" \
-		-e "deploy_ssh_public_key=$(SSH_KEY)"
-
-# Complete VPS setup for production (run once on fresh server)
-setup-production:
-	@echo "==========================================="
-	@echo "Leviosa Production VPS Setup"
-	@echo "==========================================="
-	@echo ""
-	@if [ -z "$(VPS_IP)" ]; then \
-		echo "Error: Could not get VPS IP from Terraform."; \
-		echo "Run 'cd ../terraform && make apply-production' first"; \
-		exit 1; \
-	fi
-	@echo "VPS IP: $(VPS_IP)"
-	@echo "Domain: $(DOMAIN)"
-	@echo "SSH Key: $(SSH_KEY)"
-	@echo ""
-	@read -p "Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
-	@echo ""
-	@echo "Running production setup playbook..."
-	ansible-playbook -i inventory/hosts.yml playbooks/site.yml \
-		-e "ansible_host=$(VPS_IP)" \
-		-e "app_domain=$(DOMAIN)" \
-		-e "@group_vars/all.yml" \
-		-e "@group_vars/leviosa_production.yml" \
-		-e "deploy_ssh_public_key=$(SSH_KEY)"
+		-e "ansible_host=$$vps_ip" \
+		-e "@$(KEYS_FILE)" \
+		$${domain:+-e "app_domain=$$domain"}
 
 # ============================================
-# Deployment Commands
+# Verification
 # ============================================
 
-# Deploy production application
-deploy-production:
-	@echo "==========================================="
-	@echo "Leviosa Production Deployment"
-	@echo "==========================================="
-	@echo ""
-	@if [ -z "$(VPS_IP)" ]; then \
-		echo "Error: Could not get VPS IP from Terraform."; \
-		exit 1; \
-	fi
-	@echo "Deploying to: $(VPS_IP)"
-	@echo ""
-	ansible-playbook -i inventory/hosts.yml playbooks/deploy.yml \
-		-e "ansible_host=$(VPS_IP)" \
-		-e "@group_vars/all.yml" \
-		-e "@group_vars/leviosa_production.yml"
-
-# Deploy staging application (also updates prod Caddy for staging domains)
-deploy-staging:
-	@echo "==========================================="
-	@echo "Leviosa Staging Deployment"
-	@echo "==========================================="
-	@echo ""
-	@if [ -z "$(VPS_IP)" ]; then \
-		echo "Error: Could not get VPS IP from Terraform."; \
-		exit 1; \
-	fi
-	@echo "Deploying staging to: $(VPS_IP)"
-	@echo ""
-	ansible-playbook -i inventory/hosts.yml playbooks/deploy-staging.yml \
-		-e "ansible_host=$(VPS_IP)" \
-		-e "@group_vars/all.yml" \
-		-e "@group_vars/leviosa_production.yml" \
-		-e "@group_vars/leviosa_staging.yml"
-
-# ============================================
-# Quick Restart Commands (pull images and restart)
-# ============================================
-
-# Production: restart all services
-restart:
-	@echo "Pulling latest production images and restarting all services..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa && docker compose pull && docker compose up -d"
-
-# Production: restart frontend only
-restart-frontend:
-	@echo "Pulling latest production frontend and restarting..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa && docker compose pull frontend && docker compose up -d frontend"
-
-# Production: restart backend only
-restart-backend:
-	@echo "Pulling latest production backend and restarting..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa && docker compose pull backend && docker compose up -d backend"
-
-# Staging: restart all services
-restart-staging:
-	@echo "Pulling latest staging images and restarting all services..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose pull && docker compose up -d"
-
-# Staging: restart frontend only
-restart-staging-frontend:
-	@echo "Pulling latest staging frontend and restarting..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose pull frontend && docker compose up -d frontend"
-
-# Staging: restart backend only
-restart-staging-backend:
-	@echo "Pulling latest staging backend and restarting..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose pull backend && docker compose up -d backend"
-
-# Configure database backups (not yet configured — add S3 backup bucket to Terraform first)
-backup:
-	@echo "Backup not yet configured. Add a backup S3 bucket to Terraform first."
-	@exit 1
-
-# ============================================
-# Verification Commands
-# ============================================
-
-# Check playbooks for syntax errors
 check-clean:
 	@echo "Checking playbooks for syntax errors..."
 	@ansible-playbook playbooks/site.yml --syntax-check
-	@ansible-playbook playbooks/deploy.yml --syntax-check
-	@ansible-playbook playbooks/deploy-staging.yml --syntax-check
-	@ansible-playbook playbooks/backup.yml --syntax-check
 	@echo "All playbooks are clean!"
 
-# Run ansible-lint (requires installation)
 lint:
 	@echo "Running ansible-lint..."
-	@which ansible-lint > /dev/null || (echo "Install with: pip install ansible-lint" && exit 1)
+	@command -v ansible-lint > /dev/null || { echo "Install with: pipx install ansible-lint"; exit 1; }
 	@ansible-lint playbooks/
 
-# Display effective variables
-vars-test:
-	@echo "Displaying effective variables..."
-	@ansible-playbook -i inventory/hosts.yml playbooks/site.yml \
-		-e "ansible_host=$(VPS_IP)" \
-		--tags debug --skip-tags never \
-		-e "ansible_debug=true" 2>/dev/null || true
-	@echo "To see all variables, run:"
-	@echo "  ansible-inventory -i inventory/hosts.yml --list"
-
 # ============================================
-# Server Operations
+# Server Operations (read-only, as root: the deploy user has no docker)
 # ============================================
 
-# Display SSH connection details
 ssh-info:
 	@echo "==========================================="
 	@echo "SSH Connection Details"
@@ -236,61 +101,41 @@ ssh-info:
 	@echo "VPS IP: $(VPS_IP)"
 	@echo "Domain: $(DOMAIN)"
 	@echo ""
-	@echo "Connect as root:"
-	@echo "  ssh -i ~/.ssh/leviosa root@$(VPS_IP)"
+	@echo "Connect as root (this computer's own key, from the keys file):"
+	@echo "  ssh root@$(VPS_IP)"
 	@echo ""
-	@echo "Connect as deploy user:"
-	@echo "  ssh -i ~/.ssh/leviosa leviosa@$(VPS_IP)"
-	@echo ""
+	@echo "The deploy user can only run the deploy gate; use root for docker and logs."
 	@echo "==========================================="
 
-# Check production service status
 status:
 	@echo "Checking production service status..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa && docker compose ps"
+	@ssh root@$(VPS_IP) "cd /opt/leviosa && docker compose ps"
 
-# Check staging service status
 staging-status:
 	@echo "Checking staging service status..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose ps"
+	@ssh root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose ps"
 
-# View production logs
 logs:
 	@echo "Streaming production logs (Ctrl+C to exit)..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa && docker compose logs -f"
+	@ssh root@$(VPS_IP) "cd /opt/leviosa && docker compose logs -f"
 
-# View staging logs
 staging-logs:
 	@echo "Streaming staging logs (Ctrl+C to exit)..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose logs -f"
-
-# Run health check
-health-check:
-	@echo "Running health check..."
-	@ssh -i ~/.ssh/leviosa root@$(VPS_IP) "/opt/leviosa/scripts/health-check.sh"
+	@ssh root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose logs -f"
 
 # ============================================
 # Dependencies
 # ============================================
 
-# Install Ansible and required collections
 install-deps:
 	@echo "Installing Ansible dependencies..."
-	@which pipx > /dev/null 2>&1 || sudo apt install -y pipx
-	@pipx install ansible
-	@pipx inject ansible passlib
-	@pipx ensurepath
-	@ansible-galaxy collection install community.docker community.general
+	@command -v ansible-playbook > /dev/null || pipx install --include-deps ansible
+	@ansible-galaxy collection install -r requirements.yml
 	@echo "Done! Run 'make check-clean' to verify."
 
 # ============================================
 # Terraform Integration
 # ============================================
 
-# Show Terraform outputs
 terraform-outputs:
-	@echo "==========================================="
-	@echo "Terraform Outputs"
-	@echo "==========================================="
-	@echo ""
-	@cd ../terraform && terraform output
+	@../terraform/tf.sh output

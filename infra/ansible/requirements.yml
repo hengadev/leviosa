@@ -1,0 +1,7 @@
+---
+# Collections the playbooks use: `make install-deps`, or
+#   ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: ansible.posix       # sysctl (roles/system), the timer callbacks (ansible.cfg)
+  - name: community.general   # timezone (roles/system), ufw (roles/firewall)
+  - name: community.docker    # docker_network (roles/docker)

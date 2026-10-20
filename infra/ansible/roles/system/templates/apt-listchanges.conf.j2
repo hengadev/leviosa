@@ -3,7 +3,7 @@
 
 [apt]
 frontend=pager
-email_address={{ auto_updates_email | default('root@localhost') }}
+email_address={{ auto_updates_email }}
 confirm=false
 save_seen=/var/lib/apt/listchanges.db
 which=both
