@@ -164,6 +164,13 @@ deploy-harness:
 deploy-gate-test:
 	infra/ansible/roles/deploy_gate/tests/run-tests.sh
 
+# Promote's preflight (.github/workflows/promote.yaml): which SHA ships and the
+# checks before the deploy, against a fake staging /healthz and a fake Docker
+# Hub. No Docker, no network beyond loopback. See docs/deployment/promote.md.
+.PHONY: promote-preflight-test
+promote-preflight-test:
+	.github/scripts/tests/promote-preflight-tests.sh
+
 # ===========================================
 # Docker Image Commands (run on local machine)
 # ===========================================
