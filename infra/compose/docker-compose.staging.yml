@@ -1,0 +1,164 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Leviosa staging stack (ADR-0016; docs/prd/deployment-infisical-compose.md).
+#
+# Runs on the same server as production but cannot reach production's data:
+# it brings only its backend, frontend and its OWN Redis, and uses
+# production's Postgres and RabbitMQ (owned by docker-compose.prod.yml) with
+# its own credentials:
+#   Postgres  role and database leviosa_staging; the role has no connect
+#             right on production's database
+#   RabbitMQ  vhost and user leviosa_staging, with permissions on that vhost
+#             only
+#   Redis     its own container and password: Redis has no per-database
+#             access control, so sharing production's would expose sessions
+# Ansible's shared services role creates the role, database, vhost and user
+# (issue 026); the local harness does the same with
+# test/fixtures/create-staging-services.sh.
+#
+# Same rules as the production file: no templating, no ${VAR} substitution,
+# no top-level .env; every service reads its own env_file, rendered by the
+# Infisical Agent into ./env (ADR-0017). Each staging deploy installs this
+# file from the deployed commit as /opt/leviosa-staging/docker-compose.yml;
+# `deploy staging <sha>` releases it. Relative paths resolve against that
+# stack root:
+#   ./env/{backend,frontend,admin,redis}.env   Agent-rendered, root 0600
+#   ./data/redis/                              staging Redis data
+#
+# SERVICE NAMES: Compose registers every service name as a DNS alias on each
+# network it joins, and both stacks share leviosa_network. A staging service
+# named `backend` would answer for production's `backend` too, and Docker
+# would round-robin production's traffic to staging. Every service here
+# therefore carries the staging_ prefix: production's names (backend,
+# frontend, redis, postgres, rabbitmq, caddy) resolve to production only.
+#
+# Image pins: henga/leviosa-backend:staging and henga/leviosa-frontend:staging
+# are LOCAL tags, never pushed. `deploy staging <sha>` re-points them at the
+# :<sha> images, so staging's one-offs and recreates never pick up
+# production's release (and the reverse).
+# ─────────────────────────────────────────────────────────────────────────────
+name: leviosa-staging
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # The Go backend. Its env/backend.env points DATABASE_URL at production's
+  # `postgres` (staging role and database), RABBITMQ_URL at production's
+  # `rabbitmq` (staging vhost and user) and REDIS_ADDR at staging_redis:6379.
+  # Reached as `staging_backend:3500` (staging frontend's API_URL); no host
+  # port.
+  staging_backend:
+    image: henga/leviosa-backend:staging
+    restart: unless-stopped
+    mem_limit: 512m
+    expose:
+      - "3500"
+    env_file:
+      - env/backend.env
+    # Only staging's own Redis: postgres and rabbitmq belong to production's
+    # compose project and cannot be dependencies here. When they are down, a
+    # staging deploy fails at its migrate step, before anything is recreated.
+    depends_on:
+      staging_redis:
+        condition: service_healthy
+    networks:
+      - leviosa_network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3500/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+
+  # The SvelteKit server, API_URL=http://staging_backend:3500. Loads ONLY
+  # env/frontend.env (never a backend secret). Caddy is its only client.
+  staging_frontend:
+    image: henga/leviosa-frontend:staging
+    restart: unless-stopped
+    mem_limit: 256m
+    expose:
+      - "3000"
+    env_file:
+      - env/frontend.env
+    depends_on:
+      staging_backend:
+        condition: service_healthy
+    networks:
+      - leviosa_network
+    healthcheck:
+      test: ["CMD", "/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+
+  # One-off: apply pending migrations to the staging database, then exit.
+  # Behind the `oneoff` profile, like production's:
+  #   docker compose --profile oneoff run --rm staging_migrate
+  staging_migrate:
+    profiles: ["oneoff"]
+    image: henga/leviosa-backend:staging
+    command: ["./leviosa", "migrate"]
+    restart: "no"
+    env_file:
+      - env/backend.env
+    networks:
+      - leviosa_network
+    logging: *logging
+
+  # One-off: create staging's first superadmin (bootstrap-admin). The ONLY
+  # staging container that loads env/admin.env:
+  #   docker compose --profile oneoff run --rm staging_admin
+  staging_admin:
+    profiles: ["oneoff"]
+    image: henga/leviosa-backend:staging
+    command: ["./leviosa", "bootstrap-admin"]
+    restart: "no"
+    env_file:
+      - env/backend.env
+      - env/admin.env
+    networks:
+      - leviosa_network
+    logging: *logging
+
+  # Staging's own Redis, with its own password (env/redis.env), written into
+  # an in-container config file rather than onto the command line.
+  staging_redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    env_file:
+      - env/redis.env
+    command:
+      - sh
+      - -ec
+      - |
+        umask 077
+        printf 'requirepass %s\n' "$$REDIS_PASSWORD" > /tmp/redis.conf
+        chown redis /tmp/redis.conf
+        exec docker-entrypoint.sh /tmp/redis.conf --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - leviosa_network
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 2s
+    logging: *logging
+
+# Production's network (created by Ansible's docker role, declared external
+# in both files): a `down` of either stack never removes it.
+networks:
+  leviosa_network:
+    external: true
