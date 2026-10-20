@@ -158,6 +158,12 @@ local-restart: local-stop local-start
 deploy-harness:
 	infra/compose/test/run-harness.sh
 
+# Deploy gate and root runner tests (roles/deploy_gate): no root, no Ansible, no
+# Docker, no network. See infra/ansible/roles/deploy_gate/README.md.
+.PHONY: deploy-gate-test
+deploy-gate-test:
+	infra/ansible/roles/deploy_gate/tests/run-tests.sh
+
 # ===========================================
 # Docker Image Commands (run on local machine)
 # ===========================================
