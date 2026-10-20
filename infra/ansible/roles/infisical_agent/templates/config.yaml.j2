@@ -1,0 +1,46 @@
+# {{ ansible_managed }}
+# Infisical Agent configuration — rendered by the Ansible infisical_agent
+# role (issue 027). Do not edit: re-run the role instead.
+#
+# Schema notes (checked against infisical 0.43.138; infra/infisical/README.md):
+# - auth.config.client-id / client-secret are PATHS to files, not values:
+#   the credential lives in root-only files under the credentials directory.
+# - polling-interval has a 60s minimum; shorter values shut the Agent down.
+# - a config error makes the Agent exit with status 0: the unit uses
+#   Restart=always.
+# - no inline Jinja block tags on content lines in this file: with Ansible's
+#   trim_blocks they swallow the newline and corrupt the YAML.
+
+infisical:
+  address: {{ infisical_agent_host }}
+
+auth:
+  type: "universal-auth"
+  config:
+    client-id: {{ infisical_agent_credentials_dir }}/client-id
+    client-secret: {{ infisical_agent_credentials_dir }}/client-secret
+    remove_client_secret_on_read: false
+
+sinks:
+  - type: "file"
+    config:
+      path: {{ infisical_agent_token_sink }}
+
+templates:
+{% for t in infisical_agent_templates %}
+  # {{ t.env }}/{{ t.name }} — {{ 'recreate the service when the rendered file changes (restart does not reload env_file)' if t.recreate else 'rewrite the file only, no command' }}{{ ' — POSTGRES_PASSWORD applies at first init only; rotation is manual (ADR-0016)' if t.name == 'postgres' else '' }}{{ ' — RABBITMQ_DEFAULT_* apply at first init only; rotation is manual (ADR-0016)' if t.name == 'rabbitmq' else '' }}{{ ' — the backup job (issue 028) reads the file fresh on each run' if t.name == 'backup' else '' }}{{ ' — the next deploy\'s bootstrap-admin one-off reads it' if t.name == 'admin' else '' }}
+  - source-path: {{ infisical_agent_templates_dir }}/{{ t.env }}-{{ t.name }}.env.tmpl
+    destination-path: {{ infisical_agent_stack_roots[t.env] }}/{{ infisical_agent_env_dir_name }}/{{ t.name }}.env
+    config:
+      polling-interval: {{ infisical_agent_polling_interval }}
+{% if t.recreate %}
+      execute:
+        # t.service (not t.name): staging's services carry a staging_ prefix
+        # so their names never collide with prod's DNS aliases on
+        # leviosa_network (infra/compose/README.md). --no-deps so a backend
+        # change can never bounce Postgres or RabbitMQ; --force-recreate per
+        # infra/compose/README.md's single-service recreate rule.
+        command: docker compose --project-directory {{ infisical_agent_stack_roots[t.env] }} up -d --no-deps --force-recreate {{ t.service }}
+        timeout: {{ infisical_agent_command_timeout_seconds }}
+{% endif %}
+{% endfor %}

@@ -1,0 +1,21 @@
+---
+# infisical_agent role handlers.
+#
+# infisical_agent_manage_service (defaults/main.yml) is the single switch for
+# touching the systemd service: false skips both handlers, so a run (the
+# tests, or a repair) can install files on a machine where the service does
+# not exist. A notified handler with a false `when` is simply skipped.
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: infisical_agent_manage_service | bool
+
+- name: Restart infisical agent
+  ansible.builtin.systemd:
+    name: "{{ infisical_agent_unit_name }}"
+    state: restarted
+    # Covers a run where only the unit changed and reload systemd was not
+    # notified first.
+    daemon_reload: true
+  when: infisical_agent_manage_service | bool
