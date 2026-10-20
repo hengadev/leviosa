@@ -13,6 +13,11 @@
 # (the CI key, forced to the deploy gate); see playbooks/group_vars/all.yml
 # and ../deploy-keys.example.yml.
 #
+# With INFISICAL_VPS_CLIENT_ID / INFISICAL_VPS_CLIENT_SECRET exported, the
+# Infisical Agent is installed in the same run (roles/infisical_agent);
+# without them that role is skipped with a note and can be added later with
+# `make infisical-agent`.
+#
 # Ansible sets the server up; it never releases the app. Releases are
 # `deploy <stack> <sha>` through the deploy gate (roles/deploy_gate,
 # infra/compose/), run by CI.
@@ -22,14 +27,32 @@
   gather_facts: true
 
   vars:
-    # The `leviosa` Infisical project (Infisical > leviosa > Project settings
-    # > Project ID; the same value as infisical_project_id in
-    # infra/terraform/terraform.tfvars). Not a secret. A play var rather than
-    # a group var so it is also visible to the delegated-to-localhost lookup
-    # below.
-    # OPERATOR: replace the placeholder before the first `make setup`; until
-    # then the lookup is skipped and the fallback address is used.
+    # The `leviosa` Infisical project's ID (Infisical > leviosa > Project
+    # settings > Project ID). Not a secret. It is set ONCE, in
+    # infra/terraform/terraform.tfvars (infisical_project_id — Terraform
+    # needs it too), and the pre_task below reads it from there, so the
+    # operator configures it in one place; render-template.sh reads the same
+    # line when roles/infisical_agent installs the env templates. A play var
+    # rather than a group var so it is also visible to the delegated-to-
+    # localhost lookup below (delegated tasks resolve against the delegate
+    # host, and the implicit localhost has no group vars). Until the tfvars
+    # value is a real project ID, the placeholder stays and the lookup is
+    # skipped.
     infisical_project_id: "REPLACE_WITH_LEVIOSA_PROJECT_ID"
+    infisical_tfvars_file: "{{ playbook_dir }}/../../terraform/terraform.tfvars"
+    # One `infisical_project_id = "<uuid>"` line; group 1 is the UUID.
+    # (?im): ^ per line, case-insensitive. Single-quoted YAML: the
+    # backslashes and the double quote stay literal.
+    infisical_tfvars_project_id_pattern: '(?im)^\s*infisical_project_id\s*=\s*"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"'
+
+    # Whether the leviosa-vps credential is exported on this machine. One
+    # definition for the skip note, the infisical_agent role's when and the
+    # completion message; the env var names must stay in sync with
+    # infisical_agent/defaults/main.yml (role-level when cannot see role
+    # defaults, hence this play var).
+    leviosa_infisical_credential_present: >-
+      {{ (lookup('env', 'INFISICAL_VPS_CLIENT_ID') | length > 0)
+         and (lookup('env', 'INFISICAL_VPS_CLIENT_SECRET') | length > 0) }}
 
     # What the lookup below must print: exactly one NOTIFY_EMAIL=<address>
     # line, the address optionally quoted. Anything else (a missing secret
@@ -49,6 +72,25 @@
           - ansible_user == 'root'
         fail_msg: "The setup connects as root (with this computer's key from the keys file); the deploy user can only deploy."
         quiet: true
+      tags: ['always']
+
+    - name: Note when the Infisical Agent role will be skipped
+      ansible.builtin.debug:
+        msg: >-
+          infisical_agent: no credential provided (INFISICAL_VPS_CLIENT_ID /
+          INFISICAL_VPS_CLIENT_SECRET), the role will be skipped and the
+          rest of the setup continues. Run `make infisical-agent` to install
+          or rotate the Agent later.
+      when: not leviosa_infisical_credential_present
+
+    # One source for the project ID: the tfvars value Terraform already
+    # needs (issue 023). Read-only, so it also runs in --check; the same
+    # line render-template.sh substitutes into the Agent's templates when
+    # roles/infisical_agent installs them.
+    - name: Read the Infisical project ID from infra/terraform/terraform.tfvars
+      ansible.builtin.set_fact:
+        infisical_project_id: "{{ lookup('ansible.builtin.file', infisical_tfvars_file) | regex_findall(infisical_tfvars_project_id_pattern) | first | last }}"
+      when: lookup('ansible.builtin.file', infisical_tfvars_file) is search(infisical_tfvars_project_id_pattern)
       tags: ['always']
 
     # The notification email (fail2ban, unattended-upgrades) is the one value
@@ -97,7 +139,8 @@
       ansible.builtin.debug:
         msg: >-
           WARNING: could not read NOTIFY_EMAIL from Infisical prod /host
-          ({{ 'infisical_project_id is still a placeholder in playbooks/site.yml'
+          ({{ 'infisical_project_id is still a placeholder in
+          infra/terraform/terraform.tfvars'
           if leviosa_notify_lookup is skipped
           else 'infisical exited with ' ~ leviosa_notify_lookup.rc ~ ' or printed no address' }}).
           Using the fallback '{{ host_notify_email }}' for fail2ban and
@@ -145,9 +188,14 @@
     - role: caddy
       tags: ['caddy', 'web']
 
-    # Still to come, in this order:
-    #   infisical_agent  the Agent rendering env/*.env (needs the
-    #                    leviosa-vps credential exported)             (issue 027)
+    # The Infisical Agent rendering env/*.env in both stack roots, from
+    # issue 024's templates. Needs the leviosa-vps credential exported
+    # (INFISICAL_VPS_CLIENT_ID / INFISICAL_VPS_CLIENT_SECRET — see the
+    # leviosa_infisical_credential_present play var). Before the shared
+    # services, which need the rendered env files.
+    - role: infisical_agent
+      tags: ['infisical', 'agent']
+      when: leviosa_infisical_credential_present
 
     # Postgres, RabbitMQ and Caddy up (never recreated); staging's database
     # role and each environment's RabbitMQ vhost and user, from Infisical
@@ -171,6 +219,7 @@
           - "Domain: {{ app_domain }}"
           - "Deploy user: {{ deploy_user }} (deploy gate only)"
           - "Stack roots: {{ app_prod_root }}, {{ app_staging_root }}"
+          - "Infisical Agent: {{ 'installed' if leviosa_infisical_credential_present else 'skipped (no credential; run make infisical-agent)' }}"
           - "Notifications: {{ host_notify_email }}"
           - ""
           - "Run `make setup` again: the second run must report changed=0."

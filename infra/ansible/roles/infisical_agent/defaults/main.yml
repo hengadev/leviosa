@@ -1,0 +1,116 @@
+---
+# infisical_agent role defaults (issue 027)
+#
+# Turns the server into an Infisical Agent host: the Agent runs as a systemd
+# service, renders one env file per consumer from the `leviosa` Infisical
+# project (ADR-0017) into the two compose stack roots, and recreates the
+# affected service when a rendered file changes. The templates themselves
+# come from infra/infisical (issue 024).
+
+# The team's self-hosted Infisical instance (the same value as infisical_host
+# in infra/terraform/terraform.tfvars). Not a secret: it is the public login
+# address. The Agent appends /api itself.
+infisical_agent_host: "https://secrets.henga.dev"
+
+# Pin the CLI package: it ships the Agent (`infisical agent` subcommand) in
+# the same binary, and 0.43.138 is the version the template findings in
+# infra/infisical/README.md were checked against. Held with dpkg, so
+# unattended-upgrades never moves it; bumping this variable is the only way.
+infisical_agent_version: "0.43.138"
+
+# leviosa-vps machine-identity credential (Universal Auth, Viewer on the
+# `leviosa` project). It is read from the operator at run time ONLY — never
+# from a file in this repo (ADR-0017): export INFISICAL_VPS_CLIENT_ID /
+# INFISICAL_VPS_CLIENT_SECRET on the control machine, or answer the prompts
+# of playbooks/infisical-agent.yml (`make infisical-agent`). Every task that
+# touches these values runs with no_log. site.yml skips the whole role (with
+# a note) when they are unset, so a `make setup` without them still succeeds.
+infisical_agent_client_id: "{{ lookup('env', 'INFISICAL_VPS_CLIENT_ID') }}"
+infisical_agent_client_secret: "{{ lookup('env', 'INFISICAL_VPS_CLIENT_SECRET') }}"
+
+# Filesystem layout
+infisical_agent_config_dir: /etc/infisical-agent
+infisical_agent_credentials_dir: "{{ infisical_agent_config_dir }}/credentials"
+infisical_agent_templates_dir: "{{ infisical_agent_config_dir }}/templates"
+# The Agent writes its (refreshable) access token here; root-only, like the
+# credential files, and recreated at every start. The whole credentials
+# directory MUST stay out of backups: issue 028's configuration archive
+# copies the Agent config (which holds these paths, not the values) and must
+# exclude /etc/infisical-agent/credentials.
+infisical_agent_token_sink: "{{ infisical_agent_credentials_dir }}/token-sink.json"
+infisical_agent_unit_name: infisical-agent
+
+# Source of the env templates and the substitution script (issue 024,
+# committed in this repo). The role runs render-template.sh on the control
+# node — the same substitution `make env` uses; one implementation — and
+# copies the result with `copy`, never the Ansible template module: these
+# files contain Go {{ }} braces. render-template.sh reads the project ID
+# from infra/terraform/terraform.tfvars (infisical_project_id), the one
+# place the operator sets it; the role fails with the script's message while
+# that is still the placeholder.
+infisical_agent_templates_src_dir: "{{ role_path }}/../../../infisical/templates"
+infisical_agent_render_script: "{{ role_path }}/../../../infisical/render-template.sh"
+
+# Per-stack roots on the server: group_vars/all.yml's app_prod_root /
+# app_staging_root. They MUST match the compose layout (infra/compose/,
+# roles/app, roles/deploy_gate).
+infisical_agent_stack_roots:
+  prod: "{{ app_prod_root }}"
+  staging: "{{ app_staging_root }}"
+infisical_agent_env_dir_name: env
+
+# 60s is the Agent's minimum polling interval; a shorter value makes the
+# Agent shut down (it exits 0 doing so, which is why the unit uses
+# Restart=always). PRD: a change reaches its consumer within about a minute.
+infisical_agent_polling_interval: "60s"
+
+# Touch the systemd service at all (enable/start task and the two handlers)?
+# Kept true for every real run; the role's tests set it false so they can
+# exercise the file tasks (and their no_log) against localhost, where no
+# infisical-agent service exists. A false value is also a repair escape
+# hatch: refresh the files without restarting anything.
+infisical_agent_manage_service: true
+
+# The post-start helper (the Agent's first-render gap, see the role README)
+# waits this long for the first render after a start, and every recreate
+# command (config execute and helper alike) is capped at
+# infisical_agent_command_timeout_seconds. TimeoutStartSec in the unit covers
+# the wait plus all commands, with margin.
+infisical_agent_post_start_wait_seconds: 60
+infisical_agent_command_timeout_seconds: 60
+
+# One entry per rendered env file: `name` is the issue 024 template stem AND
+# the rendered file name; `env` the Infisical environment; `service` the
+# compose service the file feeds (they differ on staging: every service name
+# is a DNS alias on leviosa_network, so staging's carry a staging_ prefix —
+# infra/compose/README.md). `recreate: true` means a rendered change also
+# recreates that service with `docker compose up -d --no-deps
+# --force-recreate` (--no-deps, so a backend change can never bounce
+# Postgres or RabbitMQ). The others are rewritten only, no command:
+# - postgres, rabbitmq: POSTGRES_PASSWORD / RABBITMQ_DEFAULT_* apply at the
+#   first initialisation only; rotating them is a manual change inside the
+#   service, never an automatic restart (ADR-0016).
+# - backup: the backup job (issue 028) reads the file fresh on each run.
+# - admin: the next deploy's bootstrap-admin one-off reads admin.env.
+# The names MUST stay in sync with infra/infisical/templates (issue 024) and
+# the service names with infra/compose/docker-compose.*.yml.
+infisical_agent_templates:
+  # Production renders every consumer under /opt/leviosa.
+  - { env: prod, name: backend, service: backend, recreate: true }
+  - { env: prod, name: frontend, service: frontend, recreate: true }
+  - { env: prod, name: redis, service: redis, recreate: true }
+  - { env: prod, name: caddy, service: caddy, recreate: true }
+  - { env: prod, name: postgres, service: postgres, recreate: false }
+  - { env: prod, name: rabbitmq, service: rabbitmq, recreate: false }
+  - { env: prod, name: backup, service: backup, recreate: false }
+  - { env: prod, name: admin, service: admin, recreate: false }
+  # Staging brings its backend, frontend, admin and its own Redis; Postgres,
+  # RabbitMQ and Caddy are production's (ADR-0016).
+  - { env: staging, name: backend, service: staging_backend, recreate: true }
+  - { env: staging, name: frontend, service: staging_frontend, recreate: true }
+  - { env: staging, name: redis, service: staging_redis, recreate: true }
+  - { env: staging, name: admin, service: staging_admin, recreate: false }
+
+# Infisical CLI apt repository.
+infisical_agent_apt_baseurl: "https://artifacts-cli.infisical.com"
+infisical_agent_apt_keyring: /usr/share/keyrings/infisical-archive-keyring.gpg

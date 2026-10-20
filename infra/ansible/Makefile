@@ -5,8 +5,8 @@
 # `deploy <stack> <sha>` through the deploy gate (roles/deploy_gate,
 # infra/compose/README.md), run by CI.
 
-.PHONY: help setup check-clean lint \
-        ssh-info status staging-status logs staging-logs \
+.PHONY: help setup infisical-agent check-clean lint \
+        ssh-info status staging-status agent-status logs staging-logs \
         install-deps terraform-outputs
 
 # Default target
@@ -17,6 +17,12 @@ help:
 	@echo "Setup (needs only this computer's SSH key, listed in the keys file, and 'infisical login'):"
 	@echo "  make setup           - Complete VPS setup (fresh server, and after any change here)"
 	@echo "                         KEYS_FILE=<path> overrides ~/leviosa-deploy-keys.yml"
+	@echo "                         With INFISICAL_VPS_CLIENT_ID/SECRET exported, the Infisical"
+	@echo "                         Agent is installed too; otherwise that role is skipped"
+	@echo ""
+	@echo "  make infisical-agent - Install or rotate the Infisical Agent alone (issue 027):"
+	@echo "                         the leviosa-vps credential from INFISICAL_VPS_CLIENT_ID /"
+	@echo "                         INFISICAL_VPS_CLIENT_SECRET, or the playbook's prompts"
 	@echo ""
 	@echo "Releases: NOT here. CI runs 'deploy <stack> <sha>' through the deploy gate."
 	@echo ""
@@ -28,6 +34,7 @@ help:
 	@echo "  make ssh-info        - Display SSH connection details"
 	@echo "  make status          - Check production service status"
 	@echo "  make staging-status  - Check staging service status"
+	@echo "  make agent-status    - Check the Infisical Agent (systemd)"
 	@echo "  make logs            - View production logs"
 	@echo "  make staging-logs    - View staging logs"
 	@echo ""
@@ -76,12 +83,47 @@ setup:
 		$${domain:+-e "app_domain=$$domain"}
 
 # ============================================
+# Infisical Agent (issue 027)
+# ============================================
+
+# Install or rotate the Infisical Agent alone: renders the env files in both
+# stack roots from issue 024's templates. The leviosa-vps credential is read
+# at run time only (ADR-0017): export INFISICAL_VPS_CLIENT_ID /
+# INFISICAL_VPS_CLIENT_SECRET and press Enter at both prompts, or answer them
+# (the secret is not echoed). Re-running this with a NEW client secret is the
+# rotation procedure (every three months; roles/infisical_agent/README.md):
+# no app container is restarted, and the old secret is revoked afterwards.
+infisical-agent:
+	@echo "==========================================="
+	@echo "Leviosa Infisical Agent - install or rotate"
+	@echo "==========================================="
+	@echo ""
+	@vps_ip="$(VPS_IP)"; \
+	if [ -z "$$vps_ip" ]; then \
+		echo "Error: could not read the VPS IP from Terraform."; \
+		echo "Run 'infisical login', then 'cd ../terraform && ./tf.sh output server_ipv4_address'."; \
+		exit 1; \
+	fi; \
+	echo "VPS IP: $$vps_ip"; \
+	if [ -n "$$INFISICAL_VPS_CLIENT_ID" ] && [ -n "$$INFISICAL_VPS_CLIENT_SECRET" ]; then \
+		echo "Credential: exported (press Enter at both prompts)"; \
+	else \
+		echo "Credential: not exported (answer the prompts; the secret is not echoed)"; \
+	fi; \
+	echo ""; \
+	printf 'Continue? [y/N] '; read confirm; [ "$$confirm" = "y" ] || exit 1; \
+	echo ""; \
+	ansible-playbook -i inventory/hosts.yml playbooks/infisical-agent.yml \
+		-e "ansible_host=$$vps_ip"
+
+# ============================================
 # Verification
 # ============================================
 
 check-clean:
 	@echo "Checking playbooks for syntax errors..."
 	@ansible-playbook playbooks/site.yml --syntax-check
+	@ansible-playbook playbooks/infisical-agent.yml --syntax-check
 	@echo "All playbooks are clean!"
 
 lint:
@@ -114,6 +156,10 @@ status:
 staging-status:
 	@echo "Checking staging service status..."
 	@ssh root@$(VPS_IP) "cd /opt/leviosa-staging && docker compose ps"
+
+agent-status:
+	@echo "Checking the Infisical Agent..."
+	@ssh root@$(VPS_IP) "systemctl status infisical-agent --no-pager; ls -la /opt/leviosa/env /opt/leviosa-staging/env"
 
 logs:
 	@echo "Streaming production logs (Ctrl+C to exit)..."
