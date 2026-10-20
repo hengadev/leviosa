@@ -141,10 +141,10 @@ type healthResponse struct {
 }
 
 // handleHealth reports the server's status and the release SHA it is running
-// (see ReleaseSHA), so the frontend's /healthz and deploy tooling can verify
+// (see releaseSHA), so the frontend's /healthz and deploy tooling can verify
 // what is actually serving.
 func handleHealth(w http.ResponseWriter, r *http.Request) {
-	httpx.RespondWithJSON(w, healthResponse{Status: "ok", SHA: ReleaseSHA}, http.StatusOK)
+	httpx.RespondWithJSON(w, healthResponse{Status: "ok", SHA: releaseSHA()}, http.StatusOK)
 }
 
 func (s *Server) setupAuthuserRoutes(router *http.ServeMux) {

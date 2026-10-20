@@ -9,3 +9,13 @@ package app
 // misleading version. /health exposes it so deploys and Promote can verify
 // what is actually serving.
 var ReleaseSHA = "dev"
+
+// releaseSHA returns the SHA to report: ReleaseSHA, or "dev" when the build
+// injected an empty value (e.g. `--build-arg COMMIT_SHA=` with an unset
+// variable), so a botched build never reports a blank version.
+func releaseSHA() string {
+	if ReleaseSHA == "" {
+		return "dev"
+	}
+	return ReleaseSHA
+}
