@@ -23,6 +23,11 @@ help:
 	@echo "  make local-stop       - Stop the local Docker stack"
 	@echo "  make local-restart    - Restart the local Docker stack"
 	@echo "  make stripe-listen    - Forward Stripe test-mode webhooks to the local backend (run beside local-dev)"
+	@echo "  make env              - Render backend/development.env and frontend/.env from Infisical dev (overwrites both; infisical login first)"
+	@echo ""
+	@echo "Infisical Agent env templates (infra/infisical):"
+	@echo "  make agent-templates-test - Render every template against fake folders and check each file (no Infisical needed)"
+	@echo "  make env-check-<dev|staging|prod> - Read-only: render that environment's files from Infisical, list key names (never values)"
 	@echo ""
 	@echo "Local deploy harnesses (Docker / shell only, nothing remote):"
 	@echo "  make deploy-harness   - Drive infra/compose/deploy against the real compose file"
@@ -85,6 +90,26 @@ local-stop:
 	docker compose -f local.compose.yaml down
 
 local-restart: local-stop local-start
+
+# Render the local env files from Infisical dev with the server's Agent
+# templates, using your own login: backend/development.env (backend.env +
+# admin.env) and frontend/.env. OVERWRITES both. See infra/infisical/README.md.
+.PHONY: env env-check-dev env-check-staging env-check-prod agent-templates-test
+env:
+	infra/infisical/make-env.sh
+
+# Read-only check of one Infisical environment (env-check-dev, -staging,
+# -prod): renders its env files into a private temp dir, lists each file's key
+# names and any problem, never a value, then deletes them. Needs infisical
+# login and Go.
+env-check-dev env-check-staging env-check-prod: env-check-%:
+	infra/infisical/check-env.sh $*
+
+# The Agent templates' fixture test: renders every template against fake
+# Infisical folders (no Infisical, no network) and asserts each file's key set,
+# frontend.env's exclusions and the URL formats.
+agent-templates-test:
+	cd infra/infisical/envcheck && go test -count=1 ./...
 
 # Local Docker harness for infra/compose (prod and staging compose files + deploy script):
 # builds both images with fake SHAs and drives the real deploy script; isolated
