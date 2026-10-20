@@ -22,3 +22,10 @@ func TestServeRejectsArguments(t *testing.T) {
 		t.Fatalf("expected serve to reject arguments, got %v", err)
 	}
 }
+
+func TestMigrateRejectsArguments(t *testing.T) {
+	err := dispatch(context.Background(), []string{"migrate", "extra"})
+	if err == nil || !strings.Contains(err.Error(), "migrate takes no arguments") {
+		t.Fatalf("expected migrate to reject arguments, got %v", err)
+	}
+}
