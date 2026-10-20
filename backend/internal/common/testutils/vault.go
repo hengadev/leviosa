@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
 	hashicorpkeys "github.com/hengadev/encx/providers/keys/hashicorp"
@@ -285,7 +284,7 @@ func InitializeServiceKeys(vaultContainer *VaultContainer, cryptoService encx.Cr
 	}
 
 	// Create service key manager
-	keyManager := services.NewServiceKeyManager(vaultClient, cryptoService)
+	keyManager := NewServiceKeyManager(vaultClient, cryptoService)
 
 	// Generate all service keys
 	serviceKeys, err := keyManager.GenerateAllServiceKeys(context.Background())

@@ -486,3 +486,23 @@ func TestSetCachedKeyHash(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, "new-hash", hash)
 }
+
+// Without a service key store (how the app runs since Vault was removed), service
+// authentication fails closed instead of panicking.
+func TestRequireServiceAuth_NoSecretReader_Rejected(t *testing.T) {
+	crypto := newTestMiddlewareCrypto(t)
+	mw := NewSessionAuthMiddleware(nil, crypto, nil)
+
+	nextCalled := false
+	next := func(w http.ResponseWriter, r *http.Request) { nextCalled = true }
+
+	req := newRequestWithLogger("POST", "/bookings/claim")
+	req.Header.Set(services.ServiceNameHeader, services.AuthUser)
+	req.Header.Set(services.ServiceKeyHeader, "any-key")
+	rr := httptest.NewRecorder()
+
+	mw.RequireServiceAuth(next)(rr, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.False(t, nextCalled)
+}

@@ -35,6 +35,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
@@ -249,7 +250,7 @@ func TestMain(m *testing.M) {
 	// Create authentication middleware with Vault client
 	// For integration tests, we pass nil session repository since we're testing service auth
 	sessionRepo = session.NewRedisSessionRepository(redisClient)
-	authmw := auth.NewSessionAuthMiddleware(sessionRepo, crypto, vaultSetup.VaultClient)
+	authmw := auth.NewSessionAuthMiddleware(sessionRepo, crypto, vaultSecretReader{vaultSetup.VaultClient})
 
 	// Create HTTP handler with auth middleware
 	handler = settingsHandler.New(service, authmw)
@@ -292,4 +293,16 @@ func TestMain(m *testing.M) {
 
 	// Exit with the test result code
 	os.Exit(code) // Commented out to allow cleanup before exiting in some environments
+}
+
+// vaultSecretReader serves the service key hashes provisioned by SetupServiceVault to the
+// auth middleware. The app itself has no service key store since Vault was removed (ADR-0015).
+type vaultSecretReader struct{ client *api.Client }
+
+func (r vaultSecretReader) Read(ctx context.Context, path string) (*auth.SecretData, error) {
+	secret, err := r.client.Logical().ReadWithContext(ctx, path)
+	if err != nil || secret == nil {
+		return nil, err
+	}
+	return &auth.SecretData{Data: secret.Data}, nil
 }

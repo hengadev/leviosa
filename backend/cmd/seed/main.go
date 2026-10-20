@@ -10,22 +10,18 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hengadev/encx"
-	hashicorpkeys "github.com/hengadev/encx/providers/keys/hashicorp"
-	hashicorpsecrets "github.com/hengadev/encx/providers/secrets/hashicorp"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption"
 )
 
 type SeedConfig struct {
-	DatabaseURL     string
-	DatabaseSchema  string
-	VaultAddr       string
-	VaultToken      string
-	EncxKEKAlias    string
-	EncxPepperAlias string
-	SeedDataPath    string
+	DatabaseURL    string
+	DatabaseSchema string
+	Encryption     encryption.Config
+	SeedDataPath   string
 }
 
 func loadConfig() (*SeedConfig, error) {
@@ -34,20 +30,14 @@ func loadConfig() (*SeedConfig, error) {
 	}
 
 	cfg := &SeedConfig{
-		DatabaseURL:     getEnv("DATABASE_URL", ""),
-		DatabaseSchema:  getEnv("DATABASE_SCHEMA", "auth"),
-		VaultAddr:       getEnv("VAULT_ADDR", "http://localhost:8200"),
-		VaultToken:      getEnv("VAULT_TOKEN", ""),
-		EncxKEKAlias:    getEnv("ENCX_KEK_ALIAS", "leviosa-kek"),
-		EncxPepperAlias: getEnv("ENCX_PEPPER_ALIAS", "leviosa"),
-		SeedDataPath:    getEnv("SEED_DATA_PATH", "cmd/seed/seed_data.json"),
+		DatabaseURL:    getEnv("DATABASE_URL", ""),
+		DatabaseSchema: getEnv("DATABASE_SCHEMA", "auth"),
+		Encryption:     encryption.ConfigFromEnv(os.Getenv),
+		SeedDataPath:   getEnv("SEED_DATA_PATH", "cmd/seed/seed_data.json"),
 	}
 
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
-	}
-	if cfg.VaultToken == "" {
-		return nil, fmt.Errorf("VAULT_TOKEN is required")
 	}
 
 	return cfg, nil
@@ -58,28 +48,6 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
-}
-
-func setupCrypto(cfg *SeedConfig) (encx.CryptoService, error) {
-	keyProvider, err := hashicorpkeys.NewTransitService()
-	if err != nil {
-		return nil, fmt.Errorf("create hashicorp key provider: %w", err)
-	}
-
-	secretProvider, err := hashicorpsecrets.NewKVStore()
-	if err != nil {
-		return nil, fmt.Errorf("create hashicorp secret provider: %w", err)
-	}
-
-	crypto, err := encx.NewCrypto(context.Background(), keyProvider, secretProvider, encx.Config{
-		KEKAlias:    cfg.EncxKEKAlias,
-		PepperAlias: cfg.EncxPepperAlias,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create crypto service: %w", err)
-	}
-
-	return crypto, nil
 }
 
 type AdminUser struct {
@@ -232,7 +200,7 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	crypto, err := setupCrypto(cfg)
+	crypto, err := encryption.NewCrypto(ctx, cfg.Encryption)
 	if err != nil {
 		log.Fatalf("Failed to setup crypto: %v", err)
 	}
