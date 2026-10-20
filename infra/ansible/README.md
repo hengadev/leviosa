@@ -22,11 +22,11 @@ deployed from an operator computer.
 | `fail2ban` | SSH jails (brute force and floods); notifications to the email below. The Caddy jail stays off until Caddy writes its access log (issue 026) |
 | `firewall` | UFW: deny incoming, allow 22 (rate limited), 80 and 443, nothing else |
 | `app` | the stack directories (below) |
+| `infisical_agent` | the Infisical Agent: pinned CLI, systemd service polling Infisical every 60 s, the env files rendered root-only `0600` into both stack roots and the affected service recreated on change ([its README](roles/infisical_agent/README.md)). **Skipped, with a note, when `INFISICAL_VPS_CLIENT_ID` / `INFISICAL_VPS_CLIENT_SECRET` are not exported** — the rest of the setup still succeeds; add it later with `make infisical-agent` |
 
-Still to come in the same playbook, in this order: `caddy` and
+Still to come in the same playbook, after `infisical_agent`: `caddy` and
 `shared_services` (Postgres, RabbitMQ and Caddy up, staging's database role,
-the RabbitMQ vhosts; issue 026), `infisical_agent` (the env files; issue 027)
-and `backup` (issue 028).
+the RabbitMQ vhosts; issue 026) and `backup` (issue 028).
 
 ### Stack directories (`roles/app`)
 
@@ -64,9 +64,9 @@ with your own `infisical login`; nothing is written to Infisical, and the
 output is hidden from Ansible's log. When the lookup fails (not logged in, no
 CLI, the secret missing) the run prints a `WARNING` and uses
 `root@localhost`; fix the cause and run again. Until `infisical_project_id`
-in `playbooks/site.yml` holds the real project ID (the same value as
-`infisical_project_id` in `infra/terraform/terraform.tfvars`), the lookup is
-skipped with the same warning.
+in `infra/terraform/terraform.tfvars` holds a real project ID — the one place
+it is set; `site.yml` reads it from there — the lookup is skipped with the
+same warning.
 
 ## Prerequisites (each operator computer)
 
@@ -77,6 +77,11 @@ cd infra/ansible && make install-deps      # ansible.posix, community.general, c
 
 # Infisical CLI, logged in to secrets.henga.dev (member of `leviosa` and `leviosa-infra`)
 infisical login
+
+# For the Infisical Agent in the same run (optional; skipped without them):
+# the leviosa-vps machine identity, exported for that run only
+export INFISICAL_VPS_CLIENT_ID=…
+export INFISICAL_VPS_CLIENT_SECRET=…
 
 # This computer's own SSH key, listed in the keys file (below)
 ssh-keygen -t ed25519 -C leviosa-<computer>
@@ -152,6 +157,11 @@ deploy_ci_ssh_public_keys:     # the CI key: the deploy user only, forced to the
 infisical login
 make setup                     # from the repository root, or from infra/ansible
 make setup                     # again: must report changed=0
+
+# Infisical Agent alone (install, or rotate the credential every three
+# months); prompts, falling back to INFISICAL_VPS_CLIENT_ID / _SECRET
+make infisical-agent
+make agent-status             # the Agent's state and the rendered env files
 ```
 
 `make setup` reads the server IP (and domain) from Terraform through
@@ -176,9 +186,10 @@ the run just reverted; find out which before moving on. The exception is
 
 One role only: `ansible-playbook … --tags <tag>` with the same `-e` options.
 Tags: `system`, `docker`, `user` (also runs `deploy_gate`), `deploy_gate`,
-`ssh`, `fail2ban`, `firewall`, `app`, plus `setup` and `security` for groups
-of them. On a server that is already set up, `--check --diff` shows what a
-run would change.
+`ssh`, `fail2ban`, `firewall`, `app`, `infisical` (also `agent`, and
+`credential` / `templates` for parts of it), plus `setup` and `security` for
+groups of them. On a server that is already set up, `--check --diff` shows
+what a run would change.
 
 ## Variables
 
@@ -202,7 +213,7 @@ Group variables (`playbooks/group_vars/all.yml`, no secrets):
 | `fail2ban_*` | see the file | jail thresholds; `fail2ban_caddy_enabled: false` until issue 026 |
 
 Values that are secrets are not variables: they live in Infisical and reach
-the server through the Agent's env files (issue 027).
+the server through the Agent's env files (`roles/infisical_agent`).
 
 ## Verification
 
@@ -210,6 +221,7 @@ the server through the Agent's env files (issue 027).
 make check-clean        # ansible-playbook --syntax-check on every playbook
 make lint               # ansible-lint, when installed
 make deploy-gate-test   # from the repository root: the deploy gate's tests
+make infisical-agent-test  # from the repository root: the Agent role's tests
 ```
 
 After a setup, on the server (as root):
@@ -226,6 +238,10 @@ After a setup, on the server (as root):
 - [ ] with the CI key, `ssh leviosa@<host> id` is refused by the gate
 - [ ] `docker network inspect leviosa_network` exists
 - [ ] `ls -la /opt/leviosa /opt/leviosa-staging` matches the layout above
+- [ ] with the credential exported: `systemctl status infisical-agent` is
+      active, and every expected file sits root-owned `0600` under
+      `/opt/leviosa/env` and `/opt/leviosa-staging/env`
+- [ ] without the credential, the run printed the skip note and succeeded
 - [ ] a second `make setup` reports `changed=0`
 
 ## Troubleshooting
@@ -241,6 +257,9 @@ After a setup, on the server (as root):
   `NOTIFY_EMAIL`.
 - **"Could not read the VPS IP from Terraform":** `infisical login`, then
   `cd ../terraform && ./tf.sh output server_ipv4_address`.
+- **The Infisical Agent authenticates in a loop / logs lockouts:** see
+  [lockout recovery](roles/infisical_agent/README.md#lockout-recovery) —
+  stop the Agent, clear the lockout in Infisical, start it.
 - **"The docker group has members":** someone was added by hand;
   `gpasswd -d <user> docker` and run again.
 - **A playbook fails:** re-run with `-vvv`.
@@ -250,13 +269,14 @@ After a setup, on the server (as root):
 ```
 infra/ansible/
 ├── ansible.cfg
-├── Makefile                    # make setup, check-clean, lint, status/logs
+├── Makefile                    # make setup, infisical-agent, check-clean, lint, status/logs
 ├── requirements.yml            # collections
 ├── deploy-keys.example.yml     # the keys file's format (fake keys)
 ├── inventory/hosts.yml
 ├── playbooks/
 │   ├── group_vars/all.yml      # defaults, no secrets
-│   └── site.yml                # the whole setup
+│   ├── site.yml                # the whole setup
+│   └── infisical-agent.yml      # install or rotate the Agent's credential
 └── roles/
     ├── system/                 # packages, unattended upgrades, sysctl
     ├── docker/                 # Docker, daemon.json, leviosa_network
@@ -265,5 +285,6 @@ infra/ansible/
     ├── ssh/                    # sshd hardening drop-in
     ├── fail2ban/               # SSH (and later Caddy) jails
     ├── firewall/               # UFW: 22, 80, 443
-    └── app/                    # stack directories
+    ├── app/                    # stack directories
+    └── infisical_agent/        # the Agent, its credential and the env files
 ```
