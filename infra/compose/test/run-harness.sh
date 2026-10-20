@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# Local Docker harness for docker-compose.prod.yml, docker-compose.staging.yml
-# and `deploy` (issues 018 and 019).
+# Local Docker harness for docker-compose.prod.yml, docker-compose.staging.yml,
+# `deploy` and caddy/Caddyfile (issues 018, 019 and 020).
 #
 #   infra/compose/test/run-harness.sh
 #
@@ -31,13 +31,25 @@
 #       credential
 #   S6. a staging deploy restarts no production container
 #   (and, before production exists, a staging deploy fails at migrate)
+#   Caddy (020) — the real caddy/Caddyfile, with Caddy's internal CA in place
+#   of the Cloudflare DNS challenge (LEVIOSA_CADDY_TLS=internal); requests go
+#   to its random loopback ports with each real host name as SNI and Host
+#   C1. POST /webhooks/stripe and /webhooks/stripe/connect on each stack reach
+#       that stack's backend (its signature error), staging's without auth
+#   C2. any staging page without credentials is a 401; with them, the page
+#   C3. staging /healthz is a 200 without credentials
+#   C4. staging responses carry X-Robots-Tag: noindex, production's don't
+#   C5. requests sent while the backend (or the frontend) is being recreated
+#       get no 502
+#   (and the production variant, Cloudflare DNS challenge, validates offline)
 #   7. nothing left behind: containers, networks, volumes, images, temp files
 #
 # Isolation: every name carries a random run id (leviosa-harness-<id>): its
 # own compose projects (<name>-prod, <name>-staging), network, LocalStack
 # container and image repositories (<name>-backend / <name>-frontend, so the
 # henga/leviosa-* pins are never touched). Nothing binds a fixed host port
-# (Caddy gets a random loopback port). Everything on disk lives under one
+# (Caddy gets random loopback ports) and nothing resolves the real host names
+# (curl --connect-to). Everything on disk lives under one
 # mktemp -d. An EXIT trap tears it all down on success and failure; public
 # images the run had to pull are removed too (HARNESS_KEEP_PULLED=1 keeps
 # them for faster reruns).
@@ -74,8 +86,21 @@ LOCALSTACK_IMAGE=localstack/localstack:4.6
 AWS_REGION=eu-central-1             # as in fixtures/{prod,staging}/env/backend.env
 KMS_ALIAS=alias/leviosa-harness     # ENCX_KMS_KEY_ALIAS in the prod file
 KMS_ALIAS_STAGING=alias/leviosa-harness-staging # ... and in the staging file
-STAGING_HOST=staging.harness.leviosa.test       # fixtures/Caddyfile's staging site
 BROKEN_MIGRATION=29991231235959_harness_broken_migration.sql
+
+# caddy/Caddyfile's sites, and the hosts it no longer serves.
+CADDYFILE=$COMPOSE_DIR/caddy/Caddyfile
+CADDY_IMAGE=serfriz/caddy-cloudflare:2.11 # docker-compose.prod.yml's caddy image
+PROD_HOSTS="leviosa.care www.leviosa.care admin.leviosa.care staff.leviosa.care"
+STAGING_HOSTS="staging.leviosa.care admin-staging.leviosa.care staff-staging.leviosa.care"
+DROPPED_HOSTS="analytics.leviosa.care www.staging.leviosa.care"
+STAGING_HOST=staging.leviosa.care
+# The plaintext of fixtures/prod/env/caddy.env's STAGING_BASIC_AUTH_HASH.
+STAGING_AUTH_PASSWORD=harness-staging-password
+# Stripe's webhook routes. The fixtures' webhook secrets are empty, so no
+# signature ever verifies: the backend answers each POST with this error.
+WEBHOOK_PATHS="/webhooks/stripe /webhooks/stripe/connect"
+WEBHOOK_REJECTED='{"error":"webhook signature verification failed"}'
 
 # Fake, obviously-not-real 40-hex commit SHAs, baked into images via COMMIT_SHA.
 fake_sha() { printf 'c0ffee%034d' "$1"; }
@@ -94,7 +119,8 @@ declare -A SECTION_FAILS=()
 CURRENT=""
 TOTAL_PASS=0
 TOTAL_FAIL=0
-CADDY_ADDRESS="" # Caddy's random loopback address, once it runs
+CADDY_HTTPS=""    # Caddy's random loopback address for :443, once it runs
+STREAM_PID=""    # a background request stream through Caddy, while one runs
 # Production's containers before and after the first staging deploy (S6).
 PROD_BEFORE_STAGING=""
 PROD_AFTER_FIRST_STAGING=""
@@ -360,6 +386,68 @@ leaked_keys() {
 	done
 }
 
+# ── Caddy (issue 020) ────────────────────────────────────────────────────────
+# One request through Caddy's HTTPS port as https://<host><path>: curl never
+# resolves the host (--connect-to sends it to Caddy's loopback port, with the
+# host as SNI and Host header) and accepts the internal CA's certificate (-k).
+# Prints the status code (000: no HTTP answer, e.g. no certificate for the
+# host); response_header and response_body read the rest of the answer.
+via_caddy() { # $1 host, $2 path, curl options...
+	local host=$1 path=$2
+	shift 2
+	: >"$TMP/caddy-response.headers"
+	: >"$TMP/caddy-response.body"
+	curl -sk --max-time 40 --connect-to "$host:443:$CADDY_HTTPS" \
+		-D "$TMP/caddy-response.headers" -o "$TMP/caddy-response.body" -w '%{http_code}' \
+		"$@" "https://$host$path" 2>/dev/null || true
+}
+response_header() { tr -d '\r' <"$TMP/caddy-response.headers" | sed -n "s/^$1: *//Ip" | paste -sd ',' -; }
+response_body() { cat "$TMP/caddy-response.body"; }
+# Staging's basic auth user (caddy.env) and the fixture password, for curl -u.
+staging_credentials() { echo "$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_USER):$STAGING_AUTH_PASSWORD"; }
+# A Stripe-shaped webhook POST whose signature cannot verify.
+post_webhook() { # $1 host, $2 path, $3 User-Agent
+	via_caddy "$1" "$2" -X POST -A "$3" -H 'Content-Type: application/json' \
+		-H 'Stripe-Signature: t=1,v1=0000' --data '{"type":"harness.test"}'
+}
+# The backend logs every request (but /health and /healthz) with its
+# User-Agent: a unique one tells which backend, if any, a request reached.
+backend_saw() { docker logs "$1" 2>&1 | grep -qF "\"user_agent\":\"$2\""; } # $1 container, $2 User-Agent
+# `caddy <command>` (validate, adapt) on the Caddyfile, in the compose file's
+# Caddy image and without a network: nothing is contacted. The environment
+# holds the fixture caddy.env's values, unquoted as Compose reads them (never
+# on a command line), and no LEVIOSA_CADDY_TLS unless given: by default this
+# is production's variant, with the Cloudflare DNS challenge.
+caddy_offline() { # $1 caddy command, docker run options...
+	local command=$1 hash
+	shift
+	hash=$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_HASH)
+	hash=${hash#\'}
+	env CLOUDFLARE_API_TOKEN="$(env_value "$TMP/prod/env/caddy.env" CLOUDFLARE_API_TOKEN)" \
+		STAGING_BASIC_AUTH_USER="$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_USER)" \
+		STAGING_BASIC_AUTH_HASH="${hash%\'}" \
+		docker run --rm --label "$LABEL" --network none -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" \
+		-e CLOUDFLARE_API_TOKEN -e STAGING_BASIC_AUTH_USER -e STAGING_BASIC_AUTH_HASH "$@" \
+		"$CADDY_IMAGE" caddy "$command" --config /etc/caddy/Caddyfile
+}
+caddy_validates() { caddy_offline validate "${@:2}" >"$TMP/logs/$1.log" 2>&1; } # $1 log name, docker run options...
+# The JSON config without its tls app (the last one: Caddy sorts the keys).
+without_tls_app() { echo "${1%%,\"tls\":\{*}"; }
+# The hosts a JSON config's tls automation policy covers, sorted, one line.
+tls_subjects() { sed -n 's/.*"subjects":\[\([^]]*\)\].*/\1/p' <<<"$1" | tr -d '"' | tr ',' '\n' | sort | paste -sd ' ' -; }
+# Requests through Caddy, one every 100 ms, until the stop file $1 exists:
+# "<status> <seconds>" per request into $2.
+caddy_stream() { # $1 stop file, $2 output, $3 host, $4 path, curl options...
+	local stop=$1 out=$2 host=$3 path=$4
+	shift 4
+	while [ ! -e "$stop" ] && [ -d "$TMP" ]; do
+		# -w prints 000 when there is no HTTP answer
+		curl -sk --max-time 40 --connect-to "$host:443:$CADDY_HTTPS" -o /dev/null \
+			-w '%{http_code} %{time_total}\n' "$@" "https://$host$path" >>"$out" 2>/dev/null || true
+		sleep 0.1
+	done
+}
+
 # ── teardown ─────────────────────────────────────────────────────────────────
 harness_containers() {
 	{
@@ -376,6 +464,7 @@ teardown() {
 	[ "$TORN_DOWN" = 1 ] && return 0
 	TORN_DOWN=1
 	set +e
+	[ -n "$STREAM_PID" ] && kill "$STREAM_PID" 2>/dev/null
 	if [ "${KEEP:-0}" = 1 ]; then
 		echo "KEEP=1: left running: projects $PROJECT and $PROJECT_STAGING, network $NETWORK, $LOCALSTACK; temp dir $TMP" >&2
 		return 0
@@ -450,11 +539,13 @@ setup() {
 	cp "$COMPOSE_DIR/docker-compose.prod.yml" "$TMP/prod/docker-compose.yml"
 	cp "$FIXTURES/prod/env/"*.env "$TMP/prod/env/"
 	chmod 600 "$TMP/prod/env/"*.env # the Agent renders them 0600
-	cp "$FIXTURES/Caddyfile" "$TMP/prod/caddy/etc/Caddyfile"
+	# The real Caddyfile, as Ansible's caddy role installs it.
+	cp "$CADDYFILE" "$TMP/prod/caddy/etc/Caddyfile"
 
 	# The harness's only deviations from production, layered over the
 	# unmodified compose file: its own image repositories (same :prod pin
-	# tag), its own network, and Caddy on a random loopback port.
+	# tag), its own network, and Caddy on random loopback ports with its
+	# internal CA in place of the Cloudflare DNS challenge.
 	cat >"$TMP/harness-override.yml" <<EOF
 # generated by run-harness.sh (run $RUN_ID)
 services:
@@ -467,8 +558,11 @@ services:
   frontend:
     image: $FRONTEND_REPO:prod
   caddy:
+    environment:
+      LEVIOSA_CADDY_TLS: internal
     ports: !override
       - "127.0.0.1::80"
+      - "127.0.0.1::443"
 networks:
   leviosa_network:
     name: $NETWORK
@@ -632,6 +726,31 @@ case_static() {
 	check "staging: Redis data is bind-mounted under its own ./data/redis" \
 		grep -q '\./data/redis:/data' "$staging"
 	check "deploy refuses a non-SHA for staging (a tag name)" bash -c '! "$1" staging staging >/dev/null 2>&1' _ "$DEPLOY"
+
+	# caddy/Caddyfile (issue 020): production's variant, then the harness's.
+	check "the Caddyfile validates in its production variant (LEVIOSA_CADDY_TLS unset), offline" \
+		caddy_validates caddy-validate-prod
+	check "... and in the harness variant (LEVIOSA_CADDY_TLS=internal)" \
+		caddy_validates caddy-validate-internal -e LEVIOSA_CADDY_TLS=internal
+	check "the Caddyfile is caddy fmt-clean (no formatting warning when Caddy loads it)" \
+		bash -c '"$@" >"$0" 2>&1' "$TMP/logs/caddy-fmt.log" \
+		docker run --rm --label "$LABEL" --network none -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" \
+		"$CADDY_IMAGE" caddy fmt --diff /etc/caddy/Caddyfile
+	local prod_json harness_json hosts want
+	prod_json=$(caddy_offline adapt 2>/dev/null || true)
+	harness_json=$(caddy_offline adapt -e LEVIOSA_CADDY_TLS=internal 2>/dev/null || true)
+	want=$(tr ' ' '\n' <<<"$PROD_HOSTS $STAGING_HOSTS" | sort | paste -sd ' ' -)
+	hosts=$(tls_subjects "$prod_json")
+	check "production variant: certificates for exactly the seven hosts ($hosts)" [ "$hosts" = "$want" ]
+	check "... from ACME through the Cloudflare DNS challenge, its token read at runtime from caddy.env" \
+		bash -c '[[ $1 == *"\"issuers\":[{\"challenges\":{\"dns\":{\"provider\":{\"api_token\":\"{env.CLOUDFLARE_API_TOKEN}\",\"name\":\"cloudflare\"}}},\"module\":\"acme\"}]"* ]] &&
+			[[ $1 != *"\"module\":\"internal\""* ]]' _ "$prod_json"
+	check "harness variant: the same hosts from Caddy's internal CA, no ACME" \
+		bash -c '[ "$2" = "$3" ] && [[ $1 == *"\"issuers\":[{\"module\":\"internal\"}]"* ]] && [[ $1 != *"\"module\":\"acme\""* ]]' _ \
+		"$harness_json" "$(tls_subjects "$harness_json")" "$want"
+	check "the two variants differ in the tls app only: routing, auth, headers and logs are the same config" \
+		bash -c '[ -n "$1" ] && [ "$1" = "$2" ]' _ "$(without_tls_app "$prod_json")" "$(without_tls_app "$harness_json")"
+	check "the harness runs the repository's Caddyfile unmodified" cmp -s "$CADDYFILE" "$TMP/prod/caddy/etc/Caddyfile"
 }
 
 case_first_deploy() {
@@ -788,20 +907,47 @@ case_data_survives() {
 }
 
 case_caddy() {
-	section "extra: Caddy (minimal harness Caddyfile) reaches the frontend from a random loopback port"
+	section "Caddy: the real Caddyfile (internal CA) serves production's hosts on random loopback ports"
 	if ! dc up -d --no-deps --wait --wait-timeout 60 caddy >"$TMP/logs/caddy.log" 2>&1; then
 		show_log "$TMP/logs/caddy.log"
 		bad "caddy did not start"
 		return
 	fi
-	local address body
+	local address https body host statuses="" bodies=0 n=0 waited=0 got
 	address=$(dc port caddy 80)
-	CADDY_ADDRESS=$address
-	note "caddy published on $address"
-	check "caddy is published on loopback only" [ "${address%%:*}" = 127.0.0.1 ]
-	body=$(curl -fsS --max-time 10 "http://$address/healthz" 2>&1 || true)
-	check "GET /healthz through caddy reports $SHA2 for both apps ($body)" \
+	https=$(dc port caddy 443)
+	CADDY_HTTPS=$https
+	note "caddy published on $address (http) and $https (https)"
+	check "caddy is published on loopback only" [ "${address%%:*} ${https%%:*}" = "127.0.0.1 127.0.0.1" ]
+	# Caddy issues the internal CA's certificates as it starts: wait for them.
+	until [ "$(via_caddy leviosa.care /healthz)" = 200 ] || [ "$waited" -ge 30 ]; do
+		sleep 1
+		waited=$((waited + 1))
+	done
+	body=$(response_body)
+	check "GET https://leviosa.care/healthz through caddy reports $SHA2 for both apps ($body)" \
 		[ "$body" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
+	for host in $PROD_HOSTS; do
+		n=$((n + 1))
+		statuses+="$(via_caddy "$host" /healthz) "
+		if [ "$(response_body)" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]; then bodies=$((bodies + 1)); fi
+	done
+	check "every production host (${PROD_HOSTS// /, }) reaches production's frontend: /healthz reports $SHA2 ($bodies/$n; statuses ${statuses% })" \
+		[ "$bodies" = "$n" ]
+	got=$(curl -s --max-time 10 -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Host: leviosa.care' "http://$address/healthz" || true)
+	check "plain HTTP redirects to HTTPS, as in production ($got)" [ "$got" = "308 https://leviosa.care/healthz" ]
+	via_caddy leviosa.care /healthz >/dev/null
+	check "production responses keep the security headers (HSTS with preload, nosniff, SAMEORIGIN) and drop Server" \
+		bash -c '[ "$1" = "max-age=31536000; includeSubDomains; preload" ] && [ "$2" = nosniff ] && [ "$3" = SAMEORIGIN ] &&
+			[ "$4" = "strict-origin-when-cross-origin" ] && [ -z "$5" ]' _ \
+		"$(response_header strict-transport-security)" "$(response_header x-content-type-options)" \
+		"$(response_header x-frame-options)" "$(response_header referrer-policy)" "$(response_header server)"
+	statuses=""
+	for host in $DROPPED_HOSTS; do
+		statuses+="$host=$(via_caddy "$host" /healthz) "
+	done
+	check "the dropped hosts are not served: no certificate, no answer (${statuses% })" \
+		[ "$statuses" = "$(for host in $DROPPED_HOSTS; do printf '%s=000 ' "$host"; done)" ]
 }
 
 # ── staging cases (issue 019) ────────────────────────────────────────────────
@@ -903,12 +1049,14 @@ case_staging_side_by_side() {
 		[ -z "$(docker ps -aq --filter "label=com.docker.compose.project=$PROJECT_STAGING" --filter label=com.docker.compose.oneoff=True)" ]
 	check "no staging container publishes a host port" \
 		[ -z "$(docker ps --filter "label=com.docker.compose.project=$PROJECT_STAGING" --format '{{.Ports}}' | grep -- '->' || true)" ]
-	if [ -n "$CADDY_ADDRESS" ]; then
+	if [ -n "$CADDY_HTTPS" ]; then
 		local body
-		body=$(curl -fsS --max-time 10 -H "Host: $STAGING_HOST" "http://$CADDY_ADDRESS/healthz" 2>&1 || true)
+		via_caddy "$STAGING_HOST" /healthz >/dev/null
+		body=$(response_body)
 		check "through Caddy, $STAGING_HOST reaches staging_frontend by its service name ($body)" \
 			[ "$body" = "{\"frontend\":\"$SHA1\",\"backend\":\"$SHA1\"}" ]
-		body=$(curl -fsS --max-time 10 "http://$CADDY_ADDRESS/healthz" 2>&1 || true)
+		via_caddy leviosa.care /healthz >/dev/null
+		body=$(response_body)
 		check "through Caddy, production's hosts still reach production ($body)" \
 			[ "$body" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
 	fi
@@ -1046,6 +1194,190 @@ case_staging_no_prod_restart() {
 		"$(healthz_shas staging_frontend)" "$SHA1" "$(healthz_shas)" "$SHA2"
 }
 
+# ── Caddy cases (issue 020) ──────────────────────────────────────────────────
+# POST each Stripe webhook path on every host of a stack: each must get the
+# backend's signature error and reach that stack's backend only, which the
+# request's unique User-Agent in the two backends' request logs tells.
+webhook_checks() { # $1 stack, $2 hosts, $3 own backend container, $4 its name, $5 other backend, $6 its name
+	local stack=$1 hosts=$2 own=$3 own_name=$4 other=$5 other_name=$6 path host ua statuses want bodies seen leaked n
+	local -a agents
+	for path in $WEBHOOK_PATHS; do
+		statuses="" want="" bodies=0 seen=0 leaked=0 agents=()
+		for host in $hosts; do
+			ua="leviosa-harness-$RUN_ID-webhook-$stack-${#agents[@]}-${path//\//-}"
+			agents+=("$ua")
+			statuses+="$(post_webhook "$host" "$path" "$ua") "
+			want+="400 "
+			if [ "$(response_body)" = "$WEBHOOK_REJECTED" ]; then bodies=$((bodies + 1)); fi
+		done
+		sleep 1 # the request logs reach `docker logs` asynchronously
+		for ua in "${agents[@]}"; do
+			if backend_saw "$own" "$ua"; then seen=$((seen + 1)); fi
+			if backend_saw "$other" "$ua"; then leaked=$((leaked + 1)); fi
+		done
+		n=${#agents[@]}
+		check "$stack: POST $path on ${hosts// /, } gets the backend's signature error, not a frontend page (statuses ${statuses% }; error body $bodies/$n)" \
+			[ "$statuses$bodies" = "$want$n" ]
+		check "... and reached $own_name only (seen by $own_name: $seen/$n; by $other_name: $leaked)" [ "$seen $leaked" = "$n 0" ]
+	done
+}
+
+# GET backend-only routes through Caddy on a stack's host: the frontend
+# answers, and neither backend sees them.
+backend_route_checks() { # $1 stack, $2 host, curl options...
+	local stack=$1 host=$2 path ua statuses="" saw="" i=0
+	local -a agents
+	shift 2
+	for path in /users/me /auth/refresh /categories /webhooks; do
+		ua="leviosa-harness-$RUN_ID-route-$stack-$i"
+		i=$((i + 1))
+		agents+=("$ua")
+		statuses+="$path=$(via_caddy "$host" "$path" -A "$ua" "$@") "
+	done
+	sleep 1
+	for ua in "${agents[@]}"; do
+		if backend_saw "$(cid backend)" "$ua"; then saw+="backend "; fi
+		if backend_saw "$(scid staging_backend)" "$ua"; then saw+="staging_backend "; fi
+	done
+	check "$stack: other backend routes through Caddy go to the frontend; no backend saw them (${statuses% }; seen by: ${saw:-none})" \
+		[ -z "$saw" ]
+}
+
+case_caddy_webhooks() {
+	section "caddy criterion 1: Stripe's webhooks reach each stack's own backend, staging's without basic auth"
+	local prod_backend staging_backend
+	prod_backend=$(cid backend)
+	staging_backend=$(scid staging_backend)
+	webhook_checks production "$PROD_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
+	webhook_checks staging "$STAGING_HOSTS" "$staging_backend" staging_backend "$prod_backend" "production's backend"
+	backend_route_checks production leviosa.care
+	backend_route_checks staging "$STAGING_HOST" -u "$(staging_credentials)"
+}
+
+case_caddy_staging_auth() {
+	section "caddy criterion 2: any staging page without credentials is a 401; with them, the page"
+	local host path statuses want challenges n credentials body
+	local paths="/ /admin /staff /client /auth/login /robots.txt /sitemap.xml /coming-soon /api/products /healthz/ /webhooks /webhooks-x/stripe"
+	credentials=$(staging_credentials)
+	for host in $STAGING_HOSTS; do
+		statuses="" want="" challenges=0 n=0
+		for path in $paths; do
+			n=$((n + 1))
+			statuses+="$(via_caddy "$host" "$path") "
+			want+="401 "
+			if [[ $(response_header www-authenticate) == "Basic realm="* ]]; then challenges=$((challenges + 1)); fi
+		done
+		check "$host: every page without credentials is a 401 with a Basic challenge ($n paths: ${statuses% }; challenges $challenges/$n)" \
+			[ "$statuses$challenges" = "$want$n" ]
+	done
+	statuses=""
+	for host in $STAGING_HOSTS; do
+		statuses+="$(via_caddy "$host" / -X POST --data x) $(via_caddy "$host" / -u "$(staging_credentials | cut -d: -f1):wrong-password") "
+	done
+	check "a POST without credentials and a wrong password are 401s too (${statuses% })" \
+		[ "$statuses" = "401 401 401 401 401 401 " ]
+	for host in $STAGING_HOSTS; do
+		statuses=$(via_caddy "$host" /robots.txt -u "$credentials")
+		body=$(response_body)
+		check "$host: with credentials, /robots.txt is the frontend's page for that host ($statuses, $(grep -m1 '^Sitemap:' <<<"$body" || echo 'no Sitemap line'))" \
+			bash -c '[ "$1" = 200 ] && grep -qxF "Sitemap: https://$3/sitemap.xml" <<<"$2"' _ "$statuses" "$body" "$host"
+	done
+	statuses=$(via_caddy "$STAGING_HOST" / -u "$credentials")
+	check "with credentials, $STAGING_HOST/ returns the home page ($statuses, $(response_header content-type))" \
+		bash -c '[ "$1" = 200 ] && [[ $2 == text/html* ]] && grep -qi "<html" "$3"' _ "$statuses" "$(response_header content-type)" "$TMP/caddy-response.body"
+	local log
+	log=$(dc exec -T caddy cat /var/log/caddy/staging-access.log 2>/dev/null || true)
+	check "staging's requests are logged as JSON to staging-access.log ($(grep -c '"host":"[a-z-]*staging.leviosa.care"' <<<"$log") entries), production's are not" \
+		bash -c 'grep -q "\"host\":\"staging.leviosa.care\"" <<<"$1" && ! grep -q "\"host\":\"leviosa.care\"" <<<"$1"' _ "$log"
+	check "... and the log holds no credential (Authorization redacted)" \
+		bash -c '! grep -qF -e "$2" -e "$3" <<<"$1"' _ "$log" "$STAGING_AUTH_PASSWORD" "$(printf '%s' "$credentials" | base64)"
+	log=$(dc exec -T caddy cat /var/log/caddy/access.log 2>/dev/null || true)
+	check "production's requests are logged as JSON to access.log ($(grep -c '"host":"[a-z.]*leviosa.care"' <<<"$log") entries), staging's are not" \
+		bash -c 'grep -q "\"host\":\"leviosa.care\"" <<<"$1" && ! grep -q "staging.leviosa.care" <<<"$1"' _ "$log"
+}
+
+case_caddy_staging_healthz() {
+	section "caddy criterion 3: staging /healthz is a 200 without credentials"
+	local host statuses="" bodies=0 n=0
+	for host in $STAGING_HOSTS; do
+		n=$((n + 1))
+		statuses+="$(via_caddy "$host" /healthz) "
+		if [ "$(response_body)" = "{\"frontend\":\"$SHA1\",\"backend\":\"$SHA1\"}" ]; then bodies=$((bodies + 1)); fi
+	done
+	check "/healthz on ${STAGING_HOSTS// /, } answers without credentials (statuses ${statuses% })" \
+		[ "$statuses" = "200 200 200 " ]
+	check "... with staging's release, $SHA1 for both apps ($bodies/$n)" [ "$bodies" = "$n" ]
+}
+
+case_caddy_robots() {
+	section "caddy criterion 4: staging responses carry X-Robots-Tag: noindex, production's don't"
+	local host got="" credentials
+	credentials=$(staging_credentials)
+	for host in $STAGING_HOSTS; do
+		got+="$host/=$(via_caddy "$host" /):$(response_header x-robots-tag) "
+		got+="$host/robots.txt=$(via_caddy "$host" /robots.txt -u "$credentials"):$(response_header x-robots-tag) "
+		got+="$host/healthz=$(via_caddy "$host" /healthz):$(response_header x-robots-tag) "
+		got+="$host/webhooks/stripe=$(post_webhook "$host" /webhooks/stripe "leviosa-harness-$RUN_ID-robots"):$(response_header x-robots-tag) "
+	done
+	note "staging: ${got% }"
+	check "every staging response (401, authenticated page, /healthz, webhook; on each host) carries X-Robots-Tag: noindex, once" \
+		bash -c 'for r in $1; do [ "${r##*:}" = noindex ] || exit 1; done' _ "$got"
+	got=""
+	for host in $PROD_HOSTS; do
+		got+="$host/=$(via_caddy "$host" /):$(response_header x-robots-tag) "
+		got+="$host/robots.txt=$(via_caddy "$host" /robots.txt):$(response_header x-robots-tag) "
+		got+="$host/healthz=$(via_caddy "$host" /healthz):$(response_header x-robots-tag) "
+		got+="$host/webhooks/stripe=$(post_webhook "$host" /webhooks/stripe "leviosa-harness-$RUN_ID-robots"):$(response_header x-robots-tag) "
+	done
+	note "production: ${got% }"
+	check "no production response (page, robots.txt, /healthz, webhook; on each host) carries X-Robots-Tag" \
+		bash -c 'for r in $1; do [ -z "${r##*:}" ] || exit 1; done' _ "$got"
+}
+
+# Recreate a production service (as a deploy or the Agent does) while
+# requests stream through Caddy; every request must get the service's usual
+# answer, held by the retry window rather than failed with a 502.
+recreate_under_load() { # $1 service, $2 expected status, $3 host, $4 path, curl options...
+	local service=$1 want=$2 host=$3 path=$4 before stop out total summary longest
+	shift 4
+	before=$(cid "$service")
+	stop=$TMP/stream-$service.stop
+	out=$TMP/logs/stream-$service.log
+	: >"$out"
+	caddy_stream "$stop" "$out" "$host" "$path" "$@" &
+	STREAM_PID=$!
+	sleep 2
+	if dc up -d --no-deps --force-recreate --wait --wait-timeout 120 "$service" >"$TMP/logs/recreate-$service.log" 2>&1; then
+		ok "$service recreated (up -d --no-deps --force-recreate --wait) while requests went through Caddy every 100 ms"
+	else
+		show_log "$TMP/logs/recreate-$service.log"
+		bad "recreating $service failed"
+	fi
+	sleep 2
+	touch "$stop"
+	wait "$STREAM_PID" || true
+	STREAM_PID=""
+	check "the $service container is a new one" [ "$(cid "$service")" != "$before" ]
+	total=$(grep -c . "$out" || true)
+	summary=$(cut -d ' ' -f 1 "$out" | sort | uniq -c | awk '{ printf "%s%sx %s", sep, $1, $2; sep = ", " }')
+	longest=$(cut -d ' ' -f 2 "$out" | sort -n | tail -n 1)
+	check "none of the $total requests ($host$path) got a 502, 503 or 504, or no answer ($summary)" \
+		bash -c '[ "$2" -gt 0 ] && ! grep -qE "^(000|502|503|504) " "$1"' _ "$out" "$total"
+	check "... every one got the usual $want" bash -c '! grep -qvE "^$2 " "$1"' _ "$out" "$want"
+	check "... some waited in the retry window while $service was away (longest ${longest}s)" \
+		awk -v t="$longest" 'BEGIN { exit !(t >= 0.5) }'
+}
+
+case_caddy_retry_window() {
+	section "caddy criterion 5: requests sent while the backend or the frontend is recreated get no 502"
+	recreate_under_load backend 400 leviosa.care /webhooks/stripe -X POST -A "leviosa-harness-$RUN_ID-stream" \
+		-H 'Content-Type: application/json' -H 'Stripe-Signature: t=1,v1=0000' --data '{"type":"harness.test"}'
+	recreate_under_load frontend 200 leviosa.care /healthz
+	via_caddy leviosa.care /healthz >/dev/null
+	check "production still serves $SHA2 for both apps through Caddy ($(response_body))" \
+		[ "$(response_body)" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
+}
+
 case_teardown() {
 	section "criterion 7: the harness leaves nothing behind"
 	local volumes id
@@ -1107,6 +1439,11 @@ case_staging_postgres
 case_staging_rabbitmq
 case_staging_credentials
 case_staging_no_prod_restart
+case_caddy_webhooks
+case_caddy_staging_auth
+case_caddy_staging_healthz
+case_caddy_robots
+case_caddy_retry_window
 if [ "${KEEP:-0}" = 1 ]; then
 	note "KEEP=1: teardown skipped"
 else
