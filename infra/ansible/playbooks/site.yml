@@ -140,12 +140,23 @@
     - role: app
       tags: ['app', 'setup']
 
+    # The Caddyfile into the prod stack root; reloaded only into a running
+    # Caddy (issue 026).
+    - role: caddy
+      tags: ['caddy', 'web']
+
     # Still to come, in this order:
-    #   caddy            the Caddyfile into the prod stack root       (issue 026)
     #   infisical_agent  the Agent rendering env/*.env (needs the
     #                    leviosa-vps credential exported)             (issue 027)
-    #   shared_services  Postgres, RabbitMQ and Caddy up, staging
-    #                    database role, RabbitMQ vhosts and users     (issue 026)
+
+    # Postgres, RabbitMQ and Caddy up (never recreated); staging's database
+    # role and each environment's RabbitMQ vhost and user, from Infisical
+    # through the operator's login. After the Agent: needs its env files, and
+    # is skipped with a warning without them (issue 026).
+    - role: shared_services
+      tags: ['shared_services', 'setup']
+
+    # Still to come:
     #   backup           daily dump, weekly snapshot, restore test    (issue 028)
 
   post_tasks:

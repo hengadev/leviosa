@@ -68,8 +68,10 @@ What each env file holds:
   `ADMIN_LAST_NAME`, `ADMIN_TELEPHONE`, `ADMIN_POSTAL_CODE`, `ADMIN_CITY`,
   `ADMIN_ADDRESS1`, `ADMIN_ADDRESS2`.
 - **`postgres.env`**, **`rabbitmq.env`**: applied when the data directory is
-  first initialised only; rotating those passwords is a manual change inside
-  the service (`ALTER ROLE`, `rabbitmqctl change_password`).
+  first initialised only. Production's Postgres superuser password is rotated
+  by hand (`ALTER ROLE`); the RabbitMQ users' and staging's Postgres password
+  are re-applied from Infisical by the next `make setup`
+  (`setup-shared-services.sh`).
 - **`caddy.env`**: `CLOUDFLARE_API_TOKEN` (`prod/caddy`), and
   `STAGING_BASIC_AUTH_USER` and `STAGING_BASIC_AUTH_HASH` (`staging/caddy`, a
   `caddy hash-password` bcrypt hash). The hash must be single-quoted
