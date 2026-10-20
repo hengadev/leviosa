@@ -20,6 +20,8 @@
 
 20250714115012_catalog_add_fk_prices_product_id.sql
 
+## The compatibility rule
 
-
-
+Every migration must work with the previous release: add first, remove later. Deploys run
+`leviosa migrate` while the previous release is still serving, and a rollback does not revert
+the schema. Details in the Database Migrations section of `backend/CLAUDE.md`.
