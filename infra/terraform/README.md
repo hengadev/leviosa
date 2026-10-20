@@ -107,7 +107,9 @@ The real IDs are not known to the repository yet. Fill in, commit, then run:
    to run. Check that its secrets are in environment `prod`, path `/`
    (otherwise adjust `infra_env` / `infra_path`).
 2. **`terraform.tfvars`**: set `infisical_project_id` to the `leviosa`
-   project ID. Until then plan refuses to run.
+   project ID. Until then plan refuses to run. This is the one place it is
+   set: `infra/infisical/render-template.sh` (the Agent's env templates) and
+   Ansible's `playbooks/site.yml` read the same value.
 3. **`terraform.tfvars`**: confirm `cloudflare_zone_id` is the `leviosa.care`
    zone (Cloudflare > leviosa.care > Overview > Zone ID).
 4. **Infisical `leviosa-infra`** holds the four keys listed above, and the
