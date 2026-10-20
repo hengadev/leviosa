@@ -1,0 +1,135 @@
+---
+# Deploy gate (issue 022): the CI key can run exactly one thing, a deploy of a
+# commit on main.
+#   - leviosa-deploy-gate: the CI keys' forced command, runs as the deploy user
+#   - leviosa-deploy: the root runner, the deploy user's only sudo right
+#   - the sudoers drop-in and the CI keys' lines in the deploy user's
+#     authorized_keys
+# Both scripts are root-owned and change only with a setup run: CI can
+# trigger a deploy, never change what runs as root.
+
+# Every value is rendered into the scripts inside single quotes or into
+# sudoers and authorized_keys lines: keep them plain.
+- name: Check the deploy gate settings
+  ansible.builtin.assert:
+    that:
+      - deploy_gate_user is match('^[a-z_][a-z0-9_-]*$')
+      - deploy_gate_repo_url is match('^https://[A-Za-z0-9._~/-]+$')
+      - deploy_gate_stack_roots.keys() | sort | list == ['prod', 'staging']
+      - >-
+        [deploy_gate_command, deploy_gate_runner, deploy_gate_sudoers_file,
+        deploy_gate_state_dir, deploy_gate_stack_roots.prod, deploy_gate_stack_roots.staging]
+        | reject('match', '^/[A-Za-z0-9._/-]+$') | list | length == 0
+      - deploy_gate_ci_keys is sequence and deploy_gate_ci_keys is not string
+      - deploy_gate_ci_keys | select('search', '[\r\n]') | list | length == 0
+      - >-
+        deploy_gate_ci_keys
+        | reject('match', '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh[.]com|sk-ecdsa-sha2-nistp256@openssh[.]com) [A-Za-z0-9+/]+=*( [^\r\n]*)?$')
+        | list | length == 0
+    fail_msg: >-
+      roles/deploy_gate: a setting is not plain (user name, https URL, absolute
+      paths without spaces or quotes, stacks exactly prod and staging), or a CI
+      key is not a single bare public key ("<type> <base64> [comment]", no
+      options, no newline).
+    quiet: true
+
+- name: Install git (the runner reads deploy and the compose file from the repo)
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+- name: Create the runner's root-only state directory
+  ansible.builtin.file:
+    path: "{{ deploy_gate_state_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Install the root runner
+  ansible.builtin.template:
+    src: leviosa-deploy.j2
+    dest: "{{ deploy_gate_runner }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install the CI keys' forced command
+  ansible.builtin.template:
+    src: leviosa-deploy-gate.j2
+    dest: "{{ deploy_gate_command }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+# One rule, no arguments pattern: the runner validates its own arguments.
+- name: Grant the deploy user the runner, and nothing else
+  ansible.builtin.template:
+    src: leviosa-deploy.sudoers.j2
+    dest: "{{ deploy_gate_sudoers_file }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+
+# The sudoers rule only means "deploy a commit of main" if the deploy user has
+# no other way to root. roles/user sets the groups; this refuses to finish
+# behind its back.
+- name: Read the host's groups
+  ansible.builtin.getent:
+    database: group
+
+- name: Check the deploy user is in no root-equivalent group
+  ansible.builtin.assert:
+    that:
+      - deploy_gate_user not in (ansible_facts.getent_group[item][2] | default('', true)).split(',')
+    fail_msg: >-
+      {{ deploy_gate_user }} is in the {{ item }} group, which is
+      root-equivalent: the deploy user must be in no docker, sudo, admin or
+      wheel group (roles/user).
+    quiet: true
+  loop: [docker, sudo, admin, wheel]
+  when: item in ansible_facts.getent_group
+
+- name: Look up the deploy user
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ deploy_gate_user }}"
+    fail_key: false
+
+# In --check against a fresh host, roles/user only simulated creating it.
+- name: Require the deploy user (roles/user creates it)
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.getent_passwd[deploy_gate_user] is not none
+    fail_msg: "The deploy user {{ deploy_gate_user }} does not exist: run roles/user first."
+    quiet: true
+  when: not ansible_check_mode
+
+- name: Create the deploy user's .ssh directory
+  ansible.builtin.file:
+    path: "{{ ansible_facts.getent_passwd[deploy_gate_user][4] }}/.ssh"
+    state: directory
+    owner: "{{ deploy_gate_user }}"
+    group: "{{ ansible_facts.getent_passwd[deploy_gate_user][2] }}"
+    mode: "0700"
+  when: ansible_facts.getent_passwd[deploy_gate_user] is not none
+
+# A managed block at the top of the file: other lines (operator keys) are left
+# alone, a key removed from deploy_gate_ci_keys disappears on the next run, and
+# sshd uses the first line matching a key, so a CI key listed again further
+# down without options still gets these restrictions. `restrict` turns off
+# pty, port/agent/X11 forwarding and ~/.ssh/rc; the forced command replaces
+# whatever the client asks for (shell, scp and sftp included).
+- name: Force the CI keys to the gate in the deploy user's authorized_keys
+  ansible.builtin.blockinfile:
+    path: "{{ ansible_facts.getent_passwd[deploy_gate_user][4] }}/.ssh/authorized_keys"
+    marker: "# {mark} CI deploy keys, forced to leviosa-deploy-gate (Ansible roles/deploy_gate)"
+    block: "{{ lookup('ansible.builtin.template', 'authorized_keys.ci.j2') }}"
+    insertbefore: BOF
+    create: true
+    owner: "{{ deploy_gate_user }}"
+    group: "{{ ansible_facts.getent_passwd[deploy_gate_user][2] }}"
+    mode: "0600"
+    state: "{{ 'present' if deploy_gate_ci_keys | length > 0 else 'absent' }}"
+  when: ansible_facts.getent_passwd[deploy_gate_user] is not none
