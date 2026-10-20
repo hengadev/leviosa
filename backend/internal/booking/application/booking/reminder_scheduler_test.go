@@ -17,7 +17,7 @@ import (
 
 // ---------------------------------------------------------------------------
 // Identity crypto mock — passes data through without real encryption.
-// This lets us unit-test the scheduler tick without a Vault container.
+// This lets us unit-test the scheduler tick without real key management.
 // ---------------------------------------------------------------------------
 
 type identityCrypto struct {
