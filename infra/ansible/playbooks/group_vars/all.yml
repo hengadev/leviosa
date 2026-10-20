@@ -115,8 +115,14 @@ fail2ban_ddos_maxretry: 2
 fail2ban_ddos_bantime: 86400
 fail2ban_notify_email: "{{ host_notify_email }}"
 
-# Caddy jail: off until Caddy runs and writes its JSON access log (issue
-# 026). fail2ban refuses to start a jail whose log file does not exist.
-fail2ban_caddy_enabled: false
+# Caddy jail (issue 026): 403s and 429s in Caddy's JSON access logs, both
+# sites' (production's and staging's, as the Caddyfile names them under
+# /var/log/caddy, mounted from caddy/logs). fail2ban refuses to start a jail
+# whose log file does not exist, so roles/fail2ban creates missing ones
+# (empty, root 0600, as Caddy creates them): the jail is on from the first
+# run, before Caddy has ever started.
+fail2ban_caddy_enabled: true
 fail2ban_caddy_maxretry: 5
-fail2ban_caddy_log_path: "{{ app_prod_root }}/caddy/logs/access.log"
+fail2ban_caddy_log_paths:
+  - "{{ app_prod_root }}/caddy/logs/access.log"
+  - "{{ app_prod_root }}/caddy/logs/staging-access.log"
