@@ -58,12 +58,11 @@ _help_variables() {
 # Function to display examples
 _help_examples() {
     echo "  Example(s):"
-    echo "    make dev"
-    echo "    make build"
-    echo "    make start"
-    echo "    make test"
-    echo "    make test-unit"
-    echo "    make test-integration"
+    echo "    make local-dev"
+    echo "    make setup"
+    echo "    make infra-plan"
+    echo "    make -C backend test-unit"
+    echo "    make -C backend test-integration"
 }
 
 # Call main function

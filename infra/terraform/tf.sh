@@ -49,8 +49,7 @@ export LEVIOSA_TF_INFISICAL_TOKEN
 unset token
 
 # The leviosa-infra credentials must be the only AWS credentials Terraform
-# can use, on every computer: drop any profile or session from the shell
-# (the root Makefile exports AWS_PROFILE for older targets).
+# can use, on every computer: drop any profile or session from the shell.
 unset AWS_PROFILE AWS_DEFAULT_PROFILE AWS_SESSION_TOKEN
 
 exec infisical run --projectId="$infra_project_id" --env="$infra_env" --path="$infra_path" --silent -- \
