@@ -1,7 +1,15 @@
-name: 🧪 CI - Pull Request Validation
+name: 🧪 CI
 
+# The checks run on every pull request to main and on every push to main.
+# A push to main that passes every check is also built (both images, tagged
+# with the commit SHA) and deployed to staging through the server's deploy
+# gate. Pull requests never build an image, push or deploy.
+# Job graph, secrets and the deploy path: docs/deployment/ci.md.
 on:
   pull_request:
+    branches:
+      - main
+  push:
     branches:
       - main
 
@@ -127,10 +135,48 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
+  # The staging deploy below goes through the deploy gate and root runner
+  # (infra/ansible/roles/deploy_gate), which run infra/compose/deploy from the
+  # deployed commit: test the gate and syntax-check the scripts before anything
+  # ships. The compose harness (infra/compose/test/run-harness.sh) is not run
+  # here: it builds three images and drives several full deploys.
+  deploy-scripts:
+    name: 🚪 Deploy Gate & Scripts
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4.2.2
+
+      - name: 📦 Setup test dependencies
+        # git, flock, visudo and ssh-keygen ship with the runner image; the
+        # authorized_keys check renders its template with Python's jinja2.
+        run: |
+          if ! python3 -I -c 'import jinja2' 2>/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y python3-jinja2
+          fi
+
+      - name: 🧪 Run deploy gate and root runner tests
+        # A SKIP means a tool was missing: in CI every check must run.
+        run: |
+          infra/ansible/roles/deploy_gate/tests/run-tests.sh | tee "$RUNNER_TEMP/deploy-gate-tests.log"
+          if grep -q '^SKIP' "$RUNNER_TEMP/deploy-gate-tests.log"; then
+            echo "::error::The deploy gate tests skipped checks; every check must run in CI"
+            exit 1
+          fi
+
+      - name: 🐚 Syntax-check the deploy scripts
+        run: |
+          bash -n infra/compose/deploy
+          bash -n infra/compose/test/run-harness.sh
+
   summary:
     name: ✅ CI Summary
     runs-on: ubuntu-latest
-    needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan]
+    needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan, deploy-scripts]
     if: always()
     steps:
       - name: Check CI Results
@@ -138,9 +184,153 @@ jobs:
           if [ "${{ needs.frontend-checks.result }}" != "success" ] || \
              [ "${{ needs.backend-checks.result }}" != "success" ] || \
              [ "${{ needs.backend-integration-tests.result }}" != "success" ] || \
-             [ "${{ needs.security-scan.result }}" != "success" ]; then
+             [ "${{ needs.security-scan.result }}" != "success" ] || \
+             [ "${{ needs.deploy-scripts.result }}" != "success" ]; then
             echo "❌ CI checks failed"
             exit 1
           else
             echo "✅ All CI checks passed"
           fi
+
+  # ── Staging release: pushes to main only ─────────────────────────────────────
+  # Both jobs below are skipped on pull requests (the `if:`), and run only when
+  # every check job above succeeded (`needs:` without a status function: a
+  # failed, cancelled or skipped check skips them). Docker Hub, the CI SSH key,
+  # the pinned host key and the host address are the only secrets; CI holds no
+  # Infisical credential, the server's Infisical Agent provides every runtime
+  # value (ADR-0017).
+
+  build-images:
+    name: 🐳 Build & Push ${{ matrix.app }} Image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Leviosa-care/leviosa'
+    needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan, deploy-scripts]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        include:
+          - app: backend
+            image: henga/leviosa-backend
+          - app: frontend
+            image: henga/leviosa-frontend
+    steps:
+      - name: ⬇️ Checkout repo
+        uses: actions/checkout@v4.2.2
+
+      - name: 🔑 Log in to Docker Hub
+        uses: docker/login-action@v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4.4.1
+
+      - name: 🏗️ Build and push ${{ matrix.image }}:${{ github.sha }}
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: ./${{ matrix.app }}
+          file: ./${{ matrix.app }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
+          # The full 40-hex SHA, reported by the backend's /health and the
+          # frontend's /healthz; the deploy waits until both report it.
+          build-args: COMMIT_SHA=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy-staging:
+    name: 🚀 Deploy Staging
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Leviosa-care/leviosa'
+    # Every check job is listed again (not only through build-images), so the
+    # deploy can never run after a check that did not pass.
+    needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan, deploy-scripts, build-images]
+    runs-on: ubuntu-latest
+    permissions: {}
+    environment:
+      name: staging
+      url: https://staging.leviosa.care/healthz
+    # One staging deploy at a time. A newer push waits for the running deploy
+    # instead of cancelling it halfway (the server's runner also refuses a
+    # second concurrent deploy of the same stack).
+    concurrency:
+      group: deploy-staging
+      cancel-in-progress: false
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      # The deploy user (infra/ansible/roles/deploy_gate, `deploy_gate_user`).
+      # The CI key's only right there is the gate's forced command.
+      DEPLOY_USER: leviosa
+    steps:
+      - name: 🔑 Configure SSH (CI key, pinned host key)
+        # Secrets reach the script through env, never through ${{ }} in it.
+        # StrictHostKeyChecking yes with only SSH_KNOWN_HOSTS trusted: an
+        # unknown or changed host key fails the connection (no ssh-keyscan).
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          for name in SSH_HOST SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The repository secret $name is not set (docs/deployment/ci.md)"
+              exit 1
+            fi
+          done
+          if [[ ! $SSH_HOST =~ ^[A-Za-z0-9.:-]+$ ]]; then
+            echo "::error::SSH_HOST must be a bare host name or IP address (no user, port or spaces)"
+            exit 1
+          fi
+
+          # $RUNNER_TEMP is emptied at the end of the job.
+          dir=$RUNNER_TEMP/ssh
+          umask 077
+          mkdir -p "$dir"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$dir/id_ci"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$dir/known_hosts"
+
+          if ! ssh-keygen -y -P '' -f "$dir/id_ci" > /dev/null; then
+            echo "::error::SSH_PRIVATE_KEY is not an unencrypted OpenSSH private key"
+            exit 1
+          fi
+          if ! ssh-keygen -F "$SSH_HOST" -f "$dir/known_hosts" > /dev/null; then
+            echo "::error::SSH_KNOWN_HOSTS has no host key for SSH_HOST"
+            exit 1
+          fi
+
+          cat > "$dir/config" <<EOF
+          Host staging-deploy
+            HostName $SSH_HOST
+            Port 22
+            User $DEPLOY_USER
+            IdentityFile "$dir/id_ci"
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile "$dir/known_hosts"
+            GlobalKnownHostsFile /dev/null
+            UpdateHostKeys no
+            BatchMode yes
+            RequestTTY no
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 6
+          EOF
+
+      - name: 🚀 deploy staging ${{ github.sha }}
+        # The CI key's forced command (the deploy gate) accepts exactly
+        # `deploy staging <40-hex sha>`, refuses any commit that is not on
+        # main, and runs the deploy script and compose file read from the repo
+        # at that SHA: nothing is uploaded. ssh exits with the deploy's status
+        # (255 if the connection fails), so a failed deploy fails this job.
+        run: |
+          if [[ ! $GITHUB_SHA =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::GITHUB_SHA is not a full 40-hex commit SHA: $GITHUB_SHA"
+            exit 1
+          fi
+          ssh -F "$RUNNER_TEMP/ssh/config" staging-deploy "deploy staging $GITHUB_SHA"
+          echo "Deployed \`$GITHUB_SHA\` to staging." >> "$GITHUB_STEP_SUMMARY"
