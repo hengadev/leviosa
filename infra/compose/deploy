@@ -53,11 +53,11 @@ sha=$2
 case $stack in
 	prod)
 		root=${LEVIOSA_PROD_ROOT:-/opt/leviosa}
-		pin_tag=prod
-		backend_service=backend
-		frontend_service=frontend
-		migrate_service=migrate
-		admin_service=admin
+		pin_tag="prod"
+		backend_service="backend"
+		frontend_service="frontend"
+		migrate_service="migrate"
+		admin_service="admin"
 		# Step 2's services: production owns the shared Postgres and RabbitMQ.
 		dependencies=(postgres rabbitmq redis)
 		env_files=(backend frontend admin postgres rabbitmq redis caddy)
@@ -168,6 +168,7 @@ done
 # over the network. Exit codes: 0 both match, 3 answered with another SHA,
 # anything else not answering (yet).
 healthz_check() {
+	# shellcheck disable=SC2016 # JavaScript template literals, not shell
 	"${compose[@]}" exec -T "$frontend_service" /nodejs/bin/node -e '
 		const want = process.argv[1];
 		fetch("http://127.0.0.1:3000/healthz", { signal: AbortSignal.timeout(5000) })
