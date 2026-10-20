@@ -15,7 +15,7 @@ TEST_COVERAGE?=-cover
 TEST_COVERAGE_HTML?=-coverprofile=coverage.out -covermode=atomic
 
 # Service paths (future internal/ structure)
-INTERNAL_SERVICES=authuser catalog settings booking notification messaging
+INTERNAL_SERVICES=app authuser catalog settings booking notification messaging
 SERVICES_ROOT=internal
 
 # Integration test paths (current structure)
