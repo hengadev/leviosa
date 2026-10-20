@@ -1,0 +1,7 @@
+# Managed by Ansible (roles/deploy_gate) - DO NOT EDIT MANUALLY
+#
+# The deploy user's only sudo right: the root deploy runner. The runner checks
+# its own arguments, deploys only commits on main and starts the deploy script
+# with an empty environment, so this line grants "deploy a commit of main",
+# not a root shell.
+{{ deploy_gate_user }} ALL=(root) NOPASSWD: {{ deploy_gate_runner }}

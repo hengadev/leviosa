@@ -1,0 +1,3 @@
+{% for key in deploy_gate_ci_keys %}
+restrict,command="{{ deploy_gate_command }}" {{ key }}
+{% endfor %}
