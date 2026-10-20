@@ -1,4 +1,4 @@
 ###############################################################
-#                   Leviosa Production Server                 #
+#                        Leviosa Server                       #
 #         Authorized access only. All activity logged.        #
 ###############################################################
