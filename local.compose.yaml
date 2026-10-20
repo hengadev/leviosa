@@ -1,7 +1,8 @@
 # Full local simulation of what's actually deployed to staging/production, driven entirely
 # by containers. Mirrors infra/ansible/roles/app/templates/docker-compose.yml.j2 + env.j2 —
 # same service shape and image pins (postgres:17-alpine, redis:7-alpine,
-# rabbitmq:3-management-alpine, hashicorp/vault:1.15) that Ansible deploys.
+# rabbitmq:3-management-alpine) that Ansible deploys. The encx KEK lives in LocalStack KMS
+# here (AWS KMS when deployed, ADR-0015).
 #
 # Staging isn't a separate shape worth reproducing here: on the real VPS it shares prod's
 # Postgres/Redis/Caddy to save resources, which is a VPS optimization, not an app behavior
@@ -19,8 +20,8 @@
 # Usage: make local-start / make local-stop / make local-restart
 #
 # Everything here is intentionally ephemeral: no named volumes, so `docker compose down`
-# wipes Postgres/Vault/LocalStack together. This avoids Postgres outliving a Vault dev-mode
-# restart, which would leave encx-encrypted data undecryptable under a freshly generated key.
+# wipes Postgres/LocalStack together. This avoids Postgres outliving the LocalStack KMS key,
+# which would leave encx-encrypted data undecryptable under a freshly created key.
 # Re-seed with `go run ./cmd/seed` (from /backend) after each local-start if you need data.
 
 services:
@@ -65,44 +66,10 @@ services:
       retries: 10
       start_period: 15s
 
-  # Dev-mode Vault: in-memory, auto-unsealed, root token. Not a persistence layer —
-  # see the ephemeral-by-design note above. Mirrors backend/internal/common/testutils/vault.go.
-  vault:
-    image: hashicorp/vault:1.15
-    command: ["server", "-dev", "-dev-listen-address=0.0.0.0:8200"]
-    environment:
-      VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_TOKEN:-local-root-token}
-      VAULT_ADDR: http://0.0.0.0:8200
-      VAULT_API_ADDR: http://0.0.0.0:8200
-      VAULT_DISABLE_MLOCK: "true"
-    ports:
-      - "127.0.0.1:8200:8200"
-    healthcheck:
-      test: ["CMD", "vault", "status"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 5s
-
-  # One-shot: enables the transit secrets engine (KV v2 is already on by default in dev mode).
-  # The backend auto-creates its KEK and pepper on first boot via encx once transit exists.
-  vault-init:
-    image: hashicorp/vault:1.15
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - "vault secrets enable transit || true"
-    environment:
-      VAULT_ADDR: http://vault:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-local-root-token}
-    depends_on:
-      vault:
-        condition: service_healthy
-    restart: "no"
-
   localstack:
     image: localstack/localstack:4.6
     environment:
-      SERVICES: s3
+      SERVICES: s3,kms
       AWS_DEFAULT_REGION: us-east-1
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
@@ -116,17 +83,25 @@ services:
       retries: 20
       start_period: 10s
 
-  # One-shot: creates the S3 bucket the app expects (the app never creates it itself —
-  # see backend/test/helpers/const.go and the integration test setups for the same pattern).
-  s3-init:
+  # One-shot: creates what the app expects but never creates itself — the S3 bucket and the
+  # encx KEK (a KMS key behind the alias the backend reads from ENCX_KMS_KEY_ALIAS).
+  localstack-init:
     image: amazon/aws-cli:2.36.19
-    entrypoint: ["/bin/sh", "-c"]
+    entrypoint: ["/bin/sh", "-ec"]
     command:
-      - "aws --endpoint-url=http://localstack:4566 s3 mb s3://${S3_BUCKET_NAME:-leviosa} || true"
+      - |
+        aws s3 mb "s3://$$S3_BUCKET_NAME" || true
+        if ! aws kms describe-key --key-id "$$KMS_KEY_ALIAS" > /dev/null 2>&1; then
+          key_id=$$(aws kms create-key --description "Leviosa local encx KEK" --query KeyMetadata.KeyId --output text)
+          aws kms create-alias --alias-name "$$KMS_KEY_ALIAS" --target-key-id "$$key_id"
+        fi
     environment:
       AWS_ACCESS_KEY_ID: test
       AWS_SECRET_ACCESS_KEY: test
       AWS_DEFAULT_REGION: us-east-1
+      AWS_ENDPOINT_URL: http://localstack:4566
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-leviosa}
+      KMS_KEY_ALIAS: alias/leviosa-dev
     depends_on:
       localstack:
         condition: service_healthy
@@ -147,8 +122,13 @@ services:
       # %2F is the URL-encoded default RabbitMQ vhost ("/"); a bare trailing slash parses as an
       # empty vhost name, not the default one.
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-guest}:${RABBITMQ_PASSWORD:-guest}@rabbitmq:5672/%2F
-      VAULT_ADDR: http://vault:8200
-      VAULT_TOKEN: ${VAULT_TOKEN:-local-root-token}
+      # encx: KEK in LocalStack KMS (created by localstack-init), public dev pepper.
+      ENCX_KMS_KEY_ALIAS: alias/leviosa-dev
+      ENCX_PEPPER: ${ENCX_PEPPER:-bGV2aW9zYS1sb2NhbC1kZXYtcGVwcGVyLTMyYnl0ZXM=}
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT_URL: http://localstack:4566
       S3_ENDPOINT: http://localstack:4566
       S3_REGION: us-east-1
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-leviosa}
@@ -164,9 +144,7 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
-      vault-init:
-        condition: service_completed_successfully
-      s3-init:
+      localstack-init:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${BACKEND_PORT:-3500}/health"]
