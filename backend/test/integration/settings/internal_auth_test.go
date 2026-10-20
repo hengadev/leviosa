@@ -31,7 +31,7 @@ func TestServiceAuthentication(t *testing.T) {
 	t.Run("Valid Service Authentication", func(t *testing.T) {
 		t.Run("should allow catalog service to access company name", func(t *testing.T) {
 			// Get catalog service API key
-			catalogAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey, exists := serviceKeys[services.Catalog]
 			require.True(t, exists, "Catalog service API key should exist")
 			require.NotEmpty(t, catalogAPIKey, "Catalog API key should not be empty")
 
@@ -54,7 +54,7 @@ func TestServiceAuthentication(t *testing.T) {
 
 		t.Run("should allow notification service to access company email", func(t *testing.T) {
 			// Get notification service API key
-			notificationAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Notification)
+			notificationAPIKey, exists := serviceKeys[services.Notification]
 			require.True(t, exists, "Notification service API key should exist")
 
 			// Create authenticated request
@@ -76,7 +76,7 @@ func TestServiceAuthentication(t *testing.T) {
 
 		t.Run("should allow settings service to access its own endpoints", func(t *testing.T) {
 			// Get settings service API key
-			settingsAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Settings)
+			settingsAPIKey, exists := serviceKeys[services.Settings]
 			require.True(t, exists, "Settings service API key should exist")
 
 			// Create authenticated request for bulk settings
@@ -93,7 +93,7 @@ func TestServiceAuthentication(t *testing.T) {
 
 	t.Run("Invalid Service Authentication", func(t *testing.T) {
 		t.Run("should reject request with missing service name header", func(t *testing.T) {
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 
 			req := th.NewInternalGetCompanyNameRequest(t, ctx, testServerURL)
 			// Missing X-Service-Name header
@@ -115,7 +115,7 @@ func TestServiceAuthentication(t *testing.T) {
 		})
 
 		t.Run("should reject request with invalid service name", func(t *testing.T) {
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 
 			req := th.NewInternalGetCompanyNameRequest(t, ctx, testServerURL)
 			req.Header.Set(services.ServiceNameHeader, "invalid-service")
@@ -138,7 +138,7 @@ func TestServiceAuthentication(t *testing.T) {
 
 		t.Run("should reject request with wrong service API key", func(t *testing.T) {
 			// Try to use notification service key with catalog service name
-			notificationAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Notification)
+			notificationAPIKey := serviceKeys[services.Notification]
 
 			req := th.NewInternalGetCompanyNameRequest(t, ctx, testServerURL)
 			req.Header.Set(services.ServiceNameHeader, services.Catalog)
@@ -153,7 +153,7 @@ func TestServiceAuthentication(t *testing.T) {
 	t.Run("Service Client Integration", func(t *testing.T) {
 		t.Run("should work with httpx.ServiceClient", func(t *testing.T) {
 			// Create service client for catalog service
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
 				ServiceName: services.Catalog,
 				APIKey:      catalogAPIKey,
@@ -186,7 +186,7 @@ func TestInternalEndpointsComprehensive(t *testing.T) {
 	setupServiceAuthTestData(t, ctx)
 
 	// Get API key for testing
-	catalogAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Catalog)
+	catalogAPIKey, exists := serviceKeys[services.Catalog]
 	require.True(t, exists)
 
 	// Test all internal endpoints
