@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Root Level Commands
 - `make help` - Show all available commands (local dev, Docker image builds, VPS deploy, Terraform, Ansible)
-- `make local-dev` - Frontend natively (`pnpm run dev`) + backend and its dependencies via Docker (`backend/compose.yaml`: Postgres, Redis, RabbitMQ, Vault, S3-via-LocalStack), live reload via `air` (see `backend/local.Dockerfile`). Fastest loop for day-to-day work — edits under `backend/` rebuild and restart the server automatically via a bind mount.
-- `make local-start` - Run the entire app (frontend, backend, Postgres, Redis, RabbitMQ, Vault, S3-via-LocalStack) in containers, built from the real production Dockerfiles and mirroring `infra/ansible/roles/app/templates/docker-compose.yml.j2` + `env.j2` (same image pins, same service shape minus Caddy) (`local.compose.yaml`). No hot reload — closest simulation of what actually ships to staging/production. Copies `.env.example` to `.env` on first run.
+- `make local-dev` - Frontend natively (`pnpm run dev`) + backend and its dependencies via Docker (`backend/compose.yaml`: Postgres, Redis, RabbitMQ, and LocalStack for S3 and KMS), live reload via `air` (see `backend/local.Dockerfile`). Fastest loop for day-to-day work — edits under `backend/` rebuild and restart the server automatically via a bind mount.
+- `make local-start` - Run the entire app (frontend, backend, Postgres, Redis, RabbitMQ, and LocalStack for S3 and KMS) in containers, built from the real production Dockerfiles and mirroring `infra/ansible/roles/app/templates/docker-compose.yml.j2` + `env.j2` (same image pins, same service shape minus Caddy) (`local.compose.yaml`). No hot reload — closest simulation of what actually ships to staging/production. Copies `.env.example` to `.env` on first run.
 - `make local-stop` / `make local-restart` - Stop/restart the `local-start` stack
 
-Both the `local-dev` backend stack and the `local-start` stack are intentionally ephemeral (no named volumes): stopping either wipes its Postgres, Vault dev-mode secrets, and LocalStack S3 bucket together, so a restart never has Postgres pointing at data encrypted under a Vault key that no longer exists. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data.
+Both the `local-dev` backend stack and the `local-start` stack are intentionally ephemeral (no named volumes): stopping either wipes its Postgres and LocalStack (the S3 bucket and the KMS key holding encx's KEK) together, so a restart never has Postgres pointing at data encrypted under a KMS key that no longer exists. Each stack's LocalStack init container creates the bucket and the KEK alias (`alias/leviosa-dev`); the dev pepper is a public value in `backend/example.env` / `.env.example`. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data.
 
 Deployment to the VPS (image build/push, Ansible, Terraform) is also driven from this Makefile — see `make help` for the full list (`image-*`, `deploy*`, `prod-*`, `staging-*`, `infra-*`, `ansible-*`).
 
@@ -96,7 +96,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 **Backend**:
 - Go 1.24.2 (modular monolith, single binary)
 - PostgreSQL 17.5, Redis (alpine), RabbitMQ 3 (management)
-- AWS S3, HashiCorp Vault
+- AWS S3, AWS KMS (encx KEK; the pepper comes from configuration — ADR-0015)
 - External integrations: Stripe, Gmail SMTP, Twilio SMS
 
 **Infrastructure**:
@@ -132,7 +132,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 ### Environment Configuration
 - **Development**: Uses `.env` files and mock data
 - **Production**: Environment variables with real services
-- **Required Services**: PostgreSQL, Redis, RabbitMQ, AWS S3, Vault
+- **Required Services**: PostgreSQL, Redis, RabbitMQ, AWS S3, AWS KMS
 - **Docker**: Full containerized setup available via compose.yaml
 
 ### Testing Approach
