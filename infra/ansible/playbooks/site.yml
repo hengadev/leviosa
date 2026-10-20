@@ -49,6 +49,7 @@
           - ansible_user == 'root'
         fail_msg: "The setup connects as root (with this computer's key from the keys file); the deploy user can only deploy."
         quiet: true
+      tags: ['always']
 
     # The notification email (fail2ban, unattended-upgrades) is the one value
     # the setup needs that is not a file on the target. It is read from
@@ -75,6 +76,9 @@
       check_mode: false
       failed_when: false
       no_log: true
+      # always: a run limited with --tags (fail2ban, system) must not render
+      # the fallback address over the real one.
+      tags: ['always']
       when: infisical_project_id is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 
     - name: Apply the notification email from Infisical /host
@@ -87,6 +91,7 @@
         - leviosa_notify_lookup.rc == 0
         - leviosa_notify_lookup.stdout | trim is match(leviosa_notify_email_pattern)
       no_log: true
+      tags: ['always']
 
     - name: Warn when the notification email could not be read from Infisical
       ansible.builtin.debug:
@@ -99,6 +104,7 @@
           unattended-upgrades notifications. Install the Infisical CLI, run
           `infisical login`, check the project ID and /host NOTIFY_EMAIL, and
           re-run the setup to fix this.
+      tags: ['always']
       when: >-
         leviosa_notify_lookup is skipped
         or leviosa_notify_lookup.rc != 0
