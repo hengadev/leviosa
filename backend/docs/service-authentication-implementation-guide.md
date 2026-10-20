@@ -1,5 +1,7 @@
 # Service Authentication Implementation Guide
 
+> **Superseded (historical design, not the current setup).** HashiCorp Vault was removed ([ADR-0015](../../docs/adr/0015-encx-keys-in-aws-kms-and-infisical.md), [ADR-0017](../../docs/adr/0017-infisical-sole-source-of-config.md)), and with it the Vault-backed service key store this guide describes. The backend is now a single binary and is built with no service key store (`internal/app/container.go`; tests use an in-memory `ServiceKeyStore`), so the service-to-service endpoints (for example `POST /bookings/claim`) currently reject every request. Kept for history only.
+
 This guide covers the complete implementation of Vault-backed service-to-service authentication for the Leviosa microservices architecture.
 
 ## Overview

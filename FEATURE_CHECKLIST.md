@@ -547,7 +547,7 @@
 ### GDPR Compliance
 - [ ] Data encryption at rest
   - [ ] Personal data encrypted with encx
-  - [ ] Encryption key management via Vault
+  - [ ] Encryption key management: encx KEK in AWS KMS, pepper in Infisical (ADR-0015; superseded the Vault plan)
 - [ ] Right to erasure
   - [ ] User data deletion
   - [ ] Booking data anonymization
@@ -599,8 +599,8 @@
 - **Stripe**: Payment processing, promotion codes
 - **AWS S3**: Image and file storage
 - **Twilio**: SMS notifications
-- **Gmail SMTP**: Email notifications
-- **HashiCorp Vault**: Encryption key management
+- **SMTP (Zoho Mail)**: Email notifications
+- **AWS KMS + Infisical**: Encryption key management (ADR-0015; HashiCorp Vault is gone)
 
 ### Message Queue (RabbitMQ)
 - Settings update notifications
