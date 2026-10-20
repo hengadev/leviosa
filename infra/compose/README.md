@@ -151,12 +151,16 @@ values (and never a production credential):
   booking-token secrets.
 
 The role, database, vhost and user are created on production's services by
-Ansible's shared services role (issue 026), from Infisical `staging/db` and
-`staging/rabbitmq`: the role owns the staging database, `CONNECT` on
-production's database is revoked from `PUBLIC` (production's role is the
-instance's superuser), and the RabbitMQ user has no tags and permissions on
-its own vhost only. `test/fixtures/create-staging-services.sh` does exactly
-that for the harness and is the reference for that role.
+Ansible's shared services role (issue 026), from Infisical `staging/db`,
+`prod/rabbitmq` and `staging/rabbitmq`: the role owns the staging database,
+`CONNECT` on every other database (production's, `postgres`, `template1`) is
+revoked from `PUBLIC` and the staging role (production's role is the
+instance's superuser), each environment's RabbitMQ user has no tags and
+permissions on its own vhost only, and the `guest` user is deleted. The role
+runs [`setup-shared-services.sh`](setup-shared-services.sh) on the server; the
+harness runs the same file, so production runs what the harness proves. It is
+idempotent and reports whether it changed anything, and it never restarts
+Postgres or RabbitMQ.
 
 Isolation rests on two rules:
 
@@ -298,8 +302,9 @@ surviving `down` and a fresh deploy.
 
 Staging beside production: before production exists, a staging deploy fails
 at migrate and starts nothing of production's. Then
-`fixtures/create-staging-services.sh` creates the staging role, database,
-vhost and user on production's services (twice: it is idempotent), staging is
+`setup-shared-services.sh` creates the staging role, database, vhost and user
+on production's services (again, to prove a second run reports no change; a
+password rotation and back; Postgres and RabbitMQ never restarted), staging is
 deployed at another SHA than production, and the harness proves that each
 `/healthz` reports its own SHA (also through Caddy, by host); that every
 production name (`backend`, `frontend`, `redis`, …) resolves from production's
