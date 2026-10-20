@@ -1266,12 +1266,20 @@ webhook_checks() { # $1 stack, $2 hosts, $3 own backend container, $4 its name, 
 			want+="400 "
 			if [ "$(response_body)" = "$WEBHOOK_REJECTED" ]; then bodies=$((bodies + 1)); fi
 		done
-		sleep 1 # the request logs reach `docker logs` asynchronously
+		# The request logs reach `docker logs` asynchronously: wait up to 10 s
+		# for the own backend to show every request, then count the leaks.
+		n=${#agents[@]}
+		for _ in $(seq 20); do
+			seen=0
+			for ua in "${agents[@]}"; do
+				if backend_saw "$own" "$ua"; then seen=$((seen + 1)); fi
+			done
+			[ "$seen" -lt "$n" ] || break
+			sleep 0.5
+		done
 		for ua in "${agents[@]}"; do
-			if backend_saw "$own" "$ua"; then seen=$((seen + 1)); fi
 			if backend_saw "$other" "$ua"; then leaked=$((leaked + 1)); fi
 		done
-		n=${#agents[@]}
 		check "$stack: POST $path on ${hosts// /, } gets the backend's signature error, not a frontend page (statuses ${statuses% }; error body $bodies/$n)" \
 			[ "$statuses$bodies" = "$want$n" ]
 		check "... and reached $own_name only (seen by $own_name: $seen/$n; by $other_name: $leaked)" [ "$seen $leaked" = "$n 0" ]
