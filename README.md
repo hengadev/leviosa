@@ -17,7 +17,7 @@ Leviosa is booking and activity management software for service businesses — m
 ```
 ├── frontend/            # SvelteKit 5 application
 ├── backend/             # Go modular monolith
-├── config/              # Infrastructure configuration (Caddy, Loki, Vault, etc.)
+├── config/              # Legacy Caddy configuration (moving to infra/compose/caddy/)
 ├── infra/               # Terraform and Ansible deployment scripts
 └── local.compose.yaml   # Full local stack simulation (see Local Development below)
 ```
@@ -40,8 +40,9 @@ Two ways to run the app locally, depending on what you need:
 make local-dev     # fast loop: frontend natively (pnpm), backend + deps in Docker (Postgres,
                     # Redis, RabbitMQ, S3 and KMS via LocalStack), live reload via air
 make local-start   # whole app in Docker (frontend, backend, + the same deps), built from
-                    # the real production Dockerfiles — no hot reload, mirrors what Ansible
-                    # actually deploys to staging/production (infra/ansible/roles/app)
+                    # the real production Dockerfiles — no hot reload, mirrors
+                    # infra/compose/docker-compose.prod.yml (migrate + admin one-offs run
+                    # before the apps start, as a deploy runs them)
 make local-stop    # stop the local-start stack
 make local-restart # restart it
 ```
