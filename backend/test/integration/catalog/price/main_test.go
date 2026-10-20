@@ -19,7 +19,6 @@ import (
 	priceHandler "github.com/Leviosa-care/leviosa/backend/internal/catalog/interface/price"
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/ports"
 	authsession "github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/envmode"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/logger"
@@ -136,35 +135,13 @@ func TestMain(m *testing.M) {
 	}
 	log.Println("Redis client connected successfully.")
 
-	// Setup enhanced Vault testcontainer with per-service encryption (GDPR compliant)
-	log.Println("Setting up enhanced Vault testcontainer with per-service keys...")
-	serviceNames := []string{services.Catalog} // Only catalog service for this test
-	vaultSetup, err := tu.SetupServiceVault(ctx, nil, serviceNames)
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	// Set environment variables for Vault (for encx library)
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	// Get service-specific crypto service (GDPR compliant)
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.Catalog)
-	if !exists {
-		log.Fatal("Catalog service crypto not found in vault setup")
-	}
-	if crypto == nil {
-		log.Fatal("Catalog crypto service is nil")
-	}
-	log.Printf("✓ Catalog service crypto initialized with per-service encryption key")
-
-	// Log vault setup details for debugging
-	log.Printf("✓ Vault setup complete:")
-	log.Printf("  - Services: %d", len(vaultSetup.CryptoServices))
-	log.Printf("  - API Keys: %d", len(vaultSetup.ServiceKeys))
-	log.Printf("  - GDPR compliant per-service encryption: enabled")
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 
 	// Initialize AuthTestContext for user/session testing
 	authCtx = &tu.AuthTestContext{
