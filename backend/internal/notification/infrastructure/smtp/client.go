@@ -27,10 +27,33 @@ type SMTPClient struct {
 	config SMTPConfig
 }
 
-func NewSMTPClient(config SMTPConfig) ports.EmailService {
+var _ ports.EmailService = (*SMTPClient)(nil)
+
+func NewSMTPClient(config SMTPConfig) *SMTPClient {
 	return &SMTPClient{
 		config: config,
 	}
+}
+
+// SendCheckEmail sends one short test email to `to` through the same message
+// and dialer path as every other email (the sender falls back to the SMTP
+// username, as for booking emails). The check-email run mode uses it to prove
+// the SMTP settings end to end.
+func (c *SMTPClient) SendCheckEmail(ctx context.Context, to string) error {
+	data := struct {
+		SentAt string
+	}{
+		SentAt: time.Now().UTC().Format(time.RFC3339),
+	}
+
+	emailReq := &domain.EmailRequest{
+		To:       to,
+		Subject:  "Leviosa SMTP check",
+		Template: "smtp_check",
+		Data:     data,
+	}
+
+	return c.sendEmail(ctx, emailReq, "")
 }
 
 func (c *SMTPClient) SendOTPEmail(ctx context.Context, req domain.OTPEmailRequest) error {
