@@ -1,20 +1,23 @@
 #!/usr/bin/env bash
 # deploy <stack> <sha> — the single release entry point for Leviosa: staging
 # deploys, promotions and rollbacks all run it (a rollback is just a deploy
-# of an older SHA). This version implements the `prod` stack; `staging` is a
-# second branch of the `case` below (issue 019).
+# of an older SHA). Two stacks, one branch each in the `case` below: `prod`
+# (docker-compose.prod.yml) and `staging` (docker-compose.staging.yml), which
+# runs beside production on the same server and network (ADR-0016).
 #
 # On the server the root runner (issue 022) extracts this script and the
 # stack's compose file from the deployed commit, installs the compose file as
 # <stack root>/docker-compose.yml and runs this script as root with an empty
 # environment (the Agent-rendered env files are root-only 0600). CI asks for
-# it through the deploy gate:  ssh <deploy-user>@<host> 'deploy prod <sha>'
+# it through the deploy gate:  ssh <deploy-user>@<host> 'deploy staging <sha>'
 #
 # Sequence — each step gates the next; a failure exits non-zero at once:
 #   1. pull leviosa-backend:<sha> and leviosa-frontend:<sha>, then re-point
-#      the stack's local pins (:prod) at them
-#   2. ensure Postgres, RabbitMQ and Redis are up (no-op when running; never
-#      recreated here)
+#      the stack's local pins (:prod or :staging) at them
+#   2. ensure the stack's own services are up (no-op when running; never
+#      recreated here): Postgres, RabbitMQ and Redis for prod, staging_redis
+#      alone for staging — a staging deploy never starts, stops or recreates
+#      a production container
 #   3. `migrate` one-off — on failure the pins move back and the running
 #      containers keep serving
 #   4. `admin` one-off (bootstrap-admin; idempotent, so it runs every time)
@@ -23,7 +26,8 @@
 #
 # Knobs (production defaults; the harness overrides them, the root runner
 # never sets them):
-#   LEVIOSA_PROD_ROOT       stack root                 /opt/leviosa
+#   LEVIOSA_PROD_ROOT       prod stack root            /opt/leviosa
+#   LEVIOSA_STAGING_ROOT    staging stack root         /opt/leviosa-staging
 #   LEVIOSA_BACKEND_REPO    backend image repository   henga/leviosa-backend
 #   LEVIOSA_FRONTEND_REPO   frontend image repository  henga/leviosa-frontend
 #   LEVIOSA_NETWORK         external network name      leviosa_network
@@ -38,15 +42,16 @@ die() {
 	exit 1
 }
 usage() {
-	echo "usage: deploy prod <sha>" >&2
+	echo "usage: deploy <prod|staging> <sha>" >&2
 	exit 2
 }
 
 [ $# -eq 2 ] || usage
 stack=$1
 sha=$2
-# A commit SHA, never a tag name: deploying "prod" would pin the stack to
-# itself. The deploy gate (issue 022) only lets full 40-hex SHAs through.
+# A commit SHA, never a tag name: deploying "prod" or "staging" would pin a
+# stack to itself. The deploy gate (issue 022) only lets full 40-hex SHAs
+# through.
 [[ $sha =~ ^[0-9a-f]{7,40}$ ]] || die "invalid sha '$sha' (expected 7 to 40 lowercase hex characters)"
 
 # ── stack definitions ────────────────────────────────────────────────────────
@@ -61,9 +66,26 @@ case $stack in
 		# Step 2's services: production owns the shared Postgres and RabbitMQ.
 		dependencies=(postgres rabbitmq redis)
 		env_files=(backend frontend admin postgres rabbitmq redis caddy)
+		migrate_hint=""
+		;;
+	staging)
+		root=${LEVIOSA_STAGING_ROOT:-/opt/leviosa-staging}
+		pin_tag="staging"
+		# Prefixed: on the shared network an unprefixed name would also
+		# answer for production's service of that name.
+		backend_service="staging_backend"
+		frontend_service="staging_frontend"
+		migrate_service="staging_migrate"
+		admin_service="staging_admin"
+		# Step 2's services: staging's own Redis only. Postgres and RabbitMQ
+		# belong to production's compose project, which this deploy never
+		# touches; when they are not running, the migrate step fails.
+		dependencies=(staging_redis)
+		env_files=(backend frontend admin redis)
+		migrate_hint=" (staging uses production's postgres and rabbitmq: are they running? deploy prod first)"
 		;;
 	*)
-		die "unknown stack '$stack' (expected: prod)"
+		die "unknown stack '$stack' (expected: prod or staging)"
 		;;
 esac
 
@@ -134,10 +156,12 @@ docker tag "$backend_image" "$backend_pin" || die "failed to pin $backend_pin"
 docker tag "$frontend_image" "$frontend_pin" || die "failed to pin $frontend_pin"
 log "pinned $backend_pin and $frontend_pin to $sha"
 
-# ── 2. shared dependencies ───────────────────────────────────────────────────
+# ── 2. the stack's own services ──────────────────────────────────────────────
 # Starts what is missing or stopped (the first deploy, on empty data
 # directories) and leaves running containers alone: --no-recreate, so an
 # env file the Agent rewrote never restarts Postgres or RabbitMQ from here.
+# For staging that is staging_redis alone, in staging's compose project: the
+# services it shares belong to production's project and are never named here.
 log "ensuring ${dependencies[*]} are up"
 "${compose[@]}" up -d --no-recreate --wait --wait-timeout "$health_timeout" "${dependencies[@]}" ||
 	die "${dependencies[*]} did not become healthy"
@@ -145,7 +169,7 @@ log "ensuring ${dependencies[*]} are up"
 # ── 3. migrations ────────────────────────────────────────────────────────────
 log "running migrations ($migrate_service one-off)"
 "${compose[@]}" --profile oneoff run --rm --no-deps -T "$migrate_service" ||
-	die "migration failed: NOT recreating anything, the running containers keep serving"
+	die "migration failed: NOT recreating anything, the running containers keep serving$migrate_hint"
 
 # ── 4. admin bootstrap ───────────────────────────────────────────────────────
 log "running the admin bootstrap ($admin_service one-off)"
