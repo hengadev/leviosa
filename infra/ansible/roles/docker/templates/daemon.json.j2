@@ -1,19 +1,21 @@
 {
-  "log-driver": "json-file",
+  "log-driver": "{{ docker_daemon_options['log-driver'] }}",
   "log-opts": {
-    "max-size": "{{ docker_log_max_size | default('10m') }}",
-    "max-file": "{{ docker_log_max_files | default('3') }}"
-  },
-  "metrics-addr": "{{ docker_metrics_addr | default('127.0.0.1:9323') }}",
-  "icc": {{ docker_icc | default(false) | lower }},
-  "userland-proxy": {{ docker_userland_proxy | default(false) | lower }},
-  "no-new-privileges": {{ docker_no_new_privileges | default(true) | lower }},
-  "live-restore": {{ docker_live_restore | default(true) | lower }},
+    {% for key, value in docker_daemon_options['log-opts'].items() %}
+    "{{ key }}": "{{ value }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+  }{% if docker_daemon_options['metrics-addr'] is defined %},
+  "metrics-addr": "{{ docker_daemon_options['metrics-addr'] }}"{% endif %}{% if docker_daemon_options.get('experimental') is defined %},
+  "experimental": {{ docker_daemon_options['experimental'] | lower }}{% endif %},
+  "icc": {{ docker_daemon_icc | lower }},
+  "userland-proxy": {{ docker_daemon_userland_proxy | lower }},
+  "no-new-privileges": {{ docker_daemon_no_new_privileges | lower }},
+  "live-restore": {{ docker_daemon_live_restore | lower }},
   "default-ulimits": {
     "nofile": {
       "Name": "nofile",
-      "Hard": {{ docker_ulimit_nofile | default(65536) }},
-      "Soft": {{ docker_ulimit_nofile | default(65536) }}
+      "Hard": {{ docker_daemon_ulimit_nofile }},
+      "Soft": {{ docker_daemon_ulimit_nofile }}
     }
   }
 }

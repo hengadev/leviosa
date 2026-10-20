@@ -1,0 +1,49 @@
+---
+# Firewall (UFW) Configuration Tasks
+# - Default deny incoming, allow outgoing
+# - SSH (rate limited), HTTP and HTTPS: nothing else
+# - Enable UFW
+#
+# Docker publishes container ports through its own iptables chains, ahead of
+# UFW's: the only published ports are Caddy's (80, 443 and 443/udp, in
+# infra/compose/docker-compose.prod.yml). Never publish another one.
+#
+# No `ufw reset` here: it would wipe and disable the firewall on every run,
+# so every rule below would report a change. The rules are declarative; a
+# rule removed from this list must be deleted by hand (`ufw delete …`).
+
+- name: Install UFW
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set UFW default policies
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: incoming, policy: deny }
+    - { direction: outgoing, policy: allow }
+
+- name: Allow HTTP and HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop:
+    - "80"
+    - "443"
+
+# SSH is allowed by this `limit` rule alone (allow + brute-force rate
+# limiting). A separate `allow` rule for the same port is the same UFW rule,
+# so the two would replace each other and both report a change on every run.
+- name: Allow SSH, rate limited to prevent brute force
+  community.general.ufw:
+    rule: limit
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+

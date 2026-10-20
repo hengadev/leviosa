@@ -1,114 +1,63 @@
 ---
 # SSH Hardening Tasks
-# - Disable root login
-# - Disable password authentication
-# - Set up strict key-based authentication
-# - Add modern crypto hardening
-# - Add SSH banner
-# - Test SSH configuration
+# - Key-only authentication (root: key only; no passwords anywhere)
+# - Only root and the deploy user may log in
+# - Modern algorithms, no forwarding, idle timeouts
+# - Banner
+#
+# The keys themselves are roles/user's (operator keys) and roles/
+# deploy_gate's (CI keys).
 
 - name: Ensure SSH is installed
   ansible.builtin.apt:
     name: openssh-server
     state: present
-    update_cache: yes
-
-- name: Configure root login
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PermitRootLogin '
-    line: 'PermitRootLogin {{ ssh_permit_root_login }}'
-    state: present
-  notify: Restart SSH
-
-- name: Allow only specific users to SSH
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?AllowUsers '
-    line: 'AllowUsers {{ ssh_allowed_users | join(" ") }}'
-    state: present
-  notify: Restart SSH
-
-- name: Disable password authentication
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '^#?PasswordAuthentication '
-    line: 'PasswordAuthentication no'
-    state: present
-  notify: Restart SSH
-
-# Additional SSH hardening settings
-- name: Configure additional SSH security settings
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^#?{{ item.key }}\\s"
-    line: "{{ item.key }} {{ item.value }}"
-    state: present
-  loop:
-    - { key: "MaxAuthTries", value: "3" }
-    - { key: "ClientAliveInterval", value: "300" }
-    - { key: "ClientAliveCountMax", value: "2" }
-    - { key: "X11Forwarding", value: "no" }
-    - { key: "PermitTunnel", value: "no" }
-    - { key: "AllowTcpForwarding", value: "no" }
-  notify: Restart SSH
-
-- name: Configure SSH key-based authentication with modern crypto
-  ansible.builtin.blockinfile:
-    path: /etc/ssh/sshd_config
-    block: |
-      # Modern cryptographic algorithms
-      # Key exchange - Curve25519 only (most secure)
-      KexAlgorithms curve25519-sha256@libssh.org
-
-      # Ciphers - ChaCha20 and AES-GCM only (authenticated encryption)
-      Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
-
-      # MACs - Encrypt-then-MAC only (prevents padding oracle attacks)
-      MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
-
-      # Host key algorithms - Ed25519 and RSA with SHA-256/512
-      HostKeyAlgorithms ssh-ed25519,ssh-ed25519-cert-v01@openssh.com,rsa-sha2-512,rsa-sha2-256
-
-      # Required minimum RSA key size
-      PubkeyAcceptedKeyTypes ssh-ed25519,rsa-sha2-512,rsa-sha2-256,ecdsa-sha2-nistp256
-    marker: "# {mark} ANSIBLE MANAGED BLOCK - Cryptographic hardening"
-    insertafter: EOF
-  notify: Restart SSH
 
 - name: Add SSH banner
   ansible.builtin.copy:
     src: banner.txt
     dest: /etc/ssh/banner.txt
+    owner: root
+    group: root
     mode: '0644'
 
-- name: Enable SSH banner
+# Ubuntu's sshd_config already starts with this line; ensured so the drop-in
+# below is read on any image.
+- name: Read the sshd_config.d drop-ins
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: "^#?Banner"
-    line: "Banner /etc/ssh/banner.txt"
+    regexp: '^Include\s+/etc/ssh/sshd_config\.d/\*\.conf\s*$'
+    line: 'Include /etc/ssh/sshd_config.d/*.conf'
+    insertbefore: BOF
     state: present
   notify: Restart SSH
 
-- name: Ensure .ssh directory exists for the user
+- name: Create the sshd_config.d directory
   ansible.builtin.file:
-    path: "/home/{{ deploy_user }}/.ssh"
+    path: /etc/ssh/sshd_config.d
     state: directory
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: '0700'
+    owner: root
+    group: root
+    mode: '0755'
 
-- name: Add public key to authorized_keys
-  ansible.builtin.copy:
-    content: "{{ deploy_ssh_public_key }}"
-    dest: "/home/{{ deploy_user }}/.ssh/authorized_keys"
-    owner: "{{ deploy_user }}"
-    group: "{{ deploy_user }}"
-    mode: '0600'
+# sshd re-reads its configuration for every new connection: a broken file
+# would lock everyone out before any restart. `validate` checks the new file
+# on its own before it replaces the old one.
+- name: Install the SSH hardening drop-in
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: "{{ ssh_hardening_dropin }}"
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart SSH
 
+# And the whole configuration, main file and every drop-in, before the
+# restart below.
 - name: Test SSH configuration before applying
   ansible.builtin.command:
-    cmd: sshd -t
+    cmd: /usr/sbin/sshd -t
   register: sshd_test
   changed_when: false
   failed_when: sshd_test.rc != 0
@@ -120,4 +69,16 @@
   ansible.builtin.service:
     name: ssh
     state: started
-    enabled: yes
+    enabled: true
+
+- name: Display SSH configuration summary
+  ansible.builtin.debug:
+    msg:
+      - "==========================================="
+      - "SSH Hardening Applied ({{ ssh_hardening_dropin }})"
+      - "==========================================="
+      - "Port: {{ ssh_port }}"
+      - "Root login: {{ ssh_permit_root_login }}"
+      - "Password auth: {{ ssh_password_authentication }}"
+      - "Allowed users: {{ ssh_allowed_users | join(', ') }}"
+      - "==========================================="

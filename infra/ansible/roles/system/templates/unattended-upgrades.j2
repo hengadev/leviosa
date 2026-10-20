@@ -11,20 +11,19 @@ Unattended-Upgrade::AutoFixInterruptedDpkg "true";
 Unattended-Upgrade::MinimalSteps "true";
 Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
-Unattended-Upgrade::Automatic-Reboot "false";
+Unattended-Upgrade::Automatic-Reboot "{{ 'true' if auto_updates_reboot else 'false' }}";
 Unattended-Upgrade::Automatic-Reboot-Time "02:00";
 Unattended-Upgrade::SyslogEnable "true";
 Unattended-Upgrade::Verbose "false";
 
-// Email notifications (optional, configure if needed)
-// Unattended-Upgrade::Mail "{{ auto_updates_email | default('root@localhost') }}";
+// Email notifications (the notification email from Infisical prod /host)
+Unattended-Upgrade::Mail "{{ auto_updates_email }}";
 Unattended-Upgrade::MailOnlyOnError "true";
 
-// Blacklist packages from auto-upgrade (Docker and SSH to prevent disruptions)
+// Blacklist packages from auto-upgrade (Docker: a daemon restart is a
+// deliberate operator step, not a nightly surprise)
 Unattended-Upgrade::Package-Blacklist {
-  "docker-ce";
-  "docker-ce-cli";
-  "containerd.io";
-  "openssh-server";
-  "openssh-client";
+{% for pkg in auto_updates_blacklist | default([]) %}
+  "{{ pkg }}";
+{% endfor %}
 };
