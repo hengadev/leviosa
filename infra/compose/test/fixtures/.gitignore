@@ -1,0 +1,4 @@
+# The root .gitignore ignores *.env (real env files hold secrets). These are
+# the harness's fake, non-secret stand-ins for the Agent's renderings and must
+# be committed.
+!*.env

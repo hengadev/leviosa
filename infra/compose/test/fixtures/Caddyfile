@@ -1,0 +1,12 @@
+# HARNESS FIXTURE — a minimal stand-in for the real Caddyfile (issue 020):
+# plain HTTP on :80, everything to production's frontend. Enough to prove the
+# compose file's Caddy service starts on the shared network and reaches the
+# frontend by its service name.
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	reverse_proxy frontend:3000
+}
