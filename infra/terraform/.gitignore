@@ -1,15 +1,14 @@
 # Terraform files
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
+# Only the committed, secret-free terraform.tfvars is allowed (the root
+# .gitignore ignores it everywhere else). Secrets come from Infisical
+# `leviosa-infra` through tf.sh, never from a tfvars file.
 *.tfvars
-terraform.tfvars.*
-!terraform.tfvars.example
-!terraform.tfvars.*.example
+!terraform.tfvars
 .terraform-backup/
 terraform.tfbackup
 crash.log
 crash.*.log
 terraform-graph.png
-backend.tf.bak
