@@ -80,7 +80,7 @@
       "BACKUP_AWS_REGION": "eu-central-1"
     },
     "/host": {
-      "NOTIFICATION_EMAIL": "ops@fixture.leviosa.test"
+      "NOTIFY_EMAIL": "ops@fixture.leviosa.test"
     }
   },
   "staging": {
