@@ -1,0 +1,108 @@
+#!/usr/bin/env -S -i PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HOME=/root /bin/bash
+# shellcheck shell=bash
+# Managed by Ansible (roles/deploy_gate) - DO NOT EDIT MANUALLY
+#
+# leviosa-deploy <staging|prod> <40-hex sha>: the root deploy runner (issue
+# 022). The deploy user reaches it through its only sudoers line; the CI key
+# reaches it only through leviosa-deploy-gate. CI uploads nothing: what root
+# runs comes from the deployed commit of main, so a rollback also rolls back
+# the deploy script and the compose file.
+#
+#   1. fetch main from the repository into a root-only mirror. Never a SHA:
+#      GitHub also serves commits pushed to forks under this repository's URL
+#   2. refuse <sha> unless it is main or one of main's ancestors
+#   3. read infra/compose/deploy and infra/compose/docker-compose.<stack>.yml
+#      from <sha>
+#   4. install the compose file as <stack root>/docker-compose.yml (root-owned,
+#      0644, replaced atomically)
+#   5. run that commit's `deploy <stack> <sha>` with an empty environment
+#
+# The shebang starts this script from an empty environment too, whoever runs
+# it and whatever sudo keeps: nothing the caller sets (GIT_*, BASH_ENV,
+# LEVIOSA_*, ...) reaches git or the deploy script, and nothing here can be
+# changed at run time. The settings below are rendered by Ansible from
+# roles/deploy_gate/defaults.
+set -euo pipefail
+umask 077
+# Again, for a run through `bash <this file>`, which skips the shebang.
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# git reads no system or user configuration and never prompts.
+export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0
+
+repo_url='{{ deploy_gate_repo_url }}'
+state_dir='{{ deploy_gate_state_dir }}'
+prod_root='{{ deploy_gate_stack_roots.prod }}'
+staging_root='{{ deploy_gate_stack_roots.staging }}'
+
+branch=main
+compose_dir=infra/compose
+
+log() { printf 'leviosa-deploy: %s\n' "$*"; }
+die() {
+	printf 'leviosa-deploy: ERROR: %s\n' "$*" >&2
+	exit 1
+}
+
+[ $# -eq 2 ] || die "usage: leviosa-deploy <staging|prod> <40-hex sha>"
+stack=$1
+sha=$2
+case $stack in
+	prod) root=$prod_root ;;
+	staging) root=$staging_root ;;
+	*) die "unknown stack '$stack' (expected staging or prod)" ;;
+esac
+[[ $sha =~ ^[0-9a-f]{40}$ ]] || die "'$sha' is not a full 40-character lowercase commit SHA"
+
+[ -d "$state_dir" ] && [ -w "$state_dir" ] ||
+	die "$state_dir missing or not writable: run as root (sudo -n $0 ...) on a host set up by roles/deploy_gate"
+[ -d "$root" ] && [ ! -L "$root" ] || die "stack root $root missing (Ansible's app layout creates it)"
+cd /
+
+mirror=$state_dir/repo.git
+release=$state_dir/release-$stack
+deploy_src=$compose_dir/deploy
+compose_src=$compose_dir/docker-compose.$stack.yml
+
+# One deploy per stack at a time. fd 8 stays open through the exec at the
+# end, so the lock is held until `deploy` exits.
+exec 8>"$state_dir/$stack.lock"
+flock -n 8 || die "another $stack deploy is running"
+
+# Both stacks share the mirror: one fetch at a time, and the lock is released
+# before the (long) deploy starts.
+(
+	flock -w 300 9 || die "timed out waiting for $state_dir/mirror.lock"
+	[ -d "$mirror" ] || git init --quiet --bare "$mirror"
+	log "fetching $branch from $repo_url"
+	git -C "$mirror" fetch --quiet --no-tags --no-recurse-submodules "$repo_url" \
+		"+refs/heads/$branch:refs/heads/$branch"
+) 9>"$state_dir/mirror.lock" || die "could not fetch $branch from $repo_url"
+
+if ! git -C "$mirror" cat-file -e "$sha^{commit}" 2>/dev/null ||
+	! git -C "$mirror" merge-base --is-ancestor "$sha" "refs/heads/$branch"; then
+	die "$sha is not a commit on $branch of $repo_url: deploy refused"
+fi
+log "$sha is on $branch (tip $(git -C "$mirror" rev-parse "refs/heads/$branch"))"
+
+# Blobs, not a checkout: a symlink in the commit is read as its target's
+# name, never followed.
+rm -rf "$release"
+mkdir "$release"
+git -C "$mirror" cat-file blob "$sha:$deploy_src" >"$release/deploy" 2>/dev/null ||
+	die "$sha has no $deploy_src"
+git -C "$mirror" cat-file blob "$sha:$compose_src" >"$release/docker-compose.yml" 2>/dev/null ||
+	die "$sha has no $compose_src (is the $stack stack defined at that commit?)"
+chmod 0700 "$release/deploy"
+
+# mktemp + rename: whoever reads the compose file meanwhile (the Infisical
+# Agent recreating a service) sees the old file or the new one, never half of
+# one. Created by root, so root-owned.
+log "installing $compose_src at $sha as $root/docker-compose.yml"
+new=$(mktemp "$root/.docker-compose.yml.XXXXXX")
+if ! { cp "$release/docker-compose.yml" "$new" && chmod 0644 "$new" && mv -f "$new" "$root/docker-compose.yml"; }; then
+	rm -f "$new"
+	die "could not install $root/docker-compose.yml"
+fi
+
+log "running deploy $stack $sha"
+exec env -i PATH="$PATH" HOME=/root "$release/deploy" "$stack" "$sha"

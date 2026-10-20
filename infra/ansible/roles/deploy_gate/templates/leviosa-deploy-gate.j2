@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Managed by Ansible (roles/deploy_gate) - DO NOT EDIT MANUALLY
+#
+# leviosa-deploy-gate: the forced command of the CI deploy key (issue 022).
+# sshd runs this instead of whatever the client asked for, as the deploy
+# user, with the request in SSH_ORIGINAL_COMMAND. Exactly two forms pass:
+#
+#   deploy staging <40 lowercase hex sha>
+#   deploy prod <40 lowercase hex sha>
+#
+# and both go to the root runner through the deploy user's only sudoers line.
+# Anything else (a shell, another command, scp, sftp, rsync, extra
+# arguments, shell metacharacters, a short or uppercase SHA, any whitespace
+# but single spaces) is refused. The request is matched as one string and
+# never evaluated by a shell.
+set -euo pipefail
+
+# The client may send LANG and LC_* (sshd AcceptEnv): match in the C locale,
+# where [0-9a-f] means exactly those sixteen characters.
+export LC_ALL=C
+
+request=${SSH_ORIGINAL_COMMAND-}
+
+if [[ $request =~ ^deploy\ (staging|prod)\ ([0-9a-f]{40})$ ]]; then
+	stack=${BASH_REMATCH[1]}
+	sha=${BASH_REMATCH[2]}
+	logger -t leviosa-deploy-gate -p auth.notice -- "accepted: deploy $stack $sha" || true
+	exec sudo -n '{{ deploy_gate_runner }}' "$stack" "$sha"
+fi
+
+# printf %q keeps newlines and control characters out of the log line.
+logger -t leviosa-deploy-gate -p auth.warning -- "refused: $(printf '%q' "${request:0:200}")" || true
+echo "leviosa-deploy-gate: refused. This key only runs: deploy <staging|prod> <40-hex sha>" >&2
+exit 1
