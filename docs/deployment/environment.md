@@ -172,9 +172,6 @@ Terraform. A copy here would appear twice in `backend.env`.
 | --- | :-: | --- | --- |
 | `NOTIFY_EMAIL` | ✓ | `make setup` (`playbooks/site.yml`), through the operator's login: fail2ban, unattended-upgrades, the ACME account | operator |
 
-(The template fixture names it `NOTIFICATION_EMAIL`; Ansible reads
-`NOTIFY_EMAIL`, which is the name to use.)
-
 ## Keys the templates set themselves
 
 Never put these in Infisical: the template writes them, and a copy in a folder
