@@ -3,7 +3,9 @@
 `.github/workflows/ci.yaml` checks every pull request to `main` and every push
 to `main`. A push to `main` that passes every check is built and deployed to
 staging with no human step (PRD `docs/prd/deployment-infisical-compose.md`,
-issue 029). Production is not deployed from here.
+issue 029). Production is not deployed from here: the manual **Promote**
+workflow (`.github/workflows/promote.yaml`) ships the release staging serves,
+and a rollback is a Promote of an older SHA ([promote.md](promote.md)).
 
 ## Jobs
 
@@ -13,7 +15,7 @@ issue 029). Production is not deployed from here.
 | `backend-checks`: Go build, `go test ./...` | runs | runs |
 | `backend-integration-tests`: `make test-integration` (testcontainers) | runs | runs |
 | `security-scan`: `govulncheck` | runs | runs |
-| `deploy-scripts`: deploy gate tests, `bash -n` on `infra/compose/deploy` and the harness | runs | runs |
+| `deploy-scripts`: deploy gate tests, Promote's preflight tests, `bash -n` on `infra/compose/deploy` and the harness | runs | runs |
 | `summary`: fails unless every check above passed | runs | runs |
 | `build-images`: build and push both images | skipped | after every check passed |
 | `deploy-staging`: `deploy staging <sha>` through the deploy gate | skipped | after every check passed and both images were pushed |
@@ -67,18 +69,19 @@ ssh leviosa@<SSH_HOST> 'deploy staging <sha>'      port 22, CI key, pinned host 
 ## CI secrets
 
 Repository secrets (Settings → Secrets and variables → Actions). These five
-are the only ones the workflow reads:
+are the only ones the workflows read (`ci.yaml`, and `promote.yaml` for
+production):
 
 | Secret | Used by | Value |
 | --- | --- | --- |
-| `DOCKERHUB_USERNAME` | `build-images` | the Docker Hub account that pushes `henga/leviosa-backend` and `henga/leviosa-frontend` |
-| `DOCKERHUB_TOKEN` | `build-images` | a Docker Hub access token with read and write access to those repositories, not the account password |
-| `SSH_PRIVATE_KEY` | `deploy-staging` | the private half of the `leviosa-ci` key, OpenSSH format, no passphrase. Its public half is in the keys file's CI list (`deploy_gate_ci_keys`), never in root's `authorized_keys` |
-| `SSH_KNOWN_HOSTS` | `deploy-staging` | the server's host key for `SSH_HOST`, as a known-hosts line: `203.0.113.10 ssh-ed25519 AAAA…` (a hashed line works too) |
-| `SSH_HOST` | `deploy-staging` | the server's address, exactly as it appears in `SSH_KNOWN_HOSTS`: Terraform's `server_ipv4_address` output |
+| `DOCKERHUB_USERNAME` | `build-images`; Promote's `preflight` (image check) | the Docker Hub account that pushes `henga/leviosa-backend` and `henga/leviosa-frontend` |
+| `DOCKERHUB_TOKEN` | `build-images`; Promote's `preflight` (image check) | a Docker Hub access token with read and write access to those repositories, not the account password |
+| `SSH_PRIVATE_KEY` | `deploy-staging`; Promote's `deploy` | the private half of the `leviosa-ci` key, OpenSSH format, no passphrase. Its public half is in the keys file's CI list (`deploy_gate_ci_keys`), never in root's `authorized_keys` |
+| `SSH_KNOWN_HOSTS` | `deploy-staging`; Promote's `deploy` | the server's host key for `SSH_HOST`, as a known-hosts line: `203.0.113.10 ssh-ed25519 AAAA…` (a hashed line works too) |
+| `SSH_HOST` | `deploy-staging`; Promote's `deploy` | the server's address, exactly as it appears in `SSH_KNOWN_HOSTS`: Terraform's `server_ipv4_address` output |
 
 The SSH user (`leviosa`), the port (22) and the image repositories are written
-in the workflow; they are not secrets. GitHub holds no Infisical, AWS, Stripe,
+in the workflows; they are not secrets. GitHub holds no Infisical, AWS, Stripe,
 database or other runtime credential (ADR-0017): the server's Infisical Agent
 provides those. Any other repository secret is unused by CI and can be deleted.
 
@@ -90,8 +93,9 @@ login), never from an unauthenticated scan:
 ssh root@<ip> cat /etc/ssh/ssh_host_ed25519_key.pub | awk -v h=<ip> '{print h, $1, $2}'
 ```
 
-A rebuilt server has a new host key: staging deploys fail with
-"Host key verification failed" until this secret is updated.
+A rebuilt server has a new host key: staging deploys and Promote fail with
+"Host key verification failed" until this secret is updated. Both stacks live
+on that one server (ADR-0016), so the same three SSH secrets serve both.
 
 ## Not run in CI
 
