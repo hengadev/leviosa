@@ -1,0 +1,8 @@
+---
+# backup role handlers. backup_manage_service (defaults/main.yml) false skips
+# them: the role's tests install files without touching systemd.
+
+- name: Reload systemd for the backup units
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: backup_manage_service | bool

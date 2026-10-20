@@ -1,0 +1,131 @@
+---
+# backup role defaults (issue 028)
+#
+# Production backups, all run as root from systemd timers (the deploy user
+# has no docker and no sudo beyond the deploy runner, roles/deploy_gate):
+#
+#   leviosa-backup        daily: pg_dump of production's database + a
+#                         configuration archive without secrets
+#   leviosa-snapshot      weekly: Infisical prod, age-encrypted with the
+#                         operator's public key
+#   leviosa-restore-test  by hand: the newest dump into a throwaway Postgres,
+#                         checked with the backend's `verify` mode
+#
+# Not backed up: staging, Redis, RabbitMQ; the media buckets rely on S3
+# versioning (infra/terraform/s3.tf). Recovery procedures: README.md.
+#
+# The credentials are read at run time from the Agent-rendered env files,
+# never from Ansible.
+
+# Rendered by the Infisical Agent (roles/infisical_agent, issue 024's
+# backup.env.tmpl): BACKUP_AWS_ACCESS_KEY_ID, BACKUP_AWS_SECRET_ACCESS_KEY,
+# BACKUP_S3_BUCKET, BACKUP_AWS_REGION (prod /backup, written by Terraform)
+# and POSTGRES_USER / POSTGRES_DB (prod /db).
+backup_env_file: "{{ app_prod_root }}/env/backup.env"
+# The restore test runs the backend in `verify` mode with production's KMS
+# key and pepper, from the backend's own rendering.
+backup_backend_env_file: "{{ app_prod_root }}/env/backend.env"
+
+# Root-only working directory: per-run temporary files (removed at the end of
+# each run) and latest.dump, the newest dump (root 0600).
+backup_work_dir: /var/backups/leviosa
+
+# Production's compose project and its Postgres service (infra/compose/
+# docker-compose.prod.yml: `name: leviosa`, service `postgres`). The dump
+# runs inside that container, over its local socket.
+backup_compose_project: leviosa
+backup_db_service: postgres
+
+# The AWS CLI is not packaged for Ubuntu 24.04: the official image, pinned.
+# Bump on purpose, never a floating tag.
+backup_aws_cli_image: amazon/aws-cli:2.37.10
+# Same image as production's Postgres (docker-compose.prod.yml), so the
+# restore test reads the dump with the same pg_restore.
+backup_restore_postgres_image: postgres:17-alpine
+# Production's local pin (re-pointed by every `deploy prod <sha>`): the
+# restore test verifies with the release that is running.
+backup_restore_backend_image: henga/leviosa-backend:prod
+
+# Scripts (root 0750), their shared library and data (root 0640/0644), and
+# the configuration they read (root 0644: paths and names, no secret).
+backup_bin_dir: /usr/local/sbin
+backup_lib_dir: /usr/local/lib/leviosa-backup
+backup_conf_file: /etc/leviosa/backup.conf
+
+# Configuration archive: an ALLOWLIST, so no env file, no Agent credential
+# and no TLS key can get in by accident (Infisical and the weekly snapshot
+# cover those). Missing paths are skipped. NEVER add an env/ directory,
+# /etc/infisical-agent/credentials or caddy/data (certificates and keys).
+backup_config_paths:
+  - "{{ app_prod_root }}/docker-compose.yml"
+  - "{{ app_staging_root }}/docker-compose.yml"
+  - "{{ app_prod_root }}/caddy/etc"
+  - "{{ infisical_agent_config_dir | default('/etc/infisical-agent') }}/config.yaml"
+  - "{{ infisical_agent_config_dir | default('/etc/infisical-agent') }}/templates"
+
+# Compose projects whose containers' images (the deployed SHAs) go into the
+# archive's manifest.txt.
+backup_manifest_projects:
+  - leviosa
+  - leviosa-staging
+
+# Every value of these files counts as a secret: the daily job refuses to
+# upload a configuration archive that contains one of them (see
+# leviosa-backup), on top of the allowlist.
+backup_secret_env_dirs:
+  - "{{ app_prod_root }}/env"
+  - "{{ app_staging_root }}/env"
+backup_secret_files:
+  - "{{ infisical_agent_credentials_dir | default('/etc/infisical-agent/credentials') }}/client-id"
+  - "{{ infisical_agent_credentials_dir | default('/etc/infisical-agent/credentials') }}/client-secret"
+
+# ── Weekly Infisical snapshot ───────────────────────────────────────────────
+# The operator's age PUBLIC key, committed in files/backup-age.pub. It can
+# only encrypt; the private key exists only in the password manager, so the
+# server can write snapshots and never read them. Until the committed file
+# holds a real `age1…` key, the role does NOT install the weekly job (and
+# says so); see README.md, "The age key pair".
+backup_age_public_key_file: "{{ role_path }}/files/backup-age.pub"
+
+# The snapshot logs in with the Agent's own machine identity (leviosa-vps,
+# roles/infisical_agent), read from its root-only credential files: the
+# server needs no second Infisical credential.
+backup_infisical_domain: "{{ infisical_agent_host | default('https://secrets.henga.dev') }}"
+backup_infisical_client_id_file: "{{ infisical_agent_credentials_dir | default('/etc/infisical-agent/credentials') }}/client-id"
+backup_infisical_client_secret_file: "{{ infisical_agent_credentials_dir | default('/etc/infisical-agent/credentials') }}/client-secret"
+backup_snapshot_environment: prod
+
+# ── Schedules ────────────────────────────────────────────────────────────────
+# Local time on purpose: the operator reads times in Paris time (the server
+# runs in UTC). Persistent= catches up a run missed while the server was off;
+# RandomizedDelaySec keeps the start within a few minutes.
+backup_daily_on_calendar: "*-*-* 03:00:00 Europe/Paris"
+backup_snapshot_on_calendar: "Sun *-*-* 04:00:00 Europe/Paris"
+backup_randomized_delay: 5min
+
+# One systemd service + timer per scheduled job (scripts of the same name).
+# `weekly: true` marks the snapshot, installed only with a real age key.
+backup_jobs:
+  - name: leviosa-backup
+    description: Leviosa daily backup (production database + configuration)
+    on_calendar: "{{ backup_daily_on_calendar }}"
+    weekly: false
+  - name: leviosa-snapshot
+    description: Leviosa weekly encrypted Infisical snapshot
+    on_calendar: "{{ backup_snapshot_on_calendar }}"
+    weekly: true
+
+# Touch systemd at all (daemon-reload, enable/start, stop/disable)? Kept true
+# for every real run; the role's tests set it false to exercise the file
+# tasks against localhost, where no such unit may be installed.
+backup_manage_service: true
+
+# Test knobs. Where the units go, whether to apt-install age and jq, and who
+# owns the files: fixed on the server; the role's tests (tests/run-tests.sh)
+# run the role unprivileged into a temporary directory, without apt.
+backup_systemd_dir: /etc/systemd/system
+backup_install_packages: true
+# Owner of everything the role installs: root on the server (the tests run
+# the role unprivileged into a temporary directory, as the current user).
+backup_owner: root
+backup_group: root

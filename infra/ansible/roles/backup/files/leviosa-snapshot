@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2154
+# ^ the backup_* settings come from backup.conf, through the library.
+# Managed by Ansible (roles/backup, issue 028) — DO NOT EDIT ON THE SERVER
+#
+# leviosa-snapshot — the weekly recovery snapshot of Infisical prod (every
+# folder, the pepper included), run as root by leviosa-snapshot.timer
+# (Sunday 04:00 Paris time). By hand: `systemctl start leviosa-snapshot`.
+#
+#   1. log in with the Agent's own machine identity (leviosa-vps): the client
+#      ID and secret are read from its root-only files into the CLI's
+#      environment, never onto a command line
+#   2. `infisical export --template` renders snapshot.json.tmpl: ONE
+#      recursive listSecrets call over prod, every secret with its folder, so
+#      the folders can be re-created
+#   3. jq checks the JSON (not empty), and age encrypts it with the
+#      operator's PUBLIC key
+#        -> infisical/<YYYY>/<MM>/<DD>/leviosa_prod_infisical_<UTC>.json.age
+#
+# The plaintext only ever exists in the pipe between the CLI, jq and age: it
+# is never written to disk, and the server holds no key that can decrypt the
+# result (the private key exists only in the operator's password manager).
+# Decrypt and recover: roles/backup/README.md.
+
+# shellcheck source=leviosa-backup-lib.sh
+. "${LEVIOSA_BACKUP_LIB:-/usr/local/lib/leviosa-backup/lib.sh}"
+backup_init
+
+recipient=$(grep -E '^age1[0-9a-z]{58}$' "$backup_age_recipient_file" | head -n 1) ||
+	die "$backup_age_recipient_file holds no age public key (age1…): replace the placeholder (roles/backup/README.md)"
+[ -r "$backup_snapshot_template" ] || die "$backup_snapshot_template is missing"
+for f in "$backup_infisical_client_id_file" "$backup_infisical_client_secret_file"; do
+	[ -s "$f" ] || die "$f is missing or empty (roles/infisical_agent installs the leviosa-vps credential)"
+done
+
+work=$(mktemp -d "$backup_work_dir/snapshot.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+out=$work/leviosa_${backup_snapshot_environment}_infisical_$timestamp.json.age
+
+# The CLI keeps its config and update checks under HOME: a private,
+# throwaway one, removed with the run.
+mkdir "$work/home"
+export HOME=$work/home INFISICAL_DISABLE_UPDATE_CHECK=true
+
+log "logging in to $backup_infisical_domain as the Agent's machine identity"
+token=$(
+	INFISICAL_UNIVERSAL_AUTH_CLIENT_ID=$(tr -d '\r\n' <"$backup_infisical_client_id_file") \
+		INFISICAL_UNIVERSAL_AUTH_CLIENT_SECRET=$(tr -d '\r\n' <"$backup_infisical_client_secret_file") \
+		infisical login --method=universal-auth --domain="$backup_infisical_domain" --plain --silent
+) || die "infisical login failed (is the leviosa-vps identity locked out? see roles/infisical_agent/README.md)"
+[ -n "$token" ] || die "infisical login printed no token"
+
+# jq writes only folder names and counts to its stderr (for the journal),
+# or its own error, which never quotes a value. The ciphertext is uploaded
+# only if every step of the pipe succeeded.
+log "exporting Infisical $backup_snapshot_environment (every folder)"
+if ! INFISICAL_TOKEN=$token infisical export --domain="$backup_infisical_domain" \
+	--template="$backup_snapshot_template" --silent |
+	jq -ce --arg at "$timestamp" '
+		if (.secrets | type) != "array" or (.secrets | length) == 0 then error("the export holds no secret")
+		else
+			(.secrets | group_by(.path) | map("\(.[0].path)=\(length)") | join(" ") | stderr | empty),
+			(. + {takenAt: $at})
+		end' 2>"$work/jq.log" |
+	age -r "$recipient" -o "$out"; then
+	cat "$work/jq.log" >&2
+	die "export or encryption failed; nothing uploaded"
+fi
+unset token
+log "folders (keys): $(tr -d '"' <"$work/jq.log")"
+
+upload "$out" "infisical/$date_prefix/$(basename "$out")"
+log "OK: snapshot done"

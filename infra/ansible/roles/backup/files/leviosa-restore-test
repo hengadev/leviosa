@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2154
+# ^ the backup_* settings come from backup.conf, through the library.
+# Managed by Ansible (roles/backup, issue 028) — DO NOT EDIT ON THE SERVER
+#
+# leviosa-restore-test [--local | <s3 key>] [--backend-env <file>]
+#
+# Prove a database dump restores AND decrypts. Run by hand as root;
+# production's containers and data are never touched.
+#
+#   1. take the dump: by default the newest db/…/leviosa_prod_*.dump in the
+#      bucket (the backup IAM user may list and read it, issue 023); a key
+#      given picks that one; --local takes <work dir>/latest.dump
+#   2. restore it into a throwaway Postgres container on its own Docker
+#      network (no host port)
+#   3. run the production backend image in `verify` mode against it, with
+#      production's KMS key and pepper (read from backend.env, or the file
+#      --backend-env names, by name into the container: never a command
+#      line, never --env-file, never printed)
+#   4. report PASS or FAIL from verify's exit status, which this script
+#      exits with: 0 OK, 3 nothing to verify, 4 canary missing, 5 wrong KMS
+#      key, 6 wrong pepper, 1 anything else
+#
+# The containers, the network and the downloaded dump are removed on every
+# exit (trap), pass or fail.
+
+# shellcheck source=leviosa-backup-lib.sh
+. "${LEVIOSA_BACKUP_LIB:-/usr/local/lib/leviosa-backup/lib.sh}"
+
+usage() { die "usage: $backup_name [--local | <s3 key>] [--backend-env <file>]"; }
+source_key=
+local_dump=0
+backend_env=$backup_backend_env_file
+while [ $# -gt 0 ]; do
+	case $1 in
+	--local) local_dump=1 ;;
+	--backend-env)
+		[ $# -ge 2 ] || usage
+		backend_env=$2
+		shift
+		;;
+	-*) usage ;;
+	*)
+		[ -z "$source_key" ] || usage
+		source_key=$1
+		;;
+	esac
+	shift
+done
+[ "$local_dump" = 0 ] || [ -z "$source_key" ] || usage
+
+backup_init
+[ -r "$backend_env" ] || die "$backend_env is missing (rendered by the Infisical Agent)"
+
+run_id=$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')
+name=leviosa-restore-test-$run_id
+label=leviosa.restore-test=$run_id
+work=$(mktemp -d "$backup_work_dir/restore-test.XXXXXX")
+# shellcheck disable=SC2329 # run by the EXIT trap
+cleanup() {
+	# -v: the throwaway Postgres's anonymous data volume goes too.
+	docker ps -aq --filter "label=$label" | xargs -r docker rm -fv >/dev/null 2>&1 || true
+	docker network rm "$name" >/dev/null 2>&1 || true
+	rm -rf "$work"
+}
+trap cleanup EXIT
+
+# ── 1. the dump ──────────────────────────────────────────────────────────────
+if [ "$local_dump" = 1 ]; then
+	[ -s "$backup_work_dir/latest.dump" ] || die "$backup_work_dir/latest.dump is missing (no daily backup ran on this server yet)"
+	log "using the local $backup_work_dir/latest.dump"
+	cp "$backup_work_dir/latest.dump" "$work/test.dump"
+else
+	if [ -z "$source_key" ]; then
+		source_key=$(newest_key db 'leviosa_prod_[0-9]{8}T[0-9]{6}Z\.dump') || true
+		[ -n "$source_key" ] || die "no dump found under $bucket/db/"
+	fi
+	log "downloading $bucket/$source_key"
+	aws s3 cp --only-show-errors "$bucket/$source_key" - >"$work/test.dump" ||
+		die "could not download $bucket/$source_key"
+fi
+[ -s "$work/test.dump" ] || die "the dump is empty"
+
+# ── 2. throwaway Postgres ────────────────────────────────────────────────────
+# Its own bridge network: no host port, nothing else on it but the verify
+# container. The password is random and only exists for this run.
+db_password=$(od -An -N24 -tx1 /dev/urandom | tr -d ' \n')
+docker network create --label "$label" "$name" >/dev/null || die "could not create network $name"
+(
+	export POSTGRES_PASSWORD=$db_password
+	exec docker run -d --name "$name-db" --label "$label" --network "$name" --network-alias restore-db \
+		-e POSTGRES_USER="$POSTGRES_USER" -e POSTGRES_PASSWORD -e POSTGRES_DB=restore_test \
+		"$backup_restore_postgres_image" >/dev/null
+) || die "could not start the throwaway Postgres ($backup_restore_postgres_image)"
+
+# The image's init runs a socket-only server first: wait for TCP, which only
+# the final server listens on.
+ready=0
+for _ in $(seq 90); do
+	if docker exec "$name-db" pg_isready -q -h 127.0.0.1 -U "$POSTGRES_USER" -d restore_test 2>/dev/null; then
+		ready=1
+		break
+	fi
+	sleep 1
+done
+[ "$ready" = 1 ] || die "the throwaway Postgres did not start"
+
+log "restoring into the throwaway database"
+# --no-owner/--no-acl: the throwaway server has none of production's other
+# roles (staging's). A real recovery restores into production's Postgres.
+docker exec -i "$name-db" pg_restore -U "$POSTGRES_USER" -d restore_test \
+	--no-owner --no-acl --exit-on-error <"$work/test.dump" ||
+	die "pg_restore failed"
+users=$(docker exec "$name-db" psql -U "$POSTGRES_USER" -d restore_test -Atqc \
+	"select count(*) from auth.users" 2>/dev/null) || users="?"
+log "restored; auth.users holds $users rows"
+
+# ── 3. verify, with production's KMS key and pepper ──────────────────────────
+# Only the names verify reads (backend/cmd/app/verify.go): DATABASE_URL, the
+# encx settings, the AWS credentials and region for KMS, ENVIRONMENT. Each is
+# exported in a subshell and passed by name (-e NAME); AWS_ENDPOINT_URL is
+# only ever set in the role's tests (LocalStack).
+verify_names=(ENVIRONMENT ENCX_KMS_KEY_ALIAS ENCX_PEPPER AWS_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_ENDPOINT_URL)
+for key in ENCX_KMS_KEY_ALIAS ENCX_PEPPER AWS_REGION; do
+	[ -n "$(env_get "$backend_env" "$key")" ] || die "$key is empty in $backend_env"
+done
+(
+	opts=(--name "$name-verify" --label "$label" --network "$name" -e DATABASE_URL)
+	export DATABASE_URL="postgres://$POSTGRES_USER:$db_password@restore-db:5432/restore_test?sslmode=disable"
+	for key in "${verify_names[@]}"; do
+		value=$(env_get "$backend_env" "$key")
+		[ -n "$value" ] || continue
+		export "$key=$value"
+		opts+=(-e "$key")
+	done
+	exec docker create "${opts[@]}" "$backup_restore_backend_image" ./leviosa verify >/dev/null
+) || die "could not create the verify container ($backup_restore_backend_image)"
+# Tests only: the network that reaches LocalStack's KMS.
+if [ -n "${backup_docker_network:-}" ]; then
+	docker network connect "$backup_docker_network" "$name-verify" || die "could not join $backup_docker_network"
+fi
+
+log "running verify ($backup_restore_backend_image)"
+status=0
+docker start -a "$name-verify" || status=$?
+
+case $status in
+0) log "PASS: the dump restores and decrypts with production's KMS key and pepper" ;;
+3) log "FAIL (verify exit 3): nothing to verify — no auth.users record and no pepper canary in the dump" ;;
+4) log "FAIL (verify exit 4): the pepper canary is missing from the dump" ;;
+5) log "FAIL (verify exit 5): decryption failed — the dump was not written under this KMS key" ;;
+6) log "FAIL (verify exit 6): wrong pepper — the canary decrypted but its hash does not match" ;;
+*) log "FAIL (verify exit $status): verify could not run (configuration or connectivity, see above)" ;;
+esac
+exit "$status"

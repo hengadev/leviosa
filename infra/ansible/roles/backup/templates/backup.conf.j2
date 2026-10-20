@@ -1,0 +1,52 @@
+# {{ ansible_managed }}
+# shellcheck shell=bash disable=SC2034
+# ^ read by the scripts that source this file.
+#
+# roles/backup (issue 028): what leviosa-backup, leviosa-snapshot and
+# leviosa-restore-test read. Paths and names only — no secret: the
+# credentials come from the Agent-rendered env files at run time.
+# Sourced by /usr/local/lib/leviosa-backup/lib.sh.
+
+backup_require_root=1
+backup_env_file={{ backup_env_file | quote }}
+backup_backend_env_file={{ backup_backend_env_file | quote }}
+backup_work_dir={{ backup_work_dir | quote }}
+
+backup_compose_project={{ backup_compose_project | quote }}
+backup_db_service={{ backup_db_service | quote }}
+
+backup_aws_cli_image={{ backup_aws_cli_image | quote }}
+backup_restore_postgres_image={{ backup_restore_postgres_image | quote }}
+backup_restore_backend_image={{ backup_restore_backend_image | quote }}
+# Tests only (LocalStack): empty on the server, where the AWS CLI reaches
+# AWS and the verify container reaches KMS through Docker's default egress.
+backup_aws_endpoint_url=
+backup_docker_network=
+
+backup_config_paths=(
+{% for p in backup_config_paths %}
+	{{ p | quote }}
+{% endfor %}
+)
+backup_manifest_projects=(
+{% for p in backup_manifest_projects %}
+	{{ p | quote }}
+{% endfor %}
+)
+backup_secret_env_dirs=(
+{% for p in backup_secret_env_dirs %}
+	{{ p | quote }}
+{% endfor %}
+)
+backup_secret_files=(
+{% for p in backup_secret_files %}
+	{{ p | quote }}
+{% endfor %}
+)
+
+backup_snapshot_environment={{ backup_snapshot_environment | quote }}
+backup_snapshot_template={{ (backup_lib_dir ~ '/snapshot.json.tmpl') | quote }}
+backup_age_recipient_file={{ (backup_lib_dir ~ '/backup-age.pub') | quote }}
+backup_infisical_domain={{ backup_infisical_domain | quote }}
+backup_infisical_client_id_file={{ backup_infisical_client_id_file | quote }}
+backup_infisical_client_secret_file={{ backup_infisical_client_secret_file | quote }}

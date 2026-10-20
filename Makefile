@@ -34,6 +34,7 @@ help:
 	@echo "  make deploy-harness   - Drive infra/compose/deploy against the real compose file"
 	@echo "  make deploy-gate-test - Test the deploy gate, root runner, sudoers rule and CI keys"
 	@echo "  make infisical-agent-test - Test the Infisical Agent role's templates, recreate behaviour and no_log"
+	@echo "  make backup-test      - Test the backup role: timers, archive allowlist, age snapshot, restore test (Docker, LocalStack)"
 	@echo "  make promote-preflight-test - Test Promote's preflight (which SHA ships, its checks)"
 	@echo ""
 	@echo "Server setup (Ansible; needs this computer's key in the keys file and 'infisical login'):"
@@ -137,6 +138,16 @@ deploy-gate-test:
 .PHONY: infisical-agent-test
 infisical-agent-test:
 	infra/ansible/roles/infisical_agent/tests/run-tests.sh
+
+# Backup role tests (roles/backup, issue 028): the role against localhost
+# into a temporary tree, its systemd units, then end to end with Docker:
+# LocalStack (KMS + S3), the backend built from this checkout, the daily
+# backup, the age-encrypted snapshot (stub Infisical CLI) and the restore
+# test (passes on the dump, exit 6 with a wrong pepper). Isolated names, no
+# host port, everything removed. BACKUP_TEST_ARGS=--static skips Docker.
+.PHONY: backup-test
+backup-test:
+	infra/ansible/roles/backup/tests/run-tests.sh $(BACKUP_TEST_ARGS)
 
 # Promote's preflight (.github/workflows/promote.yaml): which SHA ships and the
 # checks before the deploy, against a fake staging /healthz and a fake Docker

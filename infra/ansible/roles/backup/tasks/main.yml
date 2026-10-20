@@ -1,0 +1,186 @@
+---
+# Backups (issue 028)
+#   leviosa-backup        daily pg_dump + configuration archive (allowlist)
+#   leviosa-snapshot      weekly age-encrypted export of Infisical prod
+#   leviosa-restore-test  by hand: the newest dump into a throwaway Postgres,
+#                         checked with the backend's `verify` mode
+#
+# All root: scripts in {{ backup_bin_dir }}, root systemd timers, the
+# credentials read at run time from the Agent-rendered env files. Nothing
+# here belongs to the deploy user. Recovery: roles/backup/README.md.
+
+# ---------------------------------------------------------------------------
+# Is the weekly snapshot installable?
+# ---------------------------------------------------------------------------
+
+# The committed public key (files/backup-age.pub): exactly one age1… line.
+# The placeholder has none, so the weekly job is refused until the operator
+# commits the real key. The project ID is the play var site.yml reads from
+# infra/terraform/terraform.tfvars; the snapshot template needs it.
+- name: Read the committed age public key and decide on the weekly snapshot
+  ansible.builtin.set_fact:
+    backup_age_recipients: "{{ lookup('ansible.builtin.file', backup_age_public_key_file) | regex_findall('(?m)^age1[0-9a-z]{58}$') }}"
+    backup_project_id_ok: "{{ (infisical_project_id | default('')) is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') }}"
+
+- name: Enable the weekly snapshot only with a real key and project ID
+  ansible.builtin.set_fact:
+    backup_snapshot_enabled: "{{ (backup_age_recipients | length == 1) and (backup_project_id_ok | bool) }}"
+
+- name: List the jobs to install
+  ansible.builtin.set_fact:
+    backup_active_jobs: >-
+      {{ backup_jobs | rejectattr('weekly') | list
+         + (backup_jobs | selectattr('weekly') | list if (backup_snapshot_enabled | bool) else []) }}
+
+- name: Warn that the weekly Infisical snapshot is not installed
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: the weekly Infisical snapshot (leviosa-snapshot) is NOT
+      installed:
+      {{ 'roles/backup/files/backup-age.pub still holds the placeholder, not exactly one age public key (age1…)'
+         if backup_age_recipients | length != 1
+         else 'infisical_project_id is still a placeholder in infra/terraform/terraform.tfvars' }}.
+      Without it, losing Infisical loses every secret, the pepper included.
+      See roles/backup/README.md ("The age key pair"), then re-run
+      `make setup` (or --tags backup).
+  when: not (backup_snapshot_enabled | bool)
+
+# ---------------------------------------------------------------------------
+# Tools and layout
+# ---------------------------------------------------------------------------
+
+- name: Install age and jq (snapshot encryption and check)
+  ansible.builtin.apt:
+    name:
+      - age
+      - jq
+    state: present
+  when: backup_install_packages | bool
+
+- name: Create the backup directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ backup_lib_dir }}", mode: "0755" }
+    - { path: "{{ backup_conf_file | dirname }}", mode: "0755" }
+    # Per-run temporary files and latest.dump: root only.
+    - { path: "{{ backup_work_dir }}", mode: "0700" }
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Install the backup configuration (paths and names, no secret)
+  ansible.builtin.template:
+    src: backup.conf.j2
+    dest: "{{ backup_conf_file }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "0644"
+
+- name: Install the shared backup library
+  ansible.builtin.copy:
+    src: leviosa-backup-lib.sh
+    dest: "{{ backup_lib_dir }}/lib.sh"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "0644"
+
+- name: Install the backup scripts
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ backup_bin_dir }}/{{ item }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "0750"
+  loop:
+    - leviosa-backup
+    - leviosa-snapshot
+    - leviosa-restore-test
+
+# `copy` with the placeholders replaced, never `template`: the file holds Go
+# template braces, which Jinja would try to interpret.
+- name: Install the snapshot template and the age public key
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ backup_lib_dir }}/{{ item.dest }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "0644"
+  loop:
+    - dest: snapshot.json.tmpl
+      # The file lookup drops the final newline; put it back.
+      content: "{{ (lookup('ansible.builtin.file', 'leviosa-snapshot.json.tmpl')
+        | replace('__LEVIOSA_PROJECT_ID__', infisical_project_id | default(''))
+        | replace('__LEVIOSA_ENV__', backup_snapshot_environment)) ~ '\n' }}"
+    - dest: backup-age.pub
+      content: "{{ (backup_age_recipients | first | default('')) ~ '\n' }}"
+  loop_control:
+    label: "{{ item.dest }}"
+  when: backup_snapshot_enabled | bool
+
+# ---------------------------------------------------------------------------
+# systemd: the daily timer always, the weekly one only when enabled
+# ---------------------------------------------------------------------------
+
+- name: Install the backup services and timers
+  ansible.builtin.template:
+    src: "leviosa-backup-job.{{ item.1 }}.j2"
+    dest: "{{ backup_systemd_dir }}/{{ item.0.name }}.{{ item.1 }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
+    mode: "0644"
+  loop: "{{ backup_active_jobs | product(['service', 'timer']) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}.{{ item.1 }}"
+  vars:
+    job: "{{ item.0 }}"
+  notify: Reload systemd for the backup units
+
+# A weekly job left over from a run with a real key that was then reverted
+# to the placeholder: stop it, so a timer never runs without its key file.
+- name: Check for a leftover weekly snapshot timer
+  ansible.builtin.stat:
+    path: "{{ backup_systemd_dir }}/{{ item.name }}.timer"
+  loop: "{{ backup_jobs | selectattr('weekly') | list }}"
+  loop_control:
+    label: "{{ item.name }}.timer"
+  register: backup_weekly_units
+  when: not (backup_snapshot_enabled | bool)
+
+- name: Stop and disable the leftover weekly snapshot timer
+  ansible.builtin.systemd:
+    name: "{{ item.item.name }}.timer"
+    state: stopped
+    enabled: false
+  loop: "{{ backup_weekly_units.results | default([]) | selectattr('stat', 'defined') | selectattr('stat.exists') | list }}"
+  loop_control:
+    label: "{{ item.item.name }}.timer"
+  when:
+    - not (backup_snapshot_enabled | bool)
+    - backup_manage_service | bool
+
+- name: Remove the leftover weekly snapshot units
+  ansible.builtin.file:
+    path: "{{ backup_systemd_dir }}/{{ item.0.name }}.{{ item.1 }}"
+    state: absent
+  loop: "{{ backup_jobs | selectattr('weekly') | list | product(['service', 'timer']) | list }}"
+  loop_control:
+    label: "{{ item.0.name }}.{{ item.1 }}"
+  when: not (backup_snapshot_enabled | bool)
+  notify: Reload systemd for the backup units
+
+- name: Reload systemd before enabling the timers
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start the backup timers
+  ansible.builtin.systemd:
+    name: "{{ item.name }}.timer"
+    enabled: true
+    state: started
+  loop: "{{ backup_active_jobs }}"
+  loop_control:
+    label: "{{ item.name }}.timer"
+  when: backup_manage_service | bool
