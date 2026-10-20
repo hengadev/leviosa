@@ -1,0 +1,240 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Leviosa production stack (ADR-0016; docs/prd/deployment-infisical-compose.md).
+#
+# A plain file: no templating, no ${VAR} substitution, no top-level .env.
+# Every service gets its values from its own env_file — the files the
+# Infisical Agent renders into ./env next to this file (ADR-0017). Each
+# production deploy installs this file from the deployed commit as
+# /opt/leviosa/docker-compose.yml; `deploy prod <sha>` (next to this file in
+# the repo) is the only thing that releases it. See README.md in this
+# directory for the server layout and the deploy sequence.
+#
+# Relative paths (env files, data and Caddy directories) resolve against the
+# stack root, the directory holding this file:
+#   ./env/<consumer>.env       Agent-rendered, root 0600, one per consumer
+#   ./data/{postgres,rabbitmq,redis}/   persistent data — survives `down`
+#   ./caddy/{etc,data,config,logs}/     Caddyfile, certificates, autosave, logs
+#
+# Image pins: henga/leviosa-backend:prod and henga/leviosa-frontend:prod are
+# LOCAL tags, never pushed. `deploy prod <sha>` pulls the :<sha> images and
+# re-points these tags before anything runs, so the one-offs and any later
+# recreate (the Agent's, on a config change) always resolve production's
+# release — never a mutable remote tag.
+# ─────────────────────────────────────────────────────────────────────────────
+name: leviosa
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  # The Go backend (`serve`, the image's default command). It never migrates:
+  # it refuses to start on a schema older than its embedded migrations, so
+  # the deploy runs the `migrate` one-off first. Loads ONLY env/backend.env —
+  # the ADMIN_* values live in env/admin.env, which the `admin` one-off alone
+  # reads. Reached as `backend:3500` on the shared network (the frontend's
+  # API_URL); no host port.
+  backend:
+    image: henga/leviosa-backend:prod
+    restart: unless-stopped
+    mem_limit: 512m
+    expose:
+      - "3500"
+    env_file:
+      - env/backend.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - leviosa_network
+    healthcheck:
+      # busybox wget (alpine image); SERVER_PORT=3500 in env/backend.env.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3500/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+
+  # The SvelteKit server (adapter-node). Loads ONLY env/frontend.env, which
+  # holds nothing but what the SvelteKit server reads (API_URL, cookie and
+  # header names, COMING_SOON...): never a database, AWS, encx, Stripe,
+  # Twilio, SMTP or admin value. Caddy is its only client; no host port.
+  frontend:
+    image: henga/leviosa-frontend:prod
+    restart: unless-stopped
+    mem_limit: 256m
+    expose:
+      - "3000"
+    env_file:
+      - env/frontend.env
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - leviosa_network
+    healthcheck:
+      # Distroless image: no shell, wget or curl — node is the only tool.
+      # /healthz is 200 only when the backend answers too (502 otherwise).
+      test: ["CMD", "/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+
+  # One-off: apply pending migrations, then exit. `deploy` runs it before the
+  # backend is recreated; a failure stops the deploy while the running
+  # containers keep serving. The `oneoff` profile keeps it (and `admin`) out
+  # of every plain `up`, including the Agent's recreates:
+  #   docker compose --profile oneoff run --rm migrate
+  migrate:
+    profiles: ["oneoff"]
+    image: henga/leviosa-backend:prod
+    command: ["./leviosa", "migrate"]
+    restart: "no"
+    env_file:
+      - env/backend.env
+    networks:
+      - leviosa_network
+    logging: *logging
+
+  # One-off: create the first superadmin from the ADMIN_* values when no user
+  # with ADMIN_EMAIL exists; never modifies an existing account. The ONLY
+  # container that loads env/admin.env (plus env/backend.env, for the
+  # database, KMS key and pepper):
+  #   docker compose --profile oneoff run --rm admin
+  admin:
+    profiles: ["oneoff"]
+    image: henga/leviosa-backend:prod
+    command: ["./leviosa", "bootstrap-admin"]
+    restart: "no"
+    env_file:
+      - env/backend.env
+      - env/admin.env
+    networks:
+      - leviosa_network
+    logging: *logging
+
+  # PostgreSQL, shared with staging (one role and database per environment).
+  # POSTGRES_USER/PASSWORD/DB (env/postgres.env) apply at the first initdb
+  # only; a password rotation is a manual ALTER ROLE. `deploy` starts it when
+  # it is not running but never recreates it.
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    stop_grace_period: 60s
+    env_file:
+      - env/postgres.env
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - leviosa_network
+    healthcheck:
+      # Over TCP: during the image's first initdb the temporary server only
+      # listens on the Unix socket, which must not count as ready.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+      start_interval: 2s
+    logging: *logging
+
+  # RabbitMQ, shared with staging (one vhost and user per environment).
+  # env/rabbitmq.env holds RABBITMQ_DEFAULT_USER/PASS/VHOST, applied when the
+  # data directory is first initialised.
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    # RabbitMQ keeps its data under a directory named after the node
+    # (rabbit@<hostname>): a fixed hostname is what makes ./data/rabbitmq
+    # survive container recreation.
+    hostname: rabbitmq
+    restart: unless-stopped
+    mem_limit: 512m
+    stop_grace_period: 60s
+    env_file:
+      - env/rabbitmq.env
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - leviosa_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+      start_interval: 3s
+    logging: *logging
+
+  # Production's own Redis (sessions, OTPs, rate limits); staging runs its
+  # own. The password (env/redis.env) goes into a config file inside the
+  # container rather than onto the command line, where any host user could
+  # read it in the process list. The image's entrypoint then drops to the
+  # redis user as usual.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    env_file:
+      - env/redis.env
+    command:
+      - sh
+      - -ec
+      - |
+        umask 077
+        printf 'requirepass %s\n' "$$REDIS_PASSWORD" > /tmp/redis.conf
+        chown redis /tmp/redis.conf
+        exec docker-entrypoint.sh /tmp/redis.conf --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - leviosa_network
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 2s
+    logging: *logging
+
+  # Caddy: TLS (Cloudflare DNS challenge, token in env/caddy.env) and the
+  # only container publishing host ports, for both stacks. Its Caddyfile is
+  # installed into ./caddy/etc by Ansible; `deploy` never touches Caddy.
+  caddy:
+    image: serfriz/caddy-cloudflare:2.11
+    restart: unless-stopped
+    mem_limit: 128m
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    env_file:
+      - env/caddy.env
+    volumes:
+      - ./caddy/etc:/etc/caddy:ro
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+      - ./caddy/logs:/var/log/caddy
+    networks:
+      - leviosa_network
+    logging: *logging
+
+# Created outside Compose (Ansible's docker role) and shared with the staging
+# stack, so a `down` here can never remove the network staging depends on.
+# Every service name becomes a DNS alias on it: staging's services carry a
+# staging_ prefix so they never answer for `backend`, `frontend` or `redis`.
+networks:
+  leviosa_network:
+    external: true
