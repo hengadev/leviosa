@@ -25,8 +25,7 @@ deployed from an operator computer.
 | `caddy` | `infra/compose/caddy/Caddyfile`, as is, into `/opt/leviosa/caddy/etc/`; on a change, reloaded into Caddy only if it runs |
 | `infisical_agent` | the Infisical Agent: pinned CLI, systemd service polling Infisical every 60 s, the env files rendered root-only `0600` into both stack roots and the affected service recreated on change ([its README](roles/infisical_agent/README.md)). **Skipped, with a note, when `INFISICAL_VPS_CLIENT_ID` / `INFISICAL_VPS_CLIENT_SECRET` are not exported** — the rest of the setup still succeeds; add it later with `make infisical-agent` |
 | `shared_services` | production's Postgres, RabbitMQ and Caddy up (`up --no-recreate`: never recreated or restarted by a run); then [`infra/compose/setup-shared-services.sh`](../compose/setup-shared-services.sh), the harness-tested script, with the values of `prod`/`staging` `/db` and `/rabbitmq` read through the operator's `infisical login`: staging's Postgres role and database (no `CONNECT` on any other database), one RabbitMQ vhost and user per environment with permissions on its own vhost only and no tags, no `guest`. Skipped with a warning while the Agent's env files are missing. Before the first production deploy, it installs `docker-compose.prod.yml` from the checkout as `/opt/leviosa/docker-compose.yml` (only if absent: every deploy then installs its own) |
-
-Still to come in the same playbook: `backup` (issue 028).
+| `backup` | last: root systemd timers for the daily `pg_dump` of production and a configuration archive without secrets (03:00 Paris) and the weekly `age`-encrypted Infisical `prod` snapshot (Sunday 04:00, installed only once `roles/backup/files/backup-age.pub` holds the operator's real public key), plus `leviosa-restore-test` (the newest dump into a throwaway Postgres, checked with the backend's `verify` mode). Recovery procedures: [roles/backup/README.md](roles/backup/README.md) |
 
 ### Stack directories (`roles/app`)
 
@@ -288,5 +287,6 @@ infra/ansible/
     ├── app/                    # stack directories
     ├── caddy/                  # the Caddyfile, reloaded when Caddy runs
     ├── infisical_agent/        # the Agent, its credential and the env files
-    └── shared_services/        # Postgres, RabbitMQ, Caddy up; staging role, vhosts, users
+    ├── shared_services/        # Postgres, RabbitMQ, Caddy up; staging role, vhosts, users
+    └── backup/                 # daily dump + config, weekly age snapshot, restore test
 ```
