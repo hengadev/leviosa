@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+
+	smtpClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/smtp"
+	twilioClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/twilio"
 )
 
 // Config holds all application configuration
@@ -44,16 +47,11 @@ type Config struct {
 	StripeWebhookSecret        string
 	StripeConnectWebhookSecret string
 
-	// Twilio
-	TwilioAccountSID  string
-	TwilioAuthToken   string
-	TwilioPhoneNumber string
+	// Twilio (API-key auth, region/edge, sender; see TwilioConfigFromEnv)
+	Twilio twilioClient.Config
 
-	// SMTP
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUsername string
-	SMTPPassword string
+	// SMTP (see SMTPConfigFromEnv)
+	SMTP smtpClient.SMTPConfig
 
 	// OAuth
 	GoogleClientID     string
@@ -139,15 +137,10 @@ func LoadConfig(ctx context.Context) (*Config, error) {
 		StripeConnectWebhookSecret: getEnv("STRIPE_CONNECT_WEBHOOK_SECRET", ""),
 
 		// Twilio
-		TwilioAccountSID:  getEnv("TWILIO_ACCOUNT_SID", ""),
-		TwilioAuthToken:   getEnv("TWILIO_AUTH_TOKEN", ""),
-		TwilioPhoneNumber: getEnv("TWILIO_PHONE_NUMBER", ""),
+		Twilio: TwilioConfigFromEnv(),
 
 		// SMTP
-		SMTPHost:     getEnv("SMTP_HOST", "smtp.gmail.com"),
-		SMTPPort:     getEnvInt("SMTP_PORT", 587),
-		SMTPUsername: getEnv("SMTP_USERNAME", ""),
-		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
+		SMTP: SMTPConfigFromEnv(),
 
 		// OAuth
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),
