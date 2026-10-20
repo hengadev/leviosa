@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Build and Run
 - `docker compose up --build` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ, Vault, S3-via-LocalStack); builds from `local.Dockerfile`, which runs `air` for live reload — the source tree is bind-mounted, so edits rebuild and restart the server automatically. Needs `development.env` (copy from `example.env`; `make local-dev` from the repo root does this for you).
-- `go run ./cmd/app` - Run the backend binary directly against already-running dependencies
+- `go run ./cmd/app migrate` - Apply pending database migrations (`serve` never migrates; see Database Migrations below)
+- `go run ./cmd/app` - Run the backend binary (`serve` mode) directly against already-running, migrated dependencies
 - `go run ./cmd/seed` - Seed data (configured via `cmd/seed/seed_data.example.json`)
 
 ### Testing
@@ -60,9 +61,16 @@ Each domain package follows the ports & adapters pattern:
 - **testutils/** - Testcontainers helpers for Postgres, Redis, RabbitMQ, S3, Vault, Stripe
 
 ### Database Migrations
-- Located in `internal/common/migrations/` and per-domain `infrastructure/postgres/migrations/`
+- Located in `internal/common/migrations/` (goose SQL files, embedded into the binary)
 - Convention: `{timestamp}_{service}_{action}_{entity_or_scope}.sql`
 - Example: `20250714103022_catalog_add_column_products_buffer_time.sql`
+- Applied only by the `migrate` run mode (`go run ./cmd/app migrate`, or `leviosa migrate` in the image), which exits non-zero and names the migration that failed. Deploys run it as a one-off before the new backend container starts; the dev stack runs it before every air restart (`.air.toml`).
+- `serve` never migrates. At startup it refuses to run if the database's migration version is **lower** than the newest embedded migration (the migrate step was skipped) and accepts a **higher** one (a rollback to an older release).
+
+**Migration rule: every migration must work with the previous release — add first, remove later.** A deploy migrates while the previous release is still serving, and a rollback redeploys an older release without reverting the schema (down migrations are never run), so the previous release's code must keep working against the new schema:
+- Add tables, and add columns as nullable or with a default. Don't add a constraint (`NOT NULL`, `CHECK`, unique) that the previous release's writes would violate.
+- Rename or drop in steps: add the new column/table, ship the code that uses it and stops using the old one, and only drop the old one in a later release, once no release you might roll back to reads it.
+- Never edit a migration that has already been applied anywhere; write a new one.
 
 ### Testing Structure
 - **Unit tests**: Alongside source files (`*_test.go`)
@@ -162,4 +170,4 @@ All booking handlers use `httpx.RespondWithServiceError()` for automatic error c
 ### Development Workflow
 1. Start the backend and its dependencies: `docker compose up`
 2. Run tests: `make test-unit` / `make test-integration` (or the per-domain variants)
-3. Database migrations managed through Go embed and custom migration system
+3. Database migrations are embedded goose files applied by the `migrate` run mode; follow the migration rule under Database Migrations

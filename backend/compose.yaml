@@ -6,6 +6,9 @@
 # Usage: make local-dev (from repo root), or `docker compose up` from here directly.
 # Ephemeral by design — see local.compose.yaml's header comment for why Vault/Postgres/S3
 # aren't given persistent volumes.
+#
+# Migrations: serve never migrates (it refuses an out-of-date schema), so air's build step
+# runs the binary's `migrate` mode before every (re)start — see .air.toml.
 
 name: leviosa-backend-dev
 

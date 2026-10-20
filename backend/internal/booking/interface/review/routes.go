@@ -16,11 +16,12 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 
 	// Public read endpoints (unauthenticated) — non-hidden reviews plus an aggregate
 	// rating for a partner/product, used on services/[id] and team/[id] pages.
-	// Path shape follows the existing /partners/<subresource>/{partnerId} convention
-	// used elsewhere in this handler group (e.g. /partners/bookings/{partnerId}),
-	// which also avoids a net/http ServeMux pattern conflict with that route.
+	// The {id}/<subresource> shape avoids net/http ServeMux pattern conflicts:
+	// /products/reviews/{productId} conflicts with /products/{id}/prices (two
+	// incomparable wildcard/literal mixes), which panics route registration at
+	// startup.
 	router.HandleFunc("GET /partners/reviews/{partnerId}", mw.EnableCORS(h.GetPartnerReviews))
-	router.HandleFunc("GET /products/reviews/{productId}", mw.EnableCORS(h.GetProductReviews))
+	router.HandleFunc("GET /products/{id}/reviews", mw.EnableCORS(h.GetProductReviews))
 
 	// Staff/admin moderation: hide (not delete) a review, or reverse that.
 	router.HandleFunc("POST /reviews/{id}/hide", RequireAdmin(mw.EnableCORS(h.HideReview)))

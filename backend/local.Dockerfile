@@ -7,7 +7,7 @@ RUN apk add --no-cache git gcc musl-dev
 
 WORKDIR /app
 
-RUN go install github.com/air-verse/air@v1.67.4
+RUN go install github.com/air-verse/air@v1.62.0
 
 COPY go.mod go.sum ./
 RUN go mod download
