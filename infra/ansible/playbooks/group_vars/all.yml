@@ -1,0 +1,122 @@
+---
+# Leviosa - Group Variables
+# These variables apply to all hosts.
+#
+# No secrets live here (ADR-0017): application and infrastructure values are
+# rendered on the server by the Infisical Agent (issue 027), and the one value
+# Ansible needs at setup time — the notification email — is read from
+# Infisical prod /host through the operator's own login (playbooks/site.yml).
+
+# ============================================
+# Infisical
+# ============================================
+# Notification email for host-level services (fail2ban, unattended-upgrades).
+# Overridden by the /host (NOTIFY_EMAIL) lookup in site.yml when the operator
+# is logged in; this fallback only applies when that lookup fails, and
+# site.yml warns when it does.
+host_notify_email: root@localhost
+
+# ============================================
+# SSH keys (the keys file)
+# ============================================
+# Both lists come from the keys file, a public-keys-only vars file kept
+# outside the repo (default ~/leviosa-deploy-keys.yml, see
+# ../deploy-keys.example.yml) and passed with -e @<file> by `make setup`.
+# The empty defaults here make roles/user refuse to run without it.
+#
+# One key per operator computer: root's authorized_keys and the deploy
+# user's operator block are written from this list, so a key removed from it
+# loses access on the next run. Never the CI key.
+deploy_ssh_public_keys: []
+
+# The CI key(s): only in the deploy user's authorized_keys, forced to the
+# deploy gate (roles/deploy_gate): they can run `deploy <staging|prod> <sha>`
+# and nothing else. A key must not appear in both lists.
+deploy_ci_ssh_public_keys: []
+
+# ============================================
+# Deploy User Configuration
+# ============================================
+# The deploy user is not root-equivalent: no docker, sudo, admin or wheel
+# group, and one sudoers rule — the root deploy runner, owned by
+# roles/deploy_gate (/etc/sudoers.d/leviosa-deploy). Ansible itself connects
+# as root with the operator's key.
+deploy_user: leviosa
+
+# ============================================
+# Stack roots (roles/app, roles/deploy_gate)
+# ============================================
+# Must match infra/compose/deploy's defaults and infra/compose/README.md.
+app_prod_root: /opt/leviosa
+app_staging_root: /opt/leviosa-staging
+
+# ============================================
+# Deploy gate (roles/deploy_gate, issue 022)
+# ============================================
+# The keys file's CI list, as the role's plain list of bare public keys.
+deploy_gate_ci_keys: "{{ deploy_ci_ssh_public_keys }}"
+deploy_gate_stack_roots:
+  prod: "{{ app_prod_root }}"
+  staging: "{{ app_staging_root }}"
+
+# ============================================
+# System Configuration
+# ============================================
+# System timezone
+system_timezone: Etc/UTC
+
+# Automatic security updates
+auto_security_updates: true
+auto_updates_reboot: false
+auto_updates_email: "{{ host_notify_email }}"
+auto_updates_blacklist:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# ============================================
+# Docker Configuration
+# ============================================
+# The external network both compose stacks join (infra/compose).
+docker_network_name: leviosa_network
+
+docker_daemon_options:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  # SECURITY: Metrics endpoint bound to localhost only
+  metrics-addr: "127.0.0.1:9323"
+  experimental: false
+
+# Docker Security Hardening
+# SECURITY: Disable inter-container communication on default bridge
+# User-defined networks (like leviosa_network) are unaffected
+docker_daemon_icc: false
+docker_daemon_userland_proxy: false
+docker_daemon_no_new_privileges: true
+docker_daemon_live_restore: true
+docker_daemon_ulimit_nofile: 64000
+
+# ============================================
+# Fail2ban Configuration
+# ============================================
+fail2ban_enabled: true
+# IPs to never ban (localhost + your public IP)
+fail2ban_ignoreip: "127.0.0.1/8 ::1"
+fail2ban_maxretry: 5
+fail2ban_bantime: 3600
+fail2ban_findtime: 600
+fail2ban_ssh_maxretry: 3
+fail2ban_ssh_bantime: 7200
+fail2ban_ddos_maxretry: 2
+fail2ban_ddos_bantime: 86400
+fail2ban_notify_email: "{{ host_notify_email }}"
+
+# Caddy jail: off until Caddy runs and writes its JSON access log (issue
+# 026). fail2ban refuses to start a jail whose log file does not exist.
+fail2ban_caddy_enabled: false
+fail2ban_caddy_maxretry: 5
+fail2ban_caddy_log_path: "{{ app_prod_root }}/caddy/logs/access.log"

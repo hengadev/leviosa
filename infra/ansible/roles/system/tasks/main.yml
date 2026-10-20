@@ -1,11 +1,13 @@
 ---
 # System Hardening Tasks
 # - Update system packages
+# - Install the packages the deploy gate and the deploy script need
 # - Set timezone
 # - Configure automatic security updates
 # - Harden kernel parameters
 # - Secure shared memory
-# - Create app directories
+#
+# The stack directories are roles/app's.
 
 - name: Update apt cache
   ansible.builtin.apt:
@@ -15,60 +17,60 @@
 - name: Upgrade all packages
   ansible.builtin.apt:
     upgrade: dist
-    update_cache: true
   register: apt_upgrade
   retries: 3
   delay: 5
   until: apt_upgrade is succeeded
 
+# git: the deploy runner fetches main into a root-only mirror (roles/
+# deploy_gate). util-linux: flock, which the runner and infra/compose/deploy
+# hold per stack. Both are usually present already; listed so a minimal
+# image cannot break a deploy.
 - name: Install essential packages
   ansible.builtin.apt:
     name:
-      - curl
-      - wget
-      - git
-      - vim
-      - htop
-      - ufw
       - ca-certificates
+      - curl
+      - git
       - gnupg
-      - lsb-release
-      - apt-transport-https
-      - software-properties-common
-      - unzip
+      - htop
       - logrotate
+      - unzip
+      - util-linux
+      - vim
+      - wget
     state: present
 
 - name: Set system timezone
   community.general.timezone:
-    name: "{{ system_timezone | default('Europe/Berlin') }}"
+    name: "{{ system_timezone }}"
 
 - name: Configure automatic security updates
   ansible.builtin.apt:
     name: unattended-upgrades
     state: present
-  when: auto_security_updates | default(true)
+  when: auto_security_updates
 
 - name: Copy unattended-upgrades configuration
   ansible.builtin.template:
     src: unattended-upgrades.j2
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
     mode: '0644'
-  when: auto_security_updates | default(true)
+  when: auto_security_updates
   notify: restart unattended-upgrades
 
 - name: Install apt-listchanges for update notifications
   ansible.builtin.apt:
     name: apt-listchanges
     state: present
-  when: auto_security_updates | default(true)
+  when: auto_security_updates
 
 - name: Deploy apt-listchanges configuration
   ansible.builtin.template:
     src: apt-listchanges.conf.j2
     dest: /etc/apt/listchanges.conf
     mode: '0644'
-  when: auto_security_updates | default(true)
+  when: auto_security_updates
 
 - name: Enable auto-upgrades
   ansible.builtin.copy:
@@ -79,7 +81,7 @@
       APT::Periodic::AutocleanInterval "7";
       APT::Periodic::Unattended-Upgrade "1";
     mode: '0644'
-  when: auto_security_updates | default(true)
+  when: auto_security_updates
 
 - name: Harden sysctl - IP spoofing protection
   ansible.posix.sysctl:
@@ -122,16 +124,3 @@
     line: 'tmpfs /run/shm tmpfs defaults,noexec,nosuid,size=64M 0 0'
     state: present
     backup: true
-
-- name: Create app directories
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0750'
-    owner: root
-    group: root
-  loop:
-    - "{{ app_base_dir | default('/opt/leviosa') }}"
-    - "{{ app_data_dir | default('/opt/leviosa/data') }}"
-    - "{{ app_logs_dir | default('/opt/leviosa/logs') }}"
-    - "{{ app_backup_dir | default('/opt/leviosa/backups') }}"

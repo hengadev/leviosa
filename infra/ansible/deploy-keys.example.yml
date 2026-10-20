@@ -1,0 +1,31 @@
+# Leviosa keys file — EXAMPLE. The keys below are fake and do not work.
+#
+# The real file lives OUTSIDE the repository, by default at
+# ~/leviosa-deploy-keys.yml (`make setup KEYS_FILE=<path>` to use another
+# path). It holds public keys only, so it is not a secret, but it is the
+# whole list of who may log in: keep one canonical copy (e.g. a note in the
+# password manager) and refresh your local copy from it before every
+# `make setup`. A run from a stale copy removes the keys it lacks.
+#
+# Every entry is one bare public key, exactly as in the .pub file:
+# "<type> <base64> <comment>". No options (command=, from=, …), no line
+# breaks. Name each key after its computer in the comment.
+
+# One key per operator computer. Each one can log in as root and as the
+# deploy user `leviosa`. Root's authorized_keys and the deploy user's
+# operator block are written from this list: a key removed here loses access
+# on the next run, and keys added on the server by hand are removed.
+# Keep Terraform's `terraform-leviosa` key (installed in root's
+# authorized_keys when Hetzner creates the server) here until your own
+# computers' keys work, then drop it.
+deploy_ssh_public_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKEFAKE leviosa-laptop"
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLEEXAMPLE leviosa-desktop"
+
+# The CI deploy key (its private half is the GitHub Actions secret). Only in
+# the deploy user's authorized_keys, forced to the deploy gate: it can run
+# `deploy <staging|prod> <sha>` for a commit on main and nothing else — no
+# shell, no scp/sftp, no forwarding, never root. A key must not appear in
+# both lists.
+deploy_ci_ssh_public_keys:
+  - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINOTAREALKEYNOTAREALKEYNOTAREALKEYNOTAREALKEY leviosa-ci"

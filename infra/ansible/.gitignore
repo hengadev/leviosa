@@ -1,3 +1,18 @@
-# Ignore actual secret files - keep only .example files in version control
-leviosa_production.yml
-leviosa_staging.yml
+# Ansible
+*.retry
+.ansible_facts/
+
+# Local-only files (never commit)
+inventory/hosts.local.yml
+inventory/local*
+playbooks/group_vars/*.local.yml
+
+# The keys file lives outside the repo (~/leviosa-deploy-keys.yml); never
+# commit a real copy. deploy-keys.example.yml is the committed example.
+deploy-keys.yml
+*-deploy-keys.yml
+
+# The retired per-environment secrets files (plain YAML from the Ansible
+# Vault era) may still sit on an operator's computer: keep them out of git
+# until they are deleted.
+/group_vars/

@@ -1,33 +1,108 @@
 ---
 # Leviosa VPS - Complete Setup
-# Usage: ansible-playbook -i inventory/hosts.yml playbooks/site.yml
+# Usage (or `make setup` from infra/ansible or the repository root):
 #
-# With custom variables:
 #   ansible-playbook -i inventory/hosts.yml playbooks/site.yml \
-#     -e "ansible_host=1.2.3.4" \
-#     -e "deploy_ssh_public_key=$(cat ~/.ssh/leviosa.pub)" \
-#     -e "app_domain=yourdomain.com"
+#     -e "ansible_host=$(../terraform/tf.sh output -raw server_ipv4_address)" \
+#     -e @$HOME/leviosa-deploy-keys.yml
 #
-# Using Terraform outputs:
-#   ansible-playbook -i inventory/hosts.yml playbooks/site.yml \
-#     -e "ansible_host=$(terraform output -raw server_ipv4_address)" \
-#     -e "app_domain=$(terraform output -raw domain_name)"
+# Needs only this computer's SSH key (listed in the keys file) and
+# `infisical login` on the control machine: no local secret files, no Ansible
+# Vault (ADR-0017). The keys file holds deploy_ssh_public_keys (one per
+# operator computer: root and the deploy user) and deploy_ci_ssh_public_keys
+# (the CI key, forced to the deploy gate); see playbooks/group_vars/all.yml
+# and ../deploy-keys.example.yml.
+#
+# Ansible sets the server up; it never releases the app. Releases are
+# `deploy <stack> <sha>` through the deploy gate (roles/deploy_gate,
+# infra/compose/), run by CI.
 
 - name: Leviosa VPS - Complete Setup
   hosts: leviosa_servers
   gather_facts: true
 
+  vars:
+    # The `leviosa` Infisical project (Infisical > leviosa > Project settings
+    # > Project ID; the same value as infisical_project_id in
+    # infra/terraform/terraform.tfvars). Not a secret. A play var rather than
+    # a group var so it is also visible to the delegated-to-localhost lookup
+    # below.
+    # OPERATOR: replace the placeholder before the first `make setup`; until
+    # then the lookup is skipped and the fallback address is used.
+    infisical_project_id: "REPLACE_WITH_LEVIOSA_PROJECT_ID"
+
+    # What the lookup below must print: exactly one NOTIFY_EMAIL=<address>
+    # line, the address optionally quoted. Anything else (a missing secret
+    # is printed as a placeholder, an error message) is not an address.
+    # Group 2 is the address. A folded scalar: no YAML escape processing.
+    leviosa_notify_email_pattern: >-
+      ^NOTIFY_EMAIL=(['"]?)([^@\s'"]+@[^@\s'"]+)\1$
+
   pre_tasks:
     - name: Display target host
       ansible.builtin.debug:
-        msg: "Setting up {{ inventory_hostname }} ({{ ansible_default_ipv4.address }}) for {{ app_name }}"
+        msg: "Setting up {{ inventory_hostname }} ({{ ansible_facts['default_ipv4']['address'] | default(ansible_host) }}) for {{ app_name }}"
 
     - name: Check if running as root
       ansible.builtin.assert:
         that:
           - ansible_user == 'root'
-        fail_msg: "Initial setup must run as root. After first run, use deploy playbook."
+        fail_msg: "The setup connects as root (with this computer's key from the keys file); the deploy user can only deploy."
         quiet: true
+
+    # The notification email (fail2ban, unattended-upgrades) is the one value
+    # the setup needs that is not a file on the target. It is read from
+    # Infisical prod /host on the control node through the operator's own
+    # `infisical login`: never from the repo, never from a local encrypted
+    # file (ADR-0017). Read-only, so it also runs in --check. no_log because
+    # the CLI output passes through.
+    - name: Look up NOTIFY_EMAIL in Infisical prod /host through the operator's login
+      ansible.builtin.command:
+        argv:
+          - infisical
+          - secrets
+          - get
+          - NOTIFY_EMAIL
+          - "--projectId={{ infisical_project_id }}"
+          - --env=prod
+          - --path=/host
+          - --output=dotenv
+          - --silent
+      delegate_to: localhost
+      become: false
+      register: leviosa_notify_lookup
+      changed_when: false
+      check_mode: false
+      failed_when: false
+      no_log: true
+      when: infisical_project_id is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+
+    - name: Apply the notification email from Infisical /host
+      ansible.builtin.set_fact:
+        # regex_findall gives [(quote, address)]: no backreference, so no
+        # backslash to survive YAML and Jinja quoting.
+        host_notify_email: "{{ leviosa_notify_lookup.stdout | trim | regex_findall(leviosa_notify_email_pattern) | first | last }}"
+      when:
+        - leviosa_notify_lookup is not skipped
+        - leviosa_notify_lookup.rc == 0
+        - leviosa_notify_lookup.stdout | trim is match(leviosa_notify_email_pattern)
+      no_log: true
+
+    - name: Warn when the notification email could not be read from Infisical
+      ansible.builtin.debug:
+        msg: >-
+          WARNING: could not read NOTIFY_EMAIL from Infisical prod /host
+          ({{ 'infisical_project_id is still a placeholder in playbooks/site.yml'
+          if leviosa_notify_lookup is skipped
+          else 'infisical exited with ' ~ leviosa_notify_lookup.rc ~ ' or printed no address' }}).
+          Using the fallback '{{ host_notify_email }}' for fail2ban and
+          unattended-upgrades notifications. Install the Infisical CLI, run
+          `infisical login`, check the project ID and /host NOTIFY_EMAIL, and
+          re-run the setup to fix this.
+      when: >-
+        leviosa_notify_lookup is skipped
+        or leviosa_notify_lookup.rc != 0
+        or not (leviosa_notify_lookup.stdout | trim is match(leviosa_notify_email_pattern))
 
   roles:
     - role: system
@@ -36,8 +111,15 @@
     - role: docker
       tags: ['docker', 'setup']
 
-    - role: common
-      tags: ['common', 'setup']
+    # The deploy user, root's and the deploy user's operator keys. Before
+    # roles/deploy_gate, which needs the user to exist (issue 022).
+    - role: user
+      tags: ['user', 'setup']
+
+    # The CI keys' forced command, the root runner and the deploy user's only
+    # sudoers rule; the CI keys' block at the top of its authorized_keys.
+    - role: deploy_gate
+      tags: ['deploy_gate', 'user', 'setup']
 
     - role: ssh
       tags: ['ssh', 'security']
@@ -45,28 +127,20 @@
     - role: fail2ban
       tags: ['fail2ban', 'security']
 
-    - role: ufw
-      tags: ['ufw', 'security']
+    - role: firewall
+      tags: ['firewall', 'security']
 
-    - role: caddy
-      tags: ['caddy', 'web']
-
-    - role: gpg
-      tags: ['gpg', 'security']
-
-    - role: rclone
-      tags: ['rclone', 'backup']
-
+    # Stack roots, root-only env directories, data and Caddy directories.
     - role: app
-      tags: ['app', 'deploy']
+      tags: ['app', 'setup']
 
-    - role: monitoring
-      tags: ['monitoring', 'setup']
-      when: monitoring_enabled | default(false)
-
-    - role: analytics
-      tags: ['analytics', 'setup']
-      when: analytics_enabled | default(false)
+    # Still to come, in this order:
+    #   caddy            the Caddyfile into the prod stack root       (issue 026)
+    #   infisical_agent  the Agent rendering env/*.env (needs the
+    #                    leviosa-vps credential exported)             (issue 027)
+    #   shared_services  Postgres, RabbitMQ and Caddy up, staging
+    #                    database role, RabbitMQ vhosts and users     (issue 026)
+    #   backup           daily dump, weekly snapshot, restore test    (issue 028)
 
   post_tasks:
     - name: Display setup completion message
@@ -76,14 +150,13 @@
           - "Leviosa VPS Setup Complete!"
           - "==========================================="
           - ""
-          - "Server: {{ ansible_default_ipv4.address }}"
+          - "Server: {{ ansible_facts['default_ipv4']['address'] | default(ansible_host) }}"
           - "Domain: {{ app_domain }}"
-          - "Deploy user: {{ deploy_user }}"
-          - "Reverse proxy: {{ 'Caddy' if caddy_enabled | default(false) else 'None' }}"
+          - "Deploy user: {{ deploy_user }} (deploy gate only)"
+          - "Stack roots: {{ app_prod_root }}, {{ app_staging_root }}"
+          - "Notifications: {{ host_notify_email }}"
           - ""
-          - "Next steps:"
-          - "  1. Copy your .env file to {{ app_base_dir }}/.env"
-          - "  2. Run: ansible-playbook playbooks/deploy.yml"
-          - "  3. Or manually: ssh {{ deploy_user }}@{{ ansible_default_ipv4.address }}"
-          - ""
+          - "Run `make setup` again: the second run must report changed=0."
+          - "Releases never go through Ansible: CI runs `deploy <stack> <sha>`"
+          - "through the deploy gate (infra/compose/README.md)."
           - "==========================================="
