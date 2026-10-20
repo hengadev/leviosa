@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+# {{ job.description }} (roles/backup, issue 028).
+# `systemctl list-timers 'leviosa-*'` shows the next run.
+[Unit]
+Description={{ job.description }} timer
+
+[Timer]
+OnCalendar={{ job.on_calendar }}
+# A run missed while the server was off happens at the next boot.
+Persistent=true
+RandomizedDelaySec={{ backup_randomized_delay }}
+
+[Install]
+WantedBy=timers.target

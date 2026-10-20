@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC2154
+# ^ the backup_* settings come from backup.conf, through the library.
+# Managed by Ansible (roles/backup, issue 028) — DO NOT EDIT ON THE SERVER
+#
+# leviosa-backup — the daily backup, run as root by leviosa-backup.timer
+# (03:00 Paris time). By hand: `systemctl start leviosa-backup`.
+#
+#   1. pg_dump -Fc of production's database, from its running Postgres
+#      container, checked with pg_restore -l
+#        -> db/<YYYY>/<MM>/<DD>/leviosa_prod_<UTC>.dump
+#      The newest dump also stays on the server as <work dir>/latest.dump
+#      (root 0600).
+#   2. the configuration archive: an allowlist of files that are not secrets
+#      (compose files of both stacks, caddy/etc, the Agent's config.yaml and
+#      templates, never its credentials, never an env file) plus manifest.txt
+#      with the images (deployed SHAs) of both stacks' containers
+#        -> config/<YYYY>/<MM>/<DD>/leviosa_config_<UTC>.tar.gz
+#      It is refused (nothing uploaded) if it lists a secret-looking path or
+#      contains any value of the env files or of the Agent's credential.
+#
+# The date prefix is the UTC date. Restore test: leviosa-restore-test.
+# Recovery: roles/backup/README.md.
+
+# shellcheck source=leviosa-backup-lib.sh
+. "${LEVIOSA_BACKUP_LIB:-/usr/local/lib/leviosa-backup/lib.sh}"
+backup_init
+log "starting the daily backup ($timestamp)"
+
+work=$(mktemp -d "$backup_work_dir/run.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+
+# ── 1. database ──────────────────────────────────────────────────────────────
+db=$(db_container)
+dump=$work/leviosa_prod_$timestamp.dump
+log "dumping database $POSTGRES_DB"
+docker exec "$db" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc >"$dump" ||
+	die "pg_dump failed"
+tables=$(docker exec -i "$db" pg_restore -l <"$dump" | grep -c ' TABLE DATA ') ||
+	die "the dump is unreadable or empty (pg_restore -l)"
+log "dump holds $tables tables"
+upload "$dump" "db/$date_prefix/$(basename "$dump")"
+install -m 0600 "$dump" "$backup_work_dir/latest.dump"
+
+# ── 2. configuration archive (allowlist) ─────────────────────────────────────
+{
+	echo "leviosa configuration backup $timestamp on $(hostname)"
+	for project in "${backup_manifest_projects[@]}"; do
+		docker ps --filter "label=com.docker.compose.project=$project" \
+			--format '{{.Label "com.docker.compose.project"}}/{{.Label "com.docker.compose.service"}}: {{.Image}}' |
+			sort
+	done
+} >"$work/manifest.txt"
+
+paths=()
+for p in "${backup_config_paths[@]}"; do
+	if [ -e "$p" ]; then paths+=("${p#/}"); else log "skipping $p (missing)"; fi
+done
+config=$work/leviosa_config_$timestamp.tar.gz
+tar -czf "$config" -C / "${paths[@]}" -C "$work" manifest.txt
+
+# Belt and braces: the allowlist must never pull in a secret. First by path…
+if tar -tzf "$config" | grep -E '(^|/)(env|credentials|data)(/|$)|\.env$|token-sink|client-secret|client-id|\.key$|\.pem$'; then
+	die "the configuration archive lists a secret-looking path (above); nothing uploaded"
+fi
+# …then by content: no value of a secret-looking key of any env file, nor the
+# Agent's credential, may appear in it. The values only ever pass through a
+# pipe (process substitution) and are never printed.
+secret_values() {
+	local dir file line key value
+	for dir in "${backup_secret_env_dirs[@]}"; do
+		for file in "$dir"/*.env; do
+			[ -r "$file" ] || continue
+			while IFS= read -r line || [ -n "$line" ]; do
+				case $line in '' | '#'*) continue ;; esac
+				key=${line%%=*}
+				[[ $key =~ (PASSWORD|PASS|SECRET|TOKEN|PEPPER|HASH|_KEY|_KEY_ID|_SID|DATABASE_URL|RABBITMQ_URL)$ ]] || continue
+				value=$(unquote "${line#*=}")
+				[ "${#value}" -ge 8 ] && printf '%s\n' "$value"
+			done <"$file"
+		done
+	done
+	for file in "${backup_secret_files[@]}"; do
+		[ -r "$file" ] || continue
+		value=$(tr -d '\r\n' <"$file")
+		# Never an empty pattern: grep -F would match everything.
+		[ "${#value}" -ge 8 ] && printf '%s\n' "$value"
+	done
+	return 0
+}
+mkdir "$work/check"
+tar -xzf "$config" -C "$work/check"
+if [ -n "$(secret_values | head -c 1)" ] && grep -rqF -f <(secret_values) "$work/check"; then
+	die "the configuration archive contains a secret value (from an env file or the Agent credential); nothing uploaded"
+fi
+rm -rf "$work/check"
+upload "$config" "config/$date_prefix/$(basename "$config")"
+
+log "OK: daily backup done"

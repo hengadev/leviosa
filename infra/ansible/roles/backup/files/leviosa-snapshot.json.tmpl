@@ -1,0 +1,25 @@
+{{- /*
+	The weekly Infisical snapshot (roles/backup, issue 028), rendered by
+	`infisical export --template` on the server with the Agent's machine
+	identity: every secret of __LEVIOSA_ENV__, every folder, with its folder
+	path, key, raw value (secret references are NOT expanded, so a
+	recovery re-creates them as references) and comment.
+
+	ONE recursive listSecrets call. Go built-ins only (no sprig), like the
+	env templates (infra/infisical/README.md). Strings are written with
+	printf "%q" (Go quoting), which is valid JSON for every printable
+	character, quotes, backslashes, tabs and newlines included; a value
+	holding another control character or invalid UTF-8 would not be, and
+	leviosa-snapshot's jq check then fails the run loudly (nothing
+	uploaded) rather than store something unreadable.
+
+	The placeholders are substituted by Ansible when it installs this file
+	(infisical_project_id, backup_snapshot_environment). Checked by
+	infra/infisical/envcheck/snapshot_test.go against the fake Agent engine.
+*/ -}}
+{"format":"leviosa-infisical-snapshot/1","project":"__LEVIOSA_PROJECT_ID__","environment":"__LEVIOSA_ENV__","secrets":[
+{{- range $i, $s := listSecrets "__LEVIOSA_PROJECT_ID__" "__LEVIOSA_ENV__" "/" `{"recursive": true, "expandSecretReferences": false}` -}}
+{{- if $i }},{{ end }}
+{"path":{{ printf "%q" $s.SecretPath }},"key":{{ printf "%q" $s.Key }},"value":{{ printf "%q" $s.Value }},"comment":{{ printf "%q" $s.Comment }}}
+{{- end }}
+]}

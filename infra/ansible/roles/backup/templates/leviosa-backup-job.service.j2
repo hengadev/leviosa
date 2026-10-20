@@ -1,0 +1,15 @@
+# {{ ansible_managed }}
+# {{ job.description }} (roles/backup, issue 028). Started by {{ job.name }}.timer;
+# run it now with `systemctl start {{ job.name }}`, read it with
+# `journalctl -u {{ job.name }}`.
+[Unit]
+Description={{ job.description }}
+Requires=docker.service
+After=docker.service network-online.target infisical-agent.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart={{ backup_bin_dir }}/{{ job.name }}
+Nice=10
+IOSchedulingClass=idle
