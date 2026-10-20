@@ -1,0 +1,202 @@
+name: 🚢 Promote to production
+
+# The only way a release reaches production. Run it by hand from main
+# (Actions → Promote to production → Run workflow):
+#   - no input: ships the release staging serves, read from staging's /healthz,
+#     and only when the frontend and the backend report the same SHA;
+#   - a `sha` input: ships that commit of main instead. A rollback is this,
+#     with an older SHA.
+# Both images must already be on Docker Hub (ci.yaml pushes them for every
+# commit it builds on main). The deploy is `deploy prod <sha>` through the
+# server's deploy gate, over the same SSH setup as ci.yaml's staging deploy.
+# The server reads the deploy script and compose file from that commit, so a
+# rollback rolls them back too; it never reverts a migration.
+# Procedure, rollback and what can stop a run: docs/deployment/promote.md.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Full 40-character SHA of a commit on main to ship (a rollback). Leave empty to ship what staging serves.'
+        type: string
+        required: false
+        default: ''
+
+permissions: {}
+
+jobs:
+  # Decides which SHA ships and checks it. Nothing here can reach the server:
+  # it holds no SSH secret, and the deploy job below starts only when this job
+  # succeeded and handed it a SHA.
+  preflight:
+    name: 🔎 Resolve & Check the Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    outputs:
+      sha: ${{ steps.release.outputs.sha }}
+      source: ${{ steps.release.outputs.source }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: 🛑 Require main
+        # A run dispatched from another branch runs that branch's copy of this
+        # file: stop it before anything else. A modified copy could drop this
+        # check, so it is not the boundary: the deploy gate refuses any commit
+        # that is not on main, and the `production` environment can be limited
+        # to main (docs/deployment/promote.md).
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Promote runs only from main, not $GITHUB_REF: run it again with 'Use workflow from: Branch: main'"
+            exit 1
+          fi
+
+      - name: ⬇️ Checkout repo (full history)
+        uses: actions/checkout@v4.2.2
+        with:
+          # The preflight checks that the SHA is a commit on main.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 🔑 Log in to Docker Hub
+        # The image check reads the repositories with the account CI pushes
+        # with, so it works if they are private too.
+        uses: docker/login-action@v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 🔎 Resolve the SHA, check it is on main and both images exist
+        id: release
+        # The input reaches the script through env, never through ${{ }} in it.
+        # Every refusal stops the run here, before any deploy. Tested by
+        # .github/scripts/tests/promote-preflight-tests.sh (ci.yaml,
+        # deploy-scripts).
+        env:
+          PROMOTE_SHA: ${{ inputs.sha }}
+          STAGING_HEALTHZ_URL: https://staging.leviosa.care/healthz
+          BACKEND_IMAGE: henga/leviosa-backend
+          FRONTEND_IMAGE: henga/leviosa-frontend
+          MAIN_REF: origin/main
+        run: .github/scripts/promote-preflight.sh
+
+  deploy:
+    name: 🚀 Deploy Production
+    needs: preflight
+    runs-on: ubuntu-latest
+    permissions: {}
+    # Required reviewers and the branch limit are set on this environment in
+    # the repository settings (docs/deployment/promote.md).
+    environment:
+      name: production
+      url: https://leviosa.care/healthz
+    # One production deploy at a time, in its own group (staging's is
+    # deploy-staging). A second Promote waits for the running one instead of
+    # cancelling it halfway (the server's runner also refuses a second
+    # concurrent deploy of the same stack).
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    env:
+      # The deploy user (infra/ansible/roles/deploy_gate, `deploy_gate_user`).
+      # The CI key's only right there is the gate's forced command.
+      DEPLOY_USER: leviosa
+      RELEASE_SHA: ${{ needs.preflight.outputs.sha }}
+      RELEASE_SOURCE: ${{ needs.preflight.outputs.source }}
+    steps:
+      - name: 🔑 Configure SSH (CI key, pinned host key)
+        # The same setup as ci.yaml's deploy-staging (keep the two in step):
+        # both stacks live on one server (ADR-0016), so the same three secrets
+        # reach production. Secrets reach the script through env, never
+        # through ${{ }} in it. StrictHostKeyChecking yes with only
+        # SSH_KNOWN_HOSTS trusted: an unknown or changed host key fails the
+        # connection (no ssh-keyscan).
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          for name in SSH_HOST SSH_PRIVATE_KEY SSH_KNOWN_HOSTS; do
+            if [ -z "${!name}" ]; then
+              echo "::error::The repository secret $name is not set (docs/deployment/ci.md)"
+              exit 1
+            fi
+          done
+          if [[ ! $SSH_HOST =~ ^[A-Za-z0-9.:-]+$ ]]; then
+            echo "::error::SSH_HOST must be a bare host name or IP address (no user, port or spaces)"
+            exit 1
+          fi
+
+          # $RUNNER_TEMP is emptied at the end of the job.
+          dir=$RUNNER_TEMP/ssh
+          umask 077
+          mkdir -p "$dir"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$dir/id_ci"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$dir/known_hosts"
+
+          if ! ssh-keygen -y -P '' -f "$dir/id_ci" > /dev/null; then
+            echo "::error::SSH_PRIVATE_KEY is not an unencrypted OpenSSH private key"
+            exit 1
+          fi
+          if ! ssh-keygen -F "$SSH_HOST" -f "$dir/known_hosts" > /dev/null; then
+            echo "::error::SSH_KNOWN_HOSTS has no host key for SSH_HOST"
+            exit 1
+          fi
+
+          cat > "$dir/config" <<EOF
+          Host prod-deploy
+            HostName $SSH_HOST
+            Port 22
+            User $DEPLOY_USER
+            IdentityFile "$dir/id_ci"
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            UserKnownHostsFile "$dir/known_hosts"
+            GlobalKnownHostsFile /dev/null
+            UpdateHostKeys no
+            BatchMode yes
+            RequestTTY no
+            ConnectTimeout 30
+            ServerAliveInterval 30
+            ServerAliveCountMax 6
+          EOF
+
+      - name: 🚀 deploy prod ${{ needs.preflight.outputs.sha }}
+        # The CI key's forced command (the deploy gate) accepts exactly
+        # `deploy prod <40-hex sha>`, refuses any commit that is not on main,
+        # and runs the deploy script and compose file read from the repo at
+        # that SHA. ssh exits with the deploy's status (255 if the connection
+        # fails), so a failed deploy fails this job. The deploy finishes only
+        # when production's /healthz reports the SHA for both apps.
+        run: |
+          if [[ ! $RELEASE_SHA =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::The preflight handed over no full 40-hex commit SHA: '$RELEASE_SHA'"
+            exit 1
+          fi
+          ssh -F "$RUNNER_TEMP/ssh/config" prod-deploy "deploy prod $RELEASE_SHA"
+
+          case $RELEASE_SOURCE in
+            input) source_text="the \`sha\` input (a pinned release or a rollback)" ;;
+            *) source_text="the release staging serves" ;;
+          esac
+          {
+            echo "### Deployed \`$RELEASE_SHA\` to production"
+            echo
+            echo "- Source: $source_text"
+            echo "- Production's \`/healthz\` reported \`$RELEASE_SHA\` for the frontend and the backend before the deploy finished."
+            echo "- Roll back: run Promote again with an older SHA from \`main\` (docs/deployment/promote.md)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 📝 Report the failed deploy
+        if: failure()
+        run: |
+          {
+            echo "### Production deploy of \`$RELEASE_SHA\` failed"
+            echo
+            echo "See the failed step's log. A refused or failed migration leaves production on the release it was serving; what to check after a later failure: docs/deployment/promote.md."
+          } >> "$GITHUB_STEP_SUMMARY"

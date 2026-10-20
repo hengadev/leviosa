@@ -138,8 +138,9 @@ jobs:
   # The staging deploy below goes through the deploy gate and root runner
   # (infra/ansible/roles/deploy_gate), which run infra/compose/deploy from the
   # deployed commit: test the gate and syntax-check the scripts before anything
-  # ships. The compose harness (infra/compose/test/run-harness.sh) is not run
-  # here: it builds three images and drives several full deploys.
+  # ships, and test Promote's preflight (promote.yaml), which decides what
+  # reaches production. The compose harness (infra/compose/test/run-harness.sh)
+  # is not run here: it builds three images and drives several full deploys.
   deploy-scripts:
     name: 🚪 Deploy Gate & Scripts
     runs-on: ubuntu-latest
@@ -167,6 +168,12 @@ jobs:
             echo "::error::The deploy gate tests skipped checks; every check must run in CI"
             exit 1
           fi
+
+      - name: 🧪 Run the promote preflight tests
+        # .github/scripts/promote-preflight.sh against a fake staging /healthz
+        # on loopback, a fake Docker Hub and a fixture repository; git, curl,
+        # jq and python3 ship with the runner image.
+        run: .github/scripts/tests/promote-preflight-tests.sh
 
       - name: 🐚 Syntax-check the deploy scripts
         run: |
@@ -268,6 +275,8 @@ jobs:
       DEPLOY_USER: leviosa
     steps:
       - name: 🔑 Configure SSH (CI key, pinned host key)
+        # promote.yaml's deploy job has a copy of this step (host alias
+        # prod-deploy): keep the two in step.
         # Secrets reach the script through env, never through ${{ }} in it.
         # StrictHostKeyChecking yes with only SSH_KNOWN_HOSTS trusted: an
         # unknown or changed host key fails the connection (no ssh-keyscan).
