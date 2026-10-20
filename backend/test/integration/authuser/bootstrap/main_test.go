@@ -14,7 +14,6 @@ import (
 	userRepository "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
 
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
@@ -26,7 +25,6 @@ import (
 var (
 	pgContainer *tu.PostgresContainer
 	testPool    *pgxpool.Pool
-	vaultSetup  *tu.ServiceVaultSetup
 	crypto      encx.CryptoService
 	repo        ports.UserRepository
 	svc         *bootstrap.Service
@@ -76,22 +74,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Running all migrations: %v", err)
 	}
 
-	// Vault container with per-service encx keys (the same crypto setup the
-	// app and the other authuser suites use today).
-	vaultSetup, err = tu.SetupServiceVault(ctx, nil, []string{services.AuthUser})
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.AuthUser)
-	if !exists || crypto == nil {
-		log.Fatal("AuthUser service crypto not found in vault setup")
-	}
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 
 	repo = userRepository.New(ctx, testPool)
 	svc = bootstrap.New(repo, crypto)

@@ -36,7 +36,6 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	authsession "github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/envmode"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/logger"
@@ -56,7 +55,7 @@ import (
 const testClaimServiceKey = "test-authuser-claim-service-key"
 
 // testSecretReader is a static SecretReader that validates against a pre-hashed key.
-// It allows the integration tests to exercise RequireServiceAuth without a real Vault.
+// It allows the integration tests to exercise RequireServiceAuth without a service key store.
 type testSecretReader struct {
 	keyHash string // HMAC of testClaimServiceKey, computed once during TestMain
 }
@@ -183,29 +182,13 @@ func TestMain(m *testing.M) {
 	}
 	log.Println("Redis client connected successfully.")
 
-	// Setup Vault testcontainer with per-service encryption
-	log.Println("Setting up enhanced Vault testcontainer with per-service keys...")
-	serviceNames := []string{services.Booking}
-	vaultSetup, err := tu.SetupServiceVault(ctx, nil, serviceNames)
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	// Set environment variables for Vault
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	// Get service-specific crypto service
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.Booking)
-	if !exists {
-		log.Fatal("Booking service crypto not found in vault setup")
-	}
-	if crypto == nil {
-		log.Fatal("Booking crypto service is nil")
-	}
-	log.Printf("✓ Booking service crypto initialized with per-service encryption key")
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 
 	// Initialize AuthTestContext for user/session testing
 	authCtx = &tu.AuthTestContext{
