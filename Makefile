@@ -19,8 +19,9 @@ help:
 	@echo ""
 	@echo "Local Development:"
 	@echo "  make local-dev        - Start frontend (native) and backend deps (Docker), hot reload"
-	@echo "  make local-start      - Start the whole app in Docker (prod-like build, no hot reload)"
-	@echo "  make local-stop       - Stop the local Docker stack"
+	@echo "  make local-start      - Start the whole app in Docker, mirroring the production stack"
+	@echo "                           (prod Dockerfiles, migrate+admin one-offs, LocalStack S3/KMS; no hot reload)"
+	@echo "  make local-stop       - Stop the local Docker stack (ephemeral: wipes its data)"
 	@echo "  make local-restart    - Restart the local Docker stack"
 	@echo "  make stripe-listen    - Forward Stripe test-mode webhooks to the local backend (run beside local-dev)"
 	@echo ""
@@ -80,9 +81,12 @@ local-start:
 	@echo "Starting local docker compose..."
 	docker compose -f local.compose.yaml up --build
 
+# Down with -v: the stack is ephemeral by design (no named volumes — see the header
+# of local.compose.yaml), and -v also clears the throwaway anonymous volumes
+# (Postgres data, LocalStack state) so nothing lingers after a stop.
 local-stop:
 	@echo "Stopping local docker compose..."
-	docker compose -f local.compose.yaml down
+	docker compose -f local.compose.yaml down -v
 
 local-restart: local-stop local-start
 
