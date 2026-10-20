@@ -5,15 +5,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hengadev/encx"
-	hashicorpkeys "github.com/hengadev/encx/providers/keys/hashicorp"
-	hashicorpsecrets "github.com/hengadev/encx/providers/secrets/hashicorp"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 
 	bootstrap "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/bootstrap"
 	userRepository "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption"
 )
 
 // bootstrapAdmin creates the first superadmin from the ADMIN_* values and
@@ -61,7 +59,7 @@ func bootstrapAdmin(ctx context.Context, args []string) error {
 		return fmt.Errorf("ping postgres: %w", err)
 	}
 
-	crypto, err := newBootstrapCrypto(ctx)
+	crypto, err := encryption.NewCrypto(ctx, encryption.ConfigFromEnv(os.Getenv))
 	if err != nil {
 		return err
 	}
@@ -79,37 +77,4 @@ func bootstrapAdmin(ctx context.Context, args []string) error {
 		logger.InfoContext(ctx, "bootstrap-admin: account already exists, nothing changed", "email", cfg.Email)
 	}
 	return nil
-}
-
-// newBootstrapCrypto builds the encx crypto service exactly the way the app
-// container does today — the hashicorp key and secret providers, configured
-// from the ENCX_* variables and authenticated by VAULT_ADDR/VAULT_TOKEN.
-func newBootstrapCrypto(ctx context.Context) (encx.CryptoService, error) {
-	keyProvider, err := hashicorpkeys.NewTransitService()
-	if err != nil {
-		return nil, fmt.Errorf("create hashicorp key provider: %w", err)
-	}
-
-	secretProvider, err := hashicorpsecrets.NewKVStore()
-	if err != nil {
-		return nil, fmt.Errorf("create hashicorp secret provider: %w", err)
-	}
-
-	kekAlias := os.Getenv("ENCX_KEK_ALIAS")
-	if kekAlias == "" {
-		kekAlias = "leviosa-kek"
-	}
-	pepperAlias := os.Getenv("ENCX_PEPPER_ALIAS")
-	if pepperAlias == "" {
-		pepperAlias = "leviosa"
-	}
-
-	crypto, err := encx.NewCrypto(ctx, keyProvider, secretProvider, encx.Config{
-		KEKAlias:    kekAlias,
-		PepperAlias: pepperAlias,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create crypto service: %w", err)
-	}
-	return crypto, nil
 }

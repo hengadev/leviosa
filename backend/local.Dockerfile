@@ -7,6 +7,7 @@ RUN apk add --no-cache git gcc musl-dev
 
 WORKDIR /app
 
+# air v1.63+ requires Go >= 1.25; v1.62.0 is the newest that builds on this image.
 RUN go install github.com/air-verse/air@v1.62.0
 
 COPY go.mod go.sum ./

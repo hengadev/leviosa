@@ -6,7 +6,6 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 
-	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
 )
 
@@ -17,12 +16,12 @@ const DefaultServiceKeyCacheTTL = 5 * time.Minute
 type SessionAuthMiddleware struct {
 	sessionRepo session.SessionRepository
 	crypto      encx.CryptoService
-	vaultClient *api.Client
 
-	// secretReader abstracts Vault reads so tests can inject mocks.
+	// secretReader is the store of service API key hashes checked by RequireServiceAuth.
+	// When nil, every service-authenticated request is rejected.
 	secretReader SecretReader
 
-	// serviceKeyCache stores key_hash values fetched from Vault per service.
+	// serviceKeyCache stores key_hash values fetched from the secret reader per service.
 	serviceKeyCache map[string]*cachedKeyEntry
 	cacheTTL       time.Duration
 	cacheMu        sync.RWMutex
@@ -52,18 +51,17 @@ func WithSecretReader(reader SecretReader) SessionAuthMiddlewareOption {
 }
 
 // NewSessionAuthMiddleware creates a new session-based auth middleware.
-func NewSessionAuthMiddleware(sessionRepo session.SessionRepository, crypto encx.CryptoService, vaultClient *api.Client, opts ...SessionAuthMiddlewareOption) AuthMiddleware {
+//
+// serviceKeys is the store of service API key hashes that RequireServiceAuth checks. The
+// app passes nil: its domains call each other in process, and the service keys lived in
+// Vault, which is gone (ADR-0015), so service-to-service endpoints reject every request.
+func NewSessionAuthMiddleware(sessionRepo session.SessionRepository, crypto encx.CryptoService, serviceKeys SecretReader, opts ...SessionAuthMiddlewareOption) AuthMiddleware {
 	m := &SessionAuthMiddleware{
 		sessionRepo:     sessionRepo,
 		crypto:          crypto,
-		vaultClient:     vaultClient,
+		secretReader:    serviceKeys,
 		serviceKeyCache: make(map[string]*cachedKeyEntry),
 		cacheTTL:        DefaultServiceKeyCacheTTL,
-	}
-
-	// Default: use the real Vault client as the secret reader.
-	if vaultClient != nil {
-		m.secretReader = NewVaultSecretReader(vaultClient)
 	}
 
 	for _, opt := range opts {

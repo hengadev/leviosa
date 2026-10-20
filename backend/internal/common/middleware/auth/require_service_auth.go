@@ -71,7 +71,7 @@ func (m *SessionAuthMiddleware) RequireServiceAuth(next mw.Handler) mw.Handler {
 			return
 		}
 
-		// Validate service key against Vault (with caching)
+		// Validate service key against the service key store (with caching)
 		if !m.validateServiceKey(ctx, serviceName, serviceKey) {
 			logger.WarnContext(ctx, "Service auth middleware: Invalid service key",
 				"operation", "require_service_auth",
@@ -102,11 +102,19 @@ func (m *SessionAuthMiddleware) RequireServiceAuth(next mw.Handler) mw.Handler {
 	}
 }
 
-// validateServiceKey validates the service key against stored service credentials in Vault.
-// The key hash is cached in memory with a configurable TTL to avoid a Vault round-trip on every request.
+// validateServiceKey validates the service key against the stored service key hash.
+// The key hash is cached in memory with a configurable TTL to avoid a store round-trip on every request.
+// Without a store, every key is rejected.
 func (m *SessionAuthMiddleware) validateServiceKey(ctx context.Context, serviceName, serviceKey string) bool {
 	logger, err := ctxutil.GetLoggerFromContext(ctx)
 	if err != nil {
+		return false
+	}
+
+	if m.secretReader == nil {
+		logger.WarnContext(ctx, "Service auth middleware: No service key store configured, rejecting",
+			"operation", "validate_service_key",
+			"service_name", serviceName)
 		return false
 	}
 
@@ -124,7 +132,7 @@ func (m *SessionAuthMiddleware) validateServiceKey(ctx context.Context, serviceN
 	// Check the cache first.
 	storedKeyHash, ok := m.getCachedKeyHash(serviceName)
 	if ok {
-		// Cache hit (within TTL) – compare directly, no Vault round-trip.
+		// Cache hit (within TTL) – compare directly, no store round-trip.
 		isValid := storedKeyHash == providedKeyHash
 		if isValid {
 			logger.InfoContext(ctx, "Service auth middleware: Service key validation successful (cached)",
@@ -138,48 +146,48 @@ func (m *SessionAuthMiddleware) validateServiceKey(ctx context.Context, serviceN
 		return isValid
 	}
 
-	// Cache miss or expired – fetch from Vault.
-	vaultPath := services.ServiceAPIKeyPath(serviceName)
+	// Cache miss or expired – fetch from the store.
+	keyPath := services.ServiceAPIKeyPath(serviceName)
 
-	logger.InfoContext(ctx, "Service auth middleware: Fetching service key from Vault",
+	logger.InfoContext(ctx, "Service auth middleware: Fetching service key from store",
 		"operation", "validate_service_key",
 		"service_name", serviceName,
-		"vault_path", vaultPath)
+		"key_path", keyPath)
 
-	secretData, err := m.secretReader.Read(ctx, vaultPath)
+	secretData, err := m.secretReader.Read(ctx, keyPath)
 	if err != nil {
-		logger.ErrorContext(ctx, "Service auth middleware: Failed to read service key from Vault",
+		logger.ErrorContext(ctx, "Service auth middleware: Failed to read service key from store",
 			"operation", "validate_service_key",
 			"service_name", serviceName,
-			"vault_path", vaultPath,
+			"key_path", keyPath,
 			"error", err)
 		return false
 	}
 
 	if secretData == nil || secretData.Data == nil {
-		logger.WarnContext(ctx, "Service auth middleware: Service key not found in Vault",
+		logger.WarnContext(ctx, "Service auth middleware: Service key not found in store",
 			"operation", "validate_service_key",
 			"service_name", serviceName,
-			"vault_path", vaultPath)
+			"key_path", keyPath)
 		return false
 	}
 
-	// Vault KV v2 nests data under the "data" key.
+	// Entries follow the KV v2 layout: data nested under the "data" key.
 	data, ok := secretData.Data["data"].(map[string]interface{})
 	if !ok {
-		logger.ErrorContext(ctx, "Service auth middleware: Invalid Vault response format",
+		logger.ErrorContext(ctx, "Service auth middleware: Invalid service key entry format",
 			"operation", "validate_service_key",
 			"service_name", serviceName,
-			"vault_path", vaultPath)
+			"key_path", keyPath)
 		return false
 	}
 
 	fetchedKeyHash, ok := data["key_hash"].(string)
 	if !ok || fetchedKeyHash == "" {
-		logger.WarnContext(ctx, "Service auth middleware: Missing or invalid key_hash in Vault",
+		logger.WarnContext(ctx, "Service auth middleware: Missing or invalid key_hash in store",
 			"operation", "validate_service_key",
 			"service_name", serviceName,
-			"vault_path", vaultPath)
+			"key_path", keyPath)
 		return false
 	}
 

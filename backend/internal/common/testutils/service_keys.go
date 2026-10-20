@@ -1,4 +1,4 @@
-package services
+package testutils
 
 import (
 	"context"
@@ -9,9 +9,12 @@ import (
 
 	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
+
+	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 )
 
-// ServiceKeyManager provides utilities for managing service API keys in Vault
+// ServiceKeyManager provides utilities for managing service API keys in a test Vault.
+// It is test-only: the app has no service key store since Vault was removed (ADR-0015).
 type ServiceKeyManager struct {
 	vaultClient *api.Client
 	crypto      encx.CryptoService
@@ -41,7 +44,7 @@ func (skm *ServiceKeyManager) GenerateServiceKey() (string, error) {
 
 // StoreServiceKey stores a service API key in Vault with proper hashing
 func (skm *ServiceKeyManager) StoreServiceKey(ctx context.Context, serviceName, apiKey string) error {
-	if !IsValidService(serviceName) {
+	if !services.IsValidService(serviceName) {
 		return fmt.Errorf("invalid service name: %s", serviceName)
 	}
 
@@ -62,7 +65,7 @@ func (skm *ServiceKeyManager) StoreServiceKey(ctx context.Context, serviceName, 
 	}
 
 	// Store in Vault at the correct path
-	vaultPath := ServiceAPIKeyPath(serviceName)
+	vaultPath := services.ServiceAPIKeyPath(serviceName)
 	_, err = skm.vaultClient.Logical().Write(vaultPath, vaultData)
 	if err != nil {
 		return fmt.Errorf("failed to store service key in Vault at %s: %w", vaultPath, err)
@@ -92,7 +95,7 @@ func (skm *ServiceKeyManager) GenerateAndStoreServiceKey(ctx context.Context, se
 func (skm *ServiceKeyManager) GenerateAllServiceKeys(ctx context.Context) (map[string]string, error) {
 	serviceKeys := make(map[string]string)
 
-	for _, serviceName := range AllServices() {
+	for _, serviceName := range services.AllServices() {
 		apiKey, err := skm.GenerateAndStoreServiceKey(ctx, serviceName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate key for service %s: %w", serviceName, err)
@@ -105,12 +108,12 @@ func (skm *ServiceKeyManager) GenerateAllServiceKeys(ctx context.Context) (map[s
 
 // ValidateServiceKey validates a service key against Vault storage (for testing/verification)
 func (skm *ServiceKeyManager) ValidateServiceKey(ctx context.Context, serviceName, providedKey string) (bool, error) {
-	if !IsValidService(serviceName) {
+	if !services.IsValidService(serviceName) {
 		return false, fmt.Errorf("invalid service name: %s", serviceName)
 	}
 
 	// Read from Vault
-	vaultPath := ServiceAPIKeyPath(serviceName)
+	vaultPath := services.ServiceAPIKeyPath(serviceName)
 	secret, err := skm.vaultClient.Logical().Read(vaultPath)
 	if err != nil {
 		return false, fmt.Errorf("failed to read service key from Vault: %w", err)
@@ -142,11 +145,11 @@ func (skm *ServiceKeyManager) ValidateServiceKey(ctx context.Context, serviceNam
 
 // DeleteServiceKey removes a service API key from Vault
 func (skm *ServiceKeyManager) DeleteServiceKey(serviceName string) error {
-	if !IsValidService(serviceName) {
+	if !services.IsValidService(serviceName) {
 		return fmt.Errorf("invalid service name: %s", serviceName)
 	}
 
-	vaultPath := ServiceAPIKeyPath(serviceName)
+	vaultPath := services.ServiceAPIKeyPath(serviceName)
 	_, err := skm.vaultClient.Logical().Delete(vaultPath)
 	if err != nil {
 		return fmt.Errorf("failed to delete service key from Vault at %s: %w", vaultPath, err)

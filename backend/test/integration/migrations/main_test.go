@@ -4,7 +4,7 @@
 // embedded set while accepting an equal or newer one (a rollback).
 //
 // The app binary is built once and driven as a real process against
-// testcontainers Postgres/Redis/Vault (ADR-0005: real adapters, no mocking) —
+// testcontainers Postgres/Redis/LocalStack KMS (ADR-0005: real adapters, no mocking) —
 // the same dependency shape `make local-dev` boots.
 package migrations_test
 
@@ -34,7 +34,7 @@ var (
 	appBinary   string
 	pgContainer *testutils.PostgresContainer
 	redisCont   *testutils.RedisContainer
-	vaultCont   *testutils.VaultContainer
+	kmsCont     *testutils.KMSContainer
 )
 
 func TestMain(m *testing.M) {
@@ -65,16 +65,19 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to setup redis container: %v", err)
 	}
 
-	vaultCont, err = testutils.SetupVault(ctx, nil)
+	kmsCont, err = testutils.SetupKMS(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup vault container: %v", err)
+		log.Fatalf("Failed to setup LocalStack KMS container: %v", err)
+	}
+	if _, err := kmsCont.CreateKey(ctx, testKEKAlias); err != nil {
+		log.Fatalf("Failed to create the KEK: %v", err)
 	}
 
 	code := m.Run()
 
 	_ = pgContainer.Terminate(ctx)
 	_ = redisCont.Terminate(ctx)
-	_ = vaultCont.Terminate(ctx)
+	testutils.TeardownKMS(ctx, nil, kmsCont)
 	os.Exit(code)
 }
 
@@ -149,17 +152,26 @@ func baseEnv(dsn string, extra map[string]string) []string {
 	return env
 }
 
+// testKEKAlias and testPepper are the encx settings serve runs with: a KEK
+// created on the LocalStack KMS container and a fixed base64 32-byte pepper.
+const (
+	testKEKAlias = "alias/leviosa-migrations-test"
+	testPepper   = "bGV2aW9zYS1taWdyYXRpb25zLXRlc3QtcGVwcGVyMzI="
+)
+
 // serveEnv is what serve needs to get past infrastructure setup: Postgres,
-// Redis and a Vault with the transit engine and the encx values that
-// testutils.SetupVault pre-creates.
+// Redis and the encx KEK on LocalStack KMS with a pepper.
 func serveEnv(dsn string, port int) []string {
+	enc := kmsCont.EncryptionConfig(testKEKAlias, testPepper)
 	return baseEnv(dsn, map[string]string{
-		"SERVER_PORT":       strconv.Itoa(port),
-		"REDIS_ADDR":        redisCont.Host + ":" + redisCont.Port,
-		"VAULT_ADDR":        vaultCont.HTTPSEndpoint,
-		"VAULT_TOKEN":       vaultCont.RootToken,
-		"ENCX_KEK_ALIAS":    testutils.EncryptionKey,
-		"ENCX_PEPPER_ALIAS": "pepper",
+		"SERVER_PORT":           strconv.Itoa(port),
+		"REDIS_ADDR":            redisCont.Host + ":" + redisCont.Port,
+		"ENCX_KMS_KEY_ALIAS":    enc.KMSKeyAlias,
+		"ENCX_PEPPER":           enc.Pepper,
+		"AWS_REGION":            enc.AWSRegion,
+		"AWS_ACCESS_KEY_ID":     enc.AWSAccessKeyID,
+		"AWS_SECRET_ACCESS_KEY": enc.AWSSecretAccessKey,
+		"AWS_ENDPOINT_URL":      enc.AWSEndpointURL,
 	})
 }
 

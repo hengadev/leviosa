@@ -16,6 +16,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// vaultSecretReader serves service key hashes from the test Vault. The app itself has no
+// service key store since Vault was removed (ADR-0015).
+type vaultSecretReader struct{ client *api.Client }
+
+func (r vaultSecretReader) Read(ctx context.Context, path string) (*SecretData, error) {
+	secret, err := r.client.Logical().ReadWithContext(ctx, path)
+	if err != nil || secret == nil {
+		return nil, err
+	}
+	return &SecretData{Data: secret.Data}, nil
+}
+
 // TestServiceAuthWithVault tests the complete service authentication flow with real Vault
 func TestServiceAuthWithVault(t *testing.T) {
 	if testing.Short() {
@@ -41,7 +53,7 @@ func TestServiceAuthWithVault(t *testing.T) {
 	require.NoError(t, err, "Failed to create test crypto service")
 	
 	// Initialize service key manager
-	keyManager := services.NewServiceKeyManager(vaultClient, cryptoService)
+	keyManager := testutils.NewServiceKeyManager(vaultClient, cryptoService)
 	
 	// Generate and store a service API key
 	testServiceName := services.Catalog
@@ -50,7 +62,7 @@ func TestServiceAuthWithVault(t *testing.T) {
 	require.NotEmpty(t, apiKey, "Generated API key should not be empty")
 	
 	// Create auth middleware with Vault client
-	middleware := NewSessionAuthMiddleware(nil, cryptoService, vaultClient)
+	middleware := NewSessionAuthMiddleware(nil, cryptoService, vaultSecretReader{vaultClient})
 	
 	// Test successful authentication
 	t.Run("Valid service authentication", func(t *testing.T) {
@@ -171,7 +183,7 @@ func TestServiceKeyManager(t *testing.T) {
 	require.NoError(t, err, "Failed to create crypto service")
 	
 	// Initialize service key manager
-	keyManager := services.NewServiceKeyManager(vaultClient, cryptoService)
+	keyManager := testutils.NewServiceKeyManager(vaultClient, cryptoService)
 	
 	t.Run("Generate and validate single service key", func(t *testing.T) {
 		testService := services.Settings
@@ -239,12 +251,12 @@ func TestEndToEndServiceCommunication(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Generate service keys
-	keyManager := services.NewServiceKeyManager(vaultClient, cryptoService)
+	keyManager := testutils.NewServiceKeyManager(vaultClient, cryptoService)
 	catalogKey, err := keyManager.GenerateAndStoreServiceKey(ctx, services.Catalog)
 	require.NoError(t, err)
 	
 	// Create auth middleware
-	middleware := NewSessionAuthMiddleware(nil, cryptoService, vaultClient)
+	middleware := NewSessionAuthMiddleware(nil, cryptoService, vaultSecretReader{vaultClient})
 	
 	// Create a test server with protected endpoint
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
