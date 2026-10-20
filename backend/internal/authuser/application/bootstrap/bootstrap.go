@@ -9,9 +9,21 @@
 package bootstrap
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
+
+	"github.com/google/uuid"
+	"github.com/hengadev/encx"
+
+	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/identity"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 )
 
 // AdminPasswordMinLength is the minimum length for the superadmin's
@@ -137,4 +149,82 @@ func LoadConfig(getenv func(string) string) (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// Service creates the first superadmin through the authuser domain path
+// (encrypted fields, hashed password, searchable email hash) — the same
+// processing every other user creation goes through.
+type Service struct {
+	repo   ports.UserRepository
+	crypto encx.CryptoService
+}
+
+// New creates a bootstrap service over the user repository and the app's
+// encx crypto service.
+func New(repo ports.UserRepository, crypto encx.CryptoService) *Service {
+	return &Service{repo: repo, crypto: crypto}
+}
+
+// Run creates the superadmin described by cfg when no user with that email
+// exists, and changes nothing when one does — never the password, never the
+// role. It returns whether the account was created, so callers can report
+// it. The password (or its hash) is never logged.
+func (s *Service) Run(ctx context.Context, cfg Config) (bool, error) {
+	logger, err := ctxutil.GetLoggerFromContext(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get logger: %w", err)
+	}
+
+	emailBytes, err := encx.SerializeValue(cfg.Email)
+	if err != nil {
+		return false, fmt.Errorf("serialize email: %w", err)
+	}
+	emailHash := s.crypto.HashBasic(ctx, emailBytes)
+
+	exists, err := s.repo.ExistsByEmailHash(ctx, emailHash)
+	if err != nil {
+		return false, fmt.Errorf("check for existing user: %w", err)
+	}
+	if exists {
+		logger.InfoContext(ctx, "bootstrap: user with ADMIN_EMAIL already exists — leaving it unchanged",
+			"email", cfg.Email)
+		return false, nil
+	}
+
+	user := &domain.User{
+		ID:         uuid.New(),
+		State:      domain.Active,
+		Email:      cfg.Email,
+		Password:   cfg.Password,
+		FirstName:  cfg.FirstName,
+		LastName:   cfg.LastName,
+		Role:       identity.Administrator.String(),
+		Telephone:  cfg.Telephone,
+		PostalCode: cfg.PostalCode,
+		City:       cfg.City,
+		Address1:   cfg.Address1,
+		Address2:   cfg.Address2,
+		CreatedAt:  time.Now(),
+	}
+
+	userEncx, err := domain.ProcessUserEncx(ctx, s.crypto, user)
+	if err != nil {
+		return false, fmt.Errorf("encrypt superadmin data: %w", err)
+	}
+
+	if err := s.repo.CreateUser(ctx, userEncx); err != nil {
+		// Created concurrently between the existence check and the insert —
+		// same outcome as finding it existing: nothing is modified.
+		if errors.Is(err, errs.ErrUniqueViolation) {
+			logger.InfoContext(ctx, "bootstrap: user with ADMIN_EMAIL appeared concurrently — leaving it unchanged",
+				"email", cfg.Email)
+			return false, nil
+		}
+		return false, fmt.Errorf("create superadmin: %w", err)
+	}
+
+	logger.InfoContext(ctx, "bootstrap: superadmin created",
+		"email", cfg.Email,
+		"role", identity.Administrator.String())
+	return true, nil
 }
