@@ -94,6 +94,7 @@ import (
 
 	// Common
 	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 
 	// Common auth session
@@ -108,10 +109,7 @@ import (
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
-	hashicorpkeys "github.com/hengadev/encx/providers/keys/hashicorp"
-	hashicorpsecrets "github.com/hengadev/encx/providers/secrets/hashicorp"
 	"github.com/jackc/pgx/v5/pgxpool"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
@@ -127,7 +125,6 @@ type Container struct {
 	RabbitMQ    *amqp.Connection
 	S3Client    *s3.Client
 	Crypto      encx.CryptoService
-	VaultClient *api.Client
 	AuthMw      auth.AuthMiddleware
 	RateLimiter *middleware.RateLimiter
 	AuditLogger audit.Logger
@@ -300,32 +297,10 @@ func (c *Container) setupInfrastructure(ctx context.Context) error {
 	}
 	c.S3Client = s3.NewFromConfig(awsCfg, s3Options)
 
-	// Vault client
-	vaultConfig := api.DefaultConfig()
-	vaultConfig.Address = c.Config.VaultAddr
-	c.VaultClient, err = api.NewClient(vaultConfig)
+	// Encryption: KEK in AWS KMS, pepper from configuration (ADR-0015)
+	c.Crypto, err = encryption.NewCrypto(ctx, c.Config.Encryption)
 	if err != nil {
-		return fmt.Errorf("create vault client: %w", err)
-	}
-	c.VaultClient.SetToken(c.Config.VaultToken)
-
-	// Encryption — the hashicorp providers read VAULT_ADDR and VAULT_TOKEN from env
-	keyProvider, err := hashicorpkeys.NewTransitService()
-	if err != nil {
-		return fmt.Errorf("create hashicorp key provider: %w", err)
-	}
-
-	secretProvider, err := hashicorpsecrets.NewKVStore()
-	if err != nil {
-		return fmt.Errorf("create hashicorp secret provider: %w", err)
-	}
-
-	c.Crypto, err = encx.NewCrypto(ctx, keyProvider, secretProvider, encx.Config{
-		KEKAlias:    c.Config.EncxKEKAlias,
-		PepperAlias: c.Config.EncxPepperAlias,
-	})
-	if err != nil {
-		return fmt.Errorf("create crypto service: %w", err)
+		return err
 	}
 
 	return nil
@@ -396,9 +371,10 @@ func (c *Container) setupServices(ctx context.Context) error {
 	// Session service (needed early for auth middleware and other services)
 	c.SessionService = sessionSvc.New(ctx, c.SessionRepo, c.Crypto)
 
-	// Auth middleware (uses a separate minimal session repo interface for token lookups)
+	// Auth middleware (uses a separate minimal session repo interface for token lookups).
+	// No service key store: service-to-service endpoints reject every request.
 	authSessionRepo := commonSession.NewRedisSessionRepository(c.RedisClient)
-	c.AuthMw = auth.NewSessionAuthMiddleware(authSessionRepo, c.Crypto, c.VaultClient,
+	c.AuthMw = auth.NewSessionAuthMiddleware(authSessionRepo, c.Crypto, nil,
 		auth.WithServiceKeyCacheTTL(time.Duration(c.Config.ServiceKeyCacheTTLSeconds)*time.Second),
 	)
 

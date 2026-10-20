@@ -5,7 +5,7 @@
 
 .PHONY: test-all test-unit test-integration test-coverage test-race test-benchmark test-verbose test-smoke test-clean test-help
 .PHONY: test-unit-authuser test-unit-catalog test-unit-settings test-unit-booking test-unit-notification
-.PHONY: test-integration-authuser test-integration-catalog test-integration-settings test-integration-booking test-integration-notification test-integration-messaging
+.PHONY: test-integration-authuser test-integration-catalog test-integration-settings test-integration-booking test-integration-notification test-integration-messaging test-integration-encryption
 
 # Test settings
 TEST_TIMEOUT?=30m
@@ -20,6 +20,8 @@ SERVICES_ROOT=internal
 
 # Integration test paths (current structure)
 INTEGRATION_ROOT=test/integration
+# Integration suites run by test-integration: every domain plus cross-cutting suites
+INTEGRATION_SUITES=$(INTERNAL_SERVICES) encryption
 
 test-help: ## Show testing help message
 	@echo 'Leviosa Backend Testing Commands:'
@@ -43,6 +45,7 @@ test-help: ## Show testing help message
 	@echo '  test-integration-booking      Run integration tests for booking'
 	@echo '  test-integration-notification Run integration tests for notification'
 	@echo '  test-integration-messaging     Run integration tests for messaging'
+	@echo '  test-integration-encryption   Run integration tests for encx on KMS (LocalStack)'
 	@echo ''
 	@echo 'Advanced Testing Commands:'
 	@echo '  test-coverage      Generate HTML coverage report for all services'
@@ -75,7 +78,7 @@ test-unit: ## Run all unit tests across all services in internal/
 
 test-integration: ## Run all integration tests from test/integration/
 	@echo "Running all integration tests..."
-	@for service in $(INTERNAL_SERVICES); do \
+	@for service in $(INTEGRATION_SUITES); do \
 		if [ -d "$(INTEGRATION_ROOT)/$$service" ]; then \
 			echo "Testing integration for $$service..."; \
 			go test $(TEST_VERBOSE) -timeout $(TEST_TIMEOUT) ./$(INTEGRATION_ROOT)/$$service/... || exit 1; \
@@ -179,6 +182,9 @@ test-integration-messaging: ## Run integration tests for messaging
 	else \
 		echo "Warning: $(INTEGRATION_ROOT)/messaging not found, skipping..."; \
 	fi
+
+test-integration-encryption: ## Run integration tests for encx on KMS (LocalStack)
+	go test $(TEST_VERBOSE) -timeout $(TEST_TIMEOUT) ./$(INTEGRATION_ROOT)/encryption/...
 
 # Advanced Testing Commands
 test-coverage: ## Generate HTML coverage report for all services

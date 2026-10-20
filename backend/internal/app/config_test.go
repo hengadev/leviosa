@@ -55,3 +55,30 @@ func TestLoadConfig_DevelopmentAllowsDefaultSecret(t *testing.T) {
 		t.Errorf("expected default SessionSecret in development, got %q", cfg.SessionSecret)
 	}
 }
+
+func TestLoadConfig_ReadsEncryptionSettings(t *testing.T) {
+	t.Setenv("ENVIRONMENT", "staging")
+	t.Setenv("DATABASE_URL", "postgres://user:pass@localhost:5432/db")
+	t.Setenv("SESSION_SECRET", "a-real-secret-that-is-not-the-default")
+	t.Setenv("ENCX_KMS_KEY_ALIAS", "alias/leviosa-staging")
+	t.Setenv("ENCX_PEPPER", "bGV2aW9zYS1sb2NhbC1kZXYtcGVwcGVyLTMyYnl0ZXM=")
+	t.Setenv("AWS_REGION", "eu-central-1")
+	t.Setenv("AWS_ACCESS_KEY_ID", "AKIDEXAMPLE")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "secret")
+	t.Setenv("AWS_ENDPOINT_URL", "")
+
+	cfg, err := LoadConfig(context.Background())
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	enc := cfg.Encryption
+	if enc.KMSKeyAlias != "alias/leviosa-staging" || enc.Pepper != "bGV2aW9zYS1sb2NhbC1kZXYtcGVwcGVyLTMyYnl0ZXM=" ||
+		enc.AWSRegion != "eu-central-1" || enc.AWSAccessKeyID != "AKIDEXAMPLE" ||
+		enc.AWSSecretAccessKey != "secret" || enc.AWSEndpointURL != "" {
+		t.Fatalf("unexpected encryption config: %+v", enc)
+	}
+	if err := enc.Validate(); err != nil {
+		t.Fatalf("encryption config from a complete environment should validate: %v", err)
+	}
+}

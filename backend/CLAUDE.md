@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Build and Run
-- `docker compose up --build` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ, Vault, S3-via-LocalStack); builds from `local.Dockerfile`, which runs `air` for live reload — the source tree is bind-mounted, so edits rebuild and restart the server automatically. Needs `development.env` (copy from `example.env`; `make local-dev` from the repo root does this for you).
+- `docker compose up --build` - Start the backend plus its dependencies (PostgreSQL, Redis, RabbitMQ, and LocalStack for S3 and KMS — its init container creates the bucket and the encx KEK alias); builds from `local.Dockerfile`, which runs `air` for live reload — the source tree is bind-mounted, so edits rebuild and restart the server automatically. Needs `development.env` (copy from `example.env`; `make local-dev` from the repo root does this for you).
 - `go run ./cmd/app migrate` - Apply pending database migrations (`serve` never migrates; see Database Migrations below)
 - `go run ./cmd/app` - Run the backend binary (`serve` mode) directly against already-running, migrated dependencies
 - `go run ./cmd/seed` - Seed data (configured via `cmd/seed/seed_data.example.json`)
@@ -54,11 +54,12 @@ Each domain package follows the ports & adapters pattern:
 - **contracts/** - RabbitMQ message contracts and routing keys
 - **messaging/** - RabbitMQ utilities for exchanges, queues, and payloads
 - **ctxutil/** - Context utilities for logger and role validation
+- **encryption/** - `NewCrypto`: the one way every entry point builds encx (KEK in AWS KMS by alias, pepper from `ENCX_PEPPER`; refuses to create keys or store a pepper)
 - **httpx/** - HTTP utilities for CORS, JSON responses, error handling
 - **logger/** - Structured logging configuration
 - **middleware/** - Authentication middleware
 - **validation/** - Email and phone validation utilities
-- **testutils/** - Testcontainers helpers for Postgres, Redis, RabbitMQ, S3, Vault, Stripe
+- **testutils/** - Testcontainers helpers for Postgres, Redis, RabbitMQ, S3, KMS (LocalStack, `SetupKMS`), Stripe, and the legacy Vault helper still used by most integration suites
 
 ### Database Migrations
 - Located in `internal/common/migrations/` (goose SQL files, embedded into the binary)
@@ -89,7 +90,8 @@ Each domain package follows the ports & adapters pattern:
 ### Environment Configuration
 - Development uses `development.env` file
 - Production uses environment variables
-- Required services: PostgreSQL, Redis, RabbitMQ, AWS S3, Vault (HashiCorp)
+- Required services: PostgreSQL, Redis, RabbitMQ, AWS S3, AWS KMS
+- Encryption (encx, ADR-0015): `ENCX_KMS_KEY_ALIAS` (an alias name, `alias/<name>`, never a key ID or ARN), `ENCX_PEPPER` (base64 of 32 bytes), `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL` for LocalStack only. A missing or invalid pepper, or an alias that does not resolve, stops startup
 - External integrations: Stripe, Gmail SMTP, Twilio SMS
 
 ### Error Handling
