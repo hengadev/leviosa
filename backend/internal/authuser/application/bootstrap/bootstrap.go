@@ -74,24 +74,23 @@ type Config struct {
 	Address2   string
 }
 
-// adminKeys maps each ADMIN_* variable to the Config field it fills, in a
-// stable order for error messages. Every value is required outside
+// adminKeys lists each ADMIN_* variable and the Config field it fills, in
+// a stable order for error messages. Every value is required outside
 // development except ADMIN_ADDRESS2.
 var adminKeys = []struct {
 	env      string
-	field    func(Config) string
 	assign   func(*Config, string)
 	optional bool
 }{
-	{"ADMIN_EMAIL", func(c Config) string { return c.Email }, func(c *Config, v string) { c.Email = v }, false},
-	{"ADMIN_PASSWORD", func(c Config) string { return c.Password }, func(c *Config, v string) { c.Password = v }, false},
-	{"ADMIN_FIRST_NAME", func(c Config) string { return c.FirstName }, func(c *Config, v string) { c.FirstName = v }, false},
-	{"ADMIN_LAST_NAME", func(c Config) string { return c.LastName }, func(c *Config, v string) { c.LastName = v }, false},
-	{"ADMIN_TELEPHONE", func(c Config) string { return c.Telephone }, func(c *Config, v string) { c.Telephone = v }, false},
-	{"ADMIN_POSTAL_CODE", func(c Config) string { return c.PostalCode }, func(c *Config, v string) { c.PostalCode = v }, false},
-	{"ADMIN_CITY", func(c Config) string { return c.City }, func(c *Config, v string) { c.City = v }, false},
-	{"ADMIN_ADDRESS1", func(c Config) string { return c.Address1 }, func(c *Config, v string) { c.Address1 = v }, false},
-	{"ADMIN_ADDRESS2", func(c Config) string { return c.Address2 }, func(c *Config, v string) { c.Address2 = v }, true},
+	{"ADMIN_EMAIL", func(c *Config, v string) { c.Email = v }, false},
+	{"ADMIN_PASSWORD", func(c *Config, v string) { c.Password = v }, false},
+	{"ADMIN_FIRST_NAME", func(c *Config, v string) { c.FirstName = v }, false},
+	{"ADMIN_LAST_NAME", func(c *Config, v string) { c.LastName = v }, false},
+	{"ADMIN_TELEPHONE", func(c *Config, v string) { c.Telephone = v }, false},
+	{"ADMIN_POSTAL_CODE", func(c *Config, v string) { c.PostalCode = v }, false},
+	{"ADMIN_CITY", func(c *Config, v string) { c.City = v }, false},
+	{"ADMIN_ADDRESS1", func(c *Config, v string) { c.Address1 = v }, false},
+	{"ADMIN_ADDRESS2", func(c *Config, v string) { c.Address2 = v }, true},
 }
 
 // devDefaults are the non-secret values used in development when an ADMIN_*
