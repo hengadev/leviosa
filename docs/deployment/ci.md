@@ -15,7 +15,7 @@ and a rollback is a Promote of an older SHA ([promote.md](promote.md)).
 | `backend-checks`: Go build, `go test ./...` | runs | runs |
 | `backend-integration-tests`: `make test-integration` (testcontainers) | runs | runs |
 | `security-scan`: `govulncheck` | runs | runs |
-| `deploy-scripts`: deploy gate tests, Promote's preflight tests, `bash -n` on `infra/compose/deploy` and the harness | runs | runs |
+| `deploy-scripts`: deploy gate tests, Promote's preflight tests, the Infisical Agent template tests, `bash -n` on `infra/compose/deploy` and the harness | runs | runs |
 | `summary`: fails unless every check above passed | runs | runs |
 | `build-images`: build and push both images | skipped | after every check passed |
 | `deploy-staging`: `deploy staging <sha>` through the deploy gate | skipped | after every check passed and both images were pushed |
