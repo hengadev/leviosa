@@ -17,7 +17,7 @@ Leviosa is booking and activity management software for service businesses — m
 ```
 ├── frontend/            # SvelteKit 5 application
 ├── backend/             # Go modular monolith
-├── config/              # Infrastructure configuration (Caddy, Loki, Vault, etc.)
+├── config/              # Infrastructure configuration (Loki, Vault, etc.)
 ├── infra/               # Terraform and Ansible deployment scripts
 └── local.compose.yaml   # Full local stack simulation (see Local Development below)
 ```
