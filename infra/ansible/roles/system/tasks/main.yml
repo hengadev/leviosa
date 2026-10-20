@@ -17,10 +17,10 @@
 - name: Upgrade all packages
   ansible.builtin.apt:
     upgrade: dist
-  register: apt_upgrade
+  register: system_apt_upgrade
   retries: 3
   delay: 5
-  until: apt_upgrade is succeeded
+  until: system_apt_upgrade is succeeded
 
 # git: the deploy runner fetches main into a root-only mirror (roles/
 # deploy_gate). util-linux: flock, which the runner and infra/compose/deploy
@@ -57,7 +57,7 @@
     dest: /etc/apt/apt.conf.d/50unattended-upgrades
     mode: '0644'
   when: auto_security_updates
-  notify: restart unattended-upgrades
+  notify: Restart unattended-upgrades
 
 - name: Install apt-listchanges for update notifications
   ansible.builtin.apt:

@@ -58,9 +58,9 @@
 - name: Test SSH configuration before applying
   ansible.builtin.command:
     cmd: /usr/sbin/sshd -t
-  register: sshd_test
+  register: ssh_sshd_test
   changed_when: false
-  failed_when: sshd_test.rc != 0
+  failed_when: ssh_sshd_test.rc != 0
 
 - name: Ensure SSH is restarted after configuration
   ansible.builtin.meta: flush_handlers
