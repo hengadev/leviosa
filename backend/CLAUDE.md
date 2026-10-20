@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `go run ./cmd/app migrate` - Apply pending database migrations (`serve` never migrates; see Database Migrations below)
 - `go run ./cmd/app` - Run the backend binary (`serve` mode) directly against already-running, migrated dependencies
 - `go run ./cmd/app verify` - Read-only check that the database is readable with the configured KMS key and pepper (see Pepper Canary below)
+- `go run ./cmd/app bootstrap-admin` - Create the first superadmin from the `ADMIN_*` values if that email does not exist; never modifies an existing account; refuses missing values, and a weak password outside development
+- `go run ./cmd/app check-sms <to>` / `go run ./cmd/app check-email <to>` - Send one test message through the configured Twilio / SMTP settings (no database, Redis, RabbitMQ or KMS needed); print one success line or the provider's error, never a credential. In deployed environments, run them inside the backend container
 - `go run ./cmd/seed` - Seed data (configured via `cmd/seed/seed_data.example.json`)
 
 ### Testing
@@ -89,14 +91,17 @@ Each domain package follows the ports & adapters pattern:
 - **Cache**: Redis (alpine)
 - **Message Queue**: RabbitMQ 3 (management)
 - **Object Storage**: AWS S3
-- **Configuration**: Viper + environment variables
+- **Configuration**: environment variables (from Infisical in deployed environments)
+
+### Run Modes
+`cmd/app` dispatches on its first argument (`main.go`, one file per mode): `serve` (default), `migrate`, `bootstrap-admin`, `verify`, `check-sms`, `check-email`. Deploys run `migrate` and `bootstrap-admin` as one-offs before recreating the `serve` container (`infra/compose/README.md`); `leviosa-restore-test` runs `verify` against a restored dump. The release SHA is baked in at build time (`COMMIT_SHA`) and reported by `/health`.
 
 ### Environment Configuration
-- Development uses `development.env` file
-- Production uses environment variables
+- Development uses the `development.env` file: a copy of the committed `example.env` (no secrets, integrations off), or rendered from Infisical `dev` by `make env` at the repo root
+- Staging and production get their environment from `backend.env`, rendered from Infisical by the Infisical Agent (every key, its folder and its writer: `docs/deployment/environment.md`)
 - Required services: PostgreSQL, Redis, RabbitMQ, AWS S3, AWS KMS
 - Encryption (encx, ADR-0015): `ENCX_KMS_KEY_ALIAS` (an alias name, `alias/<name>`, never a key ID or ARN), `ENCX_PEPPER` (base64 of 32 bytes), `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL` for LocalStack only. A missing or invalid pepper, or an alias that does not resolve, stops startup
-- External integrations: Stripe, Gmail SMTP, Twilio SMS
+- External integrations: Stripe (`STRIPE_*`), SMTP via Zoho Mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`), Twilio SMS with an API key in region IE1 (`TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_REGION`, `TWILIO_EDGE`, `TWILIO_SENDER`)
 
 ### Error Handling
 - Sentinel errors defined in `internal/common/errs/` package
