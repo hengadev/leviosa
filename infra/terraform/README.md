@@ -89,7 +89,7 @@ the backend reads them and the Agent templates render them.
 | | `AWS_REGION` | `eu-central-1` |
 | | `S3_BUCKET_NAME` | `leviosa-care-<env>-media` |
 | | `ENCX_KMS_KEY_ARN` | that environment's KMS key ARN (for reference) |
-| | `ENCX_KMS_KEY_ALIAS` | `leviosa-<env>`: the alias the backend uses, without `alias/` (encx adds it) |
+| | `ENCX_KMS_KEY_ALIAS` | `alias/leviosa-<env>`: the full alias name the backend finds its KEK by (it refuses key IDs and ARNs) |
 | `prod/backup` | `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY` | the `leviosa-prod-backup` access key |
 | | `BACKUP_S3_BUCKET` | `leviosa-care-prod-backups` |
 | | `BACKUP_AWS_REGION` | `eu-central-1` |

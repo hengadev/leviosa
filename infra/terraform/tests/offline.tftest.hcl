@@ -311,8 +311,8 @@ run "infisical_aws_per_environment" {
       infisical_secret.aws["prod/S3_BUCKET_NAME"].value == "leviosa-care-prod-media" &&
       infisical_secret.aws["staging/ENCX_KMS_KEY_ARN"].value == aws_kms_key.encx["staging"].arn &&
       infisical_secret.aws["prod/ENCX_KMS_KEY_ARN"].value == aws_kms_key.encx["prod"].arn &&
-      infisical_secret.aws["staging/ENCX_KMS_KEY_ALIAS"].value == "leviosa-staging" &&
-      infisical_secret.aws["prod/ENCX_KMS_KEY_ALIAS"].value == "leviosa-prod" &&
+      infisical_secret.aws["staging/ENCX_KMS_KEY_ALIAS"].value == "alias/leviosa-staging" &&
+      infisical_secret.aws["prod/ENCX_KMS_KEY_ALIAS"].value == "alias/leviosa-prod" &&
       infisical_secret.aws["staging/AWS_REGION"].value == "eu-central-1" &&
       infisical_secret.aws["prod/AWS_REGION"].value == "eu-central-1"
     )

@@ -6,7 +6,7 @@
 locals {
   # The only KMS actions an app user gets: what encx needs to wrap and unwrap
   # data keys. No key administration: no ScheduleKeyDeletion, DisableKey,
-  # PutKeyPolicy, kms:* ... (checked by tests/policies.tftest.hcl).
+  # PutKeyPolicy, kms:* ... (checked by tests/offline.tftest.hcl).
   app_kms_actions = ["kms:Encrypt", "kms:Decrypt", "kms:GenerateDataKey*", "kms:DescribeKey"]
 
   app_policies = {
