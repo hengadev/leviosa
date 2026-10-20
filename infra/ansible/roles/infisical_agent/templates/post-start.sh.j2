@@ -1,0 +1,142 @@
+#!/bin/sh
+# {{ ansible_managed }}
+# infisical_agent post-start helper (issue 027).
+#
+# Why this exists: the Infisical Agent never runs a template's execute
+# command on the FIRST render after a start. So a value that changed while
+# the Agent was down (or before a rotation restart) would be written to the
+# env file but never applied to the running container.
+#
+# How it works:
+#   snapshot (ExecStartPre)   - checksum the rendered env files BEFORE the
+#                               Agent starts, and stamp the time.
+#   apply    (ExecStartPost)  - wait for the first render (every destination
+#                               file rewritten since the snapshot), then
+#                               recreate the compose service of each file
+#                               whose content actually changed.
+#
+# Only the services of changed files are recreated (with --force-recreate),
+# so e.g. a backend.env change restarts the backend alone. An unchanged
+# re-render (a credential rotation restart) touches no container. The script
+# always exits 0: a failure here must never take the Agent service down.
+set -u
+
+SNAPSHOT_FILE=/run/{{ infisical_agent_unit_name }}/pre-start.sum
+WAIT_LIMIT={{ infisical_agent_post_start_wait_seconds }}
+CMD_TIMEOUT={{ infisical_agent_command_timeout_seconds }}
+
+DESTINATIONS="
+{% for t in infisical_agent_templates %}
+{{ infisical_agent_stack_roots[t.env] }}/{{ infisical_agent_env_dir_name }}/{{ t.name }}.env
+{% endfor %}"
+
+log() {
+	echo "{{ infisical_agent_unit_name }} post-start: $*" >&2
+}
+
+snapshot() {
+	for f in $DESTINATIONS; do
+		if [ -f "$f" ]; then
+			sha256sum "$f"
+		else
+			echo "MISSING  $f"
+		fi
+	done
+}
+
+# sha256sum prints "<hash>  <path>"; MISSING lines are printed the same way.
+hash_of() {
+	awk -v f="$1" '$2 == f { print $1 }'
+}
+
+recreate() {
+	service=$1
+	root=$2
+	if [ ! -f "$root/docker-compose.yml" ]; then
+		log "$root/docker-compose.yml not present yet; skipping $service (the first deploy installs it)"
+	else
+		log "recreating $service ($root)"
+		timeout "$CMD_TIMEOUT" docker compose --project-directory "$root" up -d --no-deps --force-recreate "$service" \
+			|| log "recreating $service failed (the next change or deploy retries)"
+	fi
+}
+
+# Has the Agent's first render happened? It rewrites every destination file
+# on the first render (the write is unconditional when the ETag is unknown),
+# so "every file exists and was modified at or after the snapshot stamp" is
+# the readiness signal.
+first_render_done() {
+	for f in $DESTINATIONS; do
+		[ -f "$f" ] || return 1
+		[ "$(stat -c %Y "$f" 2>/dev/null || echo 0)" -ge "$1" ] || return 1
+	done
+	return 0
+}
+
+case "${1:-}" in
+snapshot)
+	umask 0077
+	mkdir -p "$(dirname "$SNAPSHOT_FILE")"
+	{
+		date +%s
+		snapshot
+	} >"$SNAPSHOT_FILE"
+	;;
+
+apply)
+	if [ ! -f "$SNAPSHOT_FILE" ]; then
+		# ExecStartPre failed to write one: assume everything changed, so a
+		# value that moved while it could not be observed is still applied.
+		log "no pre-start snapshot; assuming changed (every consumer is recreated)"
+		before="missing"
+	else
+		stamp=$(sed -n '1p' "$SNAPSHOT_FILE")
+		before=$(sed -n '2,$p' "$SNAPSHOT_FILE")
+	fi
+
+	waited=0
+	if [ "${before:-missing}" != "missing" ]; then
+		until first_render_done "$stamp" || [ "$waited" -ge "$WAIT_LIMIT" ]; do
+			sleep 2
+			waited=$((waited + 2))
+		done
+		if [ "$waited" -ge "$WAIT_LIMIT" ] && ! first_render_done "$stamp"; then
+			log "first render not observed within ${WAIT_LIMIT}s (Infisical unreachable?); checking content anyway"
+		fi
+	fi
+
+	after=$(snapshot)
+
+	changed=0
+	for f in $DESTINATIONS; do
+		before_hash=$(printf '%s\n' "$before" | hash_of "$f")
+		after_hash=$(printf '%s\n' "$after" | hash_of "$f")
+		if [ "$before_hash" = "$after_hash" ]; then
+			continue
+		fi
+		changed=1
+		case "$f" in
+{% for t in infisical_agent_templates if t.recreate %}
+		{{ infisical_agent_stack_roots[t.env] }}/{{ infisical_agent_env_dir_name }}/{{ t.name }}.env)
+			recreate {{ t.service }} {{ infisical_agent_stack_roots[t.env] }}
+			;;
+{% endfor %}
+		*)
+			log "$f changed (rewrite only; no service to recreate)"
+			;;
+		esac
+	done
+
+	if [ "$changed" -eq 0 ]; then
+		log "rendered files unchanged; nothing to recreate"
+	fi
+	exit 0
+	;;
+
+*)
+	log "usage: $0 {snapshot|apply}"
+	exit 0
+	;;
+esac
+
+exit 0

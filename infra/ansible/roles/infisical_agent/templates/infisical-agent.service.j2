@@ -1,0 +1,47 @@
+# {{ ansible_managed }}
+[Unit]
+Description=Infisical Agent - renders Leviosa env files from Infisical
+Documentation=https://infisical.com/docs
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+# Snapshot the rendered files BEFORE the Agent starts, so the post-start step
+# can tell "changed while the Agent was not running" from "unchanged".
+ExecStartPre=-{{ infisical_agent_config_dir }}/post-start.sh snapshot
+ExecStart=/usr/bin/infisical agent --config {{ infisical_agent_config_dir }}/config.yaml
+# The Agent never runs a template's execute command on the FIRST render
+# after a start. The helper waits for that first render and recreates the
+# services whose files actually changed once — a no-op when nothing changed,
+# so e.g. credential rotation restarts the Agent without touching any app
+# container. The leading '-' ignores helper failures: they must never take
+# the Agent down.
+ExecStartPost=-{{ infisical_agent_config_dir }}/post-start.sh apply
+
+# A config error makes the Agent exit with status 0, so the unit must
+# restart unconditionally, not only on failure.
+Restart=always
+RestartSec=10
+
+# The Agent creates rendered files 0644 and its token sink 0644; UMask
+# tightens everything it writes to 0600 (root-owned).
+UMask=0077
+
+# Covers the post-start wait plus all capped recreate commands, with margin.
+TimeoutStartSec=600
+
+NoNewPrivileges=true
+PrivateTmp=true
+# read-only, not true: the recreate commands run docker as root and may need
+# /root/.docker/config.json (registry login) if an image must be pulled.
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target
