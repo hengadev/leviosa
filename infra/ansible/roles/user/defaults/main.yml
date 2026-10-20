@@ -6,4 +6,5 @@
 # One bare public key per keys-file entry: "<type> <base64> [comment]", no
 # options, no newline. The same key types roles/deploy_gate accepts for the
 # CI keys, and the ones sshd accepts (roles/ssh, PubkeyAcceptedAlgorithms).
-user_ssh_key_pattern: '^(ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh[.]com|sk-ecdsa-sha2-nistp256@openssh[.]com) [A-Za-z0-9+/]+=*( [^\r\n]*)?$'
+user_ssh_key_types: 'ssh-ed25519|ssh-rsa|ecdsa-sha2-nistp(256|384|521)|sk-ssh-ed25519@openssh[.]com|sk-ecdsa-sha2-nistp256@openssh[.]com'
+user_ssh_key_pattern: '^({{ user_ssh_key_types }}) [A-Za-z0-9+/]+=*( [^\r\n]*)?$'
