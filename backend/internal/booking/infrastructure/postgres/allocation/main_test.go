@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
 	"github.com/hengadev/encx"
@@ -21,7 +20,6 @@ import (
 
 var (
 	pgContainer *tu.PostgresContainer
-	vaultSetup  *tu.ServiceVaultSetup
 	testPool    *pgxpool.Pool
 	testCrypto  encx.CryptoService
 	repo        ports.RoomAllocationRepository
@@ -31,29 +29,15 @@ func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Vault container setup for encryption (GDPR compliant)
 	var err error
-	serviceNames := []string{services.Booking}
-	vaultSetup, err = tu.SetupServiceVault(ctx, nil, serviceNames)
+
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	// Set environment variables for Vault (for encx library)
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	// Get service-specific crypto service (GDPR compliant)
-	var exists bool
-	testCrypto, exists = vaultSetup.GetServiceCrypto(services.Booking)
-	if !exists {
-		log.Fatal("Booking service crypto not found in vault setup")
-	}
-	if testCrypto == nil {
-		log.Fatal("Booking crypto service is nil")
-	}
-	log.Printf("✓ Booking service crypto initialized with per-service encryption key")
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	testCrypto = cryptoSetup.Crypto
 
 	// Postgres container setup
 	pgContainer, err = tu.SetupPostgres(ctx, nil)

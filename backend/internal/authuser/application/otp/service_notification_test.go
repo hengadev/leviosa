@@ -39,7 +39,7 @@ func (m *mockNotifier) SendOTPEmail(_ context.Context, email, otp string) error 
 var _ ports.NotificationService = (*mockNotifier)(nil)
 
 // testCrypto is a lightweight encx.CryptoService implementation for unit tests.
-// It uses AES-GCM for encryption and SHA-256 for hashing — no Vault dependency.
+// It uses AES-GCM for encryption and SHA-256 for hashing — no key management service.
 type testCrypto struct {
 	key []byte // 32-byte AES key
 }

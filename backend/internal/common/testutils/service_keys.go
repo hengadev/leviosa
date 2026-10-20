@@ -5,184 +5,123 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"time"
+	"sync"
 
-	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/middleware/auth"
 )
 
-// ServiceKeyManager provides utilities for managing service API keys in a test Vault.
-// It is test-only: the app has no service key store since Vault was removed (ADR-0015).
-type ServiceKeyManager struct {
-	vaultClient *api.Client
-	crypto      encx.CryptoService
+// ServiceKeyStore is an in-memory service key store for tests of the auth middleware's
+// RequireServiceAuth: it generates service API keys and serves their hashes through
+// auth.SecretReader. The app itself runs without a service key store (ADR-0015), so
+// service-to-service endpoints only accept requests in tests.
+type ServiceKeyStore struct {
+	crypto encx.CryptoService
+
+	mu     sync.RWMutex
+	hashes map[string]string // services.ServiceAPIKeyPath(name) -> key hash
 }
 
-// NewServiceKeyManager creates a new service key manager
-func NewServiceKeyManager(vaultClient *api.Client, crypto encx.CryptoService) *ServiceKeyManager {
-	return &ServiceKeyManager{
-		vaultClient: vaultClient,
-		crypto:      crypto,
-	}
+var _ auth.SecretReader = (*ServiceKeyStore)(nil)
+
+// NewServiceKeyStore returns an empty store that hashes keys with crypto, as the
+// middleware does.
+func NewServiceKeyStore(crypto encx.CryptoService) *ServiceKeyStore {
+	return &ServiceKeyStore{crypto: crypto, hashes: make(map[string]string)}
 }
 
-// GenerateServiceKey generates a cryptographically secure API key
-func (skm *ServiceKeyManager) GenerateServiceKey() (string, error) {
-	// Generate 32 bytes of random data (256 bits)
+// GenerateServiceKey generates a cryptographically secure API key.
+func (s *ServiceKeyStore) GenerateServiceKey() (string, error) {
 	keyBytes := make([]byte, 32)
-	_, err := rand.Read(keyBytes)
-	if err != nil {
+	if _, err := rand.Read(keyBytes); err != nil {
 		return "", fmt.Errorf("failed to generate random key: %w", err)
 	}
-
-	// Encode as base64 for safe transmission
-	key := base64.URLEncoding.EncodeToString(keyBytes)
-	return key, nil
+	return base64.URLEncoding.EncodeToString(keyBytes), nil
 }
 
-// StoreServiceKey stores a service API key in Vault with proper hashing
-func (skm *ServiceKeyManager) StoreServiceKey(ctx context.Context, serviceName, apiKey string) error {
+// StoreServiceKey stores the hash of apiKey as serviceName's key.
+func (s *ServiceKeyStore) StoreServiceKey(ctx context.Context, serviceName, apiKey string) error {
 	if !services.IsValidService(serviceName) {
 		return fmt.Errorf("invalid service name: %s", serviceName)
 	}
-
-	// Hash the API key for storage
-	apiKeyBytes, err := encx.SerializeValue(apiKey)
+	keyHash, err := s.hash(ctx, apiKey)
 	if err != nil {
-		return fmt.Errorf("failed to serialize API key for hashing: %w", err)
-	}
-	keyHash := skm.crypto.HashBasic(ctx, apiKeyBytes)
-
-	// Prepare Vault data structure
-	vaultData := map[string]interface{}{
-		"data": map[string]interface{}{
-			"key_hash":     keyHash,
-			"service_name": serviceName,
-			"created_at":   fmt.Sprintf("%d", time.Now().Unix()),
-		},
+		return err
 	}
 
-	// Store in Vault at the correct path
-	vaultPath := services.ServiceAPIKeyPath(serviceName)
-	_, err = skm.vaultClient.Logical().Write(vaultPath, vaultData)
-	if err != nil {
-		return fmt.Errorf("failed to store service key in Vault at %s: %w", vaultPath, err)
-	}
-
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.hashes[services.ServiceAPIKeyPath(serviceName)] = keyHash
 	return nil
 }
 
-// GenerateAndStoreServiceKey generates a new API key and stores it in Vault
-func (skm *ServiceKeyManager) GenerateAndStoreServiceKey(ctx context.Context, serviceName string) (string, error) {
-	// Generate new API key
-	apiKey, err := skm.GenerateServiceKey()
+// GenerateAndStoreServiceKey generates a new API key for serviceName, stores its hash and
+// returns the key.
+func (s *ServiceKeyStore) GenerateAndStoreServiceKey(ctx context.Context, serviceName string) (string, error) {
+	apiKey, err := s.GenerateServiceKey()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate service key for %s: %w", serviceName, err)
 	}
-
-	// Store in Vault
-	err = skm.StoreServiceKey(ctx, serviceName, apiKey)
-	if err != nil {
+	if err := s.StoreServiceKey(ctx, serviceName, apiKey); err != nil {
 		return "", fmt.Errorf("failed to store service key for %s: %w", serviceName, err)
 	}
-
 	return apiKey, nil
 }
 
-// GenerateAllServiceKeys generates and stores API keys for all defined services
-func (skm *ServiceKeyManager) GenerateAllServiceKeys(ctx context.Context) (map[string]string, error) {
+// GenerateAllServiceKeys generates and stores a key for every service and returns them
+// by service name.
+func (s *ServiceKeyStore) GenerateAllServiceKeys(ctx context.Context) (map[string]string, error) {
 	serviceKeys := make(map[string]string)
-
 	for _, serviceName := range services.AllServices() {
-		apiKey, err := skm.GenerateAndStoreServiceKey(ctx, serviceName)
+		apiKey, err := s.GenerateAndStoreServiceKey(ctx, serviceName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to generate key for service %s: %w", serviceName, err)
+			return nil, err
 		}
 		serviceKeys[serviceName] = apiKey
 	}
-
 	return serviceKeys, nil
 }
 
-// ValidateServiceKey validates a service key against Vault storage (for testing/verification)
-func (skm *ServiceKeyManager) ValidateServiceKey(ctx context.Context, serviceName, providedKey string) (bool, error) {
+// ValidateServiceKey reports whether providedKey is serviceName's stored key.
+func (s *ServiceKeyStore) ValidateServiceKey(ctx context.Context, serviceName, providedKey string) (bool, error) {
 	if !services.IsValidService(serviceName) {
 		return false, fmt.Errorf("invalid service name: %s", serviceName)
 	}
 
-	// Read from Vault
-	vaultPath := services.ServiceAPIKeyPath(serviceName)
-	secret, err := skm.vaultClient.Logical().Read(vaultPath)
-	if err != nil {
-		return false, fmt.Errorf("failed to read service key from Vault: %w", err)
-	}
-
-	if secret == nil || secret.Data == nil {
-		return false, fmt.Errorf("service key not found in Vault for service: %s", serviceName)
-	}
-
-	// Extract stored key hash
-	data, ok := secret.Data["data"].(map[string]interface{})
+	s.mu.RLock()
+	storedHash, ok := s.hashes[services.ServiceAPIKeyPath(serviceName)]
+	s.mu.RUnlock()
 	if !ok {
-		return false, fmt.Errorf("invalid Vault response format")
+		return false, fmt.Errorf("no service key stored for service: %s", serviceName)
 	}
 
-	storedKeyHash, ok := data["key_hash"].(string)
-	if !ok || storedKeyHash == "" {
-		return false, fmt.Errorf("missing or invalid key_hash in Vault")
-	}
-
-	// Compare hashes
-	providedKeyBytes, err := encx.SerializeValue(providedKey)
+	providedHash, err := s.hash(ctx, providedKey)
 	if err != nil {
-		return false, fmt.Errorf("failed to serialize provided key for hashing: %w", err)
+		return false, err
 	}
-	providedKeyHash := skm.crypto.HashBasic(ctx, providedKeyBytes)
-	return storedKeyHash == providedKeyHash, nil
+	return storedHash == providedHash, nil
 }
 
-// DeleteServiceKey removes a service API key from Vault
-func (skm *ServiceKeyManager) DeleteServiceKey(serviceName string) error {
-	if !services.IsValidService(serviceName) {
-		return fmt.Errorf("invalid service name: %s", serviceName)
+// Read implements auth.SecretReader: the key hash stored at path, in the layout the
+// middleware reads (Data["data"]["key_hash"]), or nil when nothing is stored there.
+func (s *ServiceKeyStore) Read(_ context.Context, path string) (*auth.SecretData, error) {
+	s.mu.RLock()
+	keyHash, ok := s.hashes[path]
+	s.mu.RUnlock()
+	if !ok {
+		return nil, nil
 	}
-
-	vaultPath := services.ServiceAPIKeyPath(serviceName)
-	_, err := skm.vaultClient.Logical().Delete(vaultPath)
-	if err != nil {
-		return fmt.Errorf("failed to delete service key from Vault at %s: %w", vaultPath, err)
-	}
-
-	return nil
+	return &auth.SecretData{Data: map[string]interface{}{
+		"data": map[string]interface{}{"key_hash": keyHash},
+	}}, nil
 }
 
-// ListServiceKeys returns a list of services that have API keys stored in Vault
-func (skm *ServiceKeyManager) ListServiceKeys() ([]string, error) {
-	// List all service API key paths
-	listPath := "secret/metadata/services"
-	secret, err := skm.vaultClient.Logical().List(listPath)
+func (s *ServiceKeyStore) hash(ctx context.Context, apiKey string) (string, error) {
+	keyBytes, err := encx.SerializeValue(apiKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list service keys: %w", err)
+		return "", fmt.Errorf("failed to serialize API key for hashing: %w", err)
 	}
-
-	if secret == nil || secret.Data == nil {
-		return []string{}, nil
-	}
-
-	// Extract service names from the keys
-	keys, ok := secret.Data["keys"].([]interface{})
-	if !ok {
-		return []string{}, nil
-	}
-
-	serviceNames := make([]string, 0, len(keys))
-	for _, key := range keys {
-		if serviceName, ok := key.(string); ok {
-			serviceNames = append(serviceNames, serviceName)
-		}
-	}
-
-	return serviceNames, nil
+	return s.crypto.HashBasic(ctx, keyBytes), nil
 }

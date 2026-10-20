@@ -30,7 +30,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 	t.Run("Service-to-Service Communication", func(t *testing.T) {
 		t.Run("catalog service fetching company settings", func(t *testing.T) {
 			// Create service client for catalog service
-			catalogAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey, exists := serviceKeys[services.Catalog]
 			require.True(t, exists, "Catalog service API key must exist")
 
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
@@ -66,7 +66,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 
 		t.Run("notification service fetching email settings", func(t *testing.T) {
 			// Create service client for notification service
-			notificationAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Notification)
+			notificationAPIKey, exists := serviceKeys[services.Notification]
 			require.True(t, exists, "Notification service API key must exist")
 
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
@@ -91,7 +91,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 
 		t.Run("authuser service fetching OTP settings", func(t *testing.T) {
 			// Create service client for authuser service
-			authuserAPIKey, exists := vaultSetup.GetServiceAPIKey(services.AuthUser)
+			authuserAPIKey, exists := serviceKeys[services.AuthUser]
 			require.True(t, exists, "AuthUser service API key must exist")
 
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
@@ -116,7 +116,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 
 		t.Run("settings service self-access", func(t *testing.T) {
 			// Settings service should be able to access its own internal endpoints
-			settingsAPIKey, exists := vaultSetup.GetServiceAPIKey(services.Settings)
+			settingsAPIKey, exists := serviceKeys[services.Settings]
 			require.True(t, exists, "Settings service API key must exist")
 
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
@@ -139,7 +139,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 	t.Run("Cross-Service Security Validation", func(t *testing.T) {
 		t.Run("service cannot use another service's API key", func(t *testing.T) {
 			// Try to use notification service key with catalog service name
-			notificationAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Notification)
+			notificationAPIKey := serviceKeys[services.Notification]
 
 			client := &http.Client{Timeout: 10 * time.Second}
 			req := th.NewInternalGetCompanyNameRequest(t, ctx, testServerURL)
@@ -152,7 +152,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 		})
 
 		t.Run("invalid service name should be rejected", func(t *testing.T) {
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 
 			client := &http.Client{Timeout: 10 * time.Second}
 			req := th.NewInternalGetCompanyNameRequest(t, ctx, testServerURL)
@@ -187,7 +187,7 @@ func TestMultiServiceIntegration(t *testing.T) {
 		})
 
 		t.Run("should reject missing base URL", func(t *testing.T) {
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 
 			_, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
 				ServiceName: services.Catalog,
@@ -210,7 +210,7 @@ func TestServiceDiscoveryScenarios(t *testing.T) {
 	t.Run("Realistic Service Communication Patterns", func(t *testing.T) {
 		t.Run("catalog service workflow", func(t *testing.T) {
 			// Realistic scenario: Catalog service needs company info for product displays
-			catalogAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Catalog)
+			catalogAPIKey := serviceKeys[services.Catalog]
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
 				ServiceName: services.Catalog,
 				APIKey:      catalogAPIKey,
@@ -234,7 +234,7 @@ func TestServiceDiscoveryScenarios(t *testing.T) {
 
 		t.Run("notification service workflow", func(t *testing.T) {
 			// Realistic scenario: Notification service sending emails
-			notificationAPIKey, _ := vaultSetup.GetServiceAPIKey(services.Notification)
+			notificationAPIKey := serviceKeys[services.Notification]
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
 				ServiceName: services.Notification,
 				APIKey:      notificationAPIKey,
@@ -258,7 +258,7 @@ func TestServiceDiscoveryScenarios(t *testing.T) {
 
 		t.Run("authuser service workflow", func(t *testing.T) {
 			// Realistic scenario: Auth service configuring OTP
-			authuserAPIKey, _ := vaultSetup.GetServiceAPIKey(services.AuthUser)
+			authuserAPIKey := serviceKeys[services.AuthUser]
 			serviceClient, err := httpx.NewServiceClient(httpx.ServiceClientConfig{
 				ServiceName: services.AuthUser,
 				APIKey:      authuserAPIKey,

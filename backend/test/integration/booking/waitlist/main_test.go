@@ -22,8 +22,6 @@ import (
 	sharedPostgres "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/postgres/shared"
 	pricePayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/price"
 	productPayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/product"
-
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/envmode"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/logger"
@@ -103,22 +101,13 @@ func TestMain(m *testing.M) {
 		panic(fmt.Sprintf("running all migrations: %s\n", err))
 	}
 
-	// Vault testcontainer with per-service encryption
-	serviceNames := []string{services.Booking}
-	vaultSetup, err := tu.SetupServiceVault(ctx, nil, serviceNames)
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.Booking)
-	if !exists {
-		log.Fatal("Booking service crypto not found in vault setup")
-	}
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 
 	ctx = context.WithValue(ctx, ctxutil.LoggerKey, testLogger)
 
