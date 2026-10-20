@@ -28,7 +28,7 @@ Leviosa is booking and activity management software for service businesses — m
 - **Cache**: Redis.
 - **Message queue**: RabbitMQ.
 - **File storage**: AWS S3.
-- **Secrets**: HashiCorp Vault.
+- **Encryption keys**: AWS KMS for the encx KEK, with the pepper supplied as configuration (ADR-0015).
 - **Payments**: Stripe.
 - **Notifications**: Gmail SMTP, Twilio SMS.
 
@@ -38,7 +38,7 @@ Two ways to run the app locally, depending on what you need:
 
 ```bash
 make local-dev     # fast loop: frontend natively (pnpm), backend + deps in Docker (Postgres,
-                    # Redis, RabbitMQ, Vault, S3-via-LocalStack), live reload via air
+                    # Redis, RabbitMQ, S3 and KMS via LocalStack), live reload via air
 make local-start   # whole app in Docker (frontend, backend, + the same deps), built from
                     # the real production Dockerfiles — no hot reload, mirrors what Ansible
                     # actually deploys to staging/production (infra/ansible/roles/app)
@@ -46,6 +46,6 @@ make local-stop    # stop the local-start stack
 make local-restart # restart it
 ```
 
-`make local-start` copies `.env.example` to `.env` on first run, and `make local-dev` copies `backend/example.env` to `backend/development.env` — both have working local defaults, you only need to fill in real Stripe/Twilio/SMTP credentials if you want to exercise those integrations. Both stacks are intentionally ephemeral: stopping either clears its Postgres, Vault dev-mode secrets, and LocalStack S3 bucket together, so a restart never leaves data encrypted under a Vault key that no longer exists. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data to work with.
+`make local-start` copies `.env.example` to `.env` on first run, and `make local-dev` copies `backend/example.env` to `backend/development.env` — both have working local defaults, you only need to fill in real Stripe/Twilio/SMTP credentials if you want to exercise those integrations. Both stacks are intentionally ephemeral: stopping either clears its Postgres and LocalStack (S3 bucket and the KMS key holding the encryption KEK) together, so a restart never leaves data encrypted under a KMS key that no longer exists. Re-seed with `go run ./cmd/seed` (from `/backend`) if you need data to work with.
 
 See `make help` at the repo root for the full list of commands (local dev, Docker image builds, VPS deploy, Terraform, Ansible). Frontend- and backend-specific commands are documented in `frontend/CLAUDE.md` and `backend/CLAUDE.md`.
