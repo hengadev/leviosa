@@ -2,9 +2,13 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/main ./cmd/app"
+# serve never migrates on boot (it refuses a schema older than the embedded migrations),
+# so every rebuild applies pending migrations before air restarts the server: the dev
+# equivalent of a deploy's migrate step. Watching .sql files means saving a new
+# migration applies it right away.
+cmd = "go build -o ./tmp/main ./cmd/app && ./tmp/main migrate"
 bin = "tmp/main"
-include_ext = ["go"]
+include_ext = ["go", "sql"]
 exclude_dir = ["tmp", "vendor", "test"]
 delay = 200
 
