@@ -1,0 +1,297 @@
+---
+# infisical_agent role tasks (issue 027)
+#
+# Installs the Infisical CLI (which ships the Agent), the leviosa-vps
+# credential, the env templates from infra/infisical (issue 024, substituted
+# on the control node by render-template.sh), the Agent config, and a systemd
+# unit that keeps the Agent running and tightens file modes.
+
+# ---------------------------------------------------------------------------
+# Preconditions
+# ---------------------------------------------------------------------------
+
+# Tagged `credential`: `--tags credential` re-places the credential files
+# alone (the restart then needs an untagged run; see the role README).
+- name: Require the leviosa-vps credential at run time
+  ansible.builtin.assert:
+    that:
+      - infisical_agent_client_id | length > 0
+      - infisical_agent_client_secret | length > 0
+    fail_msg: >-
+      The leviosa-vps machine-identity credential is missing. It is read
+      from the operator at run time only — never from a file in this repo
+      (ADR-0017). Export INFISICAL_VPS_CLIENT_ID and
+      INFISICAL_VPS_CLIENT_SECRET, or run `make infisical-agent`
+      (playbooks/infisical-agent.yml) and answer the prompts.
+    quiet: true
+  tags: ['credential']
+
+- name: Enforce the Agent's minimum polling interval (60s)
+  ansible.builtin.assert:
+    that:
+      - infisical_agent_polling_interval is match('^([6-9][0-9]|[1-9][0-9]{2,})s$|^[1-9][0-9]*[mhd]$')
+    fail_msg: >-
+      infisical_agent_polling_interval must be at least 60s: shorter values
+      make the Agent shut down (it exits 0 doing so, which is why the unit
+      uses Restart=always).
+    quiet: true
+
+# Tagged `templates`: the render pipeline below runs alone under
+# `--tags templates` (used by tests/run-tests.sh).
+- name: Compute which issue 024 templates are missing on the control node
+  ansible.builtin.set_fact:
+    infisical_agent_missing_templates: >-
+      {{ infisical_agent_templates | map(attribute='name') | unique | list
+         | difference(lookup('ansible.builtin.fileglob',
+                             infisical_agent_templates_src_dir ~ '/*.env.tmpl',
+                             wantlist=true)
+                      | map('regex_replace', '^.*/(.*)\.env\.tmpl$', '\1') | list) }}
+  tags: ['templates']
+
+- name: Fail with the missing template names
+  ansible.builtin.assert:
+    that:
+      - infisical_agent_missing_templates | length == 0
+    fail_msg: >-
+      Missing Agent env templates under {{ infisical_agent_templates_src_dir }}:
+      {{ infisical_agent_missing_templates | join(', ') }}.
+      They come from issue 024 (infra/infisical/templates/).
+    quiet: true
+  tags: ['templates']
+
+# ---------------------------------------------------------------------------
+# Install the Infisical CLI (ships the Agent binary)
+# ---------------------------------------------------------------------------
+
+- name: Ensure gpg is present (needed to dearmor the apt key)
+  ansible.builtin.apt:
+    name: gpg
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Add the Infisical CLI apt repository key
+  ansible.builtin.apt_key:
+    url: "{{ infisical_agent_apt_baseurl }}/infisical.gpg"
+    keyring: "{{ infisical_agent_apt_keyring }}"
+    state: present
+
+- name: Add the Infisical CLI apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by={{ infisical_agent_apt_keyring }}] {{ infisical_agent_apt_baseurl }}/deb stable main"
+    filename: infisical-cli
+    state: present
+
+# The pin wins in both directions: unattended-upgrades may have moved the
+# package (allow_downgrade), and a changed pin replaces a held package
+# (allow_change_held_packages).
+- name: Install the pinned Infisical CLI
+  ansible.builtin.apt:
+    name: "infisical={{ infisical_agent_version }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    allow_downgrade: true
+    allow_change_held_packages: true
+  notify: Restart infisical agent
+
+# Held, so unattended-upgrades never changes the Agent's version behind the
+# pin; bumping infisical_agent_version is the only way it moves.
+- name: Hold the Infisical CLI at the pinned version
+  ansible.builtin.dpkg_selections:
+    name: infisical
+    selection: hold
+
+# ---------------------------------------------------------------------------
+# Filesystem layout
+# ---------------------------------------------------------------------------
+
+- name: Create the Agent config and template directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ infisical_agent_config_dir }}"
+    - "{{ infisical_agent_templates_dir }}"
+  tags: ['templates']
+
+- name: Create the root-only credential directory
+  ansible.builtin.file:
+    path: "{{ infisical_agent_credentials_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  tags: ['credential']
+
+# roles/app creates these too (site.yml runs it first); the standalone
+# playbook (playbooks/infisical-agent.yml) does not, so the role makes sure
+# the render destinations exist before the Agent starts.
+- name: Create the per-stack env directories (the Agent renders into them)
+  ansible.builtin.file:
+    path: "{{ item.value }}/{{ infisical_agent_env_dir_name }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  loop: "{{ infisical_agent_stack_roots | dict2items }}"
+  loop_control:
+    label: "{{ item.key }} -> {{ item.value }}/{{ infisical_agent_env_dir_name }}"
+
+# ---------------------------------------------------------------------------
+# Credential (root-only, 0400, never logged)
+# ---------------------------------------------------------------------------
+
+- name: Place the leviosa-vps client ID
+  ansible.builtin.copy:
+    content: "{{ infisical_agent_client_id }}"
+    dest: "{{ infisical_agent_credentials_dir }}/client-id"
+    owner: root
+    group: root
+    mode: '0400'
+  no_log: true
+  notify: Restart infisical agent
+  tags: ['credential']
+
+- name: Place the leviosa-vps client secret
+  ansible.builtin.copy:
+    content: "{{ infisical_agent_client_secret }}"
+    dest: "{{ infisical_agent_credentials_dir }}/client-secret"
+    owner: root
+    group: root
+    mode: '0400'
+  no_log: true
+  notify: Restart infisical agent
+  tags: ['credential']
+
+# ---------------------------------------------------------------------------
+# Agent env templates — rendered on the control node by render-template.sh
+# (issue 024), then copied. NEVER the Ansible template module: these files
+# contain Go {{ }} braces. The script substitutes __LEVIOSA_ENV__ and
+# __LEVIOSA_PROJECT_ID__ exactly as `make env` does, and reads the project
+# ID from infra/terraform/terraform.tfvars; it fails with a clear message
+# while that is still the placeholder.
+# ---------------------------------------------------------------------------
+
+- name: Render the env templates on the control node (render-template.sh)
+  ansible.builtin.command:
+    argv:
+      - "{{ infisical_agent_render_script }}"
+      - "{{ infisical_agent_templates_src_dir }}/{{ item.name }}.env.tmpl"
+      - "{{ item.env }}"
+  delegate_to: localhost
+  become: false
+  register: infisical_agent_rendered
+  changed_when: false
+  check_mode: false
+  loop: "{{ infisical_agent_templates }}"
+  loop_control:
+    label: "{{ item.env }}/{{ item.name }}"
+  tags: ['templates']
+
+- name: Install the rendered templates for the Agent
+  ansible.builtin.copy:
+    # The trailing '\n' compensates for the command result's stripped
+    # trailing newline, so the installed file is byte-identical to
+    # render-template.sh's output.
+    content: "{{ item.stdout }}\n"
+    dest: "{{ infisical_agent_templates_dir }}/{{ item.item.env }}-{{ item.item.name }}.env.tmpl"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ infisical_agent_rendered.results }}"
+  loop_control:
+    label: "{{ item.item.env }}/{{ item.item.name }}"
+  notify: Restart infisical agent
+  tags: ['templates']
+
+# ---------------------------------------------------------------------------
+# Agent config, post-start helper, systemd unit
+# ---------------------------------------------------------------------------
+
+- name: Render the Agent config
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: "{{ infisical_agent_config_dir }}/config.yaml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart infisical agent
+
+- name: Install the post-start helper
+  ansible.builtin.template:
+    src: post-start.sh.j2
+    dest: "{{ infisical_agent_config_dir }}/post-start.sh"
+    owner: root
+    group: root
+    mode: '0750'
+  notify: Restart infisical agent
+
+- name: Install the infisical-agent systemd unit
+  ansible.builtin.template:
+    src: infisical-agent.service.j2
+    dest: "/etc/systemd/system/{{ infisical_agent_unit_name }}.service"
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - Reload systemd
+    - Restart infisical agent
+
+- name: Enable and start the Infisical Agent
+  ansible.builtin.systemd:
+    name: "{{ infisical_agent_unit_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: infisical_agent_manage_service | bool
+
+# Apply a changed credential, config or version now, not at the end of the
+# play: the role after this one in site.yml (issue 026's shared_services)
+# needs the env files the restarted Agent renders.
+- name: Restart the Agent now if anything changed
+  ansible.builtin.meta: flush_handlers
+
+# ---------------------------------------------------------------------------
+# Rendered files are created 0644 by the Agent. UMask=0077 in the unit makes
+# new files 0600; this sweep also tightens anything rendered before that
+# (e.g. by a manual run of the binary).
+# ---------------------------------------------------------------------------
+
+- name: Find existing rendered env files
+  ansible.builtin.find:
+    paths: "{{ infisical_agent_stack_roots.values() | map('regex_replace', '$', '/' ~ infisical_agent_env_dir_name) | list }}"
+    file_type: file
+    hidden: true
+  register: infisical_agent_rendered_files
+
+- name: Enforce root-owned 0600 on rendered env files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: root
+    group: root
+    mode: '0600'
+  loop: "{{ infisical_agent_rendered_files.files }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Report the Agent service state
+  when: not ansible_check_mode
+  block:
+    - name: Read the Agent service state
+      ansible.builtin.systemd:
+        name: "{{ infisical_agent_unit_name }}"
+      register: infisical_agent_service
+
+    - name: Show the Agent service state
+      ansible.builtin.debug:
+        msg: >-
+          {{ infisical_agent_unit_name }}:
+          {{ infisical_agent_service.status.ActiveState }}
+          ({{ infisical_agent_service.status.SubState }}).
+          Rendered files appear under
+          {{ infisical_agent_stack_roots.values() | map('regex_replace', '$', '/' ~ infisical_agent_env_dir_name) | join(', ') }}
+          once the Agent authenticates.
