@@ -85,7 +85,9 @@ snapshot)
 
 apply)
 	if [ ! -f "$SNAPSHOT_FILE" ]; then
-		log "no pre-start snapshot; assuming changed (recreate commands are no-ops when nothing changed)"
+		# ExecStartPre failed to write one: assume everything changed, so a
+		# value that moved while it could not be observed is still applied.
+		log "no pre-start snapshot; assuming changed (every consumer is recreated)"
 		before="missing"
 	else
 		stamp=$(sed -n '1p' "$SNAPSHOT_FILE")

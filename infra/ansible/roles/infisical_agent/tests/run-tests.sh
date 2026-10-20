@@ -374,15 +374,16 @@ cat > "$work/leak.yml" <<YAML
   gather_facts: false
   become: false
   vars:
-    infisical_agent_client_id: "$fake_id"
-    infisical_agent_client_secret: "$fake_secret"
+    # No credential here: the fake values travel the real path — the role
+    # defaults' lookup('env', ...) below, exported for this run only.
     infisical_agent_config_dir: $work/etc-infisical-agent
     infisical_agent_manage_service: false
   roles:
     - role: infisical_agent
 YAML
 
-if run_play "$work/leak.yml" --check --diff -vv --tags credential >"$work/leak.log" 2>&1; then
+if INFISICAL_VPS_CLIENT_ID="$fake_id" INFISICAL_VPS_CLIENT_SECRET="$fake_secret" \
+	run_play "$work/leak.yml" --check --diff -vv --tags credential >"$work/leak.log" 2>&1; then
 	if grep -qF "$fake_secret" "$work/leak.log"; then
 		fail "credential: the fake secret never appears in -vv --diff output"
 	else

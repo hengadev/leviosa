@@ -11,7 +11,8 @@
 # ---------------------------------------------------------------------------
 
 # Tagged `credential`: `--tags credential` re-places the credential files
-# alone (the restart then needs an untagged run; see the role README).
+# alone; the role's internal handler flush (below) is not tag-filtered, so
+# the Agent still restarts with them. See the role README.
 - name: Require the leviosa-vps credential at run time
   ansible.builtin.assert:
     that:
