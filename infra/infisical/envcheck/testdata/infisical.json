@@ -1,0 +1,212 @@
+{
+  "_comment": "FAKE Infisical content for the template fixture test: environment -> folder -> key -> value. Nothing here is a real credential. The folder and key names are the canonical layout the templates expect (see ../../README.md, 'Folders and keys'); some values deliberately contain $, #, spaces, quotes and backslashes to prove the rendered files keep them intact.",
+  "prod": {
+    "/app": {
+      "FRONTEND_ORIGIN": "https://fixture.leviosa.test",
+      "SESSION_SECRET": "fixture-prod-session-secret-not-real",
+      "BOOKING_TOKEN_SECRET": "fixture-prod-booking-token-secret-not-real",
+      "SESSION_COOKIE_NAME": "leviosa_session",
+      "CLIENT_IP_HEADER": "x-client-ip",
+      "COMING_SOON": "true"
+    },
+    "/admin": {
+      "ADMIN_EMAIL": "admin@fixture.leviosa.test",
+      "ADMIN_PASSWORD": "Fixture$Admin #1234",
+      "ADMIN_FIRST_NAME": "Fixture",
+      "ADMIN_LAST_NAME": "Admin",
+      "ADMIN_TELEPHONE": "+33600000000",
+      "ADMIN_POSTAL_CODE": "75001",
+      "ADMIN_CITY": "Paris",
+      "ADMIN_ADDRESS1": "1 Rue du Fixture",
+      "ADMIN_ADDRESS2": ""
+    },
+    "/db": {
+      "POSTGRES_USER": "leviosa",
+      "POSTGRES_PASSWORD": "FixtureProdPg1",
+      "POSTGRES_DB": "leviosa",
+      "POSTGRES_HOST": "postgres",
+      "POSTGRES_PORT": "5432"
+    },
+    "/redis": {
+      "REDIS_PASSWORD": "FixtureProdRedis1",
+      "REDIS_HOST": "redis",
+      "REDIS_PORT": "6379"
+    },
+    "/rabbitmq": {
+      "RABBITMQ_USER": "leviosa",
+      "RABBITMQ_PASSWORD": "FixtureProdMq1",
+      "RABBITMQ_VHOST": "leviosa",
+      "RABBITMQ_HOST": "rabbitmq",
+      "RABBITMQ_PORT": "5672"
+    },
+    "/encx": {
+      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXByb2QtcGVwcGVyLTMyYiE="
+    },
+    "/aws": {
+      "AWS_ACCESS_KEY_ID": "AKIAFIXTUREPROD00001",
+      "AWS_SECRET_ACCESS_KEY": "fixture/prod+aws$secret",
+      "AWS_REGION": "eu-central-1",
+      "S3_BUCKET_NAME": "leviosa-fixture-prod-media",
+      "ENCX_KMS_KEY_ARN": "arn:aws:kms:eu-central-1:000000000000:key/00000000-0000-4000-8000-000000000001",
+      "ENCX_KMS_KEY_ALIAS": "alias/leviosa-prod"
+    },
+    "/stripe": {
+      "STRIPE_SECRET_KEY": "sk_live_fixture_not_real",
+      "STRIPE_WEBHOOK_SECRET": "whsec_fixture_prod_not_real",
+      "STRIPE_CONNECT_WEBHOOK_SECRET": "whsec_fixture_prod_connect_not_real"
+    },
+    "/smtp": {
+      "SMTP_HOST": "smtp.fixture.test",
+      "SMTP_PORT": "587",
+      "SMTP_USERNAME": "noreply@fixture.leviosa.test",
+      "SMTP_PASSWORD": "fixture\"smtp\\pass",
+      "SMTP_FROM": "Leviosa <noreply@fixture.leviosa.test>"
+    },
+    "/twilio": {
+      "TWILIO_ACCOUNT_SID": "ACfixtureprod0000000000000000000",
+      "TWILIO_API_KEY_SID": "SKfixtureprod0000000000000000000",
+      "TWILIO_API_KEY_SECRET": "fixture-prod-twilio-secret",
+      "TWILIO_REGION": "ie1",
+      "TWILIO_EDGE": "dublin",
+      "TWILIO_SENDER": "Leviosa"
+    },
+    "/caddy": {
+      "CLOUDFLARE_API_TOKEN": "fixture-cloudflare-token-not-real"
+    },
+    "/backup": {
+      "BACKUP_AWS_ACCESS_KEY_ID": "AKIAFIXTUREBACKUP001",
+      "BACKUP_AWS_SECRET_ACCESS_KEY": "fixture-backup-secret-not-real",
+      "BACKUP_S3_BUCKET": "leviosa-fixture-backups",
+      "BACKUP_AWS_REGION": "eu-central-1"
+    },
+    "/host": {
+      "NOTIFICATION_EMAIL": "ops@fixture.leviosa.test"
+    }
+  },
+  "staging": {
+    "/app": {
+      "FRONTEND_ORIGIN": "https://staging.fixture.leviosa.test",
+      "SESSION_SECRET": "fixture-staging-session-secret-not-real",
+      "BOOKING_TOKEN_SECRET": "fixture-staging-booking-token-secret-not-real",
+      "SESSION_COOKIE_NAME": "leviosa_session",
+      "CLIENT_IP_HEADER": "x-client-ip",
+      "COMING_SOON": "false",
+      "PUBLIC_PLAUSIBLE_DOMAIN": "staging.fixture.leviosa.test"
+    },
+    "/admin": {
+      "ADMIN_EMAIL": "admin@staging.fixture.leviosa.test",
+      "ADMIN_PASSWORD": "FixtureStaging1234",
+      "ADMIN_FIRST_NAME": "Staging",
+      "ADMIN_LAST_NAME": "Admin",
+      "ADMIN_TELEPHONE": "+33600000001",
+      "ADMIN_POSTAL_CODE": "75002",
+      "ADMIN_CITY": "Paris",
+      "ADMIN_ADDRESS1": "2 Rue du Fixture",
+      "ADMIN_ADDRESS2": "Bat. B"
+    },
+    "/db": {
+      "POSTGRES_USER": "leviosa_staging",
+      "POSTGRES_PASSWORD": "FixtureStagingPg2",
+      "POSTGRES_DB": "leviosa_staging",
+      "POSTGRES_HOST": "postgres",
+      "POSTGRES_PORT": "5432"
+    },
+    "/redis": {
+      "REDIS_PASSWORD": "FixtureStagingRedis2",
+      "REDIS_HOST": "staging_redis",
+      "REDIS_PORT": "6379"
+    },
+    "/rabbitmq": {
+      "RABBITMQ_USER": "leviosa_staging",
+      "RABBITMQ_PASSWORD": "FixtureStagingMq2",
+      "RABBITMQ_VHOST": "leviosa_staging",
+      "RABBITMQ_HOST": "rabbitmq",
+      "RABBITMQ_PORT": "5672"
+    },
+    "/encx": {
+      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXN0Zy1wZXBwZXItMzJieSE="
+    },
+    "/aws": {
+      "AWS_ACCESS_KEY_ID": "AKIAFIXTURESTAGING01",
+      "AWS_SECRET_ACCESS_KEY": "fixture/staging+aws-secret",
+      "AWS_REGION": "eu-central-1",
+      "S3_BUCKET_NAME": "leviosa-fixture-staging-media",
+      "ENCX_KMS_KEY_ARN": "arn:aws:kms:eu-central-1:000000000000:key/00000000-0000-4000-8000-000000000002",
+      "ENCX_KMS_KEY_ALIAS": "alias/leviosa-staging"
+    },
+    "/stripe": {
+      "STRIPE_SECRET_KEY": "sk_test_fixture_not_real",
+      "STRIPE_WEBHOOK_SECRET": "whsec_fixture_staging_not_real",
+      "STRIPE_CONNECT_WEBHOOK_SECRET": "whsec_fixture_staging_connect_not_real"
+    },
+    "/smtp": {
+      "SMTP_HOST": "smtp.fixture.test",
+      "SMTP_PORT": "587",
+      "SMTP_USERNAME": "noreply-staging@fixture.leviosa.test",
+      "SMTP_PASSWORD": "fixture-staging-smtp-pass"
+    },
+    "/twilio": {
+      "TWILIO_ACCOUNT_SID": "ACfixturestaging0000000000000000",
+      "TWILIO_API_KEY_SID": "SKfixturestaging0000000000000000",
+      "TWILIO_API_KEY_SECRET": "fixture-staging-twilio-secret",
+      "TWILIO_REGION": "ie1",
+      "TWILIO_EDGE": "dublin",
+      "TWILIO_SENDER": "Leviosa"
+    },
+    "/caddy": {
+      "STAGING_BASIC_AUTH_USER": "leviosa",
+      "STAGING_BASIC_AUTH_HASH": "$2a$14$FixtureSaltNotReal./xyFixtureHashNotRealForTests01234"
+    }
+  },
+  "dev": {
+    "/app": {
+      "FRONTEND_ORIGIN": "http://localhost:5173",
+      "SESSION_SECRET": "dev-session-secret-not-secret",
+      "BOOKING_TOKEN_SECRET": "dev-booking-token-secret-not-secret",
+      "SESSION_COOKIE_NAME": "leviosa_session",
+      "CLIENT_IP_HEADER": "x-client-ip",
+      "COMING_SOON": "false"
+    },
+    "/admin": {
+      "ADMIN_EMAIL": "admin@example.com",
+      "ADMIN_PASSWORD": "ChangeMe1234!",
+      "ADMIN_FIRST_NAME": "Admin",
+      "ADMIN_LAST_NAME": "User",
+      "ADMIN_TELEPHONE": "+33600000000",
+      "ADMIN_POSTAL_CODE": "75001",
+      "ADMIN_CITY": "Paris",
+      "ADMIN_ADDRESS1": "1 Rue Example",
+      "ADMIN_ADDRESS2": ""
+    },
+    "/db": {
+      "POSTGRES_USER": "user",
+      "POSTGRES_PASSWORD": "password",
+      "POSTGRES_DB": "leviosa_dev",
+      "POSTGRES_HOST": "localhost",
+      "POSTGRES_PORT": "5432"
+    },
+    "/redis": {
+      "REDIS_PASSWORD": "secret",
+      "REDIS_HOST": "localhost",
+      "REDIS_PORT": "6379"
+    },
+    "/rabbitmq": {
+      "RABBITMQ_USER": "guest",
+      "RABBITMQ_PASSWORD": "guest",
+      "RABBITMQ_VHOST": "/",
+      "RABBITMQ_HOST": "localhost",
+      "RABBITMQ_PORT": "5672"
+    },
+    "/encx": {
+      "ENCX_PEPPER": "bGV2aW9zYS1sb2NhbC1kZXYtcGVwcGVyLTMyYnl0ZXM="
+    },
+    "/aws": {
+      "AWS_ACCESS_KEY_ID": "test",
+      "AWS_SECRET_ACCESS_KEY": "test",
+      "AWS_REGION": "us-east-1",
+      "AWS_ENDPOINT_URL": "http://localhost:4566",
+      "S3_BUCKET_NAME": "leviosa",
+      "ENCX_KMS_KEY_ALIAS": "alias/leviosa-dev"
+    }
+  }
+}
