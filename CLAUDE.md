@@ -38,7 +38,6 @@ Run from `/backend` (see `make test-help` for the full list):
 ```
 ├── frontend/           # SvelteKit 5 application
 ├── backend/           # Go modular monolith
-├── config/            # Legacy Caddy configuration (moving to infra/compose/caddy/)
 └── infra/             # Terraform and Ansible deployment scripts
 ```
 

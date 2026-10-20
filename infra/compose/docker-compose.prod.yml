@@ -210,8 +210,10 @@ services:
     logging: *logging
 
   # Caddy: TLS (Cloudflare DNS challenge, token in env/caddy.env) and the
-  # only container publishing host ports, for both stacks. Its Caddyfile is
-  # installed into ./caddy/etc by Ansible; `deploy` never touches Caddy.
+  # only container publishing host ports, for both stacks: /webhooks/* to each
+  # stack's backend, everything else to its frontend, staging behind basic
+  # auth (env/caddy.env too). Its Caddyfile, caddy/Caddyfile next to this
+  # file, is installed into ./caddy/etc by Ansible; `deploy` never touches it.
   caddy:
     image: serfriz/caddy-cloudflare:2.11
     restart: unless-stopped

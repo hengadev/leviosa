@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Leviosa's Caddy configuration: the public entry point of both stacks
+# (ADR-0016; docs/prd/deployment-infisical-compose.md).
+#
+# A plain file: no templating. Ansible's caddy role installs it into
+# /opt/leviosa/caddy/etc/, which docker-compose.prod.yml mounts read-only at
+# /etc/caddy. Values that differ per environment come from Caddy's env file
+# (env/caddy.env, rendered by the Infisical Agent from prod/caddy and
+# staging/caddy):
+#
+#   CLOUDFLARE_API_TOKEN      DNS challenge token, read at runtime ({env.*})
+#   STAGING_BASIC_AUTH_USER   staging's basic auth user        } read when the
+#   STAGING_BASIC_AUTH_HASH   its bcrypt hash (caddy           } file loads
+#                             hash-password)                   } ({$VAR})
+#
+# The Agent recreates Caddy when caddy.env changes, so {$VAR} values never go
+# stale. Staging is never served without its basic auth: with neither staging
+# value set it answers 401 to everything (production keeps serving); with only
+# one of them, Caddy refuses to load this file. caddy.env must single-quote the
+# hash: Compose expands `$` in unquoted env-file values, which mangles bcrypt.
+#
+# Routing, per stack:
+#   /webhooks/*    that stack's backend: Stripe's payment (/webhooks/stripe)
+#                  and Connect (/webhooks/stripe/connect) webhooks
+#   anything else  that stack's frontend
+# No other backend path is reachable from outside: the frontend calls the
+# backend over the shared network.
+#
+# TLS: certificates through the Cloudflare DNS challenge; the DNS records stay
+# Cloudflare-proxied and Cloudflare's ranges are trusted proxies. The local
+# harness (infra/compose/test/run-harness.sh) runs this same file with
+# LEVIOSA_CADDY_TLS=internal, which swaps the DNS challenge for Caddy's
+# internal CA and changes nothing else. Production never sets it.
+# ─────────────────────────────────────────────────────────────────────────────
+{
+	servers {
+		# Cloudflare's published ranges (cloudflare.com/ips): the client IP
+		# and X-Forwarded-For are taken from requests coming through them.
+		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+	}
+}
+
+# ─── TLS: one of these per site, chosen by LEVIOSA_CADDY_TLS ─────────────────
+
+(tls_cloudflare) {
+	tls {
+		dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+	}
+}
+
+# Local harness only: certificates from Caddy's internal CA, no ACME.
+(tls_internal) {
+	tls internal
+}
+
+# ─── A stack's routing: import stack <backend> <frontend> ────────────────────
+
+(stack) {
+	request_body {
+		max_size 100M
+	}
+
+	# The retry window: while a container is being recreated (a deploy, or the
+	# Agent after a config change), requests wait for it to come back instead
+	# of failing with a 502.
+	handle /webhooks/* {
+		reverse_proxy {args[0]} {
+			lb_try_duration 30s
+			lb_try_interval 250ms
+		}
+	}
+
+	handle {
+		reverse_proxy {args[1]} {
+			lb_try_duration 30s
+			lb_try_interval 250ms
+		}
+	}
+}
+
+# ─── Production ──────────────────────────────────────────────────────────────
+
+leviosa.care, www.leviosa.care, admin.leviosa.care, staff.leviosa.care {
+	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
+	import stack backend:3500 frontend:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 100mb
+			roll_keep 5
+			roll_keep_for 720h
+		}
+		format json
+	}
+}
+
+# ─── Staging ─────────────────────────────────────────────────────────────────
+
+staging.leviosa.care, admin-staging.leviosa.care, staff-staging.leviosa.care {
+	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
+
+	# Basic auth on every path but /healthz (Promote reads staging's release
+	# from it) and /webhooks/* (Stripe cannot authenticate; the backend checks
+	# each webhook's signature). Staging runs real Twilio: an open OTP
+	# endpoint would be an SMS-pumping target.
+	@protected not path /healthz /webhooks/*
+	basic_auth @protected {
+		{$STAGING_BASIC_AUTH_USER} {$STAGING_BASIC_AUTH_HASH}
+	}
+
+	import stack staging_backend:3500 staging_frontend:3000
+
+	# Keep staging out of search results: X-Robots-Tag on every response.
+	# This line applies before the request is handled, so Caddy's own 401s
+	# carry it; the block below (deferred, because it removes a header) does
+	# not reach them, but sets it again so an upstream cannot replace it.
+	header X-Robots-Tag "noindex"
+	header {
+		X-Robots-Tag "noindex"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		X-XSS-Protection "1; mode=block"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	log {
+		output file /var/log/caddy/staging-access.log {
+			roll_size 100mb
+			roll_keep 5
+			roll_keep_for 720h
+		}
+		format json
+	}
+}

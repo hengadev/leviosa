@@ -115,7 +115,7 @@ env-check-dev env-check-staging env-check-prod: env-check-%:
 agent-templates-test:
 	cd infra/infisical/envcheck && go test -count=1 ./...
 
-# Local Docker harness for infra/compose (prod and staging compose files + deploy script):
+# Local Docker harness for infra/compose (prod and staging compose files, deploy script, Caddyfile):
 # builds both images with fake SHAs and drives the real deploy script; isolated
 # names, no fixed host ports, full teardown. See infra/compose/README.md.
 .PHONY: deploy-harness
