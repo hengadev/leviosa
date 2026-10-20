@@ -179,15 +179,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-leviosa_session}
-        CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-client-ip}
-        BACKEND_PORT: ${BACKEND_PORT:-3500}
-        COMING_SOON: ${COMING_SOON:-false}
+      # No per-environment build args: the image is environment-agnostic and
+      # reads everything below from its runtime environment.
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
       API_URL: http://backend:${BACKEND_PORT:-3500}
+      CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-client-ip}
       USE_MOCK_DATA: ${USE_MOCK_DATA:-false}
       COMING_SOON: ${COMING_SOON:-false}
     ports:

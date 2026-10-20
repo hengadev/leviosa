@@ -12,7 +12,13 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 COPY . .
 
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -v -o leviosa ./cmd/app
+# Commit SHA this image was built from, reported by /health so the deploy
+# script and the Promote workflow can verify what is actually serving. Pass it
+# with: docker build --build-arg COMMIT_SHA=<full-sha> ... Builds without the
+# argument (local, ad-hoc) keep the "dev" sentinel instead of reporting a
+# misleading version.
+ARG COMMIT_SHA=dev
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/Leviosa-care/leviosa/backend/internal/app.ReleaseSHA=${COMMIT_SHA}" -v -o leviosa ./cmd/app
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -v -o seed ./cmd/seed/main.go
 
 FROM alpine:latest
