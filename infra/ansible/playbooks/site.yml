@@ -89,7 +89,7 @@
     # roles/infisical_agent installs them.
     - name: Read the Infisical project ID from infra/terraform/terraform.tfvars
       ansible.builtin.set_fact:
-        infisical_project_id: "{{ lookup('ansible.builtin.file', infisical_tfvars_file) | regex_findall(infisical_tfvars_project_id_pattern) | first | last }}"
+        infisical_project_id: "{{ lookup('ansible.builtin.file', infisical_tfvars_file) | regex_findall(infisical_tfvars_project_id_pattern) | first }}"
       when: lookup('ansible.builtin.file', infisical_tfvars_file) is search(infisical_tfvars_project_id_pattern)
       tags: ['always']
 
