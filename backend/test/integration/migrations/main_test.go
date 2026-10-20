@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // database/sql driver
@@ -119,6 +120,20 @@ func openDB(t *testing.T, dsn string) *sql.DB {
 	}
 	t.Cleanup(func() { db.Close() })
 	return db
+}
+
+// simulateNewerSchema records a migration version above the newest embedded
+// one, as if a newer release had migrated the database, and returns it.
+func simulateNewerSchema(t *testing.T, db *sql.DB) int64 {
+	t.Helper()
+
+	newer := migrations.NewestVersion() + 1
+	if _, err := db.Exec(
+		"INSERT INTO goose_db_version (version_id, is_applied) VALUES ($1, true)", newer,
+	); err != nil {
+		t.Fatalf("simulate a newer schema version: %v", err)
+	}
+	return newer
 }
 
 // baseEnv is the minimal environment the binary needs: everything else keeps

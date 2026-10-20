@@ -106,12 +106,7 @@ func TestServeStartsAgainstNewerSchema(t *testing.T) {
 	if _, err := migrations.ApplyAll(ctx, db); err != nil {
 		t.Fatalf("apply embedded migrations: %v", err)
 	}
-	if _, err := db.ExecContext(ctx,
-		"INSERT INTO goose_db_version (version_id, is_applied) VALUES ($1, true)",
-		migrations.NewestVersion()+1,
-	); err != nil {
-		t.Fatalf("simulate a newer schema version: %v", err)
-	}
+	simulateNewerSchema(t, db)
 
 	proc := startServe(t, dsn, freePort(t))
 	proc.stop(t)
