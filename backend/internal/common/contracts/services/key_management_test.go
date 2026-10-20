@@ -7,7 +7,7 @@ import (
 )
 
 func TestServiceKeyValidation(t *testing.T) {
-	// Test service name validation logic without requiring Vault
+	// Test service name validation logic
 	tests := []struct {
 		name        string
 		serviceName string
@@ -26,26 +26,6 @@ func TestServiceKeyValidation(t *testing.T) {
 			// Test the IsValidService function directly
 			result := IsValidService(tt.serviceName)
 			assert.Equal(t, tt.isValid, result)
-		})
-	}
-}
-
-func TestKeyManagementVaultPaths(t *testing.T) {
-	// Test that our key management uses the correct Vault paths
-	tests := []struct {
-		service      string
-		expectedPath string
-	}{
-		{AuthUser, "secret/data/services/authuser/api-key"},
-		{Catalog, "secret/data/services/catalog/api-key"},
-		{Settings, "secret/data/services/settings/api-key"},
-		{Notification, "secret/data/services/notification/api-key"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.service, func(t *testing.T) {
-			path := ServiceAPIKeyPath(tt.service)
-			assert.Equal(t, tt.expectedPath, path)
 		})
 	}
 }

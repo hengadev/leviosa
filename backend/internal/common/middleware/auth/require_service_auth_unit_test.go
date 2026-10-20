@@ -142,8 +142,8 @@ func TestRequireServiceAuth_ValidKey_PassesThrough(t *testing.T) {
 	expectedHash := computeKeyHash(t, crypto, testKey)
 
 	sr := new(mockSecretReader)
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(&SecretData{
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(&SecretData{
 		Data: map[string]interface{}{
 			"data": map[string]interface{}{
 				"key_hash":     expectedHash,
@@ -181,7 +181,7 @@ func TestRequireServiceAuth_ValidKey_PassesThrough(t *testing.T) {
 	assert.True(t, nextCalled)
 	require.NotNil(t, capturedServiceInfo)
 	assert.Equal(t, services.Catalog, capturedServiceInfo.Name)
-	sr.AssertCalled(t, "Read", mock.Anything, vaultPath)
+	sr.AssertCalled(t, "Read", mock.Anything, keyPath)
 }
 
 func TestRequireServiceAuth_InvalidKey_Rejected(t *testing.T) {
@@ -191,8 +191,8 @@ func TestRequireServiceAuth_InvalidKey_Rejected(t *testing.T) {
 	storedHash := computeKeyHash(t, crypto, "wrong-key")
 
 	sr := new(mockSecretReader)
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(&SecretData{
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(&SecretData{
 		Data: map[string]interface{}{
 			"data": map[string]interface{}{
 				"key_hash":     storedHash,
@@ -222,12 +222,12 @@ func TestRequireServiceAuth_InvalidKey_Rejected(t *testing.T) {
 	assert.False(t, nextCalled)
 }
 
-func TestRequireServiceAuth_VaultReadError_Rejected(t *testing.T) {
+func TestRequireServiceAuth_StoreReadError_Rejected(t *testing.T) {
 	crypto := newTestMiddlewareCrypto(t)
 
 	sr := new(mockSecretReader)
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(nil, assert.AnError)
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(nil, assert.AnError)
 
 	mw := &SessionAuthMiddleware{
 		crypto:          crypto,
@@ -254,8 +254,8 @@ func TestRequireServiceAuth_SecretNotFound_Rejected(t *testing.T) {
 	crypto := newTestMiddlewareCrypto(t)
 
 	sr := new(mockSecretReader)
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(nil, nil)
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(nil, nil)
 
 	mw := &SessionAuthMiddleware{
 		crypto:          crypto,
@@ -282,12 +282,12 @@ func TestRequireServiceAuth_SecretNotFound_Rejected(t *testing.T) {
 // Cache tests
 // ---------------------------------------------------------------------------
 
-func TestRequireServiceAuth_CacheHit_SkipsVaultRead(t *testing.T) {
+func TestRequireServiceAuth_CacheHit_SkipsStoreRead(t *testing.T) {
 	crypto := newTestMiddlewareCrypto(t)
 	testKey := "cached-test-key"
 	expectedHash := computeKeyHash(t, crypto, testKey)
 
-	// Pre-populate the cache so Vault is never called.
+	// Pre-populate the cache so the store is never read.
 	mw := &SessionAuthMiddleware{
 		crypto:       crypto,
 		secretReader: new(mockSecretReader), // no expectations → panic if called
@@ -317,7 +317,7 @@ func TestRequireServiceAuth_CacheHit_SkipsVaultRead(t *testing.T) {
 	assert.True(t, nextCalled)
 }
 
-func TestRequireServiceAuth_CacheExpired_VaultReadCalled(t *testing.T) {
+func TestRequireServiceAuth_CacheExpired_StoreReadCalled(t *testing.T) {
 	crypto := newTestMiddlewareCrypto(t)
 	testKey := "expired-test-key"
 	expectedHash := computeKeyHash(t, crypto, testKey)
@@ -336,8 +336,8 @@ func TestRequireServiceAuth_CacheExpired_VaultReadCalled(t *testing.T) {
 		cacheTTL: time.Minute,
 	}
 
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(&SecretData{
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(&SecretData{
 		Data: map[string]interface{}{
 			"data": map[string]interface{}{
 				"key_hash":     expectedHash,
@@ -361,7 +361,7 @@ func TestRequireServiceAuth_CacheExpired_VaultReadCalled(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 	assert.True(t, nextCalled)
-	sr.AssertCalled(t, "Read", mock.Anything, vaultPath)
+	sr.AssertCalled(t, "Read", mock.Anything, keyPath)
 }
 
 func TestRequireServiceAuth_CachePopulatedAfterFirstRequest(t *testing.T) {
@@ -370,15 +370,15 @@ func TestRequireServiceAuth_CachePopulatedAfterFirstRequest(t *testing.T) {
 	expectedHash := computeKeyHash(t, crypto, testKey)
 
 	sr := new(mockSecretReader)
-	vaultPath := services.ServiceAPIKeyPath(services.Catalog)
-	sr.On("Read", mock.Anything, vaultPath).Return(&SecretData{
+	keyPath := services.ServiceAPIKeyPath(services.Catalog)
+	sr.On("Read", mock.Anything, keyPath).Return(&SecretData{
 		Data: map[string]interface{}{
 			"data": map[string]interface{}{
 				"key_hash":     expectedHash,
 				"service_name": services.Catalog,
 			},
 		},
-	}, nil).Once() // only one Vault call expected
+	}, nil).Once() // only one store read expected
 
 	mw := &SessionAuthMiddleware{
 		crypto:          crypto,
@@ -391,7 +391,7 @@ func TestRequireServiceAuth_CachePopulatedAfterFirstRequest(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	// First request → should hit Vault.
+	// First request → should read the store.
 	req1 := newRequestWithLogger("GET", "/internal/test")
 	req1.Header.Set(services.ServiceNameHeader, services.Catalog)
 	req1.Header.Set(services.ServiceKeyHeader, testKey)
@@ -399,7 +399,7 @@ func TestRequireServiceAuth_CachePopulatedAfterFirstRequest(t *testing.T) {
 	mw.RequireServiceAuth(next)(rr1, req1)
 	assert.Equal(t, http.StatusOK, rr1.Code)
 
-	// Second request → should be served from cache (no additional Vault call).
+	// Second request → should be served from cache (no additional store read).
 	req2 := newRequestWithLogger("GET", "/internal/test")
 	req2.Header.Set(services.ServiceNameHeader, services.Catalog)
 	req2.Header.Set(services.ServiceKeyHeader, testKey)
@@ -487,7 +487,7 @@ func TestSetCachedKeyHash(t *testing.T) {
 	assert.Equal(t, "new-hash", hash)
 }
 
-// Without a service key store (how the app runs since Vault was removed), service
+// Without a service key store (how the app runs, ADR-0015), service
 // authentication fails closed instead of panicking.
 func TestRequireServiceAuth_NoSecretReader_Rejected(t *testing.T) {
 	crypto := newTestMiddlewareCrypto(t)
