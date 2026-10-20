@@ -1,0 +1,37 @@
+---
+# Install or rotate the Infisical Agent on the Leviosa VPS (issue 027).
+#
+# The leviosa-vps machine-identity credential is read from the operator at
+# run time ONLY — never from a file in this repo (ADR-0017). Export
+# INFISICAL_VPS_CLIENT_ID and INFISICAL_VPS_CLIENT_SECRET and press Enter at
+# both prompts, or type the values (the secret prompt is private and is not
+# echoed).
+#
+# Re-running this playbook with a NEW client secret is the rotation
+# procedure (every three months; see roles/infisical_agent/README.md): the
+# Agent restarts with it and no app container is restarted; the old secret
+# is then revoked in Infisical.
+
+- name: Install or rotate the Infisical Agent
+  hosts: leviosa_servers
+  gather_facts: true
+
+  # No `default:` on these prompts: Ansible prints a prompt's default in
+  # brackets, even for private prompts, which would echo a secret taken from
+  # the environment. Empty answers fall back to the environment below.
+  vars_prompt:
+    - name: infisical_agent_prompt_client_id
+      prompt: leviosa-vps client ID (empty = use $INFISICAL_VPS_CLIENT_ID)
+      private: false
+
+    - name: infisical_agent_prompt_client_secret
+      prompt: leviosa-vps client secret (empty = use $INFISICAL_VPS_CLIENT_SECRET)
+      private: true
+
+  vars:
+    infisical_agent_client_id: "{{ infisical_agent_prompt_client_id or lookup('env', 'INFISICAL_VPS_CLIENT_ID') }}"
+    infisical_agent_client_secret: "{{ infisical_agent_prompt_client_secret or lookup('env', 'INFISICAL_VPS_CLIENT_SECRET') }}"
+
+  roles:
+    - role: infisical_agent
+      tags: ['infisical', 'agent']
