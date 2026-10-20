@@ -119,3 +119,13 @@ backup_jobs:
 # for every real run; the role's tests set it false to exercise the file
 # tasks against localhost, where no such unit may be installed.
 backup_manage_service: true
+
+# Test knobs. Where the units go, whether to apt-install age and jq, and who
+# owns the files: fixed on the server; the role's tests (tests/run-tests.sh)
+# run the role unprivileged into a temporary directory, without apt.
+backup_systemd_dir: /etc/systemd/system
+backup_install_packages: true
+# Owner of everything the role installs: root on the server (the tests run
+# the role unprivileged into a temporary directory, as the current user).
+backup_owner: root
+backup_group: root

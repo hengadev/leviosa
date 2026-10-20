@@ -28,7 +28,9 @@
 
 - name: List the jobs to install
   ansible.builtin.set_fact:
-    backup_active_jobs: "{{ backup_jobs | rejectattr('weekly') | list + (backup_jobs | selectattr('weekly') | list if (backup_snapshot_enabled | bool) else []) }}"
+    backup_active_jobs: >-
+      {{ backup_jobs | rejectattr('weekly') | list
+         + (backup_jobs | selectattr('weekly') | list if (backup_snapshot_enabled | bool) else []) }}
 
 - name: Warn that the weekly Infisical snapshot is not installed
   ansible.builtin.debug:
@@ -53,13 +55,14 @@
       - age
       - jq
     state: present
+  when: backup_install_packages | bool
 
 - name: Create the backup directories
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "{{ item.mode }}"
   loop:
     - { path: "{{ backup_lib_dir }}", mode: "0755" }
@@ -73,24 +76,24 @@
   ansible.builtin.template:
     src: backup.conf.j2
     dest: "{{ backup_conf_file }}"
-    owner: root
-    group: root
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "0644"
 
 - name: Install the shared backup library
   ansible.builtin.copy:
     src: leviosa-backup-lib.sh
     dest: "{{ backup_lib_dir }}/lib.sh"
-    owner: root
-    group: root
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "0644"
 
 - name: Install the backup scripts
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ backup_bin_dir }}/{{ item }}"
-    owner: root
-    group: root
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "0750"
   loop:
     - leviosa-backup
@@ -103,15 +106,15 @@
   ansible.builtin.copy:
     content: "{{ item.content }}"
     dest: "{{ backup_lib_dir }}/{{ item.dest }}"
-    owner: root
-    group: root
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "0644"
   loop:
     - dest: snapshot.json.tmpl
-      content: >-
-        {{ lookup('ansible.builtin.file', 'leviosa-snapshot.json.tmpl')
-           | replace('__LEVIOSA_PROJECT_ID__', infisical_project_id | default(''))
-           | replace('__LEVIOSA_ENV__', backup_snapshot_environment) }}
+      # The file lookup drops the final newline; put it back.
+      content: "{{ (lookup('ansible.builtin.file', 'leviosa-snapshot.json.tmpl')
+        | replace('__LEVIOSA_PROJECT_ID__', infisical_project_id | default(''))
+        | replace('__LEVIOSA_ENV__', backup_snapshot_environment)) ~ '\n' }}"
     - dest: backup-age.pub
       content: "{{ (backup_age_recipients | first | default('')) ~ '\n' }}"
   loop_control:
@@ -125,9 +128,9 @@
 - name: Install the backup services and timers
   ansible.builtin.template:
     src: "leviosa-backup-job.{{ item.1 }}.j2"
-    dest: "/etc/systemd/system/{{ item.0.name }}.{{ item.1 }}"
-    owner: root
-    group: root
+    dest: "{{ backup_systemd_dir }}/{{ item.0.name }}.{{ item.1 }}"
+    owner: "{{ backup_owner }}"
+    group: "{{ backup_group }}"
     mode: "0644"
   loop: "{{ backup_active_jobs | product(['service', 'timer']) | list }}"
   loop_control:
@@ -140,7 +143,7 @@
 # to the placeholder: stop it, so a timer never runs without its key file.
 - name: Check for a leftover weekly snapshot timer
   ansible.builtin.stat:
-    path: "/etc/systemd/system/{{ item.name }}.timer"
+    path: "{{ backup_systemd_dir }}/{{ item.name }}.timer"
   loop: "{{ backup_jobs | selectattr('weekly') | list }}"
   loop_control:
     label: "{{ item.name }}.timer"
@@ -161,7 +164,7 @@
 
 - name: Remove the leftover weekly snapshot units
   ansible.builtin.file:
-    path: "/etc/systemd/system/{{ item.0.name }}.{{ item.1 }}"
+    path: "{{ backup_systemd_dir }}/{{ item.0.name }}.{{ item.1 }}"
     state: absent
   loop: "{{ backup_jobs | selectattr('weekly') | list | product(['service', 'timer']) | list }}"
   loop_control:

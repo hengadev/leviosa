@@ -226,7 +226,10 @@
           - "Stack roots: {{ app_prod_root }}, {{ app_staging_root }}"
           - "Infisical Agent: {{ 'installed' if leviosa_infisical_credential_present else 'skipped (no credential; run make infisical-agent)' }}"
           - "Notifications: {{ host_notify_email }}"
-          - "Backups: daily dump + config{{ ', weekly Infisical snapshot' if backup_snapshot_enabled | default(false) | bool else ' (weekly Infisical snapshot NOT installed: see roles/backup/README.md)' }}"
+          - >-
+            Backups: daily dump + config{{ ', weekly Infisical snapshot'
+            if backup_snapshot_enabled | default(false) | bool
+            else ' (weekly Infisical snapshot NOT installed: see roles/backup/README.md)' }}
           - ""
           - "Run `make setup` again: the second run must report changed=0."
           - "Releases never go through Ansible: CI runs `deploy <stack> <sha>`"
