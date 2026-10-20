@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+
+	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption"
 )
 
 // Config holds all application configuration
@@ -31,13 +33,8 @@ type Config struct {
 	S3AccessKeyID     string
 	S3SecretAccessKey string
 
-	// Vault
-	VaultAddr  string
-	VaultToken string
-
-	// Encryption (encx)
-	EncxKEKAlias    string
-	EncxPepperAlias string
+	// Encryption (encx on AWS KMS + env pepper); validated when the crypto service is built
+	Encryption encryption.Config
 
 	// Stripe
 	StripeSecretKey            string
@@ -125,13 +122,8 @@ func LoadConfig(ctx context.Context) (*Config, error) {
 		S3AccessKeyID:     getEnv("S3_ACCESS_KEY_ID", ""),
 		S3SecretAccessKey: getEnv("S3_SECRET_ACCESS_KEY", ""),
 
-		// Vault
-		VaultAddr:  getEnv("VAULT_ADDR", "http://localhost:8200"),
-		VaultToken: getEnv("VAULT_TOKEN", ""),
-
 		// Encryption (encx)
-		EncxKEKAlias:    getEnv("ENCX_KEK_ALIAS", "leviosa-kek"),
-		EncxPepperAlias: getEnv("ENCX_PEPPER_ALIAS", "leviosa"),
+		Encryption: encryption.ConfigFromEnv(os.Getenv),
 
 		// Stripe
 		StripeSecretKey:            getEnv("STRIPE_SECRET_KEY", ""),
