@@ -1,225 +1,236 @@
-# Leviosa Terraform Configuration
+# Leviosa Terraform
 
-Infrastructure as Code for the Leviosa VPS and supporting AWS resources.
+Infrastructure as code for Leviosa: the Hetzner server, Cloudflare DNS, and
+the AWS side (media buckets, encx KMS keys, IAM users, production backup
+bucket). Terraform also writes the credentials and identifiers it creates
+into Infisical, so nobody copies them by hand.
 
-## What This Does
+One state in S3 holds everything, in the default workspace. Any operator
+computer can plan and apply after `infisical login`, with no flags, no AWS
+profile and no local tfvars file.
 
-This Terraform configuration provisions:
+## What this manages
 
-- **VPS**: A single Hetzner Cloud server (`hcloud_server.manager`), shared by both the staging and production application environments (see [Workspace Strategy](#workspace-strategy))
-- **DNS**: Cloudflare DNS records for the apex domain, `www`, `staging`, `admin`, `staff`, `admin-staging`, and `staff-staging` subdomains, all proxied through Cloudflare
-- **S3 Assets Bucket**: One per environment (staging/production), versioned, encrypted, with public access blocked and CORS configured for the frontend origins
-- **IAM**: A per-environment IAM user with least-privilege S3 access for the application, plus a separate `app-leviosa` IAM user (production workspace only) with access to both environments' asset and backup buckets
-- **Terraform State Backend**: An S3 bucket (`leviosa-terraform-state`, defined in `backend.tf`) for remote state, created once and then left alone
+| Area | Resources |
+| --- | --- |
+| Hetzner | One `cpx22` in `nbg1` (`hcloud_server.main`), minimal cloud-init (Ansible does the rest), and its **primary IPs** (IPv4 + IPv6), which survive a server rebuild |
+| Cloudflare | Proxied records for `leviosa.care`, `www`, `admin`, `staff`, `staging`, `admin-staging`, `staff-staging`. Mail records (MX, SPF, DKIM, verification, DMARC) from the `email_*` inputs, empty until Zoho provides them (issue 036) |
+| AWS, per environment (`staging`, `prod`) | Private media bucket `leviosa-care-<env>-media` (SSE, versioning, non-current versions expire after 30 days); encx KEK: symmetric KMS key + `alias/leviosa-<env>`, `prevent_destroy`, 30-day deletion window; app IAM user `leviosa-<env>-app` with an access key and one policy: its own bucket and its own key only |
+| AWS, production backups | Bucket `leviosa-care-prod-backups` (SSE, versioning, lifecycle expiry); IAM user `leviosa-prod-backup` that can list, read and write it but **not delete** |
+| AWS, shared | The state bucket `leviosa-terraform-state` (imported, `prevent_destroy`) |
+| Infisical | `/aws` in `staging` and `prod`, `/backup` in `prod` of the `leviosa` project (below) |
 
-## Workspace Strategy
+### IAM, exactly
 
-This configuration uses Terraform workspaces instead of separate directories per environment:
+| User | Allowed | On |
+| --- | --- | --- |
+| `leviosa-<env>-app` | `s3:ListBucket` | its media bucket |
+| | `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject` | its media bucket's objects |
+| | `kms:Encrypt`, `kms:Decrypt`, `kms:GenerateDataKey*`, `kms:DescribeKey` | its KMS key |
+| `leviosa-prod-backup` | `s3:ListBucket` | the backup bucket |
+| | `s3:GetObject`, `s3:PutObject`, `s3:AbortMultipartUpload` | the backup bucket's objects |
 
-- **`default` workspace = staging** — owns the shared VPS, Cloudflare DNS records, and staging S3/IAM resources
-- **`production` workspace** — owns *only* the production S3/IAM resources (`app_leviosa_*` resources are also gated to this workspace via `count = terraform.workspace == "production" ? 1 : 0`)
+No app or backup user can delete, disable or administer a KMS key, and the
+backup user cannot delete an object (old backups go only through the
+lifecycle rule; versioning keeps an overwritten object's previous version
+for 30 days). `make check` proves this offline (see [Checks](#checks)).
 
-The VPS and DNS records are **not** duplicated in the production workspace — they live once in staging/default and are shared by both app environments (see `infra/ansible` for how staging and production share the same VPS).
+## Credentials and inputs
 
-## Prerequisites
+- **Non-secret inputs** are in the committed [`terraform.tfvars`](terraform.tfvars):
+  domain, zone ID, bucket prefix, server settings, mail records, the
+  `leviosa` project ID. Never put a secret in it; it is the only tfvars file
+  git accepts here.
+- **Secret inputs** live in the Infisical project **`leviosa-infra`**
+  (environment `prod`, path `/`) and reach Terraform as environment
+  variables through `tf.sh`:
 
-### Hetzner Cloud
-1. Create a Hetzner Cloud account and project
-2. Upload an SSH public key to the Hetzner console named `terraform-leviosa` (referenced via `data "hcloud_ssh_key" "default"` in `leviosa.tf` — it must already exist, Terraform does not create it)
-3. Generate an API token for the project
+  | `leviosa-infra` key | Used for |
+  | --- | --- |
+  | `TF_VAR_hcloud_token` | Hetzner provider |
+  | `TF_VAR_cloudflare_token` | Cloudflare provider (DNS edit on `leviosa.care`) |
+  | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS provider **and** the S3 state backend (an IAM user that can manage S3, IAM and KMS) |
 
-### Cloudflare
-1. Add your domain to Cloudflare and note the Zone ID
-2. Generate an API token with DNS edit permissions for that zone
+  The server's `leviosa-vps` identity has no access to `leviosa-infra`.
 
-### AWS (for S3 + IAM only — no EC2 is used)
+### `tf.sh`, and why plain `terraform` fails
+
+Every Makefile target that touches infrastructure, here and at the
+repository root (`make infra-init|infra-plan|infra-apply|infra-output`), runs
+`./tf.sh`, which:
+
+1. runs `infisical run --projectId=<leviosa-infra> --env=prod --path=/`,
+   injecting the secret inputs above (after dropping any `AWS_PROFILE` or
+   session token from your shell, so these are the only AWS credentials used);
+2. hands the Infisical **provider** your own session token
+   (`infisical user get token`) as `INFISICAL_TOKEN` with
+   `INFISICAL_AUTH_METHOD=token`. There is no machine identity for
+   Terraform, so no extra long-lived credential exists. You need write
+   access to the `leviosa` project's `/aws` and `/backup` folders.
+
+**Running `terraform` directly does not work**: it has no Hetzner or
+Cloudflare token (plan stops with "hcloud_token is empty: run Terraform
+through ./tf.sh ..."), no AWS credentials for the state backend, and no
+Infisical session for the provider. That is deliberate: no computer keeps a
+tfvars file or profile with these credentials. Offline commands (`fmt`,
+`validate`, `test`, see [Checks](#checks)) need none of them.
+
+When your Infisical session expires, `tf.sh` stops with "Run: infisical login".
+
+## What Terraform writes into Infisical
+
+Into the **`leviosa`** project. The key names are defined once, in
+[`locals.tf`](locals.tf) (`infisical_aws_keys`, `infisical_backup_keys`):
+the backend reads them and the Agent templates render them.
+
+| Environment / folder | Key | Value |
+| --- | --- | --- |
+| `staging/aws`, `prod/aws` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | that environment's `leviosa-<env>-app` access key |
+| | `AWS_REGION` | `eu-central-1` |
+| | `S3_BUCKET_NAME` | `leviosa-care-<env>-media` |
+| | `ENCX_KMS_KEY_ARN` | that environment's KMS key ARN (for reference) |
+| | `ENCX_KMS_KEY_ALIAS` | `leviosa-<env>`: the alias the backend uses, without `alias/` (encx adds it) |
+| `prod/backup` | `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY` | the `leviosa-prod-backup` access key |
+| | `BACKUP_S3_BUCKET` | `leviosa-care-prod-backups` |
+| | `BACKUP_AWS_REGION` | `eu-central-1` |
+
+Nothing is written to `dev`: local development uses LocalStack and must
+reach no real data. Every other folder (`/encx` pepper, `/db`, `/stripe`, ...)
+is the operator's (issue 008).
+
+## Before the first apply
+
+The real IDs are not known to the repository yet. Fill in, commit, then run:
+
+1. **`tf.sh`**: set `infra_project_id` to the `leviosa-infra` project ID
+   (Infisical > leviosa-infra > Project settings). Until then `tf.sh` refuses
+   to run. Check that its secrets are in environment `prod`, path `/`
+   (otherwise adjust `infra_env` / `infra_path`).
+2. **`terraform.tfvars`**: set `infisical_project_id` to the `leviosa`
+   project ID. Until then plan refuses to run.
+3. **`terraform.tfvars`**: confirm `cloudflare_zone_id` is the `leviosa.care`
+   zone (Cloudflare > leviosa.care > Overview > Zone ID).
+4. **Infisical `leviosa-infra`** holds the four keys listed above, and the
+   `leviosa` project has the folders `/aws` in `staging` and `prod` and
+   `/backup` in `prod` (issue 008). Terraform writes keys, not folders.
+5. **Hetzner**: an SSH key named `terraform-leviosa` (`hcloud_ssh_key_name`)
+   exists in the project. It only seeds root's `authorized_keys`; Ansible
+   replaces it with the keys file.
+6. **Old state gone** (issue 007): both old workspaces destroyed, the
+   `production` workspace deleted, the `default` state empty, and the state
+   bucket removed from the old state but still existing. The `import` blocks
+   in [`backend.tf`](backend.tf) adopt it (and its versioning, encryption
+   and public access block) on the first apply; afterwards they are no-ops.
+7. **Bucket names**: S3 names are global. If `plan`/`apply` reports a name
+   as taken, change `bucket_prefix` before anything holds data.
+
+Then:
+
 ```bash
-pip install awscli
-aws configure --profile terraform-leviosa
-```
-The Makefile exports `AWS_PROFILE=terraform-leviosa` for all commands.
-
-### Terraform
-```bash
-# On Ubuntu/Debian
-sudo apt install terraform
-
-# Or download from https://www.terraform.io/downloads
+cd infra/terraform
+infisical login        # once per computer / session
+make init
+make plan              # review: everything to add, the 4 state-bucket resources to import, nothing to destroy
+make apply
 ```
 
-## Quick Start
+After the apply, check in Infisical that `staging/aws`, `prod/aws` and
+`prod/backup` are populated (issue 033).
 
-### 1. Configure Variables
+## Usage
 
-Copy the example and fill in values for each environment:
+Prerequisites: Terraform >= 1.11, the Infisical CLI, `infisical login`, and
+membership of both `leviosa-infra` and `leviosa`.
 
 ```bash
-cp terraform.tfvars.example terraform.tfvars.staging
-cp terraform.tfvars.example terraform.tfvars.production
+cd infra/terraform
+make init        # S3 backend + providers (versions pinned in .terraform.lock.hcl)
+make plan
+make apply       # also updates /aws and prod/backup in Infisical
+make output
+./tf.sh <any terraform command>    # e.g. ./tf.sh state list
 ```
 
-```hcl
-aws_region   = "eu-central-1"
-project_name = "leviosa"
-environment  = "staging"  # or "production"
+From the repository root: `make infra-init`, `make infra-plan`,
+`make infra-apply`, `make infra-output`.
 
-hcloud_token    = "your_hetzner_api_token_here"
-server_type     = "cpx11"
-server_location = "nbg1"
-enable_backups  = true
-
-cloudflare_token = "your_cloudflare_api_token_here"
-zone_id          = "your_zone_id_here"
-domain_name      = "leviosa.care"
-
-allowed_origins = [
-  "http://localhost:5173",
-  "https://leviosa.care",
-  "https://staging.leviosa.care",
-]
-```
-
-`terraform.tfvars`, `terraform.tfvars.staging`, and `terraform.tfvars.production` are gitignored (only `*.example` files are committed).
-
-### 2. Initialize Terraform
+### Rebuilding the server
 
 ```bash
-make init-staging      # initializes and selects the default (staging) workspace
-make init-production   # initializes and selects/creates the production workspace
+./tf.sh apply -replace=hcloud_server.main
 ```
 
-### 3. Plan and Apply
+The primary IPs are separate resources (delete protection, `prevent_destroy`),
+so the new server keeps its addresses and the DNS records don't change. Then
+re-run Ansible (`make setup`).
+
+### Rotating AWS credentials
 
 ```bash
-make plan-staging
-make apply-staging
-
-make plan-production
-make apply-production
+./tf.sh apply -replace='aws_iam_access_key.app["prod"]'    # or ["staging"]
+./tf.sh apply -replace=aws_iam_access_key.backup
 ```
 
-Staging applies the VPS, Cloudflare DNS, and staging S3/IAM. Production applies only the production S3/IAM resources (see `STAGING_TARGETS` / `PRODUCTION_TARGETS` in the Makefile).
+The new key is written to Infisical in the same apply; the Agent re-renders
+the env file and recreates the consumer.
 
-### 4. Get Outputs
+### The KMS keys
+
+A KMS key cannot be recovered once deleted, and every encrypted field of its
+environment would be lost. Terraform refuses to destroy them
+(`prevent_destroy`). If a deletion is ever scheduled by hand, it waits 30
+days and can be cancelled (`aws kms cancel-key-deletion`). Never remove the
+`prevent_destroy` to "clean up".
+
+## Checks
 
 ```bash
-make output            # all outputs
-make credentials       # AWS S3 credentials
-make server-info        # VPS connection details
-make dns-info            # DNS records
+make check     # terraform fmt -check, validate, test, no terraform.workspace
 ```
 
-## Variables
+Offline: no credentials, no state backend, no API call. `make test` runs
+[`tests/offline.tftest.hcl`](tests/offline.tftest.hcl) with every provider
+mocked, and asserts:
 
-| Variable | Description | Default | Required |
-|----------|-------------|---------|----------|
-| `aws_region` | AWS region for S3/IAM resources | `eu-central-1` | No |
-| `project_name` | Project identifier | `leviosa` | No |
-| `bucket_suffix` | Optional suffix to avoid S3 bucket name collisions | `""` | No |
-| `environment` | `staging` or `production` | `staging` | No |
-| `allowed_origins` | CORS origins for the S3 assets bucket | localhost + leviosa.care | No |
-| `hcloud_token` | Hetzner Cloud API token | - | **Yes** |
-| `server_type` | Hetzner Cloud server type | `cpx11` | No |
-| `server_location` | Hetzner Cloud datacenter (`nbg1`, `fsn1`, `hel1`, `hil`, `ash`, `sin`) | `nbg1` | No |
-| `enable_backups` | Enable Hetzner server backups | `true` | No |
-| `cloudflare_token` | Cloudflare API token | - | **Yes** |
-| `zone_id` | Cloudflare zone ID | - | **Yes** |
-| `domain_name` | Primary domain name | - | **Yes** |
+- each app policy names only its own bucket and its own key, with exactly the
+  actions in the table above;
+- no app or backup policy grants `kms:*`, key deletion, disabling or any key
+  administration; the backup policy grants no `s3:Delete*` and no KMS;
+- the Infisical keys, folders and environments listed above, and that each
+  environment receives its own credentials, bucket and key;
+- KMS deletion window, bucket privacy, versioning and expiry, the DNS
+  hostnames, the server type and location;
+- `plan` fails when the tokens `tf.sh` provides are missing.
 
-## Outputs
-
-| Output | Description |
-|--------|-------------|
-| `domain_name` | Configured domain |
-| `server_ipv4_address` / `server_ipv6_address` | VPS public IP addresses |
-| `ssh_connection_string` | `ssh root@<ip>` |
-| `media_bucket_name` / `media_bucket_region` / `media_bucket_arn` | S3 assets bucket details |
-| `app_user_access_key_id` / `app_user_secret_access_key` | Per-environment S3 app credentials (sensitive) |
-| `app_leviosa_access_key_id` / `app_leviosa_access_key_secret` | Cross-environment app credentials, production workspace only (sensitive) |
-| `credentials` | Formatted summary of AWS credentials for Ansible vault |
-
-## Directory Structure
+## Files
 
 ```
-infra/terraform/
-├── main.tf              # Providers, S3 state backend config
-├── variables.tf         # Variable definitions
-├── leviosa.tf            # VPS, S3 assets bucket, per-environment IAM
-├── app-leviosa.tf        # Cross-environment app-leviosa IAM user (production workspace only)
-├── cloudflare.tf          # DNS records
-├── backend.tf             # One-time bootstrap of the Terraform state S3 bucket
-├── output.tf              # Output definitions
-├── cloud-init.yml.tftpl   # Cloud-init template applied to the VPS
-├── terraform.tfvars.example  # Template — copy to .staging/.production
-├── Makefile               # Workspace-aware plan/apply/destroy commands
-└── README.md              # This file
+main.tf            backend (S3, eu-central-1, lockfile) and providers
+locals.tf          environments, resource names, Infisical key names
+variables.tf       inputs (the two secrets default to empty and refuse to plan)
+terraform.tfvars   non-secret input values (committed)
+hetzner.tf         server + primary IPs
+cloud-init.yml.tftpl  minimal cloud-init (python3 for Ansible)
+cloudflare.tf      web records, mail records (empty until Zoho)
+s3.tf              media bucket per environment
+kms.tf             encx KEK + alias per environment
+iam.tf             app IAM user, policy and access key per environment
+backups.tf         production backup bucket and backup IAM user
+infisical.tf       values written into the leviosa project
+backend.tf         the state bucket itself (imported)
+outputs.tf         non-secret outputs
+tests/             offline tests (mocked providers)
+tf.sh, Makefile    run Terraform through Infisical
 ```
-
-## Cost Estimates
-
-Based on `eu-central-1` (AWS) / `nbg1` (Hetzner):
-
-| Resource | Cost (monthly) |
-|----------|----------------|
-| Hetzner `cpx11` VPS | ~€4.59 |
-| Hetzner server backups | ~€0.92 |
-| S3 Storage (per environment, light usage) | ~$1–3 |
-| Cloudflare DNS | Free |
-| **Total (both environments)** | **~€10–15/month** |
-
-*Prices are estimates and may vary by region/usage.*
-
-## Security Best Practices
-
-### SSH Keys
-The VPS references an SSH key that must already exist in the Hetzner console (`terraform-leviosa`). Never commit private keys.
-
-### AWS Credentials
-- IAM users created have least-privilege access (S3 only)
-- Credentials feed into Ansible Vault via `make update-staging-vault` / `make update-production-vault`
-- Rotate credentials periodically
-
-### State File
-- Remote state lives in the `leviosa-terraform-state` S3 bucket (configured in `main.tf`/`backend.tf`)
-- Never commit `.tfstate` files to git (already gitignored)
-- State locking uses S3's native `use_lockfile` (no DynamoDB table — single-user workflow)
-
-## Next Steps
-
-After Terraform completes:
-
-1. **Update Ansible Vault**: `make update-staging-vault` / `make update-production-vault`
-2. **Run Ansible**: `make setup-staging` / `make setup-production` from `../ansible` (see `infra/ansible/README.md`)
-3. **Verify DNS**: `make dns-verify`
 
 ## Troubleshooting
 
-### "ssh_key not found" / hcloud_ssh_key data lookup fails
-The SSH key named `terraform-leviosa` doesn't exist in your Hetzner project yet — upload it via the Hetzner console first.
-
-### AWS "InsufficientPrivileges" / "AccessDenied"
-Ensure the `terraform-leviosa` AWS profile has S3 Full Access and IAM Full Access.
-
-### State Lock Timeout
-```bash
-terraform force-unlock <LOCK_ID>
-```
-
-### Destroy
-```bash
-make destroy             # destroys resources in the current workspace
-make destroy-staging
-make destroy-production
-```
-
-**Warning:** Destroying the staging/default workspace removes the shared VPS used by both environments.
-
-## Maintenance
-
-```bash
-make fmt        # format files
-make validate   # fmt -check + terraform validate
-make refresh    # refresh state
-make show       # show current state
-make graph      # generate dependency graph
-```
+- **"set infra_project_id in ./tf.sh"**: step 1 of [Before the first apply](#before-the-first-apply).
+- **"no Infisical session"**: run `infisical login`.
+- **"hcloud_token is empty"**: you ran `terraform` directly, or the key in
+  `leviosa-infra` is not named exactly `TF_VAR_hcloud_token` (same for
+  `TF_VAR_cloudflare_token`).
+- **"infisical_project_id must be the UUID ..."**: step 2 above.
+- **Infisical "folder not found"** on apply: create `/aws` (staging, prod) or
+  `/backup` (prod) in the `leviosa` project.
+- **State lock held** after an interrupted run: `./tf.sh force-unlock <LOCK_ID>`.
