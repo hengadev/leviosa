@@ -113,9 +113,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 
 func (s *Server) setupRoutes(mux *http.ServeMux) {
 	// Health check
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		httpx.RespondWithJSON(w, map[string]string{"status": "ok"}, http.StatusOK)
-	})
+	mux.HandleFunc("/health", handleHealth)
 
 	// Authuser routes
 	s.setupAuthuserRoutes(mux)
@@ -134,6 +132,19 @@ func (s *Server) setupRoutes(mux *http.ServeMux) {
 
 	// Notification routes (public contact form)
 	s.setupNotificationRoutes(mux)
+}
+
+// healthResponse is the JSON body served by /health.
+type healthResponse struct {
+	Status string `json:"status"`
+	SHA    string `json:"sha"`
+}
+
+// handleHealth reports the server's status and the release SHA it is running
+// (see releaseSHA), so the frontend's /healthz and deploy tooling can verify
+// what is actually serving.
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	httpx.RespondWithJSON(w, healthResponse{Status: "ok", SHA: releaseSHA()}, http.StatusOK)
 }
 
 func (s *Server) setupAuthuserRoutes(router *http.ServeMux) {
