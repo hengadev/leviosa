@@ -15,8 +15,8 @@ locals {
   }
   backup_bucket_name = "${var.bucket_prefix}-prod-backups"
 
-  # encx reads the KEK by alias and prepends "alias/" itself, so Infisical
-  # holds the bare name (ENCX_KMS_KEY_ALIAS) and AWS the full one.
+  # The backend reads the KEK by its full alias name ("alias/<name>",
+  # ENCX_KMS_KEY_ALIAS in /aws) and refuses key IDs and ARNs.
   kms_alias_names = {
     for env in local.environments : env => "${var.project_name}-${env}"
   }

@@ -8,7 +8,7 @@
 #     AWS_REGION                                <- var.aws_region
 #     S3_BUCKET_NAME                            <- aws_s3_bucket.media[<env>]
 #     ENCX_KMS_KEY_ARN                          <- aws_kms_key.encx[<env>]
-#     ENCX_KMS_KEY_ALIAS                        <- alias name, without "alias/"
+#     ENCX_KMS_KEY_ALIAS                        <- aws_kms_alias.encx[<env>] ("alias/<name>")
 #
 #   leviosa/prod/backup  (the server's backup job)
 #     BACKUP_AWS_ACCESS_KEY_ID, BACKUP_AWS_SECRET_ACCESS_KEY <- aws_iam_access_key.backup
@@ -28,7 +28,7 @@ locals {
       region            = var.aws_region
       media_bucket      = aws_s3_bucket.media[env].bucket
       kms_key_arn       = aws_kms_key.encx[env].arn
-      kms_key_alias     = local.kms_alias_names[env]
+      kms_key_alias     = aws_kms_alias.encx[env].name
     }
   }
 
