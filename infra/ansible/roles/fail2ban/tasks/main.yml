@@ -1,7 +1,7 @@
 ---
 # Fail2ban Configuration Tasks
 # - SSH jails (brute force and connection floods)
-# - Caddy jail, off until Caddy writes its access log (issue 026)
+# - Caddy jail on Caddy's JSON access logs (issue 026)
 # - Notifications to the email read from Infisical prod /host
 
 - name: Install fail2ban
@@ -17,6 +17,33 @@
     group: root
     mode: '0644'
   notify: Restart fail2ban
+
+# Before the jail: fail2ban refuses a jail whose log file is missing, and
+# roles/fail2ban runs before roles/app, roles/caddy and roles/shared_services
+# (which starts Caddy). An empty root 0600 file is what Caddy creates itself;
+# it appends to an existing one. Times preserved: a second run changes
+# nothing. The directory, as roles/app lays it out.
+- name: Create the Caddy log directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop: "{{ fail2ban_caddy_log_paths | map('dirname') | unique | list }}"
+  when: fail2ban_caddy_enabled
+
+- name: Create Caddy's access logs if Caddy has not yet
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: touch
+    owner: root
+    group: root
+    mode: "0600"
+    access_time: preserve
+    modification_time: preserve
+  loop: "{{ fail2ban_caddy_log_paths }}"
+  when: fail2ban_caddy_enabled
 
 - name: Deploy Caddy rate-limit filter
   ansible.builtin.template:
@@ -42,6 +69,6 @@
       - "==========================================="
       - "SSH jail: maxretry={{ fail2ban_ssh_maxretry }}, bantime={{ fail2ban_ssh_bantime }}s"
       - "SSH DDoS jail: maxretry={{ fail2ban_ddos_maxretry }}, bantime={{ fail2ban_ddos_bantime }}s"
-      - "Caddy jail: {{ 'enabled (' ~ fail2ban_caddy_log_path ~ ')' if fail2ban_caddy_enabled else 'disabled until issue 026' }}"
+      - "Caddy jail: {{ 'enabled (' ~ fail2ban_caddy_log_paths | join(', ') ~ ')' if fail2ban_caddy_enabled else 'disabled' }}"
       - "Notifications: {{ fail2ban_notify_email }}"
       - "==========================================="

@@ -12,8 +12,8 @@
 #   Redis     its own container and password: Redis has no per-database
 #             access control, so sharing production's would expose sessions
 # Ansible's shared services role creates the role, database, vhost and user
-# (issue 026); the local harness does the same with
-# test/fixtures/create-staging-services.sh.
+# (issue 026) by running setup-shared-services.sh (next to this file); the
+# local harness runs the same script.
 #
 # Same rules as the production file: no templating, no ${VAR} substitution,
 # no top-level .env; every service reads its own env_file, rendered by the

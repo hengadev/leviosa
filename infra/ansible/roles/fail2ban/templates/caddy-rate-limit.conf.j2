@@ -1,12 +1,20 @@
 # Fail2ban Caddy Rate Limit Filter
 # Managed by Ansible - DO NOT EDIT MANUALLY
-# Matches Caddy JSON access logs for rate-limited and forbidden requests
+#
+# 403 (forbidden) and 429 (rate limited) in Caddy's JSON access log, one
+# object per line, fields in this order (Caddy 2.11):
+#   {"level":"info","ts":1792510394.502,...,"request":{"remote_ip":"...",
+#    "remote_port":"...","client_ip":"203.0.113.7",...,"headers":{...}},
+#    "bytes_read":0,...,"status":403,"resp_headers":{...}}
+# client_ip, not remote_ip: behind Cloudflare remote_ip is Cloudflare's edge,
+# and client_ip the visitor (the Caddyfile trusts Cloudflare's ranges). A
+# header value cannot fake either field: JSON escapes its quotes.
 
 [Definition]
 
-# Match 429 (rate limited) and 403 (forbidden) status codes in Caddy JSON log format
-# Caddy logs JSON: {"status":429,"request":{"remote_ip":"1.2.3.4"},...}
-failregex = ^.*"status":429.*"request".*?"remote_ip":"<HOST>".*$
-            ^.*"status":403.*"request".*?"remote_ip":"<HOST>".*$
+failregex = ^\{.*"client_ip":"<HOST>",.*,"status":(?:403|429),"resp_headers":
 
 ignoreregex =
+
+# "ts" is a Unix timestamp with a fraction.
+datepattern = "ts":{EPOCH}

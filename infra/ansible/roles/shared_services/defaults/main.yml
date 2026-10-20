@@ -1,0 +1,36 @@
+---
+# roles/shared_services defaults (issue 026).
+#
+# Production's stack owns the services both environments share (ADR-0016):
+# Postgres, RabbitMQ and Caddy. This role starts them, then gives each
+# environment its access to them with infra/compose/setup-shared-services.sh,
+# the script the compose harness tests.
+
+shared_services_root: "{{ app_prod_root | default('/opt/leviosa') }}"
+shared_services_started: [postgres, rabbitmq, caddy]
+shared_services_wait_timeout: 180
+
+# Every env file docker-compose.prod.yml references (compose loads them all,
+# even to start one service), as infra/compose/deploy checks for prod. The
+# Infisical Agent renders them (issue 027).
+shared_services_env_files: [backend, frontend, admin, postgres, rabbitmq, redis, caddy]
+
+# First setup only: until the first production deploy, the root runner
+# (roles/deploy_gate) has not installed the deployed commit's compose file
+# yet, so the operator's checkout provides it. From then on the runner is its
+# only writer.
+shared_services_compose_src: "{{ playbook_dir }}/../../compose/docker-compose.prod.yml"
+
+# The access script, installed root-only on the server and run from there.
+shared_services_script_src: "{{ playbook_dir }}/../../compose/setup-shared-services.sh"
+shared_services_script: /usr/local/sbin/leviosa-setup-shared-services
+
+# The Infisical project (site.yml's infisical_project_id, the operator's one
+# setting) and the folders the script's values come from, read on the control
+# machine through the operator's `infisical login`. Not secrets.
+shared_services_infisical_project_id: "{{ infisical_project_id | default('') }}"
+shared_services_infisical_reads:
+  - { env: prod, path: /db, names: [POSTGRES_USER, POSTGRES_DB] }
+  - { env: staging, path: /db, names: [POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB] }
+  - { env: prod, path: /rabbitmq, names: [RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_VHOST] }
+  - { env: staging, path: /rabbitmq, names: [RABBITMQ_USER, RABBITMQ_PASSWORD, RABBITMQ_VHOST] }
