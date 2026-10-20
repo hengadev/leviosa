@@ -151,7 +151,7 @@ local-stop:
 
 local-restart: local-stop local-start
 
-# Local Docker harness for infra/compose (production compose file + deploy script):
+# Local Docker harness for infra/compose (prod and staging compose files + deploy script):
 # builds both images with fake SHAs and drives the real deploy script; isolated
 # names, no fixed host ports, full teardown. See infra/compose/README.md.
 .PHONY: deploy-harness
