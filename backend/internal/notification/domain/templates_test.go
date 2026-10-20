@@ -320,3 +320,15 @@ func assertContains(t *testing.T, body, substr string) {
 		t.Errorf("template output missing expected substring %q", substr)
 	}
 }
+
+func TestSMTPCheckTemplateRenders(t *testing.T) {
+	tmpl := parseTemplateOrFail(t, "smtp_check")
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, struct{ SentAt string }{SentAt: "2026-10-20T10:00:00Z"}); err != nil {
+		t.Fatalf("failed to execute smtp_check template: %v", err)
+	}
+
+	assertContains(t, buf.String(), "check-email")
+	assertContains(t, buf.String(), "2026-10-20T10:00:00Z")
+}
