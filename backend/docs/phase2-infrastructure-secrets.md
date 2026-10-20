@@ -1,5 +1,7 @@
 # Phase 2: Infrastructure Secret Management
 
+> **Superseded (historical design, not the current setup).** HashiCorp Vault was removed. Configuration lives only in Infisical and reaches the server through the Infisical Agent ([ADR-0017](../../docs/adr/0017-infisical-sole-source-of-config.md)); the encx KEK is an AWS KMS key and the pepper an Infisical value ([ADR-0015](../../docs/adr/0015-encx-keys-in-aws-kms-and-infisical.md)). Email is sent over SMTP through Zoho Mail, not Gmail. Current model: [docs/deployment/README.md](../../docs/deployment/README.md). Kept for history only.
+
 This document outlines the complete infrastructure secret management implementation for production deployment with HashiCorp Vault.
 
 ## Overview
