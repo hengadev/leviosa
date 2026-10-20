@@ -46,4 +46,3 @@
 - name: Enable UFW
   community.general.ufw:
     state: enabled
-
