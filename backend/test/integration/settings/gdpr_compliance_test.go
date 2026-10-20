@@ -24,9 +24,8 @@ func TestGDPRCompliance(t *testing.T) {
 
 	t.Run("Settings Service ENCX Integration", func(t *testing.T) {
 		t.Run("settings service should encrypt data with service-specific key", func(t *testing.T) {
-			// Verify settings service has its own crypto instance
-			settingsCrypto, exists := vaultSetup.GetServiceCrypto(services.Settings)
-			require.True(t, exists, "Settings service crypto should exist")
+			// Verify the settings service has a crypto service
+			settingsCrypto := crypto
 			require.NotNil(t, settingsCrypto, "Settings crypto should not be nil")
 
 			// Create test data to encrypt using the domain model
@@ -57,7 +56,7 @@ func TestGDPRCompliance(t *testing.T) {
 			phoneSetting := th.NewCompanyPhone(t, ctx)
 
 			// Encrypt and store using ENCX
-			settingsCrypto, _ := vaultSetup.GetServiceCrypto(services.Settings)
+			settingsCrypto := crypto
 			phoneSettingEncx, err := domain.ProcessSettingEncryptedEncx(ctx, settingsCrypto, phoneSetting)
 			require.NoError(t, err)
 			th.InsertCompanyPhoneEncrypted(t, ctx, phoneSettingEncx, testPool)
@@ -81,7 +80,7 @@ func TestGDPRCompliance(t *testing.T) {
 			phoneSetting := th.NewCompanyPhone(t, ctx)
 
 			// Encrypt and store using settings service ENCX
-			settingsCrypto, _ := vaultSetup.GetServiceCrypto(services.Settings)
+			settingsCrypto := crypto
 			phoneSettingEncx, err := domain.ProcessSettingEncryptedEncx(ctx, settingsCrypto, phoneSetting)
 			require.NoError(t, err)
 			th.InsertCompanyPhoneEncrypted(t, ctx, phoneSettingEncx, testPool)
@@ -96,32 +95,10 @@ func TestGDPRCompliance(t *testing.T) {
 		})
 	})
 
-	t.Run("Settings Service Vault Key Management", func(t *testing.T) {
-		t.Run("should have per-service encryption key names", func(t *testing.T) {
-			// Verify the encryption key naming convention follows service isolation
-			expectedKeyName := "settings-encryption-key"
-
-			t.Logf("Settings service encryption key name: %s", expectedKeyName)
-			assert.Contains(t, expectedKeyName, services.Settings,
-				"Encryption key name should contain service name")
-			assert.Contains(t, expectedKeyName, "encryption-key",
-				"Key name should indicate its purpose")
-		})
-
-		t.Run("should have per-service pepper paths", func(t *testing.T) {
-			// Verify pepper path isolation
-			expectedPepperPath := "secret/data/peppers/settings"
-
-			t.Logf("Settings service pepper path: %s", expectedPepperPath)
-			assert.Contains(t, expectedPepperPath, services.Settings,
-				"Pepper path should contain service name")
-			assert.Contains(t, expectedPepperPath, "peppers",
-				"Path should be in peppers directory")
-		})
-
+	t.Run("Settings Service Key Management", func(t *testing.T) {
 		t.Run("should validate service authentication keys exist", func(t *testing.T) {
-			// Verify that settings service API key exists in Vault setup
-			apiKey, exists := vaultSetup.GetServiceAPIKey(services.Settings)
+			// Verify that the settings service has an API key
+			apiKey, exists := serviceKeys[services.Settings]
 			assert.True(t, exists, "API key should exist for settings service")
 			assert.NotEmpty(t, apiKey, "Settings API key should not be empty")
 
@@ -134,8 +111,7 @@ func TestGDPRCompliance(t *testing.T) {
 			// This test validates that the architecture supports data minimization
 			// Settings service should only have access to data it needs for its function
 
-			settingsCrypto, exists := vaultSetup.GetServiceCrypto(services.Settings)
-			assert.True(t, exists, "Settings service should have crypto access")
+			settingsCrypto := crypto
 			assert.NotNil(t, settingsCrypto, "Settings crypto should be available")
 
 			t.Log("✓ GDPR Data Minimization: Settings service has cryptographic access only to settings data")
@@ -143,7 +119,7 @@ func TestGDPRCompliance(t *testing.T) {
 
 		t.Run("purpose limitation - encryption keys tied to settings service", func(t *testing.T) {
 			// Verify that encryption is purpose-bound to settings service function
-			settingsCrypto, _ := vaultSetup.GetServiceCrypto(services.Settings)
+			settingsCrypto := crypto
 
 			// Test encrypting settings-related data using ENCX
 			settingsData := th.NewCompanyPhone(t, ctx)
@@ -158,7 +134,7 @@ func TestGDPRCompliance(t *testing.T) {
 			// This validates that encrypted data can be properly managed using the generated functions
 
 			testData := th.NewCompanyPhone(t, ctx)
-			settingsCrypto, _ := vaultSetup.GetServiceCrypto(services.Settings)
+			settingsCrypto := crypto
 
 			// Encrypt data using ENCX
 			encryptedSetting, err := domain.ProcessSettingEncryptedEncx(ctx, settingsCrypto, testData)

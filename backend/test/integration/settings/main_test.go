@@ -23,7 +23,6 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/settings/ports"
 	th "github.com/Leviosa-care/leviosa/backend/test/helpers"
 
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/envmode"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/logger"
@@ -35,7 +34,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/hashicorp/vault/api"
 	"github.com/hengadev/encx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
@@ -50,8 +48,8 @@ var (
 	redisClient    *redis.Client      // Redis client for session management
 	s3Client       *s3.Client
 	crypto         encx.CryptoService
-	vaultSetup     *tu.ServiceVaultSetup // Enhanced Vault setup with per-service keys
-	authCtx        *tu.AuthTestContext   // Authentication context for user/session tests
+	serviceKeys    map[string]string   // API key of every service, accepted by the internal endpoints
+	authCtx        *tu.AuthTestContext // Authentication context for user/session tests
 	repo           ports.SettingsRepository
 	mediaRepo      ports.SettingsMedia
 	sessionRepo    session.SessionRepository
@@ -197,35 +195,21 @@ func TestMain(m *testing.M) {
 	// Store connection for test verification
 	testMQConn = conn
 
-	// Setup enhanced Vault testcontainer with per-service encryption (GDPR compliant)
-	log.Println("Setting up enhanced Vault testcontainer with per-service keys...")
-	serviceNames := []string{services.Settings} // Only settings service for this test
-	vaultSetup, err = tu.SetupServiceVault(ctx, nil, serviceNames)
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 
-	// Set environment variables for Vault (for encx library)
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	// Get service-specific crypto service (GDPR compliant)
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.Settings)
-	if !exists {
-		log.Fatal("Settings service crypto not found in vault setup")
+	// Service API keys for the internal endpoints. The app has no service key store
+	// (ADR-0015); the suite serves the key hashes from memory.
+	serviceKeyStore := tu.NewServiceKeyStore(crypto)
+	serviceKeys, err = serviceKeyStore.GenerateAllServiceKeys(ctx)
+	if err != nil {
+		log.Fatalf("Failed to generate service API keys: %v", err)
 	}
-	if crypto == nil {
-		log.Fatal("Settings crypto service is nil")
-	}
-	log.Printf("✓ Settings service crypto initialized with per-service encryption key")
-
-	// Log vault setup details for debugging
-	log.Printf("✓ Vault setup complete:")
-	log.Printf("  - Services: %d", len(vaultSetup.CryptoServices))
-	log.Printf("  - API Keys: %d", len(vaultSetup.ServiceKeys))
-	log.Printf("  - GDPR compliant per-service encryption: enabled")
 
 	// Initialize AuthTestContext for user/session testing
 	authCtx = &tu.AuthTestContext{
@@ -247,10 +231,10 @@ func TestMain(m *testing.M) {
 	auditLogger = audit.NewPostgresLogger(testPool)
 	service := settings.New(repo, mediaRepo, crypto, publisher, auditLogger)
 
-	// Create authentication middleware with Vault client
+	// Create authentication middleware reading the in-memory service key store
 	// For integration tests, we pass nil session repository since we're testing service auth
 	sessionRepo = session.NewRedisSessionRepository(redisClient)
-	authmw := auth.NewSessionAuthMiddleware(sessionRepo, crypto, vaultSecretReader{vaultSetup.VaultClient})
+	authmw := auth.NewSessionAuthMiddleware(sessionRepo, crypto, serviceKeyStore)
 
 	// Create HTTP handler with auth middleware
 	handler = settingsHandler.New(service, authmw)
@@ -293,16 +277,4 @@ func TestMain(m *testing.M) {
 
 	// Exit with the test result code
 	os.Exit(code) // Commented out to allow cleanup before exiting in some environments
-}
-
-// vaultSecretReader serves the service key hashes provisioned by SetupServiceVault to the
-// auth middleware. The app itself has no service key store since Vault was removed (ADR-0015).
-type vaultSecretReader struct{ client *api.Client }
-
-func (r vaultSecretReader) Read(ctx context.Context, path string) (*auth.SecretData, error) {
-	secret, err := r.client.Logical().ReadWithContext(ctx, path)
-	if err != nil || secret == nil {
-		return nil, err
-	}
-	return &auth.SecretData{Data: secret.Data}, nil
 }

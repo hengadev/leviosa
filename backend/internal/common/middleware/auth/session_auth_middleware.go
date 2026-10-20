@@ -53,8 +53,8 @@ func WithSecretReader(reader SecretReader) SessionAuthMiddlewareOption {
 // NewSessionAuthMiddleware creates a new session-based auth middleware.
 //
 // serviceKeys is the store of service API key hashes that RequireServiceAuth checks. The
-// app passes nil: its domains call each other in process, and the service keys lived in
-// Vault, which is gone (ADR-0015), so service-to-service endpoints reject every request.
+// app passes nil: its domains call each other in process and no service key store is
+// deployed (ADR-0015), so service-to-service endpoints reject every request.
 func NewSessionAuthMiddleware(sessionRepo session.SessionRepository, crypto encx.CryptoService, serviceKeys SecretReader, opts ...SessionAuthMiddlewareOption) AuthMiddleware {
 	m := &SessionAuthMiddleware{
 		sessionRepo:     sessionRepo,

@@ -60,7 +60,7 @@ Each domain package follows the ports & adapters pattern:
 - **logger/** - Structured logging configuration
 - **middleware/** - Authentication middleware
 - **validation/** - Email and phone validation utilities
-- **testutils/** - Testcontainers helpers for Postgres, Redis, RabbitMQ, S3, KMS (LocalStack, `SetupKMS`), Stripe, and the legacy Vault helper still used by most integration suites
+- **testutils/** - Testcontainers helpers for Postgres, Redis, RabbitMQ, S3, KMS and Stripe. Integration suites get encx from `SetupCrypto` (one LocalStack KMS container per package, a KEK behind an alias and a generated pepper, built by `encryption.NewCrypto`); `ServiceKeyStore` serves service API keys to the auth middleware from memory
 
 ### Database Migrations
 - Located in `internal/common/migrations/` (goose SQL files, embedded into the binary)

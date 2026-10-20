@@ -18,7 +18,6 @@ import (
 	messagingHandler "github.com/Leviosa-care/leviosa/backend/internal/messaging/interface"
 
 	authsession "github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
-	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/services"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/envmode"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/logger"
@@ -39,7 +38,6 @@ var (
 	redisContainer  *tu.RedisContainer
 	redisClient     *redis.Client
 	crypto          encx.CryptoService
-	vaultSetup      *tu.ServiceVaultSetup
 	authSessionRepo authsession.SessionRepository
 	handler         messagingHandler.Handler
 	testServerURL   string
@@ -128,26 +126,13 @@ func TestMain(m *testing.M) {
 	}
 	log.Println("Redis client connected successfully.")
 
-	// Vault with per-service encryption keys
-	log.Println("Setting up Vault testcontainer...")
-	serviceNames := []string{services.AuthUser}
-	vaultSetup, err = tu.SetupServiceVault(ctx, nil, serviceNames)
+	// encx as the app builds it: a KEK in (LocalStack) KMS and a generated pepper
+	cryptoSetup, err := tu.SetupCrypto(ctx, nil)
 	if err != nil {
-		log.Fatalf("Failed to setup service Vault container: %v", err)
+		log.Fatalf("Failed to setup crypto (LocalStack KMS): %v", err)
 	}
-	defer tu.TeardownVault(ctx, nil, vaultSetup.VaultContainer)
-
-	os.Setenv("VAULT_ADDR", vaultSetup.VaultContainer.HTTPSEndpoint)
-	os.Setenv("VAULT_TOKEN", vaultSetup.VaultContainer.RootToken)
-
-	var exists bool
-	crypto, exists = vaultSetup.GetServiceCrypto(services.AuthUser)
-	if !exists {
-		log.Fatal("AuthUser service crypto not found in vault setup")
-	}
-	if crypto == nil {
-		log.Fatal("AuthUser crypto service is nil")
-	}
+	defer tu.TeardownCrypto(ctx, nil, cryptoSetup)
+	crypto = cryptoSetup.Crypto
 	log.Println("AuthUser service crypto initialized.")
 
 	// --- Messaging service setup ---
