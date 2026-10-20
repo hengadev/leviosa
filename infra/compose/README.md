@@ -9,6 +9,7 @@ Ansible templating, no `${VAR}` substitution, no top-level `.env` on the server.
 | `docker-compose.prod.yml` | installed by each production deploy as `/opt/leviosa/docker-compose.yml`, from the deployed commit (root runner, issue 022) |
 | `docker-compose.staging.yml` | installed by each staging deploy as `/opt/leviosa-staging/docker-compose.yml`, the same way |
 | `deploy` | never copied: the root runner runs it straight from the deployed commit |
+| `caddy/Caddyfile` | installed by Ansible's caddy role (issue 026) as `/opt/leviosa/caddy/etc/Caddyfile`; see [Caddy](#caddy) |
 | `test/` | stays in the repo: the local harness below |
 
 The server reads both files from the repository at the SHA it deploys, so a
@@ -26,11 +27,11 @@ rollback rolls them back too, and CI uploads nothing.
 │   ├── postgres.env              POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
 │   ├── rabbitmq.env              RABBITMQ_DEFAULT_USER / _PASS / _VHOST
 │   ├── redis.env                 REDIS_PASSWORD
-│   └── caddy.env                 CLOUDFLARE_API_TOKEN (+ staging basic auth, issue 020)
+│   └── caddy.env                 CLOUDFLARE_API_TOKEN, STAGING_BASIC_AUTH_USER / _HASH
 ├── data/postgres/                Postgres data dir      (survives `down`)
 ├── data/rabbitmq/                RabbitMQ node data     (survives `down`)
 ├── data/redis/                   Redis AOF + RDB        (survives `down`)
-└── caddy/{etc,data,config,logs}/ Caddyfile (Ansible), certificates, autosave, logs
+└── caddy/{etc,data,config,logs}/ caddy/Caddyfile (Ansible), certificates, autosave, logs
 ```
 
 All paths in the compose file are relative to the stack root, so the same file
@@ -69,6 +70,11 @@ What each env file holds:
 - **`postgres.env`**, **`rabbitmq.env`**: applied when the data directory is
   first initialised only; rotating those passwords is a manual change inside
   the service (`ALTER ROLE`, `rabbitmqctl change_password`).
+- **`caddy.env`**: `CLOUDFLARE_API_TOKEN` (`prod/caddy`), and
+  `STAGING_BASIC_AUTH_USER` and `STAGING_BASIC_AUTH_HASH` (`staging/caddy`, a
+  `caddy hash-password` bcrypt hash). The hash must be single-quoted
+  (`STAGING_BASIC_AUTH_HASH='$2a$14$…'`): Compose expands `$` in unquoted
+  env-file values, which mangles it.
 
 `test/fixtures/prod/env/` has one fake example of each.
 
@@ -78,8 +84,8 @@ The stack joins the external `leviosa_network` (created by Ansible's docker
 role, shared with staging), so a `down` here never removes the network staging
 depends on. Compose registers every service name as a DNS alias on it: the
 frontend reaches the backend as `backend:3500`, the backend reaches
-`postgres`, `rabbitmq` and `redis` by name, and Caddy proxies to `frontend`
-(and, issue 020, `backend` for `/webhooks/*`). Staging's services are therefore
+`postgres`, `rabbitmq` and `redis` by name, and Caddy proxies `/webhooks/*` to
+`backend` and everything else to `frontend`. Staging's services are therefore
 prefixed `staging_` (see [Staging stack root](#staging-stack-root)) so they
 never answer for those names. Without `container_name`, containers are named
 `leviosa-<service>-1`.
@@ -129,7 +135,8 @@ Redis; it uses production's Postgres and RabbitMQ with credentials of its own.
 | `staging_redis` | `redis:7-alpine` | `redis.env` | staging's own; Redis has no per-database access control |
 
 No staging service publishes a host port; Caddy (production's stack) proxies
-to `staging_frontend` (and, issue 020, `staging_backend` for `/webhooks/*`).
+staging's `/webhooks/*` to `staging_backend` and everything else to
+`staging_frontend`, behind basic auth (see [Caddy](#caddy)).
 
 What staging's `backend.env` points at — same keys as production's, other
 values (and never a production credential):
@@ -164,6 +171,62 @@ Isolation rests on two rules:
 A production outage of Postgres or RabbitMQ also stops staging; a `down` of
 either stack never touches the other (separate compose projects, external
 network).
+
+## Caddy
+
+`caddy/Caddyfile` is the public entry point of both stacks: a plain file, no
+templating, run by production's `caddy` service (the only one publishing host
+ports). Ansible's caddy role installs it into `/opt/leviosa/caddy/etc/`, which
+the compose file mounts read-only at `/etc/caddy`; `deploy` never touches it.
+Values that differ per environment come from `env/caddy.env` through Caddy's
+placeholders: `{env.CLOUDFLARE_API_TOKEN}` at runtime, and
+`{$STAGING_BASIC_AUTH_USER}` / `{$STAGING_BASIC_AUTH_HASH}` when the file loads
+(the Agent recreates Caddy when `caddy.env` changes).
+
+| Hosts | Upstreams |
+| --- | --- |
+| `leviosa.care`, `www.`, `admin.`, `staff.` | `/webhooks/*` → `backend:3500`, anything else → `frontend:3000` |
+| `staging.`, `admin-staging.`, `staff-staging.` | `/webhooks/*` → `staging_backend:3500`, anything else → `staging_frontend:3000` |
+
+- **Webhooks.** Stripe's payment (`/webhooks/stripe`) and Connect
+  (`/webhooks/stripe/connect`) webhooks reach the stack's backend, which checks
+  their signature. No other backend path is reachable from outside: the
+  frontend calls its backend over the shared network.
+- **Staging is closed.** Basic auth on every path except `/healthz` (Promote
+  reads staging's release from it) and `/webhooks/*` (Stripe cannot
+  authenticate), and `X-Robots-Tag: noindex` on every staging response, 401s
+  included. Staging runs real Twilio, so an open OTP endpoint would be an
+  SMS-pumping target. With neither staging value in `caddy.env`, staging
+  answers 401 to everything and production keeps serving; with only one of
+  them, Caddy refuses to load the file (both stacks down).
+- **Retry window.** Every `reverse_proxy` has `lb_try_duration 30s`
+  (`lb_try_interval 250ms`): while a container is recreated (a deploy, the
+  Agent), requests wait for it instead of failing with a 502.
+- **Kept from before:** the security headers (HSTS with `preload` and
+  `SAMEORIGIN` on production, `DENY` on staging; no `Server` header), a 100 MB
+  request body limit, JSON access logs (`/var/log/caddy/access.log` and
+  `staging-access.log`, credentials redacted), Cloudflare's ranges as trusted
+  proxies. The `analytics` and `www.staging` hosts are gone.
+- **TLS.** Certificates through the Cloudflare DNS challenge
+  (`serfriz/caddy-cloudflare` image); the DNS records stay Cloudflare-proxied.
+  `LEVIOSA_CADDY_TLS=internal` swaps the challenge for Caddy's internal CA and
+  changes nothing else (the adapted configs differ in their `tls` app only).
+  Only the harness sets it, from its compose override; production never does.
+
+Check a change before it ships (offline, in the image the stack runs):
+
+```sh
+docker run --rm --network none -v "$PWD/infra/compose/caddy:/etc/caddy:ro" \
+  -e CLOUDFLARE_API_TOKEN=harness-fixture-not-a-real-cloudflare-tk -e STAGING_BASIC_AUTH_USER=harness \
+  -e STAGING_BASIC_AUTH_HASH='$2a$14$1R6.dGApFitAZrS3yIE2N.gDkck7p.MJR7ia4r0uvWzAZ3I5AAdh.' \
+  serfriz/caddy-cloudflare:2.11 caddy validate --config /etc/caddy/Caddyfile
+```
+
+(the fixture `caddy.env`'s values; add `-e LEVIOSA_CADDY_TLS=internal` for the
+harness variant).
+
+The harness runs that validation too, and the file itself behind the checks
+below.
 
 ## `deploy <stack> <sha>`
 
@@ -249,6 +312,24 @@ running containers contains a production Redis, Postgres or RabbitMQ password
 (only key names are printed) and production's Redis refuses staging's
 password; and that two staging deploys leave every production container's
 id, start time and restart count, and the `:prod` pins, unchanged.
+
+Caddy: the harness runs the repository's `caddy/Caddyfile` unmodified, with
+`LEVIOSA_CADDY_TLS=internal` and the fixture `caddy.env` (fake token, a fixed
+test password's hash). Requests go to Caddy's random loopback ports with each
+real host name as SNI and `Host` (`curl --connect-to`: nothing resolves or
+contacts the real domain). It checks that the production variant validates
+offline and gets its certificates from the Cloudflare DNS challenge for
+exactly the seven hosts; that every production host reaches production and
+the dropped hosts get no certificate; that `POST /webhooks/stripe` and
+`/webhooks/stripe/connect` on every host of each stack get the backend's
+signature error and reach that stack's backend only (by a unique User-Agent
+in the backends' request logs), staging's without credentials, while other
+backend routes never reach a backend; that every staging page without
+credentials (or with a wrong password) is a 401 and with them the frontend's
+page, while staging's `/healthz` answers without; that staging responses
+carry `X-Robots-Tag: noindex` and production's don't; and that requests
+streamed through Caddy while production's backend, then its frontend, is
+recreated all get their usual answer, none a 502.
 
 Finally it checks that nothing is left behind. It ends with a PASS/FAIL line
 per case and `RESULT: OK` or `RESULT: FAILED` (non-zero exit).
