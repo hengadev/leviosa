@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.39.2
 	github.com/aws/aws-sdk-go-v2/config v1.31.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.18.6
+	github.com/aws/aws-sdk-go-v2/service/kms v1.45.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/sessions v1.4.0
@@ -41,7 +42,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/kms v1.45.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.28.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.33.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.38.0 // indirect
