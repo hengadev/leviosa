@@ -326,26 +326,28 @@ staging-update-back:
 # ===========================================
 # Infrastructure Commands (Terraform)
 # ===========================================
+# Every Terraform command runs through infra/terraform/tf.sh, which loads the
+# leviosa-infra credentials from your Infisical login (infisical login first).
 
 infra-init:
 	@echo "Initializing Terraform..."
-	cd infra/terraform && terraform init
+	infra/terraform/tf.sh init
 
 infra-plan:
 	@echo "Showing Terraform plan..."
-	cd infra/terraform && terraform plan
+	infra/terraform/tf.sh plan
 
 infra-apply:
 	@echo "Applying Terraform changes..."
-	cd infra/terraform && terraform apply
+	infra/terraform/tf.sh apply
 
 infra-output:
 	@echo "Terraform outputs:"
-	cd infra/terraform && terraform output
+	infra/terraform/tf.sh output
 
 infra-destroy:
 	@echo "Destroying all Terraform resources..."
-	cd infra/terraform && terraform destroy
+	infra/terraform/tf.sh destroy
 
 # ===========================================
 # Configuration Commands (Ansible)

@@ -1,27 +1,43 @@
-# Terraform State Backend Configuration
-# This file creates the S3 bucket needed for Terraform state with workspace support
+# The S3 bucket that holds this configuration's own state (main.tf).
 #
-# IMPORTANT: These resources should be created ONCE before using workspaces
-# After creating these resources, you can comment out this file to prevent recreation
-#
-# Initial setup:
-# 1. Comment out the entire `backend "s3"` block in main.tf
-# 2. Run: terraform init
-# 3. Run: terraform apply
-# 4. Uncomment the backend block in main.tf
-# 5. Run: terraform init -reconfigure
-# 6. (Optional) Comment out this file to prevent accidental recreation
+# It was created by the old workspace-based config and survived its teardown
+# (issue 007 removed it from the old state without deleting it). The import
+# blocks below adopt it into this state on the first apply; once it is in the
+# state they are no-ops.
+
+import {
+  to = aws_s3_bucket.terraform_state
+  id = "leviosa-terraform-state"
+}
+
+import {
+  to = aws_s3_bucket_versioning.terraform_state
+  id = "leviosa-terraform-state"
+}
+
+import {
+  to = aws_s3_bucket_server_side_encryption_configuration.terraform_state
+  id = "leviosa-terraform-state"
+}
+
+import {
+  to = aws_s3_bucket_public_access_block.terraform_state
+  id = "leviosa-terraform-state"
+}
 
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "leviosa-terraform-state"
 
   tags = {
-    Name        = "Leviosa Terraform State"
-    ManagedBy   = "Terraform"
+    Name = "Leviosa Terraform State"
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
-resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
+resource "aws_s3_bucket_versioning" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
   versioning_configuration {
@@ -29,7 +45,7 @@ resource "aws_s3_bucket_versioning" "terraform_state_versioning" {
   }
 }
 
-resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_sse" {
+resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
   rule {
@@ -39,7 +55,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_s
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
+resource "aws_s3_bucket_public_access_block" "terraform_state" {
   bucket = aws_s3_bucket.terraform_state.id
 
   block_public_acls       = true
@@ -47,22 +63,3 @@ resource "aws_s3_bucket_public_access_block" "terraform_state_block" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
-
-# DynamoDB table for state locking - REMOVED: single-user workflow
-# resource "aws_dynamodb_table" "terraform_locks" {
-#   name         = "leviosa-terraform-locks"
-#   billing_mode = "PAY_PER_REQUEST"
-#   hash_key     = "LockID"
-#
-#   attribute {
-#     name = "LockID"
-#     type = "S"
-#   }
-#
-#   tags = {
-#     Name        = "Leviosa Terraform Locks"
-#     Environment = "staging"
-#     ManagedBy   = "Terraform"
-#   }
-# }
-
