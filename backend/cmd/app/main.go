@@ -15,7 +15,8 @@ type mode func(ctx context.Context, args []string) error
 
 // modes maps each run mode name to its entry point. With no argument the binary serves.
 var modes = map[string]mode{
-	"serve": serve,
+	"serve":   serve,
+	"migrate": migrate,
 }
 
 func main() {
