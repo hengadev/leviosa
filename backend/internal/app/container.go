@@ -412,20 +412,16 @@ func (c *Container) setupServices(ctx context.Context) error {
 
 	// Shared notification clients — built once, shared between booking notification
 	// adapter and the canonical notification service (which is also used by OTP delivery).
-	sharedEmailClient := smtpClient.NewSMTPClient(smtpClient.SMTPConfig{
-		Host:     c.Config.SMTPHost,
-		Port:     c.Config.SMTPPort,
-		Username: c.Config.SMTPUsername,
-		Password: c.Config.SMTPPassword,
-	})
+	sharedEmailClient := smtpClient.NewSMTPClient(c.Config.SMTP)
 
+	// SMS stays disabled (nil) until every required Twilio value is set.
 	var sharedSMSClient notificationPorts.SMSService
-	if c.Config.TwilioAccountSID != "" && c.Config.TwilioAuthToken != "" && c.Config.TwilioPhoneNumber != "" {
-		sharedSMSClient = twilioClient.NewTwilioClient(
-			c.Config.TwilioAccountSID,
-			c.Config.TwilioAuthToken,
-			c.Config.TwilioPhoneNumber,
-		)
+	if c.Config.Twilio.Complete() {
+		smsClient, err := twilioClient.NewTwilioClient(c.Config.Twilio)
+		if err != nil {
+			return fmt.Errorf("create twilio client: %w", err)
+		}
+		sharedSMSClient = smsClient
 	}
 
 	// Catalog stripe gateways
