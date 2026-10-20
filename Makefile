@@ -22,9 +22,9 @@ PROD_DIR = /opt/leviosa
 STAGING_DIR = /opt/leviosa-staging
 
 # Build args
-SESSION_COOKIE_NAME ?= leviosa_session
-CLIENT_IP_HEADER ?= x-client-ip
-BACKEND_PORT ?= 3500
+# COMMIT_SHA defaults to the current commit; override with an explicit SHA when
+# rebuilding an older release (see docs/prd/deployment-infisical-compose.md).
+COMMIT_SHA ?= $(shell git rev-parse HEAD)
 
 .PHONY: help \
 		local-dev local-start local-stop local-restart stripe-listen \
@@ -160,9 +160,7 @@ image-build-front:
 	docker build \
 		-t $(DOCKER_IMAGE_FRONTEND_PROD) \
 		-f frontend/Dockerfile \
-		--build-arg SESSION_COOKIE_NAME=$(SESSION_COOKIE_NAME) \
-		--build-arg CLIENT_IP_HEADER=$(CLIENT_IP_HEADER) \
-		--build-arg BACKEND_PORT=$(BACKEND_PORT) \
+		--build-arg COMMIT_SHA=$(COMMIT_SHA) \
 		./frontend
 	@echo "Frontend image built: $(DOCKER_IMAGE_FRONTEND_PROD)"
 
@@ -171,6 +169,7 @@ image-build-back:
 	docker build \
 		-t $(DOCKER_IMAGE_BACKEND_PROD) \
 		-f backend/Dockerfile \
+		--build-arg COMMIT_SHA=$(COMMIT_SHA) \
 		./backend
 	@echo "Backend image built: $(DOCKER_IMAGE_BACKEND_PROD)"
 
@@ -205,9 +204,7 @@ image-build-staging-front:
 	docker build \
 		-t $(DOCKER_IMAGE_FRONTEND_STAGING) \
 		-f frontend/Dockerfile \
-		--build-arg SESSION_COOKIE_NAME=$(SESSION_COOKIE_NAME) \
-		--build-arg CLIENT_IP_HEADER=$(CLIENT_IP_HEADER) \
-		--build-arg BACKEND_PORT=$(BACKEND_PORT) \
+		--build-arg COMMIT_SHA=$(COMMIT_SHA) \
 		./frontend
 	@echo "Staging frontend image built: $(DOCKER_IMAGE_FRONTEND_STAGING)"
 
@@ -216,6 +213,7 @@ image-build-staging-back:
 	docker build \
 		-t $(DOCKER_IMAGE_BACKEND_STAGING) \
 		-f backend/Dockerfile \
+		--build-arg COMMIT_SHA=$(COMMIT_SHA) \
 		./backend
 	@echo "Staging backend image built: $(DOCKER_IMAGE_BACKEND_STAGING)"
 
