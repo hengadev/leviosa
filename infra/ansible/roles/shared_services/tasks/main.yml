@@ -1,0 +1,203 @@
+---
+# Shared services (issue 026): production's stack owns Postgres, RabbitMQ and
+# Caddy, which both environments use (ADR-0016).
+# - Start them from production's compose file, never recreating them: a run
+#   that only re-checks roles or vhosts restarts nothing.
+# - Give each environment its access: staging's Postgres role and database
+#   (no CONNECT anywhere else), one RabbitMQ vhost and user per environment
+#   with permissions on its own vhost only, no guest user. That is
+#   infra/compose/setup-shared-services.sh, the script the compose harness
+#   tests, with the values read from Infisical on the control machine.
+#
+# Needs the Agent-rendered env files (roles/infisical_agent, issue 027):
+# without them the role is skipped with a warning, not failed.
+
+- name: Check the Infisical Agent has rendered production's env files
+  ansible.builtin.stat:
+    path: "{{ shared_services_root }}/env/{{ item }}.env"
+  loop: "{{ shared_services_env_files }}"
+  register: shared_services_env_stat
+
+- name: Note which env files are missing
+  ansible.builtin.set_fact:
+    shared_services_missing: >-
+      {{ shared_services_env_stat.results | rejectattr('stat.exists') | map(attribute='item') | list }}
+
+- name: Warn that the shared services are skipped
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: shared services skipped: {{ shared_services_missing | map('regex_replace', '$', '.env') | join(', ') }}
+      missing in {{ shared_services_root }}/env. The Infisical Agent renders
+      them (roles/infisical_agent): export the leviosa-vps credential, re-run
+      the setup, check `systemctl status infisical-agent`, then run the setup
+      again to start Postgres, RabbitMQ and Caddy.
+  when: shared_services_missing | length > 0
+
+- name: Start the shared services and set up each environment's access
+  when: shared_services_missing | length == 0
+  block:
+    # force: false: only when absent (before the first production deploy).
+    # The root runner replaces it with the deployed commit's copy on every
+    # deploy; overwriting it from the operator's checkout would hand the
+    # Agent's next recreate an unreleased compose file. Same path, owner and
+    # mode as the runner writes.
+    - name: Install production's compose file (until the first deploy installs its own)
+      ansible.builtin.copy:
+        src: "{{ shared_services_compose_src }}"
+        dest: "{{ shared_services_root }}/docker-compose.yml"
+        owner: root
+        group: root
+        mode: "0644"
+        force: false
+
+    # --no-recreate: a running service is left alone whatever changed (its
+    # env file, the compose file); a stopped one is started. As root: the
+    # env files are root-only. Compose reports "Created"/"Started" only when
+    # it acted ("Running"/"Healthy" otherwise).
+    - name: Start Postgres, RabbitMQ and Caddy (never recreated)
+      ansible.builtin.command:
+        argv: "{{ ['docker', 'compose', '--project-directory', shared_services_root,
+                   'up', '--detach', '--no-recreate', '--wait',
+                   '--wait-timeout', shared_services_wait_timeout | string] + shared_services_started }}"
+      register: shared_services_up
+      changed_when: shared_services_up.stderr is search('(Creat|Start)(ed|ing)')
+      when: not ansible_check_mode
+
+    - name: Find the Postgres and RabbitMQ containers
+      ansible.builtin.command:
+        argv: [docker, compose, --project-directory, "{{ shared_services_root }}", ps, --quiet, "{{ item }}"]
+      loop: [postgres, rabbitmq]
+      register: shared_services_containers
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Install the access script
+      ansible.builtin.copy:
+        src: "{{ shared_services_script_src }}"
+        dest: "{{ shared_services_script }}"
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Check the Infisical project ID is set
+      ansible.builtin.assert:
+        that:
+          - shared_services_infisical_project_id is match('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+        fail_msg: >-
+          infisical_project_id is still a placeholder in playbooks/site.yml:
+          set it (Infisical > leviosa > Project settings > Project ID) to read
+          the /db and /rabbitmq folders.
+        quiet: true
+
+    # On the control machine, through the operator's own `infisical login`
+    # (ADR-0017): nothing is stored locally or on the server. Read-only, so
+    # it also runs in --check. no_log: the output holds passwords.
+    - name: Read the /db and /rabbitmq folders from Infisical through the operator's login
+      ansible.builtin.command:
+        argv: "{{ ['infisical', 'secrets', 'get'] + item.names
+                  + ['--projectId=' ~ shared_services_infisical_project_id,
+                     '--env=' ~ item.env, '--path=' ~ item.path, '--output=dotenv', '--silent'] }}"
+      loop: "{{ shared_services_infisical_reads }}"
+      loop_control:
+        label: "{{ item.env }}{{ item.path }}"
+      delegate_to: localhost
+      become: false
+      register: shared_services_lookup
+      changed_when: false
+      check_mode: false
+      no_log: true
+
+    # {"prod/db": {"POSTGRES_USER": ...}, ...}. regex_findall gives
+    # [(key, quote, value)] per line: no backreference to escape here.
+    - name: Parse the Infisical values
+      ansible.builtin.set_fact:
+        shared_services_values: >-
+          {{ shared_services_values | default({}) | combine({
+               item.item.env ~ item.item.path:
+                 dict((item.stdout | regex_findall(shared_services_dotenv_pattern, multiline=True) | map('first'))
+                      | zip(item.stdout | regex_findall(shared_services_dotenv_pattern, multiline=True) | map('last')))
+             }) }}
+      loop: "{{ shared_services_lookup.results }}"
+      loop_control:
+        label: "{{ item.item.env }}{{ item.item.path }}"
+      vars:
+        # KEY=value, the value optionally quoted. A folded scalar: no YAML
+        # escape processing of the backreference.
+        shared_services_dotenv_pattern: >-
+          ^([A-Z][A-Z0-9_]*)=(['"]?)(.*)\2$
+      no_log: true
+
+    # Names only, never a value: a failing assert in a loop would print the
+    # looped results (the CLI output) in verbose mode.
+    - name: Find the values Infisical did not return
+      ansible.builtin.set_fact:
+        shared_services_unread: >-
+          {{ shared_services_unread | default([]) + [item.item.env ~ item.item.path ~ ' (exit ' ~ item.rc ~ ')']
+             if item.rc != 0
+             else shared_services_unread | default([])
+                  + item.item.names
+                    | reject('in', shared_services_values[item.item.env ~ item.item.path]
+                                   | dict2items | rejectattr('value', 'match', '^$|^[*]') | map(attribute='key') | list)
+                    | map('regex_replace', '^', item.item.env ~ item.item.path ~ ' ')
+                    | list }}
+      loop: "{{ shared_services_lookup.results }}"
+      loop_control:
+        label: "{{ item.item.env }}{{ item.item.path }}"
+      no_log: true
+
+    - name: Fail when a value could not be read from Infisical
+      ansible.builtin.fail:
+        msg: >-
+          Could not read from Infisical: {{ shared_services_unread | join(', ') }}.
+          A missing secret reads as a placeholder. Install the Infisical CLI,
+          run `infisical login`, check infisical_project_id in
+          playbooks/site.yml and the folders (infra/infisical/README.md,
+          "Folders and keys"), then re-run the setup.
+      when: shared_services_unread | default([]) | length > 0
+
+    # The values reach the script on stdin, as shell-quoted assignments,
+    # never on a command line or in the task's environment (both show in
+    # verbose output). The script validates them, prints "changed: ..." per
+    # change and never a password; it restarts nothing.
+    - name: Set up staging's Postgres role and database and each environment's RabbitMQ vhost and user
+      ansible.builtin.command:
+        argv:
+          - bash
+          - -c
+          - 'set -a && . /dev/stdin && set +a && exec "$0" "$@"'
+          - "{{ shared_services_script }}"
+          - "{{ shared_services_containers.results[0].stdout }}"
+          - "{{ shared_services_containers.results[1].stdout }}"
+        stdin: |
+          PROD_DB_USER={{ shared_services_values['prod/db'].POSTGRES_USER | quote }}
+          PROD_DB_NAME={{ shared_services_values['prod/db'].POSTGRES_DB | quote }}
+          STAGING_DB_USER={{ shared_services_values['staging/db'].POSTGRES_USER | quote }}
+          STAGING_DB_PASSWORD={{ shared_services_values['staging/db'].POSTGRES_PASSWORD | quote }}
+          STAGING_DB_NAME={{ shared_services_values['staging/db'].POSTGRES_DB | quote }}
+          PROD_MQ_USER={{ shared_services_values['prod/rabbitmq'].RABBITMQ_USER | quote }}
+          PROD_MQ_PASSWORD={{ shared_services_values['prod/rabbitmq'].RABBITMQ_PASSWORD | quote }}
+          PROD_MQ_VHOST={{ shared_services_values['prod/rabbitmq'].RABBITMQ_VHOST | quote }}
+          STAGING_MQ_USER={{ shared_services_values['staging/rabbitmq'].RABBITMQ_USER | quote }}
+          STAGING_MQ_PASSWORD={{ shared_services_values['staging/rabbitmq'].RABBITMQ_PASSWORD | quote }}
+          STAGING_MQ_VHOST={{ shared_services_values['staging/rabbitmq'].RABBITMQ_VHOST | quote }}
+      register: shared_services_setup
+      changed_when: >-
+        shared_services_setup.stdout is search('^setup-shared-services: changed$', multiline=True)
+      failed_when: false
+      when: not ansible_check_mode
+      no_log: true
+
+    # The task above is no_log (its arguments hold the passwords), which
+    # would also hide why it failed. The script's own output holds no
+    # password (the harness checks it), so it is shown here.
+    - name: Report the access script's failure
+      ansible.builtin.fail:
+        msg: "{{ (shared_services_setup.stdout_lines | default([])) + (shared_services_setup.stderr_lines | default([])) }}"
+      when:
+        - shared_services_setup is not skipped
+        - shared_services_setup.rc | default(0) != 0
+
+    - name: Show what the access script did
+      ansible.builtin.debug:
+        msg: "{{ shared_services_setup.stdout_lines }}"
+      when: shared_services_setup is not skipped

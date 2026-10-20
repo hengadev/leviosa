@@ -19,14 +19,14 @@ deployed from an operator computer.
 | `user` | the deploy user `leviosa`, in its own group only; root's and the deploy user's `authorized_keys` from the keys file (below) |
 | `deploy_gate` | the CI keys' forced command, the root deploy runner and the deploy user's **only** sudoers rule (see [its README](roles/deploy_gate/README.md)) |
 | `ssh` | a drop-in read before every other one (`/etc/ssh/sshd_config.d/00-leviosa-hardening.conf`): keys only, root by key only, only `root` and `leviosa` may log in, no forwarding, modern algorithms; validated with `sshd -t` before it is installed |
-| `fail2ban` | SSH jails (brute force and floods); notifications to the email below. The Caddy jail stays off until Caddy writes its access log (issue 026) |
+| `fail2ban` | SSH jails (brute force and floods); a Caddy jail (403s and 429s by `client_ip` in both sites' JSON access logs, created empty if Caddy has not yet); notifications to the email below |
 | `firewall` | UFW: deny incoming, allow 22 (rate limited), 80 and 443, nothing else |
 | `app` | the stack directories (below) |
+| `caddy` | `infra/compose/caddy/Caddyfile`, as is, into `/opt/leviosa/caddy/etc/`; on a change, reloaded into Caddy only if it runs |
+| `shared_services` | production's Postgres, RabbitMQ and Caddy up (`up --no-recreate`: never recreated or restarted by a run); then [`infra/compose/setup-shared-services.sh`](../compose/setup-shared-services.sh), the harness-tested script, with the values of `prod`/`staging` `/db` and `/rabbitmq` read through the operator's `infisical login`: staging's Postgres role and database (no `CONNECT` on any other database), one RabbitMQ vhost and user per environment with permissions on its own vhost only and no tags, no `guest`. Skipped with a warning while the Agent's env files are missing. Before the first production deploy, it installs `docker-compose.prod.yml` from the checkout as `/opt/leviosa/docker-compose.yml` (only if absent: every deploy then installs its own) |
 
-Still to come in the same playbook, in this order: `caddy` and
-`shared_services` (Postgres, RabbitMQ and Caddy up, staging's database role,
-the RabbitMQ vhosts; issue 026), `infisical_agent` (the env files; issue 027)
-and `backup` (issue 028).
+Still to come in the same playbook: `infisical_agent` (the env files; issue
+027) between `caddy` and `shared_services`, and `backup` (issue 028).
 
 ### Stack directories (`roles/app`)
 
@@ -199,7 +199,7 @@ Group variables (`playbooks/group_vars/all.yml`, no secrets):
 | `docker_network_name` | `leviosa_network` | the external network of both compose files |
 | `system_timezone` | `Etc/UTC` | |
 | `auto_security_updates`, `auto_updates_reboot` | `true`, `false` | unattended upgrades (Docker packages excluded) |
-| `fail2ban_*` | see the file | jail thresholds; `fail2ban_caddy_enabled: false` until issue 026 |
+| `fail2ban_*` | see the file | jail thresholds; the Caddy jail reads both sites' access logs (`fail2ban_caddy_log_paths`) |
 
 Values that are secrets are not variables: they live in Infisical and reach
 the server through the Agent's env files (issue 027).
@@ -263,7 +263,9 @@ infra/ansible/
     ├── user/                   # deploy user, authorized_keys from the keys file
     ├── deploy_gate/            # CI forced command, root runner, sudoers rule
     ├── ssh/                    # sshd hardening drop-in
-    ├── fail2ban/               # SSH (and later Caddy) jails
+    ├── fail2ban/               # SSH and Caddy jails
     ├── firewall/               # UFW: 22, 80, 443
-    └── app/                    # stack directories
+    ├── app/                    # stack directories
+    ├── caddy/                  # the Caddyfile, reloaded when Caddy runs
+    └── shared_services/        # Postgres, RabbitMQ, Caddy up; staging role, vhosts, users
 ```

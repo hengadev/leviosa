@@ -1,0 +1,20 @@
+---
+# Caddy: the Caddyfile into production's stack root (issue 026).
+#
+# Only the file: roles/shared_services starts Caddy, and the Infisical Agent
+# recreates it when env/caddy.env changes. A changed Caddyfile is reloaded
+# into a running Caddy (handler); on a fresh server Caddy is not up yet and
+# starts with this file.
+
+# copy, not template: the repository file is what the harness tests
+# (infra/compose/test/run-harness.sh). Root's, world-readable like the
+# directory: the container reads it through a read-only bind mount of
+# caddy/etc (the directory, so the file's atomic replacement is seen).
+- name: Install the Caddyfile
+  ansible.builtin.copy:
+    src: "{{ caddy_caddyfile_src }}"
+    dest: "{{ caddy_caddyfile_dest }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload Caddy

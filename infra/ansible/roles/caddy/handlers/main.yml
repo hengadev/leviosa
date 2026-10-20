@@ -1,0 +1,39 @@
+---
+# Reload Caddy, only when it runs: never fail on a fresh server where
+# roles/shared_services has not started it yet (it then starts with the new
+# file). `docker exec` rather than `docker compose exec`: compose would load
+# every service's env file. A Caddyfile Caddy rejects fails the run, and
+# Caddy keeps serving the previous configuration.
+
+- name: Find the running Caddy container
+  ansible.builtin.command:
+    argv:
+      - docker
+      - ps
+      - --quiet
+      - --filter
+      - "label=com.docker.compose.project={{ caddy_compose_project }}"
+      - --filter
+      - "label=com.docker.compose.service={{ caddy_compose_service }}"
+      - --filter
+      - status=running
+  register: caddy_running
+  changed_when: false
+  check_mode: false
+  listen: Reload Caddy
+
+- name: Reload the Caddyfile into the running Caddy
+  ansible.builtin.command:
+    argv:
+      - docker
+      - exec
+      - "{{ caddy_running.stdout_lines | first }}"
+      - caddy
+      - reload
+      - --config
+      - /etc/caddy/Caddyfile
+  changed_when: true
+  when:
+    - caddy_running.stdout_lines | length > 0
+    - not ansible_check_mode
+  listen: Reload Caddy

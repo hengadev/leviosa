@@ -19,9 +19,11 @@
 #   4. /healthz SHA mismatch (backend or frontend) fails the deploy
 #   5. no ADMIN_* value in the running backend or frontend
 #   6. data survives container recreation (`down`, then a deploy)
-#   staging beside production (019) — after fixtures/create-staging-services.sh
-#   created staging's Postgres role and database and RabbitMQ vhost and user
-#   on production's services, as Ansible will (issue 026)
+#   staging beside production (019) — after ../setup-shared-services.sh, the
+#   script Ansible runs on the server (issue 026), created staging's Postgres
+#   role and database and each environment's RabbitMQ vhost and user on
+#   production's services (idempotent: a second run reports no change;
+#   restarts nothing; no guest user; each user on its own vhost only)
 #   S1. both stacks deployed with different SHAs, each /healthz reports its own
 #   S2. production's frontend only reaches production's backend (no alias
 #       collision on the shared network)
@@ -80,7 +82,7 @@ LOCALSTACK=$NAME-localstack
 BACKEND_REPO=$NAME-backend
 FRONTEND_REPO=$NAME-frontend
 LABEL=leviosa.harness=$RUN_ID
-CREATE_STAGING_SERVICES=$FIXTURES/create-staging-services.sh
+SETUP_SHARED_SERVICES=$COMPOSE_DIR/setup-shared-services.sh
 
 LOCALSTACK_IMAGE=localstack/localstack:4.6
 AWS_REGION=eu-central-1             # as in fixtures/{prod,staging}/env/backend.env
@@ -265,18 +267,27 @@ staging_db() { url_parts "$(env_value "$TMP/staging/env/backend.env" DATABASE_UR
 staging_mq() { url_parts "$(env_value "$TMP/staging/env/backend.env" RABBITMQ_URL)"; }
 field() { cut -d ' ' -f "$1"; } # field 1 user, 2 password, 3 host, 4 database or vhost
 
-# fixtures/create-staging-services.sh with the values Ansible would read
-# from Infisical (prod/db, staging/db, staging/rabbitmq).
-create_staging_services() { # $1 log name
-	local db mq
+# ../setup-shared-services.sh with the values Ansible reads from Infisical
+# (prod/db, staging/db, prod/rabbitmq, staging/rabbitmq). Extra VAR=value
+# arguments override them (a password rotation).
+setup_shared_services() { # $1 log name, [VAR=value...]
+	local db mq log=$1
+	shift
 	db=$(staging_db) && mq=$(staging_mq) || return 1
 	env PROD_DB_USER="$(env_value "$TMP/prod/env/postgres.env" POSTGRES_USER)" \
 		PROD_DB_NAME="$(env_value "$TMP/prod/env/postgres.env" POSTGRES_DB)" \
 		STAGING_DB_USER="$(field 1 <<<"$db")" STAGING_DB_PASSWORD="$(field 2 <<<"$db")" \
 		STAGING_DB_NAME="$(field 4 <<<"$db")" \
+		PROD_MQ_USER="$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_USER)" \
+		PROD_MQ_PASSWORD="$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_PASS)" \
+		PROD_MQ_VHOST="$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_VHOST)" \
 		STAGING_MQ_USER="$(field 1 <<<"$mq")" STAGING_MQ_PASSWORD="$(field 2 <<<"$mq")" \
 		STAGING_MQ_VHOST="$(field 4 <<<"$mq")" \
-		"$CREATE_STAGING_SERVICES" "$(cid postgres)" "$(cid rabbitmq)" >"$TMP/logs/$1.log" 2>&1
+		"$@" "$SETUP_SHARED_SERVICES" "$(cid postgres)" "$(cid rabbitmq)" >"$TMP/logs/$log.log" 2>&1
+}
+# Postgres and RabbitMQ: container id, start time, restart count.
+shared_services_state() {
+	docker inspect -f '{{.Id}} {{.State.StartedAt}} restarts={{.RestartCount}}' "$(cid postgres)" "$(cid rabbitmq)"
 }
 
 # Every production container (running or not) with what a restart or a
@@ -346,10 +357,11 @@ amqp_open() {
 
 # Connect to production's Postgres over TCP as role $1 (password $2) to
 # database $3 and print the current user, or psql's error. The password goes
-# through the environment, never a command line.
+# through the environment, never a command line. To the container's own
+# address, not 127.0.0.1: the image trusts loopback without any password.
 pg_connect_as() {
-	env PGPASSWORD="$2" docker exec -e PGPASSWORD "$(cid postgres)" \
-		psql -X -h 127.0.0.1 -U "$1" -d "$3" -tAc 'SELECT current_user' 2>&1 || true
+	env PGPASSWORD="$2" docker exec -e PGPASSWORD "$(cid postgres)" sh -c \
+		'exec psql -X -h "$(hostname)" -U "$1" -d "$2" -tAc "SELECT current_user"' sh "$1" "$3" 2>&1 || true
 }
 
 # Production's Redis, Postgres and RabbitMQ passwords, from its env files:
@@ -662,8 +674,8 @@ case_static() {
 	local file=$COMPOSE_DIR/docker-compose.prod.yml
 	check "deploy passes bash -n" bash -n "$DEPLOY"
 	if command -v shellcheck >/dev/null; then
-		check "deploy, run-harness.sh and create-staging-services.sh pass shellcheck" \
-			shellcheck "$DEPLOY" "$HARNESS_DIR/run-harness.sh" "$CREATE_STAGING_SERVICES"
+		check "deploy, run-harness.sh and setup-shared-services.sh pass shellcheck" \
+			shellcheck "$DEPLOY" "$HARNESS_DIR/run-harness.sh" "$SETUP_SHARED_SERVICES"
 	else
 		note "shellcheck not installed: skipped"
 	fi
@@ -974,20 +986,9 @@ case_staging_before_prod() {
 }
 
 case_staging_services() {
-	section "staging setup: role, database, vhost and user on production's services (create-staging-services.sh, as Ansible will)"
-	if create_staging_services staging-services-1; then
-		ok "create-staging-services.sh exits 0"
-	else
-		show_log "$TMP/logs/staging-services-1.log"
-		fatal "create-staging-services.sh failed"
-	fi
-	if create_staging_services staging-services-2; then
-		ok "a second run exits 0 as well (idempotent)"
-	else
-		show_log "$TMP/logs/staging-services-2.log"
-		bad "the second create-staging-services.sh run failed"
-	fi
-	local db mq role sdb mq_user mq_vhost prod_db
+	section "shared services setup: staging's role and database, each environment's vhost and user (setup-shared-services.sh, as Ansible runs it)"
+	local db mq role sdb mq_user mq_vhost prod_db prod_mq_user prod_mq_vhost before log
+	local rotated_pg=HarnessRotatedStagingPg3 rotated_mq=HarnessRotatedStagingMq3
 	db=$(staging_db)
 	mq=$(staging_mq)
 	role=$(field 1 <<<"$db")
@@ -995,6 +996,45 @@ case_staging_services() {
 	mq_user=$(field 1 <<<"$mq")
 	mq_vhost=$(field 4 <<<"$mq")
 	prod_db=$(env_value "$TMP/prod/env/postgres.env" POSTGRES_DB)
+	prod_mq_user=$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_USER)
+	prod_mq_vhost=$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_VHOST)
+	# The image creates no guest user when RABBITMQ_DEFAULT_USER is set: add
+	# one, as an older data directory would have it.
+	rabbitmqctl_q add_user guest HarnessGuestPassword1 >/dev/null
+	before=$(shared_services_state)
+
+	if setup_shared_services shared-services-1; then
+		ok "setup-shared-services.sh exits 0"
+	else
+		show_log "$TMP/logs/shared-services-1.log"
+		fatal "setup-shared-services.sh failed"
+	fi
+	check "the first run reports that it changed something" \
+		[ "$(tail -n 1 "$TMP/logs/shared-services-1.log")" = "setup-shared-services: changed" ]
+	if setup_shared_services shared-services-2; then
+		ok "a second run exits 0 as well"
+	else
+		show_log "$TMP/logs/shared-services-2.log"
+		bad "the second setup-shared-services.sh run failed"
+	fi
+	check "a second run changes nothing (reports unchanged, no changed: line)" \
+		bash -c '[ "$(tail -n 1 "$1")" = "setup-shared-services: unchanged" ] && ! grep -q "changed: " "$1"' _ \
+		"$TMP/logs/shared-services-2.log"
+
+	# A rotation in Infisical: the next run re-applies exactly the passwords.
+	setup_shared_services shared-services-rotate STAGING_DB_PASSWORD=$rotated_pg STAGING_MQ_PASSWORD=$rotated_mq || true
+	check "a password rotation is applied, and reported as exactly two changes" \
+		[ "$(grep -c 'changed: set the password of the' "$TMP/logs/shared-services-rotate.log")/$(grep -c 'changed: ' "$TMP/logs/shared-services-rotate.log")" = 2/2 ]
+	check "... $role logs in to Postgres with the rotated password" [ "$(pg_connect_as "$role" "$rotated_pg" "$sdb")" = "$role" ]
+	check "... $mq_user logs in to RabbitMQ (AMQP) with the rotated password" [ "$(amqp_open "$mq_user" "$rotated_mq" "$mq_vhost")" = open-ok ]
+	setup_shared_services shared-services-restore || true
+	check "rotating back is two changes again" \
+		[ "$(grep -c 'changed: set the password of the' "$TMP/logs/shared-services-restore.log")/$(grep -c 'changed: ' "$TMP/logs/shared-services-restore.log")" = 2/2 ]
+	setup_shared_services shared-services-3 || true
+	check "... and the run after it changes nothing" \
+		[ "$(tail -n 1 "$TMP/logs/shared-services-3.log")" = "setup-shared-services: unchanged" ]
+	check "no run restarted or recreated Postgres or RabbitMQ" [ "$(shared_services_state)" = "$before" ]
+
 	check "the staging role $role is no superuser and cannot create roles or databases" \
 		[ "$(psql_q "SELECT rolsuper OR rolcreaterole OR rolcreatedb OR rolreplication OR rolbypassrls
 			FROM pg_roles WHERE rolname = '$role'")" = f ]
@@ -1002,12 +1042,25 @@ case_staging_services() {
 		[ "$(psql_q "SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname = '$sdb'")" = "$role" ]
 	check "$role holds no CONNECT privilege on production's database $prod_db" \
 		[ "$(psql_q "SELECT has_database_privilege('$role', '$prod_db', 'CONNECT')")" = f ]
+	check "$role holds CONNECT on no database but $sdb (not even postgres or template1)" \
+		[ "$(psql_q "SELECT string_agg(datname, ' ') FROM pg_database
+			WHERE datallowconn AND has_database_privilege('$role', datname, 'CONNECT')")" = "$sdb" ]
 	check "the RabbitMQ user $mq_user has permissions on vhost $mq_vhost only" \
 		[ "$(rabbitmqctl_q list_user_permissions --no-table-headers "$mq_user" | cut -f1 | tr '\n' ' ')" = "$mq_vhost " ]
-	check "the RabbitMQ user $mq_user has no tags (no management access)" \
-		[ "$(rabbitmqctl_q list_users --no-table-headers | awk -v user="$mq_user" '$1 == user { print $2 }')" = "[]" ]
-	check "the script's output holds no password" \
-		bash -c '! grep -qF -e "$2" -e "$3" "$1"' _ "$TMP/logs/staging-services-1.log" "$(field 2 <<<"$db")" "$(field 2 <<<"$mq")"
+	check "production's RabbitMQ user $prod_mq_user has permissions on vhost $prod_mq_vhost only" \
+		[ "$(rabbitmqctl_q list_user_permissions --no-table-headers "$prod_mq_user" | cut -f1 | tr '\n' ' ')" = "$prod_mq_vhost " ]
+	check "the only RabbitMQ users are $prod_mq_user and $mq_user, both without tags (no management access)" \
+		[ "$(rabbitmqctl_q list_users --no-table-headers | sort | tr '\t\n' ': ')" = "$(printf '%s\n' "$prod_mq_user:[]" "$mq_user:[]" | sort | tr '\n' ' ')" ]
+	check "the guest user is gone" \
+		bash -c '! grep -qx guest' < <(rabbitmqctl_q list_users --no-table-headers | cut -f1)
+	check "the backend is still connected to RabbitMQ as $prod_mq_user on vhost $prod_mq_vhost" \
+		bash -c '[[ $(cat) == *"$1"*"$2"* ]]' _ "$prod_mq_user" "$prod_mq_vhost" < <(rabbitmqctl_q list_connections user vhost 2>/dev/null)
+	for log in shared-services-1 shared-services-2 shared-services-rotate shared-services-restore shared-services-3; do
+		check "the output of $log holds no password" \
+			bash -c '! grep -qF -e "$2" -e "$3" -e "$4" -e "$5" -e "$6" "$1"' _ "$TMP/logs/$log.log" \
+			"$(field 2 <<<"$db")" "$(field 2 <<<"$mq")" "$(env_value "$TMP/prod/env/rabbitmq.env" RABBITMQ_DEFAULT_PASS)" \
+			"$rotated_pg" "$rotated_mq"
+	done
 }
 
 case_staging_side_by_side() {
@@ -1105,6 +1158,9 @@ case_staging_postgres() {
 	check "$role is refused on production's database $prod_db ($(head -n 1 <<<"$got"))" \
 		bash -c '[ "$1" != "$2" ] && [[ $1 == *"permission denied for database"* ]]' _ "$got" "$role"
 	check "... for lack of the CONNECT privilege, not a bad password" \
+		grep -q 'does not have CONNECT privilege' <<<"$got"
+	got=$(pg_connect_as "$role" "$password" postgres)
+	check "$role is refused on the postgres maintenance database too, for lack of CONNECT ($(head -n 1 <<<"$got"))" \
 		grep -q 'does not have CONNECT privilege' <<<"$got"
 }
 

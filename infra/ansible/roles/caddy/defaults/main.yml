@@ -1,0 +1,19 @@
+---
+# roles/caddy defaults (issue 026).
+#
+# The Caddyfile is the repository's plain file, installed as is: no template,
+# no variable (infra/compose/caddy/Caddyfile, issue 020). It reads its
+# per-environment values (Cloudflare token, staging basic auth) from the
+# container's env/caddy.env, rendered by the Infisical Agent, and needs no
+# ACME email.
+caddy_caddyfile_src: "{{ playbook_dir }}/../../compose/caddy/Caddyfile"
+
+# Production's stack root: docker-compose.prod.yml mounts ./caddy/etc
+# read-only at /etc/caddy. roles/app creates the directories.
+caddy_stack_root: "{{ app_prod_root | default('/opt/leviosa') }}"
+caddy_caddyfile_dest: "{{ caddy_stack_root }}/caddy/etc/Caddyfile"
+
+# The compose project and service the reload looks for (docker-compose.prod.yml:
+# `name: leviosa`, service `caddy`).
+caddy_compose_project: leviosa
+caddy_compose_service: caddy
