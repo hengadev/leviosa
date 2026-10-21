@@ -48,7 +48,7 @@ for 30 days). `make check` proves this offline (see [Checks](#checks)).
   | `leviosa-infra` key | Used for |
   | --- | --- |
   | `TF_VAR_hcloud_token` | Hetzner provider |
-  | `TF_VAR_cloudflare_token` | Cloudflare provider (DNS edit on `leviosa.care`) |
+  | `TF_VAR_cloudflare_token` | Cloudflare provider (DNS edit on `leviosa.care`). Not the token Caddy uses: that one is `prod/caddy` `CLOUDFLARE_API_TOKEN` in `leviosa`, created separately |
   | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | AWS provider **and** the S3 state backend (an IAM user that can manage S3, IAM and KMS) |
 
   The server's `leviosa-vps` identity has no access to `leviosa-infra`.

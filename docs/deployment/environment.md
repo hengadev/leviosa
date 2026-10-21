@@ -153,7 +153,7 @@ Terraform. A copy here would appear twice in `backend.env`.
 
 | Key | prod | staging | dev | Rendered into → read by | Written by |
 | --- | :-: | :-: | :-: | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | ✓ | | | `caddy.env` → Caddy (TLS through the DNS challenge) | operator |
+| `CLOUDFLARE_API_TOKEN` | ✓ | | | `caddy.env` → Caddy (TLS through the DNS challenge). Its own token, DNS edit on `leviosa.care`, separate from Terraform's `TF_VAR_cloudflare_token`: each can be revoked without breaking the other, and the server holds only this one | operator |
 | `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_HASH` (a `caddy hash-password` bcrypt hash) | | ✓ | | `caddy.env` → Caddy (staging's basic auth) | operator. **Set both together**: with only one, Caddy refuses its config and both stacks go down |
 
 ### `/backup` (`backup.env`, prod only)
