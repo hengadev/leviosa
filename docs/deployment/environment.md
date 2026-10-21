@@ -104,11 +104,12 @@ later change in `/admin` changes nothing for an existing account.
 | `RABBITMQ_HOST` | `rabbitmq` | `rabbitmq` | `localhost` | `RABBITMQ_URL` | operator |
 | `RABBITMQ_PORT` | `5672` | `5672` | `5672` | `RABBITMQ_URL` | operator |
 
-### `/encx` — the pepper (whole into `backend.env`)
+### `/encx` — the pepper and the DEK cache (whole into `backend.env`)
 
 | Key | prod | staging | dev | Rendered into → read by | Written by |
 | --- | :-: | :-: | :-: | --- | --- |
 | `ENCX_PEPPER` | ✓ | ✓ (different from prod) | ✓ (the public dev pepper from `backend/example.env`) | `backend.env` → backend, and `leviosa-restore-test` (prod) | operator, once; **never rotated** |
+| `ENCX_DEK_CACHE_MAX_ENTRIES`, `ENCX_DEK_CACHE_TTL` | optional | optional | optional | `backend.env` → backend: the in-memory cache of decrypted data keys (issue 031), so the public partner listing does not pay one KMS call per partner per visit. Unset: encx's defaults (4096 entries, 10 minutes). `ENCX_DEK_CACHE_MAX_ENTRIES=0` disables the cache; the TTL is a duration (`10m`, `45s`). Invalid values stop the backend at startup | operator |
 
 The KEK alias is **not** here: it is `ENCX_KMS_KEY_ALIAS` in `/aws`, written by
 Terraform. A copy here would appear twice in `backend.env`.

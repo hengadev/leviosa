@@ -40,7 +40,9 @@
       "RABBITMQ_PORT": "5672"
     },
     "/encx": {
-      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXByb2QtcGVwcGVyLTMyYiE="
+      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXByb2QtcGVwcGVyLTMyYiE=",
+      "ENCX_DEK_CACHE_MAX_ENTRIES": "4096",
+      "ENCX_DEK_CACHE_TTL": "10m"
     },
     "/aws": {
       "AWS_ACCESS_KEY_ID": "AKIAFIXTUREPROD00001",
@@ -124,7 +126,9 @@
       "RABBITMQ_PORT": "5672"
     },
     "/encx": {
-      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXN0Zy1wZXBwZXItMzJieSE="
+      "ENCX_PEPPER": "bGV2aW9zYS1maXh0dXJlLXN0Zy1wZXBwZXItMzJieSE=",
+      "ENCX_DEK_CACHE_MAX_ENTRIES": "4096",
+      "ENCX_DEK_CACHE_TTL": "10m"
     },
     "/aws": {
       "AWS_ACCESS_KEY_ID": "AKIAFIXTURESTAGING01",
