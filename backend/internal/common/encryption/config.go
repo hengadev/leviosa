@@ -6,7 +6,9 @@ package encryption
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 )
 
 // Environment variables read by ConfigFromEnv.
@@ -22,6 +24,14 @@ const (
 	EnvAWSSecretAccessKey = "AWS_SECRET_ACCESS_KEY"
 	// EnvAWSEndpointURL overrides the KMS endpoint; set only for LocalStack.
 	EnvAWSEndpointURL = "AWS_ENDPOINT_URL"
+	// EnvDEKCacheMaxEntries bounds encx's in-memory cache of decrypted data keys
+	// (issue 031): without it, every read of an encrypted record makes one KMS call.
+	// Unset leaves encx's default bound (4096 entries); "0" disables the cache; any
+	// other value must be a positive integer and is the bound itself.
+	EnvDEKCacheMaxEntries = "ENCX_DEK_CACHE_MAX_ENTRIES"
+	// EnvDEKCacheTTL is how long a decrypted data key stays cached, as a Go duration
+	// string ("10m", "45s", "1h30m"). Unset leaves encx's default (10 minutes).
+	EnvDEKCacheTTL = "ENCX_DEK_CACHE_TTL"
 )
 
 const aliasPrefix = "alias/"
@@ -43,6 +53,12 @@ type Config struct {
 	// KeyMetadataDir is where encx keeps its local KEK-version database. It is not read
 	// from the environment; leave it empty to get a fresh directory per process (see NewCrypto).
 	KeyMetadataDir string
+
+	// DEKCacheMaxEntries and DEKCacheTTL are the raw EnvDEKCache* values. DEKCache
+	// parses them and Validate checks them, so a malformed value surfaces at startup
+	// together with every other config error.
+	DEKCacheMaxEntries string
+	DEKCacheTTL        string
 }
 
 // ConfigFromEnv reads the Env* variables through getenv (typically os.Getenv).
@@ -54,7 +70,58 @@ func ConfigFromEnv(getenv func(string) string) Config {
 		AWSAccessKeyID:     getenv(EnvAWSAccessKeyID),
 		AWSSecretAccessKey: getenv(EnvAWSSecretAccessKey),
 		AWSEndpointURL:     getenv(EnvAWSEndpointURL),
+		DEKCacheMaxEntries: getenv(EnvDEKCacheMaxEntries),
+		DEKCacheTTL:        getenv(EnvDEKCacheTTL),
 	}
+}
+
+// DEKCacheConfig is the parsed form of the EnvDEKCache* variables: encx's bounded
+// in-memory cache of decrypted data keys (encx ADR-0003), which NewCrypto enables by
+// default. Public pages that decrypt partner data would otherwise make one sequential
+// KMS round trip per record on every anonymous visit.
+type DEKCacheConfig struct {
+	// Disabled is true when EnvDEKCacheMaxEntries is "0": NewCrypto builds encx without
+	// the cache, so every read goes back to the KMS. The escape hatch for an operator who
+	// needs a KEK revocation or the KMS audit trail to see every read.
+	Disabled bool
+	// MaxEntries is the cache's entry bound. Zero leaves the bound to encx's default
+	// (4096 entries; a few thousand, per Leviosa's ADR-0015).
+	MaxEntries int
+	// TTL is how long a decrypted data key is kept. Zero leaves it to encx's default
+	// (10 minutes). The TTL is absolute: reads never extend it.
+	TTL time.Duration
+}
+
+// DEKCache parses the EnvDEKCache* values. An empty MaxEntries enables the cache with
+// encx's default bound, "0" disables it, and any other value must be a positive integer.
+// An empty TTL leaves encx's default; any other value must be a positive duration.
+func (c Config) DEKCache() (DEKCacheConfig, error) {
+	var parsed DEKCacheConfig
+
+	switch raw := strings.TrimSpace(c.DEKCacheMaxEntries); {
+	case raw == "":
+		// Enabled, encx's default bound.
+	case raw == "0":
+		parsed.Disabled = true
+	default:
+		n, err := strconv.Atoi(raw)
+		if err != nil || n <= 0 {
+			return parsed, fmt.Errorf("%s must be a non-negative integer (0 disables the DEK cache), got %q",
+				EnvDEKCacheMaxEntries, c.DEKCacheMaxEntries)
+		}
+		parsed.MaxEntries = n
+	}
+
+	if raw := strings.TrimSpace(c.DEKCacheTTL); raw != "" {
+		d, err := time.ParseDuration(raw)
+		if err != nil || d <= 0 {
+			return parsed, fmt.Errorf("%s must be a positive duration like %q or %q, got %q",
+				EnvDEKCacheTTL, "10m", "45s", c.DEKCacheTTL)
+		}
+		parsed.TTL = d
+	}
+
+	return parsed, nil
 }
 
 // Validate reports every missing or malformed value. A missing or invalid pepper wraps
@@ -71,6 +138,10 @@ func (c Config) Validate() error {
 	}
 
 	if _, err := NewPepperStore(c.Pepper); err != nil {
+		errs = append(errs, err)
+	}
+
+	if _, err := c.DEKCache(); err != nil {
 		errs = append(errs, err)
 	}
 
