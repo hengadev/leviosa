@@ -26,6 +26,12 @@ var ErrKeyCreationRefused = errors.New("refusing to create a KMS key: the KEK mu
 // configured pepper. Every entry point that encrypts or decrypts (serve, the seed
 // tool, one-off run modes) builds encx through this function.
 //
+// The DEK cache (encx ADR-0003) is enabled unless cfg disables it: repeated reads of
+// the same record within the TTL make no KMS call, so public pages that decrypt
+// partner data cost one KMS round trip per record per TTL window instead of one per
+// request. A zero MaxEntries or TTL in cfg leaves encx's defaults (4096 entries,
+// 10 minutes).
+//
 // encx records which KMS key backs each KEK version in a local SQLite file. With KMS the
 // alias is the source of truth (a key ID can differ between LocalStack restarts, and
 // the app never rotates the KEK itself), so unless cfg.KeyMetadataDir is set that file
@@ -58,11 +64,22 @@ func NewCrypto(ctx context.Context, cfg Config) (encx.CryptoService, error) {
 		}
 	}
 
+	deks, err := cfg.DEKCache()
+	if err != nil {
+		// Unreachable after Validate; kept so a malformed value can never pass silently.
+		return nil, fmt.Errorf("encryption config: %w", err)
+	}
+	opts := []encx.Option{}
+	if !deks.Disabled {
+		// Zero values select encx's defaults (4096 entries, 10 minutes).
+		opts = append(opts, encx.WithDEKCache(deks.MaxEntries, deks.TTL))
+	}
+
 	crypto, err := encx.NewCrypto(ctx, keys, pepper, encx.Config{
 		KEKAlias:    cfg.KMSKeyAlias,
 		PepperAlias: pepperAlias,
 		DBPath:      metadataDir,
-	})
+	}, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("create crypto service: %w", err)
 	}

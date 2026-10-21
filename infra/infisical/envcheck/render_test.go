@@ -63,7 +63,7 @@ func keys(groups ...[]string) []string {
 // wantKeys: environment -> file -> its exact key set for the fixture folders.
 var wantKeys = map[string]map[string][]string{
 	"prod": {
-		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "SMTP_FROM"}),
+		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "SMTP_FROM", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
 		"frontend.env": keys(frontendBase),
 		"admin.env":    keys(adminKeys),
 		"redis.env":    {"REDIS_PASSWORD"},
@@ -73,7 +73,7 @@ var wantKeys = map[string]map[string][]string{
 		"backup.env":   keys([]string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"}),
 	},
 	"staging": {
-		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "PUBLIC_PLAUSIBLE_DOMAIN"}),
+		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "PUBLIC_PLAUSIBLE_DOMAIN", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
 		"frontend.env": keys(frontendBase, []string{"PUBLIC_PLAUSIBLE_DOMAIN"}),
 		"admin.env":    keys(adminKeys),
 		"redis.env":    {"REDIS_PASSWORD"},

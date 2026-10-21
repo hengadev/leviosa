@@ -225,7 +225,7 @@ more keys: they reach their consumer with no template change.
 | `/db` | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT` | password letters and digits |
 | `/redis` | `REDIS_PASSWORD`, `REDIS_HOST`, `REDIS_PORT` | staging's host is `staging_redis` |
 | `/rabbitmq` | `RABBITMQ_USER`, `RABBITMQ_PASSWORD`, `RABBITMQ_VHOST`, `RABBITMQ_HOST`, `RABBITMQ_PORT` | password letters and digits |
-| `/encx` | `ENCX_PEPPER` | base64 of 32 bytes. The KEK alias is in `/aws` (Terraform). Do not repeat it here, or backend.env gets it twice |
+| `/encx` | `ENCX_PEPPER`; optional `ENCX_DEK_CACHE_MAX_ENTRIES`, `ENCX_DEK_CACHE_TTL` | pepper: base64 of 32 bytes. The cache keys size encx's in-memory data-key cache (issue 031); unset means encx's defaults (4096 entries, 10 minutes), `0` entries disables it. The KEK alias is in `/aws` (Terraform). Do not repeat it here, or backend.env gets it twice |
 | `/aws` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_BUCKET_NAME`, `ENCX_KMS_KEY_ARN`, `ENCX_KMS_KEY_ALIAS` | written by Terraform in staging and prod; by hand in dev |
 | `/stripe` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET` | |
 | `/smtp` | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, the sender address | the sender has no consumer yet |
