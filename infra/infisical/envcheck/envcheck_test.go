@@ -82,9 +82,18 @@ func TestCheckURLFormats(t *testing.T) {
 		"REDIS_ADDR='redis:http'":                    "port must be a number",
 		"ENCX_KMS_KEY_ALIAS='arn:aws:kms:x:y:key/z'": "KMS alias name",
 		"ENCX_PEPPER='c2hvcnQ='":                     "exactly 32 bytes",
+		"ENCX_DEK_CACHE_MAX_ENTRIES='-1'":            "ENCX_DEK_CACHE_MAX_ENTRIES must be",
+		"ENCX_DEK_CACHE_MAX_ENTRIES='4096'":          "", // the default, valid
+		"ENCX_DEK_CACHE_TTL='600'":                   "ENCX_DEK_CACHE_TTL must be a positive duration",
 		"ENVIRONMENT='development'":                  "ENVIRONMENT must be production",
 	}
 	for line, want := range cases {
+		if want == "" {
+			if ps := problems(t, "prod", "backend.env", replaceLine(base, line[:strings.Index(line, "=")], line)); len(ps) != 0 {
+				t.Errorf("%s: unexpected problems %v", line, ps)
+			}
+			continue
+		}
 		key := line[:strings.Index(line, "=")]
 		expectProblem(t, "prod", "backend.env", replaceLine(base, key, line), want, "Sup3rSecret", "Sup%2BSecret")
 	}

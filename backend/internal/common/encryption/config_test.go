@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestConfigFromEnv_ReadsEveryVariable(t *testing.T) {
@@ -14,6 +15,8 @@ func TestConfigFromEnv_ReadsEveryVariable(t *testing.T) {
 		EnvAWSAccessKeyID:     "AKIDEXAMPLE",
 		EnvAWSSecretAccessKey: "secret",
 		EnvAWSEndpointURL:     "http://localstack:4566",
+		EnvDEKCacheMaxEntries: "2048",
+		EnvDEKCacheTTL:        "5m",
 	}
 
 	got := ConfigFromEnv(func(key string) string { return env[key] })
@@ -25,6 +28,8 @@ func TestConfigFromEnv_ReadsEveryVariable(t *testing.T) {
 		AWSAccessKeyID:     "AKIDEXAMPLE",
 		AWSSecretAccessKey: "secret",
 		AWSEndpointURL:     "http://localstack:4566",
+		DEKCacheMaxEntries: "2048",
+		DEKCacheTTL:        "5m",
 	}
 	if got != want {
 		t.Fatalf("ConfigFromEnv = %+v, want %+v", got, want)
@@ -102,5 +107,92 @@ func TestConfigValidate_RequiresAnAliasName(t *testing.T) {
 		if err == nil || !strings.Contains(err.Error(), EnvKMSKeyAlias) {
 			t.Errorf("Validate(%q) error = %v, want an %s error", alias, err, EnvKMSKeyAlias)
 		}
+	}
+}
+
+// Unset cache variables mean "enabled with encx's defaults"; explicit values must parse.
+func TestDEKCache(t *testing.T) {
+	tests := []struct {
+		name             string
+		maxEntries, ttl  string
+		want             DEKCacheConfig
+		wantProblemInErr string
+	}{
+		{
+			name: "unset means enabled with encx defaults",
+			want: DEKCacheConfig{},
+		},
+		{
+			name: "blank means unset",
+			want: DEKCacheConfig{},
+		},
+		{
+			name:       "explicit values",
+			maxEntries: "2000",
+			ttl:        "15m",
+			want:       DEKCacheConfig{MaxEntries: 2000, TTL: 15 * time.Minute},
+		},
+		{
+			name: "compound durations",
+			ttl:  "1h30m",
+			want: DEKCacheConfig{TTL: 90 * time.Minute},
+		},
+		{
+			name:       "zero entries disables the cache",
+			maxEntries: "0",
+			want:       DEKCacheConfig{Disabled: true},
+		},
+		{
+			name:             "negative entries",
+			maxEntries:       "-1",
+			wantProblemInErr: EnvDEKCacheMaxEntries,
+		},
+		{
+			name:             "non-integer entries",
+			maxEntries:       "lots",
+			wantProblemInErr: EnvDEKCacheMaxEntries,
+		},
+		{
+			name:             "zero ttl",
+			ttl:              "0s",
+			wantProblemInErr: EnvDEKCacheTTL,
+		},
+		{
+			name:             "negative ttl",
+			ttl:              "-5m",
+			wantProblemInErr: EnvDEKCacheTTL,
+		},
+		{
+			name:             "unitless ttl",
+			ttl:              "600",
+			wantProblemInErr: EnvDEKCacheTTL,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := validConfig()
+			cfg.DEKCacheMaxEntries = tt.maxEntries
+			cfg.DEKCacheTTL = tt.ttl
+
+			got, err := cfg.DEKCache()
+			if tt.wantProblemInErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantProblemInErr) {
+					t.Fatalf("DEKCache error = %v, want it to name %s", err, tt.wantProblemInErr)
+				}
+				if err := cfg.Validate(); err == nil || !strings.Contains(err.Error(), tt.wantProblemInErr) {
+					t.Fatalf("Validate error = %v, want it to name %s too", err, tt.wantProblemInErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("DEKCache: %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("DEKCache = %+v, want %+v", got, tt.want)
+			}
+			if err := cfg.Validate(); err != nil {
+				t.Fatalf("Validate: %v", err)
+			}
+		})
 	}
 }
