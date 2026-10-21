@@ -100,7 +100,7 @@ Each domain package follows the ports & adapters pattern:
 - Development uses the `development.env` file: a copy of the committed `example.env` (no secrets, integrations off), or rendered from Infisical `dev` by `make env` at the repo root
 - Staging and production get their environment from `backend.env`, rendered from Infisical by the Infisical Agent (every key, its folder and its writer: `docs/deployment/environment.md`)
 - Required services: PostgreSQL, Redis, RabbitMQ, AWS S3, AWS KMS
-- Encryption (encx, ADR-0015): `ENCX_KMS_KEY_ALIAS` (an alias name, `alias/<name>`, never a key ID or ARN), `ENCX_PEPPER` (base64 of 32 bytes), `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL` for LocalStack only. A missing or invalid pepper, or an alias that does not resolve, stops startup
+- Encryption (encx, ADR-0015): `ENCX_KMS_KEY_ALIAS` (an alias name, `alias/<name>`, never a key ID or ARN), `ENCX_PEPPER` (base64 of 32 bytes), `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL` for LocalStack only. A missing or invalid pepper, or an alias that does not resolve, stops startup. The DEK cache (issue 031) is on by default (encx's 4096 entries, 10 minutes); `ENCX_DEK_CACHE_MAX_ENTRIES` (0 disables it) and `ENCX_DEK_CACHE_TTL` override, and malformed values stop startup
 - External integrations: Stripe (`STRIPE_*`), SMTP via Zoho Mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`), Twilio SMS with an API key in region IE1 (`TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_REGION`, `TWILIO_EDGE`, `TWILIO_SENDER`)
 
 ### Error Handling
