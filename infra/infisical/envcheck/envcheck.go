@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Environments are the Infisical environments of the `leviosa` project.
@@ -343,6 +344,16 @@ func backendValues(env string, v map[string]string) []string {
 	if pepper, ok := v["ENCX_PEPPER"]; ok && pepper != "" {
 		if b, err := base64.StdEncoding.DecodeString(pepper); err != nil || len(b) != 32 {
 			p = append(p, "ENCX_PEPPER must be standard base64 of exactly 32 bytes")
+		}
+	}
+	if raw, ok := v["ENCX_DEK_CACHE_MAX_ENTRIES"]; ok && raw != "" {
+		if n, err := strconv.Atoi(raw); err != nil || n < 0 {
+			p = append(p, "ENCX_DEK_CACHE_MAX_ENTRIES must be a non-negative integer (0 disables the DEK cache)")
+		}
+	}
+	if raw, ok := v["ENCX_DEK_CACHE_TTL"]; ok && raw != "" {
+		if d, err := time.ParseDuration(raw); err != nil || d <= 0 {
+			p = append(p, "ENCX_DEK_CACHE_TTL must be a positive duration like '10m' or '45s'")
 		}
 	}
 	return p

@@ -87,6 +87,10 @@ x-backend-env: &backend-env
   # this alias (ADR-0015); the pepper is the public dev value from .env.
   ENCX_KMS_KEY_ALIAS: alias/leviosa-dev
   ENCX_PEPPER: ${ENCX_PEPPER:-bGV2aW9zYS1sb2NhbC1kZXYtcGVwcGVyLTMyYnl0ZXM=}
+  # Optional DEK-cache overrides (issue 031); empty means encx's defaults
+  # (4096 entries, 10 minutes).
+  ENCX_DEK_CACHE_MAX_ENTRIES: ${ENCX_DEK_CACHE_MAX_ENTRIES:-}
+  ENCX_DEK_CACHE_TTL: ${ENCX_DEK_CACHE_TTL:-}
   # /aws — the endpoint overrides exist only because of LocalStack; deployed
   # environments point at real AWS and never set them.
   AWS_REGION: us-east-1
