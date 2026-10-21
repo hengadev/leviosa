@@ -76,7 +76,7 @@ production):
 | --- | --- | --- |
 | `DOCKERHUB_USERNAME` | `build-images`; Promote's `preflight` (image check) | the Docker Hub account that pushes `henga/leviosa-backend` and `henga/leviosa-frontend` |
 | `DOCKERHUB_TOKEN` | `build-images`; Promote's `preflight` (image check) | a Docker Hub access token with read and write access to those repositories, not the account password |
-| `SSH_PRIVATE_KEY` | `deploy-staging`; Promote's `deploy` | the private half of the `leviosa-ci` key, OpenSSH format, no passphrase. Its public half is in the keys file's CI list (`deploy_gate_ci_keys`), never in root's `authorized_keys` |
+| `SSH_PRIVATE_KEY` | `deploy-staging`; Promote's `deploy` | the private half of the `leviosa-ci` key, OpenSSH format, no passphrase. Its public half is in the keys file's CI list (`deploy_ci_ssh_public_keys`), never in root's `authorized_keys` |
 | `SSH_KNOWN_HOSTS` | `deploy-staging`; Promote's `deploy` | the server's host key for `SSH_HOST`, as a known-hosts line: `203.0.113.10 ssh-ed25519 AAAA…` (a hashed line works too) |
 | `SSH_HOST` | `deploy-staging`; Promote's `deploy` | the server's address, exactly as it appears in `SSH_KNOWN_HOSTS`: Terraform's `server_ipv4_address` output |
 
