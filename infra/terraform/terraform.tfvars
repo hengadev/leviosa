@@ -49,4 +49,4 @@ infisical_host = "https://secrets.henga.dev"
 
 # OPERATOR: the `leviosa` project's ID (Infisical > leviosa > Project
 # settings). Plan refuses to run until this is a real project ID.
-infisical_project_id = "REPLACE_WITH_LEVIOSA_PROJECT_ID"
+infisical_project_id = "43399331-2dac-4023-b49b-1abe352dbb85"
