@@ -1,0 +1,91 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "StateAndProjectBuckets",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::leviosa-terraform-state",
+        "arn:aws:s3:::leviosa-terraform-state/*",
+        "arn:aws:s3:::leviosa-care-*",
+        "arn:aws:s3:::leviosa-care-*/*"
+      ]
+    },
+    {
+      "Sid": "ProjectIamUsers",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateUser",
+        "iam:DeleteUser",
+        "iam:GetUser",
+        "iam:TagUser",
+        "iam:UntagUser",
+        "iam:ListUserTags",
+        "iam:CreateAccessKey",
+        "iam:DeleteAccessKey",
+        "iam:ListAccessKeys",
+        "iam:UpdateAccessKey",
+        "iam:PutUserPolicy",
+        "iam:GetUserPolicy",
+        "iam:DeleteUserPolicy",
+        "iam:ListUserPolicies",
+        "iam:ListAttachedUserPolicies",
+        "iam:ListGroupsForUser"
+      ],
+      "Resource": "arn:aws:iam::164138973060:user/leviosa-*"
+    },
+    {
+      "Sid": "CreateProjectKeys",
+      "Effect": "Allow",
+      "Action": "kms:CreateKey",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestTag/Project": "leviosa" }
+      }
+    },
+    {
+      "Sid": "TagOnlyProjectKeys",
+      "Effect": "Allow",
+      "Action": "kms:TagResource",
+      "Resource": "arn:aws:kms:eu-central-1:164138973060:key/*",
+      "Condition": {
+        "StringEquals": { "aws:RequestTag/Project": "leviosa" },
+        "StringEqualsIfExists": { "aws:ResourceTag/Project": "leviosa" }
+      }
+    },
+    {
+      "Sid": "ListKeysAndAliases",
+      "Effect": "Allow",
+      "Action": ["kms:ListKeys", "kms:ListAliases"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ManageProjectKeys",
+      "Effect": "Allow",
+      "Action": [
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:GetKeyRotationStatus",
+        "kms:ListResourceTags",
+        "kms:UpdateKeyDescription",
+        "kms:UntagResource",
+        "kms:EnableKeyRotation",
+        "kms:DisableKeyRotation",
+        "kms:CreateAlias",
+        "kms:DeleteAlias",
+        "kms:UpdateAlias"
+      ],
+      "Resource": "arn:aws:kms:eu-central-1:164138973060:key/*",
+      "Condition": {
+        "StringEquals": { "aws:ResourceTag/Project": "leviosa" }
+      }
+    },
+    {
+      "Sid": "ProjectAliases",
+      "Effect": "Allow",
+      "Action": ["kms:CreateAlias", "kms:DeleteAlias", "kms:UpdateAlias"],
+      "Resource": "arn:aws:kms:eu-central-1:164138973060:alias/leviosa-*"
+    }
+  ]
+}
