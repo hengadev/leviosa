@@ -19,7 +19,7 @@ set -eu
 # Where Terraform's own credentials live. Not secret.
 # OPERATOR: set infra_project_id to the `leviosa-infra` project's ID
 # (Infisical > leviosa-infra > Project settings) before the first run.
-infra_project_id=REPLACE_WITH_LEVIOSA_INFRA_PROJECT_ID
+infra_project_id=a294dad9-d70b-4a92-9789-1310ba29aac8
 infra_env=prod
 infra_path=/
 

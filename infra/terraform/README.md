@@ -53,6 +53,16 @@ for 30 days). `make check` proves this offline (see [Checks](#checks)).
 
   The server's `leviosa-vps` identity has no access to `leviosa-infra`.
 
+- **The AWS user behind those keys** is `terraform-leviosa` in account
+  `164138973060`, which Leviosa shares with Germinal. Its only (inline)
+  policy is [`terraform-user-policy.json`](terraform-user-policy.json): the
+  state bucket and `leviosa-care-*` buckets, IAM users named `leviosa-*`, and
+  KMS keys tagged `Project = leviosa` (the provider's default tag) with their
+  `alias/leviosa-*` aliases. It cannot touch Germinal's resources, modify
+  itself, or schedule a key's deletion or disable a key. If you change
+  `bucket_prefix` or `project_name`, update the policy first; an
+  `AccessDenied` on plan or apply names the missing action.
+
 ### `tf.sh`, and why plain `terraform` fails
 
 Every Makefile target that touches infrastructure, here and at the
