@@ -84,7 +84,7 @@ later change in `/admin` changes nothing for an existing account.
 | `POSTGRES_PASSWORD` | ✓ | ✓ | ✓ | `DATABASE_URL`; `postgres.env` (prod); `make setup` | operator |
 | `POSTGRES_DB` | ✓ | ✓ (`leviosa_staging`) | ✓ | `DATABASE_URL`; `postgres.env`; `backup.env` | operator |
 | `POSTGRES_HOST` | `postgres` | `postgres` | `localhost` | `DATABASE_URL` | operator |
-| `POSTGRES_PORT` | `5432` | `5432` | `5432` | `DATABASE_URL` | operator |
+| `POSTGRES_PORT` | `5432` | `5432` | `25432` | `DATABASE_URL` | operator |
 
 ### `/redis`
 
@@ -92,7 +92,7 @@ later change in `/admin` changes nothing for an existing account.
 | --- | :-: | :-: | :-: | --- | --- |
 | `REDIS_PASSWORD` | ✓ | ✓ | ✓ | `backend.env` → backend; `redis.env` → the stack's Redis | operator |
 | `REDIS_HOST` | `redis` | `staging_redis` | `localhost` | `REDIS_ADDR` in `backend.env` | operator |
-| `REDIS_PORT` | `6379` | `6379` | `6379` | `REDIS_ADDR` | operator |
+| `REDIS_PORT` | `6379` | `6379` | `26379` | `REDIS_ADDR` | operator |
 
 ### `/rabbitmq` (assembled into `RABBITMQ_URL`)
 
@@ -102,7 +102,7 @@ later change in `/admin` changes nothing for an existing account.
 | `RABBITMQ_PASSWORD` | ✓ | ✓ | ✓ | `RABBITMQ_URL`; `RABBITMQ_DEFAULT_PASS`; `make setup` | operator |
 | `RABBITMQ_VHOST` | ✓ (`leviosa`) | ✓ (`leviosa_staging`) | `/` | `RABBITMQ_URL`; `RABBITMQ_DEFAULT_VHOST`; `make setup` (the vhosts) | operator |
 | `RABBITMQ_HOST` | `rabbitmq` | `rabbitmq` | `localhost` | `RABBITMQ_URL` | operator |
-| `RABBITMQ_PORT` | `5672` | `5672` | `5672` | `RABBITMQ_URL` | operator |
+| `RABBITMQ_PORT` | `5672` | `5672` | `25672` | `RABBITMQ_URL` | operator |
 
 ### `/encx` — the pepper and the DEK cache (whole into `backend.env`)
 
@@ -123,7 +123,7 @@ Terraform. A copy here would appear twice in `backend.env`.
 | `S3_BUCKET_NAME` | `leviosa-care-prod-media` | `leviosa-care-staging-media` | `leviosa` | `backend.env` → backend | **Terraform**; by hand in dev |
 | `ENCX_KMS_KEY_ALIAS` | `alias/leviosa-prod` | `alias/leviosa-staging` | `alias/leviosa-dev` | `backend.env` → backend (the KEK, by alias only) | **Terraform**; by hand in dev |
 | `ENCX_KMS_KEY_ARN` | ✓ | ✓ | | `backend.env` (for reference; the backend finds its key by alias) | **Terraform** |
-| `AWS_ENDPOINT_URL` | | | `http://localhost:4566` | `backend.env` (LocalStack only; never in staging or prod) | by hand in dev |
+| `AWS_ENDPOINT_URL` | | | `http://localhost:24566` | `backend.env` (LocalStack only; never in staging or prod) | by hand in dev |
 
 ### `/stripe` (whole into `backend.env`)
 

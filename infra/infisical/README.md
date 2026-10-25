@@ -251,17 +251,19 @@ right is LocalStack's encryption setup:
 
 - `/aws`: `AWS_REGION=us-east-1` (the region `localstack-init` creates the
   KMS key in), `AWS_ACCESS_KEY_ID=test`, `AWS_SECRET_ACCESS_KEY=test`,
-  `AWS_ENDPOINT_URL=http://localhost:4566`, `S3_BUCKET_NAME=leviosa`,
+  `AWS_ENDPOINT_URL=http://localhost:24566`, `S3_BUCKET_NAME=leviosa`,
   `ENCX_KMS_KEY_ALIAS=alias/leviosa-dev` (the alias `localstack-init`
   creates)
 - `/encx`: `ENCX_PEPPER`, the public dev pepper from `backend/example.env`
 
 For tools run outside Docker, use the host-side addresses of the local
-stack: `/db` `user` / `password` / `leviosa_dev` / `localhost` / `5432`,
-`/redis` `secret` / `localhost` / `6379`, `/rabbitmq` `guest` / `guest` /
-`/` / `localhost` / `5672`. `/stripe`, `/smtp` and `/twilio` may be absent
-(integrations off). `dev` must never hold anything that spends money or
-reaches real data (ADR-0017).
+stack: `/db` `user` / `password` / `leviosa_dev` / `localhost` / `25432`,
+`/redis` `secret` / `localhost` / `26379`, `/rabbitmq` `guest` / `guest` /
+`/` / `localhost` / `25672` (the local stacks publish their dependencies on
+these 2xxxx ports so they never collide with another project's stack on the
+defaults). `/stripe`, `/smtp` and `/twilio` may be absent (integrations
+off). `dev` must never hold anything that spends money or reaches real data
+(ADR-0017).
 
 ## `make env`
 
