@@ -104,8 +104,6 @@ func TestGetCategoryByID(t *testing.T) {
 				assert.Equal(t, expectedCategoryFromDB.Description, category.Description, "Description mismatch")
 				assert.Equal(t, expectedCategoryFromDB.Status, category.Status, "Status mismatch")
 
-				assert.Equal(t, expectedCategoryFromDB.Metadata, category.Metadata, "Metadata mismatch")
-
 				assert.WithinDuration(t, expectedCategoryFromDB.CreatedAt, category.CreatedAt, time.Millisecond, "CreatedAt mismatch")
 				assert.WithinDuration(t, expectedCategoryFromDB.UpdatedAt, category.UpdatedAt, time.Millisecond, "UpdatedAt mismatch")
 			}

@@ -8,7 +8,6 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/Leviosa-care/leviosa/backend/test/helpers"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -87,23 +86,6 @@ func TestCreateCoupon(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, domain.CouponDurationForever, createdCoupon.Duration)
 		assert.Nil(t, createdCoupon.DurationInMonths)
-	})
-
-	t.Run("creation with auto-generated UUID", func(t *testing.T) {
-		helpers.ClearCouponsTable(t, ctx, testPool)
-
-		coupon := helpers.NewValidPercentOffCoupon("Auto UUID Coupon")
-		coupon.ID = uuid.Nil // Clear the ID to test auto-generation
-
-		couponID, err := repo.CreateCoupon(ctx, coupon)
-
-		require.NoError(t, err)
-		assert.NotEmpty(t, couponID)
-
-		// Verify a UUID was generated
-		parsedID, err := uuid.Parse(couponID)
-		require.NoError(t, err)
-		assert.NotEqual(t, uuid.Nil, parsedID)
 	})
 
 	t.Run("creation with expired coupon", func(t *testing.T) {

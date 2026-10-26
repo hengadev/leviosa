@@ -232,6 +232,8 @@ func TestDeactivateCoupon(t *testing.T) {
 		var response struct {
 			Message string `json:"message"`
 		}
+
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
 		assert.Equal(t, "Coupon deactivated successfully!", response.Message)
 
 		// Verify the coupon is deactivated in database
@@ -345,6 +347,8 @@ func TestDeleteCoupon(t *testing.T) {
 		var response struct {
 			Message string `json:"message"`
 		}
+
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
 		assert.Equal(t, "Coupon deleted successfully!", response.Message)
 
 		// Verify the coupon is deleted from database
@@ -461,6 +465,8 @@ func TestCouponBusinessLogic(t *testing.T) {
 			Coupon any  `json:"coupon"`
 		}
 
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
+
 		assert.True(t, response.Valid)
 		assert.NotNil(t, response.Coupon)
 	})
@@ -493,6 +499,8 @@ func TestCouponBusinessLogic(t *testing.T) {
 			Valid  bool `json:"valid"`
 			Coupon any  `json:"coupon"`
 		}
+
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&response))
 
 		assert.True(t, response.Valid)
 		assert.NotNil(t, response.Coupon)

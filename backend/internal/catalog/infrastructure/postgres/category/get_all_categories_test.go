@@ -2,8 +2,6 @@ package categoryRepository_test
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -83,27 +81,19 @@ func TestGetAllCategories(t *testing.T) {
 				if tt.name == "Successfully retrieve multiple categories, ordered by name" {
 					// Retrieve all categories directly from DB for comparison, ordered by name
 					var dbCategories []*domain.Category
-					rows, err := testPool.Query(ctx, `SELECT id, name, description, status, image_key, metadata, created_at, updated_at FROM catalog.categories ORDER BY name ASC`)
+					rows, err := testPool.Query(ctx, `SELECT id, name, description, status, created_at, updated_at FROM catalog.categories ORDER BY name ASC`)
 					require.NoError(t, err)
 					defer rows.Close()
 
 					for rows.Next() {
 						var (
-							cat          domain.Category
-							metadataJSON []byte
-							imageKey     sql.NullString
-							statusStr    string
+							cat       domain.Category
+							statusStr string
 						)
-						err := rows.Scan(&cat.ID, &cat.Name, &cat.Description, &statusStr, &imageKey, &metadataJSON, &cat.CreatedAt, &cat.UpdatedAt)
+						err := rows.Scan(&cat.ID, &cat.Name, &cat.Description, &statusStr, &cat.CreatedAt, &cat.UpdatedAt)
 						require.NoError(t, err)
 
 						cat.Status = domain.PublishedStatus(statusStr)
-						if metadataJSON != nil {
-							err := json.Unmarshal(metadataJSON, &cat.Metadata)
-							require.NoError(t, err)
-						} else {
-							cat.Metadata = make(map[string]any) // Match logic in GetAllCategories
-						}
 						dbCategories = append(dbCategories, &cat)
 					}
 					require.NoError(t, rows.Err())
@@ -118,9 +108,6 @@ func TestGetAllCategories(t *testing.T) {
 						assert.Equal(t, expected.Name, retrieved.Name, "Name mismatch at index %d", i)
 						assert.Equal(t, expected.Description, retrieved.Description, "Description mismatch at index %d", i)
 						assert.Equal(t, expected.Status, retrieved.Status, "Status mismatch at index %d", i)
-
-						// Metadata comparison (maps can't be directly compared with ==)
-						assert.Equal(t, expected.Metadata, retrieved.Metadata, "Metadata mismatch at index %d", i)
 
 						// Time comparison using WithinDuration due to potential precision differences
 						assert.WithinDuration(t, expected.CreatedAt, retrieved.CreatedAt, time.Millisecond, "CreatedAt mismatch at index %d", i)

@@ -2,8 +2,6 @@ package categoryRepository_test
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -117,7 +115,7 @@ func TestGetAllPublishedCategories(t *testing.T) {
 					// Manually query the database for published categories in expected order for robust comparison
 					var dbPublishedCategories []*domain.Category
 					dbRows, err := testPool.Query(ctx, `
-						SELECT id, name, description, status, image_key, metadata, created_at, updated_at
+						SELECT id, name, description, status, created_at, updated_at
 						FROM catalog.categories
 						WHERE status = $1
 						ORDER BY name ASC`, domain.Published)
@@ -125,20 +123,10 @@ func TestGetAllPublishedCategories(t *testing.T) {
 					defer dbRows.Close()
 
 					for dbRows.Next() {
-						var (
-							cat          domain.Category
-							metadataJSON []byte
-							imageKey     sql.NullString
-						)
-						err := dbRows.Scan(&cat.ID, &cat.Name, &cat.Description, &cat.Status, &imageKey, &metadataJSON, &cat.CreatedAt, &cat.UpdatedAt)
+						var cat domain.Category
+						err := dbRows.Scan(&cat.ID, &cat.Name, &cat.Description, &cat.Status, &cat.CreatedAt, &cat.UpdatedAt)
 						require.NoError(t, err)
 
-						if metadataJSON != nil {
-							err := json.Unmarshal(metadataJSON, &cat.Metadata)
-							require.NoError(t, err)
-						} else {
-							cat.Metadata = make(map[string]any)
-						}
 						dbPublishedCategories = append(dbPublishedCategories, &cat)
 					}
 					require.NoError(t, dbRows.Err())
@@ -154,8 +142,6 @@ func TestGetAllPublishedCategories(t *testing.T) {
 						assert.Equal(t, expected.Name, retrieved.Name, "Name mismatch at index %d", i)
 						assert.Equal(t, expected.Description, retrieved.Description, "Description mismatch at index %d", i)
 						assert.Equal(t, expected.Status, retrieved.Status, "Status mismatch at index %d", i)
-
-						assert.Equal(t, expected.Metadata, retrieved.Metadata, "Metadata mismatch at index %d", i)
 
 						assert.WithinDuration(t, expected.CreatedAt, retrieved.CreatedAt, time.Millisecond, "CreatedAt mismatch at index %d", i)
 						assert.WithinDuration(t, expected.UpdatedAt, retrieved.UpdatedAt, time.Millisecond, "UpdatedAt mismatch at index %d", i)

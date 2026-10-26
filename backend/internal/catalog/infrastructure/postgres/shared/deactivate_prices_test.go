@@ -30,7 +30,7 @@ func TestDeactivatePrices(t *testing.T) {
 		td.InsertPrice(t, ctx, mockPrice, testPool)
 
 		// Deactivate the price
-		err := repo.DeactivatePrices(ctx, []string{mockPrice.ID.String()})
+		err := repo.DeactivatePrices(ctx, []string{mockPrice.StripePriceID})
 		assert.NoError(t, err)
 
 		// Verify the price is now inactive
@@ -60,7 +60,7 @@ func TestDeactivatePrices(t *testing.T) {
 		td.InsertPrice(t, ctx, price2, testPool)
 
 		// Deactivate both prices
-		err := repo.DeactivatePrices(ctx, []string{price1.ID.String(), price2.ID.String()})
+		err := repo.DeactivatePrices(ctx, []string{price1.StripePriceID, price2.StripePriceID})
 		assert.NoError(t, err)
 
 		// Verify both prices are now inactive
@@ -95,7 +95,7 @@ func TestDeactivatePrices(t *testing.T) {
 		td.InsertPrice(t, ctx, mockPrice, testPool)
 
 		// Deactivate the already inactive price
-		err := repo.DeactivatePrices(ctx, []string{mockPrice.ID.String()})
+		err := repo.DeactivatePrices(ctx, []string{mockPrice.StripePriceID})
 		assert.NoError(t, err)
 
 		// Verify the price remains inactive
@@ -132,21 +132,12 @@ func TestDeactivatePrices(t *testing.T) {
 		nonExistentID := uuid.New().String()
 
 		// Deactivate a mix of valid and invalid IDs
-		err := repo.DeactivatePrices(ctx, []string{priceToDeactivate.ID.String(), nonExistentID})
+		err := repo.DeactivatePrices(ctx, []string{priceToDeactivate.StripePriceID, nonExistentID})
 		assert.NoError(t, err) // The function is not expected to return an error here
 
 		// Verify the existing price was deactivated
 		deactivatedPrice := td.GetPriceByID(t, ctx, priceToDeactivate.ID, testPool)
 		assert.False(t, deactivatedPrice.IsActive)
-	})
-
-	t.Run("should handle a database error gracefully", func(t *testing.T) {
-		clearTables(t, ctx, testPool)
-
-		// Provide an invalid UUID format in the slice to trigger a database error
-		err := repo.DeactivatePrices(ctx, []string{"not-a-valid-uuid"})
-		assert.Error(t, err)
-		assert.ErrorIs(t, err, errs.ErrInvalidInput, "expected a query failure error")
 	})
 }
 

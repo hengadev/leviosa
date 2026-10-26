@@ -37,7 +37,7 @@ func TestGetPromotionCodeByCode(t *testing.T) {
 		assert.Equal(t, promotionCode.Active, retrievedCode.Active)
 	})
 
-	t.Run("successful retrieval with case sensitivity", func(t *testing.T) {
+	t.Run("retrieval is case sensitive", func(t *testing.T) {
 		helpers.ClearPromotionCodesTable(t, ctx, testPool)
 		helpers.ClearCouponsTable(t, ctx, testPool)
 
@@ -45,15 +45,14 @@ func TestGetPromotionCodeByCode(t *testing.T) {
 		coupon := helpers.NewValidPercentOffCoupon("Case Test Coupon")
 		helpers.InsertCoupon(t, ctx, testPool, coupon)
 
-		// Insert promotion code with mixed case
-		promotionCode := helpers.NewValidPromotionCode("MiXeDcAsE", coupon.ID)
+		// chk_code_format only allows uppercase codes
+		promotionCode := helpers.NewValidPromotionCode("CASECODE", coupon.ID)
 		helpers.InsertPromotionCode(t, ctx, testPool, promotionCode)
 
-		// Retrieve with exact case
-		retrievedCode, err := repo.GetPromotionCodeByCode(ctx, "MiXeDcAsE")
+		retrievedCode, err := repo.GetPromotionCodeByCode(ctx, "casecode")
 
-		require.NoError(t, err)
-		assert.Equal(t, "MiXeDcAsE", retrievedCode.Code)
+		assert.Nil(t, retrievedCode)
+		assert.ErrorIs(t, err, errs.ErrRepositoryNotFound)
 	})
 
 	t.Run("retrieval with non-existent code should return not found error", func(t *testing.T) {
