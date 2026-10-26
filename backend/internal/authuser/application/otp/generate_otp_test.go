@@ -107,7 +107,8 @@ func TestGenerateSecureCode(t *testing.T) {
 }
 
 func TestGenerateOTP(t *testing.T) {
-	// Mock OTPService with test values
+	// OTP settings are constants (see StartOTPSettingConsumer): the cache's
+	// values must not change the generated OTP.
 	s := &OTPService{
 		cache: NewMockOTPCache(6, 15, 3), // length, duration (15 minutes), maxAttempts
 	}
@@ -129,7 +130,7 @@ func TestGenerateOTP(t *testing.T) {
 		assert.True(t, otp.CreatedAt.After(startTime.Add(-time.Second)), "CreatedAt should be around current time")
 		assert.True(t, otp.CreatedAt.Before(time.Now().Add(time.Second)), "CreatedAt should be around current time")
 
-		expectedExpiry := otp.CreatedAt.Add(15 * time.Minute)
+		expectedExpiry := otp.CreatedAt.Add(defaultOTPDuration * time.Minute)
 		assert.Equal(t, expectedExpiry, otp.ExpiresAt, "ExpiresAt should be CreatedAt + duration")
 
 		// Verify code is numeric
@@ -171,26 +172,13 @@ func TestGenerateOTP(t *testing.T) {
 		assert.NotEmpty(t, otp.Code)
 	})
 
-	t.Run("should respect custom OTP length from cache", func(t *testing.T) {
-		// Test with different length
-		s.cache = NewMockOTPCache(8, 10, 3)
+	t.Run("should ignore the cache's OTP length and duration", func(t *testing.T) {
+		s.cache = NewMockOTPCache(8, 30, 3)
 
 		otp, err := s.generateOTP("test@example.com")
 		require.NoError(t, err)
-		assert.Len(t, otp.Code, 8, "Should use custom length from cache")
-	})
-
-	t.Run("should respect custom duration from cache", func(t *testing.T) {
-		customDuration := 30 // 30 minutes
-		s.cache = NewMockOTPCache(6, customDuration, 3)
-
-		startTime := time.Now()
-		otp, err := s.generateOTP("test@example.com")
-		require.NoError(t, err)
-
-		expectedExpiry := otp.CreatedAt.Add(time.Duration(customDuration) * time.Minute)
-		assert.Equal(t, expectedExpiry, otp.ExpiresAt, "Should use custom duration from cache")
-		assert.True(t, otp.ExpiresAt.After(startTime.Add(25*time.Minute)), "Should be at least 25 minutes from start")
+		assert.Len(t, otp.Code, defaultOTPLength)
+		assert.Equal(t, otp.CreatedAt.Add(defaultOTPDuration*time.Minute), otp.ExpiresAt)
 	})
 
 	t.Run("should initialize attempts to zero", func(t *testing.T) {
@@ -227,25 +215,5 @@ func TestGenerateOTP_EdgeCases(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, specialEmail, otp.Email)
 		assert.NotEmpty(t, otp.Code)
-	})
-
-	t.Run("should handle minimum duration", func(t *testing.T) {
-		s.cache = NewMockOTPCache(6, 1, 3) // 1 minute duration
-
-		otp, err := s.generateOTP("test@example.com")
-		require.NoError(t, err)
-
-		expectedExpiry := otp.CreatedAt.Add(1 * time.Minute)
-		assert.Equal(t, expectedExpiry, otp.ExpiresAt)
-	})
-
-	t.Run("should handle large duration", func(t *testing.T) {
-		s.cache = NewMockOTPCache(6, 1440, 3) // 24 hours duration
-
-		otp, err := s.generateOTP("test@example.com")
-		require.NoError(t, err)
-
-		expectedExpiry := otp.CreatedAt.Add(1440 * time.Minute)
-		assert.Equal(t, expectedExpiry, otp.ExpiresAt)
 	})
 }

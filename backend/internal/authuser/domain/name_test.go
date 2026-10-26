@@ -17,7 +17,6 @@ func TestValidateName(t *testing.T) {
 			"María José",
 			"李小明",
 			"François",
-			"O'Connor",
 			"van der Berg",
 			strings.Repeat("A", NameMaxLength), // Exactly 50 characters
 		}
@@ -102,6 +101,7 @@ func TestValidateName(t *testing.T) {
 			"Jean;DROP",
 			`John"Doe`,
 			"Mary'Smith",
+			"O'Connor", // apostrophes are rejected, as in city and address
 			"Tom&Jerry",
 		}
 

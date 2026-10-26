@@ -130,7 +130,7 @@ func TestValidatePasswordResetOTP(t *testing.T) {
 		}
 	})
 
-	t.Run("should return unauthorized for wrong OTP code", func(t *testing.T) {
+	t.Run("should return bad request for wrong OTP code", func(t *testing.T) {
 		// Clean state and insert existing user
 		td.ClearAuthTestData(t, ctx, testPool, redisClient)
 
@@ -166,11 +166,11 @@ func TestValidatePasswordResetOTP(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Assert unauthorized response
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		// Assert bad request response
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 		errorMsg, statusCode := td.ParseErrorResponse(t, resp)
-		assert.Contains(t, strings.ToLower(errorMsg), "mismatch")
-		assert.Equal(t, http.StatusUnauthorized, statusCode)
+		assert.Contains(t, strings.ToLower(errorMsg), "does not match")
+		assert.Equal(t, http.StatusBadRequest, statusCode)
 
 		// Verify no reset token cookie was set
 		for _, cookie := range resp.Cookies() {

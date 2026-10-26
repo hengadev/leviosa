@@ -9,6 +9,7 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/identity"
+	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
 	td "github.com/Leviosa-care/leviosa/backend/test/helpers"
 
 	"github.com/google/uuid"
@@ -80,7 +81,8 @@ func TestGetAllPartners(t *testing.T) {
 		}
 
 		// Act
-		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL)
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL, accessToken)
 		resp, err := client.Do(req)
 
 		// Assert HTTP response
@@ -123,7 +125,8 @@ func TestGetAllPartners(t *testing.T) {
 		td.ClearSessionsRedis(t, ctx, redisClient)
 
 		// Act
-		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL)
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL, accessToken)
 		resp, err := client.Do(req)
 
 		// Assert HTTP response
@@ -160,7 +163,8 @@ func TestGetAllPartners(t *testing.T) {
 		td.CorruptPartnerDEK(t, ctx, partner.ID, testPool)
 
 		// Act
-		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL)
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL, accessToken)
 		resp, err := client.Do(req)
 
 		// Assert - should return 500 due to decryption failure
@@ -192,7 +196,8 @@ func TestGetAllPartners(t *testing.T) {
 		td.SetInvalidKeyVersion(t, ctx, partner.ID, testPool, 99999)
 
 		// Act
-		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL)
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+		req := td.NewGetAllPartnersRequest(t, ctx, testServerURL, accessToken)
 		resp, err := client.Do(req)
 
 		// Assert - should return 500 due to decryption failure

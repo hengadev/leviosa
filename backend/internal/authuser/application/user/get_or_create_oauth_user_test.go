@@ -3,10 +3,12 @@ package user_test
 import (
 	"context"
 	"io"
+	"log/slog"
 	"testing"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/google/uuid"
 	"github.com/hengadev/encx"
@@ -188,7 +190,7 @@ func (m *mockStripeService) CreateBillingPortalSession(ctx context.Context, cust
 }
 
 func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
-	ctx := context.Background()
+	ctx := context.WithValue(context.Background(), ctxutil.LoggerKey, slog.Default())
 
 	t.Run("should return existing OAuth user when Google ID exists", func(t *testing.T) {
 		mockRepo := &mockUserRepository{}
@@ -220,6 +222,7 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		userService := user.New(mockRepo, mockCrypto, mockStripe, nil)
 
 		// Mock that neither OAuth ID nor email exists
+		mockCrypto.On("HashBasic", ctx, mock.Anything).Return("email-hash")
 		mockRepo.On("GetUserByGoogleID", ctx, "google456").Return(nil, errs.ErrRepositoryNotFound)
 		mockRepo.On("GetUserByEmailHash", ctx, mock.AnythingOfType("string")).Return(nil, errs.ErrRepositoryNotFound)
 
@@ -227,7 +230,8 @@ func TestUserService_GetOrCreateOAuthUser(t *testing.T) {
 		mockRepo.On("CreateUser", ctx, mock.AnythingOfType("*domain.UserEncx")).Return(nil)
 
 		// Mock Stripe customer creation
-		mockStripe.On("CreateCustomer", ctx, mock.AnythingOfType("uuid.UUID"), "new@example.com", "Jane", "Smith").Return(nil, nil)
+		mockStripe.On("CreateCustomer", ctx, mock.AnythingOfType("uuid.UUID"), "new@example.com", "Jane", "Smith").Return(&stripe.Customer{ID: "cus_new"}, nil)
+		mockRepo.On("UpdateUser", ctx, mock.AnythingOfType("*domain.UserEncx")).Return(nil)
 
 		result, isNewUser, err := userService.GetOrCreateOAuthUser(ctx, "google", "google456", "new@example.com", "Jane", "Smith")
 

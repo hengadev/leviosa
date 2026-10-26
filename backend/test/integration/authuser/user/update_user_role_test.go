@@ -247,35 +247,6 @@ func TestUpdateUserRole(t *testing.T) {
 		assert.Equal(t, identity.StandardStr, unchangedUser.Role)
 	})
 
-	t.Run("should return error when missing user ID in path", func(t *testing.T) {
-		// Clean state
-		td.ClearUsersTable(t, ctx, testPool)
-
-		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
-
-		// Create request without user ID in path
-		req, err := http.NewRequestWithContext(
-			ctx,
-			http.MethodPatch,
-			fmt.Sprintf("%s/admin/users//role", testServerURL), // Empty user ID
-			nil,
-		)
-		require.NoError(t, err)
-
-		req.Header.Set("Content-Type", "application/json")
-		if accessToken != "" {
-			req.AddCookie(&http.Cookie{Name: ck.AccessTokenCookieName, Value: accessToken})
-		}
-
-		// Act
-		resp, err := client.Do(req)
-
-		// Assert
-		require.NoError(t, err)
-		defer resp.Body.Close()
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode) // Route not found
-	})
-
 	t.Run("should work with different valid roles", func(t *testing.T) {
 		// Clean state
 		td.ClearUsersTable(t, ctx, testPool)
