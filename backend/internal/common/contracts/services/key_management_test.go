@@ -35,7 +35,7 @@ func TestAllServicesConstant(t *testing.T) {
 	allServices := AllServices()
 
 	// Test that we have the expected services
-	expectedServices := []string{"authuser", "catalog", "settings", "notification"}
+	expectedServices := []string{"authuser", "catalog", "booking", "settings", "notification"}
 	assert.ElementsMatch(t, expectedServices, allServices)
 
 	// Test that each service is valid

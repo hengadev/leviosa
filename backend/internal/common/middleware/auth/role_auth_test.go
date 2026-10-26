@@ -91,7 +91,7 @@ func TestRequireAnyRole(t *testing.T) {
 				CreatedAt: time.Now(),
 				ExpiresAt: time.Now().Add(time.Hour),
 			}
-			sessionJSON := createValidSessionJSON(t, sessionData)
+			sessionJSON := createValidSessionJSON(t, mockCrypto, sessionData)
 
 			// Mock the repository call
 			mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(sessionData.ID.String(), sessionJSON, nil)
@@ -109,7 +109,7 @@ func TestRequireAnyRole(t *testing.T) {
 			handler := middleware.RequireAnyRole(tt.allowedRoles...)(testHandler)
 
 			// Create request with access token cookie
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := newTestRequest("GET", "/test")
 			req.AddCookie(&http.Cookie{
 				Name:  cookies.AccessTokenCookieName,
 				Value: "valid_token",
@@ -171,7 +171,7 @@ func TestSessionAuthMiddleware_RequireAdmin(t *testing.T) {
 				CreatedAt: time.Now(),
 				ExpiresAt: time.Now().Add(time.Hour),
 			}
-			sessionJSON := createValidSessionJSON(t, sessionData)
+			sessionJSON := createValidSessionJSON(t, mockCrypto, sessionData)
 
 			// Mock the repository call
 			mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(sessionData.ID.String(), sessionJSON, nil)
@@ -189,7 +189,7 @@ func TestSessionAuthMiddleware_RequireAdmin(t *testing.T) {
 			handler := middleware.RequireAdmin(testHandler)
 
 			// Create request with access token cookie
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := newTestRequest("GET", "/test")
 			req.AddCookie(&http.Cookie{
 				Name:  cookies.AccessTokenCookieName,
 				Value: "valid_token",
@@ -250,7 +250,7 @@ func TestRoleAuthMiddleware_NoSessionInContext(t *testing.T) {
 				tt.middlewareFn(middleware)(testHandler)(w, r)
 			})
 
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := newTestRequest("GET", "/test")
 			w := httptest.NewRecorder()
 
 			brokenSessionHandler.ServeHTTP(w, req)
@@ -269,14 +269,14 @@ func TestRoleAuthMiddleware_Integration(t *testing.T) {
 
 	// Create session data for partner user
 	sessionData := &session.Session{
-		ID:               uuid.New(),
-		UserID:           uuid.New(),
-		Role:             identity.Partner,
-		State:            session.SessionActive,
-		CreatedAt:        time.Now(),
-		ExpiresAt:        time.Now().Add(time.Hour),
-			}
-	sessionJSON := createValidSessionJSON(t, sessionData)
+		ID:        uuid.New(),
+		UserID:    uuid.New(),
+		Role:      identity.Partner,
+		State:     session.SessionActive,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(time.Hour),
+	}
+	sessionJSON := createValidSessionJSON(t, mockCrypto, sessionData)
 	mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(sessionData.ID.String(), sessionJSON, nil)
 
 	middleware := NewSessionAuthMiddleware(mockRepo, mockCrypto, nil)
@@ -296,7 +296,7 @@ func TestRoleAuthMiddleware_Integration(t *testing.T) {
 	// Chain middlewares: RequireSession is called by RequireMinimumRole
 	handler := middleware.RequireMinimumRole(identity.Partner)(testHandler)
 
-	req := httptest.NewRequest("GET", "/partner-endpoint", nil)
+	req := newTestRequest("GET", "/partner-endpoint")
 	req.AddCookie(&http.Cookie{
 		Name:  cookies.AccessTokenCookieName,
 		Value: "valid_token",

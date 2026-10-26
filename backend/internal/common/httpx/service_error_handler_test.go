@@ -119,19 +119,19 @@ func TestRespondWithServiceError_ClientError(t *testing.T) {
 			name:           "bad request error",
 			err:            errs.ErrInvalidValue,
 			expectedStatus: http.StatusBadRequest,
-			shouldLog:      false,
+			shouldLog:      true,
 		},
 		{
 			name:           "not found error",
 			err:            errs.ErrRepositoryNotFound,
 			expectedStatus: http.StatusNotFound,
-			shouldLog:      false,
+			shouldLog:      true,
 		},
 		{
 			name:           "conflict error",
 			err:            errs.ErrAlreadyExists,
 			expectedStatus: http.StatusConflict,
-			shouldLog:      false,
+			shouldLog:      true,
 		},
 	}
 
@@ -170,9 +170,9 @@ func TestRespondWithServiceError_ClientError(t *testing.T) {
 				t.Errorf("Expected error message %q, got %q", tt.err.Error(), response["error"])
 			}
 
-			// Check that no logging occurred for client errors
-			if logBuffer.Len() > 0 && tt.shouldLog == false {
-				t.Errorf("Expected no logging for client error, but got: %s", logBuffer.String())
+			// Standard client errors are logged at INFO
+			if hasLogs := logBuffer.Len() > 0; hasLogs != tt.shouldLog {
+				t.Errorf("Expected logging=%v, but got logs=%v", tt.shouldLog, hasLogs)
 			}
 		})
 	}
@@ -305,7 +305,7 @@ func TestRespondWithServiceError_ContextErrors(t *testing.T) {
 			name:           "context canceled",
 			err:            context.Canceled,
 			expectedStatus: http.StatusRequestTimeout,
-			shouldLog:      false, // 408 is a client error
+			shouldLog:      true, // 408 is a client error, logged at INFO
 		},
 		{
 			name:           "context deadline exceeded",

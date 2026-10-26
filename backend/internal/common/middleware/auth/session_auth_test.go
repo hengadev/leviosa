@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,6 +13,7 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/cookies"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/identity"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/google/uuid"
 	"github.com/hengadev/encx"
@@ -32,7 +35,7 @@ func TestNewSessionAuthMiddleware(t *testing.T) {
 
 func TestCookieExtraction(t *testing.T) {
 	// Simple test to verify cookie extraction works
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := newTestRequest("GET", "/test")
 	req.AddCookie(&http.Cookie{
 		Name:  cookies.AccessTokenCookieName,
 		Value: "test_token",
@@ -44,6 +47,9 @@ func TestCookieExtraction(t *testing.T) {
 }
 
 func TestRequireAccessToken(t *testing.T) {
+	crypto, err := NewTestCrypto(t)
+	require.NoError(t, err, "Failed to create test crypto service")
+
 	tests := []struct {
 		name           string
 		setupCookie    func(*http.Request)
@@ -120,7 +126,7 @@ func TestRequireAccessToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionPending,
 				}
-				return createValidSessionJSON(t, session)
+				return createValidSessionJSON(t, crypto, session)
 			}(),
 			expectedStatus: http.StatusOK,
 			expectedInCtx:  true,
@@ -140,7 +146,7 @@ func TestRequireAccessToken(t *testing.T) {
 		// 			Role:   identity.Standard,
 		// 			State:  session.SessionActive,
 		// 		}
-		// 		return createValidSessionJSON(t, session)
+		// 		return createValidSessionJSON(t, crypto, session)
 		// 	}(),
 		// 	expectedStatus: http.StatusOK,
 		// 	expectedInCtx:  true,
@@ -160,7 +166,7 @@ func TestRequireAccessToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  "expired", // Invalid state
 				}
-				return createValidSessionJSON(t, session)
+				return createValidSessionJSON(t, crypto, session)
 			}(),
 			expectedStatus: http.StatusUnauthorized,
 			expectedInCtx:  false,
@@ -180,7 +186,7 @@ func TestRequireAccessToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionActive, // Valid state but expired
 				}
-				return createExpiredSessionJSON(t, session, time.Now().Add(-time.Hour))
+				return createExpiredSessionJSON(t, crypto, session, time.Now().Add(-time.Hour))
 			}(),
 			expectedStatus: http.StatusUnauthorized,
 			expectedInCtx:  false,
@@ -200,7 +206,7 @@ func TestRequireAccessToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionPending, // Valid state but expired
 				}
-				return createExpiredSessionJSON(t, session, time.Now().Add(-time.Minute))
+				return createExpiredSessionJSON(t, crypto, session, time.Now().Add(-time.Minute))
 			}(),
 			expectedStatus: http.StatusUnauthorized,
 			expectedInCtx:  false,
@@ -220,7 +226,7 @@ func TestRequireAccessToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionActive,
 				}
-				return createValidSessionJSON(t, session) // Uses future expiration
+				return createValidSessionJSON(t, crypto, session) // Uses future expiration
 			}(),
 			expectedStatus: http.StatusOK,
 			expectedInCtx:  true,
@@ -231,12 +237,10 @@ func TestRequireAccessToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			mockRepo := &session.MockSessionRepository{}
-			mockCrypto, err := NewTestCrypto(t)
-			require.NoError(t, err, "Failed to create test crypto service")
-			middleware := NewSessionAuthMiddleware(mockRepo, mockCrypto, nil)
+			middleware := NewSessionAuthMiddleware(mockRepo, crypto, nil)
 
 			if tt.repoResponse != nil || tt.repoError != nil {
-				mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return("test-session-id", tt.repoResponse, tt.repoError)
+				mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(uuid.NewString(), tt.repoResponse, tt.repoError)
 			}
 
 			// Create test handler
@@ -252,7 +256,7 @@ func TestRequireAccessToken(t *testing.T) {
 			})
 
 			// Create request
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := newTestRequest("GET", "/test")
 			tt.setupCookie(req)
 			rr := httptest.NewRecorder()
 
@@ -269,6 +273,9 @@ func TestRequireAccessToken(t *testing.T) {
 }
 
 func TestRequireRefreshToken(t *testing.T) {
+	crypto, err := NewTestCrypto(t)
+	require.NoError(t, err, "Failed to create test crypto service")
+
 	tests := []struct {
 		name           string
 		path           string
@@ -346,7 +353,7 @@ func TestRequireRefreshToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionActive,
 				}
-				return createValidSessionJSON(t, session)
+				return createValidSessionJSON(t, crypto, session)
 			}(),
 			expectedStatus: http.StatusOK,
 			expectedInCtx:  true,
@@ -367,7 +374,7 @@ func TestRequireRefreshToken(t *testing.T) {
 					Role:   identity.Standard,
 					State:  session.SessionPending,
 				}
-				return createValidSessionJSON(t, session)
+				return createValidSessionJSON(t, crypto, session)
 			}(),
 			expectedStatus: http.StatusOK,
 			expectedInCtx:  true,
@@ -378,12 +385,10 @@ func TestRequireRefreshToken(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup
 			mockRepo := &session.MockSessionRepository{}
-			mockCrypto, err := NewTestCrypto(t)
-			require.NoError(t, err, "Failed to create test crypto service")
-			middleware := NewSessionAuthMiddleware(mockRepo, mockCrypto, nil)
+			middleware := NewSessionAuthMiddleware(mockRepo, crypto, nil)
 
 			if tt.repoResponse != nil || tt.repoError != nil {
-				mockRepo.On("FindSessionByRefreshTokenHash", mock.Anything, mock.AnythingOfType("string")).Return("test-session-id", tt.repoResponse, tt.repoError)
+				mockRepo.On("FindSessionByRefreshTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(uuid.NewString(), tt.repoResponse, tt.repoError)
 			}
 
 			// Create test handler
@@ -399,7 +404,7 @@ func TestRequireRefreshToken(t *testing.T) {
 			})
 
 			// Create request
-			req := httptest.NewRequest("GET", tt.path, nil)
+			req := newTestRequest("GET", tt.path)
 			tt.setupCookie(req)
 			rr := httptest.NewRecorder()
 
@@ -415,83 +420,37 @@ func TestRequireRefreshToken(t *testing.T) {
 	}
 }
 
-// TestSession is a test-only version of SessionEncx that can marshal plaintext fields
-type TestSession struct {
-	ID                 uuid.UUID            `json:"id"`
-	UserIDEncrypted    []byte               `json:"userid_encrypted"`
-	UserIDHash         string               `json:"userid_hash"`
-	RoleEncrypted      []byte               `json:"role_encrypted"`
-	StateEncrypted     []byte               `json:"state_encrypted"`
-	CreatedAtEncrypted []byte               `json:"createdat_encrypted"`
-	ExpiresAtEncrypted []byte               `json:"expiresat_encrypted"`
-	CompletedAtEncrypted []byte             `json:"completedat_encrypted"`
-	AccessTokenHash    string               `json:"accesstoken_hash"`
-	RefreshTokenHash   string               `json:"refreshtoken_hash"`
-	DEKEncrypted       []byte               `json:"dek_encrypted"`
-	KeyVersion         int                  `json:"key_version"`
-	Metadata           encx.EncryptionMetadata `json:"metadata"`
+// newTestRequest builds a request whose context carries a logger, as the
+// logging middleware provides in the app.
+func newTestRequest(method, target string) *http.Request {
+	req := httptest.NewRequest(method, target, nil)
+	return req.WithContext(context.WithValue(req.Context(), ctxutil.LoggerKey, slog.Default()))
 }
 
-// Helper function to create valid JSON session data for testing
-func createValidSessionJSON(t *testing.T, sessionStruct *session.Session) []byte {
+// createValidSessionJSON encrypts the session with crypto, as the session
+// store does, and returns the JSON the repository holds. A zero ExpiresAt
+// becomes one hour from now.
+func createValidSessionJSON(t *testing.T, crypto encx.CryptoService, sessionStruct *session.Session) []byte {
 	t.Helper()
 
-	// Create test session with encrypted fields that can be marshaled
-	testSession := &TestSession{
-		ID:                 sessionStruct.ID,
-		UserIDEncrypted:    []byte("encrypted_user_id"),
-		UserIDHash:         "user_id_hash",
-		RoleEncrypted:      []byte("encrypted_role"),
-		StateEncrypted:     []byte("encrypted_state"),
-		CreatedAtEncrypted: []byte("encrypted_created_at"),
-		ExpiresAtEncrypted: []byte("encrypted_expires_at"),
-		CompletedAtEncrypted: []byte("encrypted_completed_at"),
-		AccessTokenHash:    "access_token_hash",
-		RefreshTokenHash:   "refresh_token_hash",
-		DEKEncrypted:       []byte("encrypted_dek"),
-		KeyVersion:         1,
-		Metadata: encx.EncryptionMetadata{
-			KEKAlias:         "test-kek-alias",
-			EncryptionTime:   time.Now().Unix(),
-			GeneratorVersion: "1.0.0",
-		},
+	s := *sessionStruct
+	if s.ExpiresAt.IsZero() {
+		s.ExpiresAt = time.Now().Add(time.Hour)
 	}
+	sessionEncx, err := session.ProcessSessionEncx(context.Background(), crypto, &s)
+	require.NoError(t, err)
 
-	// Marshal to JSON
-	data, err := json.Marshal(testSession)
+	data, err := json.Marshal(sessionEncx)
 	require.NoError(t, err)
 
 	return data
 }
 
-// Helper function to create expired session JSON data for testing
-func createExpiredSessionJSON(t *testing.T, sessionStruct *session.Session, expiresAt time.Time) []byte {
+// createExpiredSessionJSON is createValidSessionJSON with ExpiresAt set to expiresAt.
+func createExpiredSessionJSON(t *testing.T, crypto encx.CryptoService, sessionStruct *session.Session, expiresAt time.Time) []byte {
 	t.Helper()
 
-	// Create test session with encrypted fields that can be marshaled
-	testSession := &TestSession{
-		ID:                 sessionStruct.ID,
-		UserIDEncrypted:    []byte("encrypted_user_id"),
-		UserIDHash:         "user_id_hash",
-		RoleEncrypted:      []byte("encrypted_role"),
-		StateEncrypted:     []byte("encrypted_state"),
-		CreatedAtEncrypted: []byte("encrypted_created_at"),
-		ExpiresAtEncrypted: []byte("encrypted_expires_at"),
-		CompletedAtEncrypted: []byte("encrypted_completed_at"),
-		AccessTokenHash:    "access_token_hash",
-		RefreshTokenHash:   "refresh_token_hash",
-		DEKEncrypted:       []byte("encrypted_dek"),
-		KeyVersion:         1,
-		Metadata: encx.EncryptionMetadata{
-			KEKAlias:         "test-kek-alias",
-			EncryptionTime:   time.Now().Add(-2 * time.Hour).Unix(), // Past encryption time
-			GeneratorVersion: "1.0.0",
-		},
-	}
-
-	// Marshal to JSON
-	data, err := json.Marshal(testSession)
-	require.NoError(t, err)
-
-	return data
+	expired := *sessionStruct
+	expired.ExpiresAt = expiresAt
+	return createValidSessionJSON(t, crypto, &expired)
 }
