@@ -86,7 +86,7 @@ Each domain package follows the ports & adapters pattern:
 - Uses real adapters (via testcontainers) for black-box testing
 
 ### Technology Stack
-- **Language**: Go 1.24.2
+- **Language**: Go 1.26.10
 - **Database**: PostgreSQL 17.5
 - **Cache**: Redis (alpine)
 - **Message Queue**: RabbitMQ 3 (management)
