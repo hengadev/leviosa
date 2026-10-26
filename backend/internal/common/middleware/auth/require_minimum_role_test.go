@@ -90,7 +90,7 @@ func TestRequireMinimumRole(t *testing.T) {
 				CreatedAt: time.Now(),
 				ExpiresAt: time.Now().Add(time.Hour),
 			}
-			sessionData := createValidSessionJSON(t, session)
+			sessionData := createValidSessionJSON(t, mockCrypto, session)
 
 			// Mock the repository call
 			mockRepo.On("FindSessionByAccessTokenHash", mock.Anything, mock.AnythingOfType("string")).Return(session.ID.String(), sessionData, nil)
@@ -108,7 +108,7 @@ func TestRequireMinimumRole(t *testing.T) {
 			handler := middleware.RequireMinimumRole(tt.requiredRole)(testHandler)
 
 			// Create request with access token cookie
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := newTestRequest("GET", "/test")
 			req.AddCookie(&http.Cookie{
 				Name:  cookies.AccessTokenCookieName,
 				Value: "valid_token",

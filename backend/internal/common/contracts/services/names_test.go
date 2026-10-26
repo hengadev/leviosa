@@ -7,7 +7,7 @@ import (
 func TestAllServices(t *testing.T) {
 	services := AllServices()
 	
-	expected := []string{AuthUser, Catalog, Settings, Notification}
+	expected := []string{AuthUser, Catalog, Booking, Settings, Notification}
 	
 	if len(services) != len(expected) {
 		t.Errorf("Expected %d services, got %d", len(expected), len(services))
