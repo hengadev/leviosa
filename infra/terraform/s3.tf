@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "media" {
   bucket   = local.media_bucket_names[each.key]
 
   tags = {
-    Name        = "Leviosa media (${each.key})"
+    Name        = "Leviosa media - ${each.key}"
     Environment = each.key
   }
 }

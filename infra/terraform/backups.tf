@@ -13,7 +13,7 @@ resource "aws_s3_bucket" "backups" {
   bucket = local.backup_bucket_name
 
   tags = {
-    Name        = "Leviosa backups (prod)"
+    Name        = "Leviosa backups - prod"
     Environment = "prod"
   }
 }
