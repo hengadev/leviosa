@@ -20,7 +20,9 @@ backup_noncurrent_version_days = 30
 # Hetzner Cloud
 # ============================================
 
-server_type         = "cpx22"
+# cax* is ARM, cx*/cpx* x86. Switching between the two cannot be done in
+# place: apply with -replace=hcloud_server.main.
+server_type         = "cax11"
 server_location     = "nbg1"
 server_image        = "ubuntu-24.04"
 enable_backups      = true

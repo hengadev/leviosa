@@ -23,7 +23,7 @@ only source of configuration).
                              Cloudflare (proxied DNS)
                                       │
    ┌──────────────────────────────────▼──────────────────────────────────────┐
-   │ Hetzner cpx22, nbg1 (Terraform; primary IPs survive a rebuild)          │
+   │ Hetzner cax11 (ARM), nbg1 (Terraform; primary IPs survive a rebuild)    │
    │                                                                         │
    │  caddy ── TLS via Cloudflare DNS-01, lb_try_duration 30 s               │
    │   ├─ leviosa.care, www., admin., staff.                                 │
