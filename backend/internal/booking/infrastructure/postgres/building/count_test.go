@@ -42,8 +42,10 @@ func TestCountBuildings(t *testing.T) {
 					id, name_encrypted, address_encrypted, city_encrypted,
 					postal_code_encrypted, country_encrypted, description_encrypted,
 					phone_encrypted, email_encrypted, is_active, created_at, updated_at,
-					dek_encrypted, key_version, metadata
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+					dek_encrypted, key_version, metadata,
+					name_hash, address_hash, city_hash, country_hash
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+					gen_random_uuid()::text, gen_random_uuid()::text, gen_random_uuid()::text, gen_random_uuid()::text)
 			`,
 				buildingID,
 				[]byte("encrypted_building_"+string(rune(i))),
@@ -84,8 +86,10 @@ func TestCountBuildings(t *testing.T) {
 					id, name_encrypted, address_encrypted, city_encrypted,
 					postal_code_encrypted, country_encrypted, description_encrypted,
 					phone_encrypted, email_encrypted, is_active, created_at, updated_at,
-					dek_encrypted, key_version, metadata
-				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+					dek_encrypted, key_version, metadata,
+					name_hash, address_hash, city_hash, country_hash
+				) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+					gen_random_uuid()::text, gen_random_uuid()::text, gen_random_uuid()::text, gen_random_uuid()::text)
 			`,
 				buildingID,
 				[]byte("encrypted_building_"+string(rune(i))),

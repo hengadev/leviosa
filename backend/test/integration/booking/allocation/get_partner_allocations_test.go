@@ -423,7 +423,7 @@ func TestGetPartnerAllocations(t *testing.T) {
 		req, err := http.NewRequestWithContext(
 			ctx,
 			http.MethodGet,
-			testServerURL+"/partners/invalid-uuid-format/allocations",
+			testServerURL+"/partners/allocations/invalid-uuid-format",
 			nil,
 		)
 		require.NoError(t, err)

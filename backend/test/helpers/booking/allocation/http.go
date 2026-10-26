@@ -215,7 +215,7 @@ func NewGetPartnerAllocationsRequest(
 ) *http.Request {
 	t.Helper()
 
-	url := serverURL + "/partners/" + partnerID.String() + "/allocations"
+	url := serverURL + "/partners/allocations/" + partnerID.String()
 
 	// Add query parameter if activeOnly is specified
 	if activeOnly != nil {

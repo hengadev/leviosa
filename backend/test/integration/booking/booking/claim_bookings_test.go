@@ -60,9 +60,9 @@ func TestClaimBookings(t *testing.T) {
 		_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create availability
-		availability := tavail.NewTestAvailability(t, room.ID, partnerID,
-			time.Now().Add(24*time.Hour),
-			time.Now().Add(25*time.Hour),
+		availability := tavail.NewTestAvailability(t, partnerID, room.ID,
+			time.Now().Add(24*time.Hour).Truncate(time.Hour),
+			time.Now().Add(24*time.Hour).Truncate(time.Hour).Add(2*time.Hour),
 			5000,
 		)
 		availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
@@ -71,22 +71,22 @@ func TestClaimBookings(t *testing.T) {
 
 		// Create guest bookings via the service (with real encryption)
 		guestEmail := "guest@example.com"
-		booking1, err := service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(10*time.Minute), "", "Jean", "Dupont", guestEmail, "0612345678")
+		booking1, err := service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "Jean", "Dupont", guestEmail, "0612345678")
 		require.NoError(t, err)
 		assert.True(t, booking1.IsGuestBooking())
 		assert.Nil(t, booking1.ClientID)
 
 		// Create a second guest booking with the same email
-		availability2 := tavail.NewTestAvailability(t, room.ID, partnerID,
-			time.Now().Add(48*time.Hour),
-			time.Now().Add(49*time.Hour),
+		availability2 := tavail.NewTestAvailability(t, partnerID, room.ID,
+			time.Now().Add(48*time.Hour).Truncate(time.Hour),
+			time.Now().Add(48*time.Hour).Truncate(time.Hour).Add(2*time.Hour),
 			5000,
 		)
 		availabilityEncx2, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability2)
 		require.NoError(t, err)
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx2, testPool)
 
-		booking2, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(10*time.Minute), "", "Jean", "Dupont", guestEmail, "0612345678")
+		booking2, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "", "Jean", "Dupont", guestEmail, "0612345678")
 		require.NoError(t, err)
 		assert.True(t, booking2.IsGuestBooking())
 
@@ -154,9 +154,9 @@ func TestClaimBookings(t *testing.T) {
 
 		_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner2@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		availability := tavail.NewTestAvailability(t, room.ID, partnerID,
-			time.Now().Add(24*time.Hour),
-			time.Now().Add(25*time.Hour),
+		availability := tavail.NewTestAvailability(t, partnerID, room.ID,
+			time.Now().Add(24*time.Hour).Truncate(time.Hour),
+			time.Now().Add(24*time.Hour).Truncate(time.Hour).Add(2*time.Hour),
 			5000,
 		)
 		availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
@@ -164,7 +164,7 @@ func TestClaimBookings(t *testing.T) {
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
 		// Create a guest booking with a DIFFERENT email
-		_, err = service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(10*time.Minute), "", "Other", "Person", "other@example.com", "0600000000")
+		_, err = service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "Other", "Person", "other@example.com", "0600000000")
 		require.NoError(t, err)
 
 		// Create a client user
@@ -224,18 +224,18 @@ func TestClaimBookings(t *testing.T) {
 		_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner3@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create two availabilities
-		availability := tavail.NewTestAvailability(t, room.ID, partnerID,
-			time.Now().Add(24*time.Hour),
-			time.Now().Add(25*time.Hour),
+		availability := tavail.NewTestAvailability(t, partnerID, room.ID,
+			time.Now().Add(24*time.Hour).Truncate(time.Hour),
+			time.Now().Add(24*time.Hour).Truncate(time.Hour).Add(2*time.Hour),
 			5000,
 		)
 		availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
 		require.NoError(t, err)
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
-		availability2 := tavail.NewTestAvailability(t, room.ID, partnerID,
-			time.Now().Add(48*time.Hour),
-			time.Now().Add(49*time.Hour),
+		availability2 := tavail.NewTestAvailability(t, partnerID, room.ID,
+			time.Now().Add(48*time.Hour).Truncate(time.Hour),
+			time.Now().Add(48*time.Hour).Truncate(time.Hour).Add(2*time.Hour),
 			5000,
 		)
 		availabilityEncx2, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability2)
@@ -247,13 +247,13 @@ func TestClaimBookings(t *testing.T) {
 		_, newID := tsetup.SetupStandardUser(t, ctx, "newuser@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create a booking already owned by existing user
-		existingBooking, err := service.CreateBooking(ctx, availability.ID, &existingID, products[0].ID, time.Now().Add(24*time.Hour).Truncate(10*time.Minute), "", "", "", "", "")
+		existingBooking, err := service.CreateBooking(ctx, availability.ID, &existingID, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "", "", "", "")
 		require.NoError(t, err)
 		assert.NotNil(t, existingBooking.ClientID)
 
 		// Create a guest booking with an email
 		guestEmail := "guestshared@example.com"
-		guestBooking, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(10*time.Minute), "", "Guest", "User", guestEmail, "")
+		guestBooking, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "", "Guest", "User", guestEmail, "")
 		require.NoError(t, err)
 		assert.Nil(t, guestBooking.ClientID)
 

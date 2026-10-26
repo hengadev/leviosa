@@ -48,7 +48,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 
 		partnerToken, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
 
@@ -124,7 +124,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		respCreate.Body.Close()
 		require.Equal(t, http.StatusCreated, respCreate.StatusCode)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
 
@@ -139,7 +139,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 0, summary.CurrentMonthCents, "currentMonthCents should be 0 for pending bookings")
-		assert.Equal(t, 5000, summary.PendingCents, "pendingCents should reflect pending booking amount")
+		assert.Equal(t, products[0].PriceCents, summary.PendingCents, "pendingCents should reflect pending booking amount")
 		assert.Equal(t, 0, summary.NextPayoutCents, "nextPayoutCents should be 0 for pending bookings")
 		assert.Len(t, summary.Transactions, 1, "should have 1 transaction")
 		assert.Equal(t, domain.PaymentStatusPending, summary.Transactions[0].PaymentStatus)
@@ -171,7 +171,10 @@ func TestGetPartnerEarnings(t *testing.T) {
 		partnerToken, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
 		clientToken, clientID := tsetup.SetupStandardUser(t, ctx, "client@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		createBooking := func(baseTime time.Time, price int) uuid.UUID {
+		// Every booking is for products[0]: a booking takes its product's price
+		price := products[0].PriceCents
+
+		createBooking := func(baseTime time.Time) domain.BookingResponse {
 			startTime := baseTime.Truncate(time.Hour)
 			endTime := startTime.Add(2 * time.Hour)
 			availability := tavail.NewTestAvailability(t, partnerID, room.ID, startTime, endTime, price)
@@ -203,21 +206,26 @@ func TestGetPartnerEarnings(t *testing.T) {
 			var createdBooking domain.BookingResponse
 			err = json.NewDecoder(respCreate.Body).Decode(&createdBooking)
 			require.NoError(t, err)
-			return createdBooking.ID
+			require.NotNil(t, createdBooking.PaymentIntentID, "a priced booking gets a payment intent")
+			return createdBooking
 		}
 
 		now := time.Now()
 
-		paidBooking1 := createBooking(now.Add(24*time.Hour), 10000)
-		paidBooking2 := createBooking(now.Add(48*time.Hour), 15000)
-		_ = createBooking(now.Add(72*time.Hour), 8000)
+		paidBooking1 := createBooking(now.Add(24 * time.Hour))
+		paidBooking2 := createBooking(now.Add(48 * time.Hour))
+		_ = createBooking(now.Add(72 * time.Hour))
 
-		updatePaymentStatus := func(bookingID uuid.UUID, paymentStatus domain.PaymentStatus) {
+		updatePaymentStatus := func(booking domain.BookingResponse, paymentStatus domain.PaymentStatus) {
+			bookingID := booking.ID
+			// The client pays through Stripe, then the frontend reports the payment
+			require.NoError(t, paymentService.ConfirmPaymentIntent(ctx, *booking.PaymentIntentID))
+
 			req, err := http.NewRequest("POST", testServerURL+"/bookings/"+bookingID.String()+"/payment", nil)
 			require.NoError(t, err)
 			req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
 
-			paymentReq := map[string]string{"payment_intent_id": "pi_test_" + bookingID.String()}
+			paymentReq := map[string]string{"payment_intent_id": *booking.PaymentIntentID}
 			bodyBytes, _ := json.Marshal(paymentReq)
 			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 			req.Header.Set("Content-Type", "application/json")
@@ -242,7 +250,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		updatePaymentStatus(paidBooking1, domain.PaymentStatusPaid)
 		updatePaymentStatus(paidBooking2, domain.PaymentStatusPaid)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
 
@@ -256,8 +264,8 @@ func TestGetPartnerEarnings(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&summary)
 		require.NoError(t, err)
 
-		assert.Equal(t, 25000, summary.CurrentMonthCents, "should sum paid bookings in current month")
-		assert.Equal(t, 8000, summary.PendingCents, "should sum pending bookings")
+		assert.Equal(t, 2*price, summary.CurrentMonthCents, "should sum paid bookings in current month")
+		assert.Equal(t, price, summary.PendingCents, "should sum pending bookings")
 		assert.Len(t, summary.Transactions, 3, "should have 3 transactions")
 	})
 
@@ -290,7 +298,10 @@ func TestGetPartnerEarnings(t *testing.T) {
 		now := time.Now()
 		lastMonth := now.AddDate(0, -1, 0)
 
-		createPaidBooking := func(bookingTime time.Time, price int) {
+		// Every booking is for products[0]: a booking takes its product's price
+		price := products[0].PriceCents
+
+		createPaidBooking := func(bookingTime time.Time) {
 			startTime := bookingTime.Truncate(time.Hour)
 			endTime := startTime.Add(2 * time.Hour)
 			availability := tavail.NewTestAvailability(t, partnerID, room.ID, startTime, endTime, price)
@@ -327,7 +338,10 @@ func TestGetPartnerEarnings(t *testing.T) {
 			require.NoError(t, err)
 			reqPayment.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
 
-			paymentReq := map[string]string{"payment_intent_id": "pi_test_" + createdBooking.ID.String()}
+			require.NotNil(t, createdBooking.PaymentIntentID, "a priced booking gets a payment intent")
+			// The client pays through Stripe, then the frontend reports the payment
+			require.NoError(t, paymentService.ConfirmPaymentIntent(ctx, *createdBooking.PaymentIntentID))
+			paymentReq := map[string]string{"payment_intent_id": *createdBooking.PaymentIntentID}
 			bodyBytes, _ = json.Marshal(paymentReq)
 			reqPayment.Body = io.NopCloser(bytes.NewReader(bodyBytes))
 			reqPayment.Header.Set("Content-Type", "application/json")
@@ -338,10 +352,21 @@ func TestGetPartnerEarnings(t *testing.T) {
 			require.Equal(t, http.StatusOK, respPayment.StatusCode)
 		}
 
-		createPaidBooking(lastMonth.Add(24*time.Hour), 5000)
-		createPaidBooking(now.Add(24*time.Hour), 7000)
+		createPaidBooking(now.Add(24 * time.Hour))
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		// Availabilities must start in the future, so a last-month booking
+		// can't go through the API: insert it directly
+		lastMonthBooking, err := domain.NewBooking(uuid.New(), &clientID, partnerID, room.ID, price, "EUR", "", "", "", "")
+		require.NoError(t, err)
+		lastMonthBooking.ProductID = products[0].ID
+		lastMonthBooking.SlotStartTime = time.Date(lastMonth.Year(), lastMonth.Month(), 15, 10, 0, 0, 0, now.Location())
+		lastMonthBooking.SlotEndTime = lastMonthBooking.SlotStartTime.Add(time.Hour)
+		lastMonthBooking.PaymentStatus = domain.PaymentStatusPaid
+		lastMonthEncx, err := domain.ProcessBookingEncx(ctx, crypto, lastMonthBooking)
+		require.NoError(t, err)
+		require.NoError(t, tbooking.InsertBookingEncx(t, ctx, testPool, lastMonthEncx))
+
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
 
@@ -355,8 +380,8 @@ func TestGetPartnerEarnings(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&summary)
 		require.NoError(t, err)
 
-		assert.Equal(t, 7000, summary.CurrentMonthCents, "should count current month paid booking")
-		assert.Equal(t, 5000, summary.LastMonthCents, "should count last month paid booking")
+		assert.Equal(t, price, summary.CurrentMonthCents, "should count current month paid booking")
+		assert.Equal(t, price, summary.LastMonthCents, "should count last month paid booking")
 	})
 
 	t.Run("partner A cannot access partner B earnings - should return 403", func(t *testing.T) {
@@ -381,7 +406,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		partnerAToken, _ := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partnerA@test.com", room.ID, testPool, authCtx.Redis, crypto)
 		_, partnerBID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partnerB@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerBID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerBID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerAToken})
 
@@ -414,7 +439,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		adminToken, _ := tsetup.SetupAdminWithAllocation(t, ctx, room.ID, testPool, authCtx.Redis, crypto)
 		_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: adminToken})
 
@@ -435,7 +460,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 
 		partnerID := uuid.New()
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 
 		resp, err := client.Do(req)
@@ -466,7 +491,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 
 		partnerToken, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
-		req, err := http.NewRequest("GET", testServerURL+"/partners/"+partnerID.String()+"/earnings", nil)
+		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
 
@@ -494,7 +519,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 }
 
 func nextMonday(t time.Time) time.Time {
-	daysUntilMonday := (7 - int(t.Weekday())) % 7
+	daysUntilMonday := (int(time.Monday) - int(t.Weekday()) + 7) % 7
 	if daysUntilMonday == 0 {
 		daysUntilMonday = 7
 	}

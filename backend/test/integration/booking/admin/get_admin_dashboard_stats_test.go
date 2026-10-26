@@ -71,17 +71,17 @@ func TestGetAdminDashboardStats(t *testing.T) {
 		lastSunday := startOfISOWeek.Add(-1 * time.Second)
 		thisMonday := startOfISOWeek
 
-		bookingEncx := tbooking.NewTestBookingEncx(t)
-		bookingEncx.CreatedAt = lastSunday
-		bookingEncx.TotalPriceCents = 5000
-		bookingEncx.PaymentStatus = domain.PaymentStatusPaid
-		tbooking.InsertBookingEncx(t, ctx, testPool, bookingEncx)
+		lastWeekBooking := tbooking.NewTestBooking(t)
+		lastWeekBooking.CreatedAt = lastSunday
+		lastWeekBooking.TotalPriceCents = 5000
+		lastWeekBooking.PaymentStatus = domain.PaymentStatusPaid
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, lastWeekBooking))
 
-		thisWeekBooking := tbooking.NewTestBookingEncx(t)
+		thisWeekBooking := tbooking.NewTestBooking(t)
 		thisWeekBooking.CreatedAt = thisMonday
 		thisWeekBooking.TotalPriceCents = 3000
 		thisWeekBooking.PaymentStatus = domain.PaymentStatusPaid
-		tbooking.InsertBookingEncx(t, ctx, testPool, thisWeekBooking)
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, thisWeekBooking))
 
 		req, err := http.NewRequest("GET", testServerURL+"/admin/dashboard/stats", nil)
 		require.NoError(t, err)
@@ -114,27 +114,32 @@ func TestGetAdminDashboardStats(t *testing.T) {
 		now := time.Now()
 		startOfISOWeek := getStartOfISOWeek(now)
 
-		upcomingBooking := tbooking.NewTestBookingEncx(t)
+		upcomingBooking := tbooking.NewTestBooking(t)
 		upcomingBooking.CreatedAt = startOfISOWeek.Add(2 * time.Hour)
-		upcomingBooking.SlotStartTimeEncrypted = []byte("future_slot")
+		upcomingBooking.PaymentStatus = domain.PaymentStatusPaid
 		upcomingBooking.Status = domain.BookingStatusConfirmed
-		tbooking.InsertBookingEncx(t, ctx, testPool, upcomingBooking)
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, upcomingBooking))
 
-		pastConfirmedBooking := tbooking.NewTestBookingEncx(t)
+		pastConfirmedBooking := tbooking.NewTestBooking(t)
 		pastConfirmedBooking.CreatedAt = startOfISOWeek.Add(1 * time.Hour)
-		pastConfirmedBooking.SlotStartTimeEncrypted = []byte("past_slot")
+		pastConfirmedBooking.SlotStartTime = now.Add(-2 * time.Hour)
+		pastConfirmedBooking.SlotEndTime = now.Add(-1 * time.Hour)
+		pastConfirmedBooking.PaymentStatus = domain.PaymentStatusPaid
 		pastConfirmedBooking.Status = domain.BookingStatusConfirmed
-		tbooking.InsertBookingEncx(t, ctx, testPool, pastConfirmedBooking)
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, pastConfirmedBooking))
 
-		cancelledBooking := tbooking.NewTestBookingEncx(t)
+		cancelledBooking := tbooking.NewTestBooking(t)
 		cancelledBooking.CreatedAt = startOfISOWeek.Add(3 * time.Hour)
+		cancelledBooking.PaymentStatus = domain.PaymentStatusRefunded
 		cancelledBooking.Status = domain.BookingStatusCancelled
-		tbooking.InsertBookingEncx(t, ctx, testPool, cancelledBooking)
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, cancelledBooking))
 
-		pendingBooking := tbooking.NewTestBookingEncx(t)
+		// Pending payment: a confirmed future slot whose payment isn't done
+		pendingBooking := tbooking.NewTestBooking(t)
 		pendingBooking.CreatedAt = startOfISOWeek.Add(4 * time.Hour)
 		pendingBooking.PaymentStatus = domain.PaymentStatusPending
-		tbooking.InsertBookingEncx(t, ctx, testPool, pendingBooking)
+		pendingBooking.Status = domain.BookingStatusConfirmed
+		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, pendingBooking))
 
 		req, err := http.NewRequest("GET", testServerURL+"/admin/dashboard/stats", nil)
 		require.NoError(t, err)
@@ -151,7 +156,7 @@ func TestGetAdminDashboardStats(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 4, stats.BookingsThisWeek)
-		assert.Equal(t, 1, stats.UpcomingBookingsCount, "should count only confirmed future bookings")
+		assert.Equal(t, 2, stats.UpcomingBookingsCount, "should count only confirmed future bookings, paid or not")
 		assert.Equal(t, 1, stats.PendingBookingsCount, "should count pending payment bookings")
 	})
 

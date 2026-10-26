@@ -1,12 +1,14 @@
 package bookingHelpers
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
 	"github.com/google/uuid"
 	"github.com/hengadev/encx"
+	"github.com/stretchr/testify/require"
 )
 
 // ptrUUID returns a pointer to the given uuid.UUID.
@@ -263,5 +265,29 @@ func NewTestBookingEncxWithNotes(
 	bookingEncx := NewTestBookingEncxWithIDs(t, availabilityID, clientID, partnerID, roomID)
 	bookingEncx.ClientNotesEncrypted = []byte("encrypted_" + clientNotes)
 	bookingEncx.PartnerNotesEncrypted = []byte("encrypted_" + partnerNotes)
+	return bookingEncx
+}
+
+// NewTestBooking returns a confirmed client booking with a pending payment and
+// a one-hour slot starting in a day. Encrypt it with EncryptTestBooking for
+// code that decrypts bookings; NewTestBookingEncx's fields are not ciphertext.
+func NewTestBooking(t *testing.T) *domain.Booking {
+	t.Helper()
+
+	slotStart := time.Now().Add(24 * time.Hour).Truncate(time.Hour)
+	b, err := domain.NewBooking(uuid.New(), ptrUUID(uuid.New()), uuid.New(), uuid.New(), 5000, "EUR", "", "", "", "")
+	require.NoError(t, err)
+	b.ProductID = uuid.New()
+	b.SlotStartTime = slotStart
+	b.SlotEndTime = slotStart.Add(time.Hour)
+	return b
+}
+
+// EncryptTestBooking encrypts b with crypto, as the booking repository stores it.
+func EncryptTestBooking(t *testing.T, ctx context.Context, crypto encx.CryptoService, b *domain.Booking) *domain.BookingEncx {
+	t.Helper()
+
+	bookingEncx, err := domain.ProcessBookingEncx(ctx, crypto, b)
+	require.NoError(t, err)
 	return bookingEncx
 }

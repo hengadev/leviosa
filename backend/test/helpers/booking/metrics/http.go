@@ -34,7 +34,7 @@ func NewGetRoomMetricsRequest(t *testing.T, ctx context.Context, serverURL strin
 // startDate and endDate should be in YYYY-MM-DD format
 // accessToken is optional - if empty, no auth cookie is added (for testing unauthorized access)
 func NewGetPartnerMetricsRequest(t *testing.T, ctx context.Context, serverURL string, partnerID string, startDate, endDate string, accessToken string) *http.Request {
-	urlStr := serverURL + "/partners/" + partnerID + "/metrics?start_date=" + startDate + "&end_date=" + endDate
+	urlStr := serverURL + "/partners/metrics/" + partnerID + "?start_date=" + startDate + "&end_date=" + endDate
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, urlStr, nil)
 	require.NoError(t, err)

@@ -105,7 +105,7 @@ func TestCreateBooking(t *testing.T) {
 		assert.Equal(t, room.ID, booking.RoomID)
 		assert.Equal(t, productID, booking.ProductID)
 		assert.Equal(t, slotStartTime.Unix(), booking.SlotStartTime.Unix())
-		assert.Equal(t, 0, booking.TotalPriceCents) // Price is 0 (pricing not yet integrated - see TODO in create_booking.go)
+		assert.Equal(t, products[0].PriceCents, booking.TotalPriceCents) // the product's active one-time price
 		assert.Equal(t, "EUR", booking.Currency)
 		assert.Equal(t, domain.BookingStatusConfirmed, booking.Status)
 		assert.Equal(t, domain.PaymentStatusPending, booking.PaymentStatus)
