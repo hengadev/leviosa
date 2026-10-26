@@ -46,7 +46,7 @@ change what runs as root, and it uploads nothing.
 | `deploy_gate_command` | `/usr/local/sbin/leviosa-deploy-gate` | the gate |
 | `deploy_gate_runner` | `/usr/local/sbin/leviosa-deploy` | the runner |
 | `deploy_gate_sudoers_file` | `/etc/sudoers.d/leviosa-deploy` | the sudoers drop-in (no dot in the name: `includedir` skips those) |
-| `deploy_gate_repo_url` | `https://github.com/Leviosa-care/leviosa.git` | where the runner fetches `main` (public, no credential) |
+| `deploy_gate_repo_url` | `https://github.com/hengadev/leviosa.git` | where the runner fetches `main` (public, no credential) |
 | `deploy_gate_state_dir` | `/var/lib/leviosa-deploy` | the runner's root-only state |
 | `deploy_gate_stack_roots` | `{prod: /opt/leviosa, staging: /opt/leviosa-staging}` | where each stack's compose file is installed; must match `infra/compose/deploy`'s defaults |
 

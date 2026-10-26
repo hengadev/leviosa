@@ -29,7 +29,7 @@ deploy-scripts ────────────┴────────�
 ```
 
 - **Pull requests never build an image, push or deploy.** `build-images` and
-  `deploy-staging` run only for a push to `main` of `Leviosa-care/leviosa`
+  `deploy-staging` run only for a push to `main` of `hengadev/leviosa`
   (a fork's own pushes skip them too).
 - **A red check stops the release.** Both release jobs need every check job and
   have no status override, and no check uses `continue-on-error`. Fix the
