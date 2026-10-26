@@ -1,8 +1,1 @@
-# PLACEHOLDER — NOT A KEY. The weekly Infisical snapshot is NOT installed
-# until this file holds the operator's real age public key.
-#
-# Replace this whole file with the single `age1…` line printed by
-#   age-keygen -o /dev/stdout | …   (see roles/backup/README.md, "The age key pair")
-# keep the private key (AGE-SECRET-KEY-1…) ONLY in the password manager,
-# commit the public key, and re-run `make setup` (or --tags backup).
-REPLACE_WITH_THE_OPERATOR_AGE_PUBLIC_KEY
+age1n30pju7s5zkltrnkjmhq7cvpcj7cvy4rjvmt9mk0yc36qmduly0s9hyjkm
