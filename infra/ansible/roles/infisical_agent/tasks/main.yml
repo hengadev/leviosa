@@ -79,7 +79,10 @@
 
 - name: Add the Infisical CLI apt repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64 signed-by={{ infisical_agent_apt_keyring }}] {{ infisical_agent_apt_baseurl }}/deb stable main"
+    repo: >-
+      deb [arch={{ 'arm64' if ansible_facts['architecture'] == 'aarch64' else 'amd64' }}
+      signed-by={{ infisical_agent_apt_keyring }}]
+      {{ infisical_agent_apt_baseurl }}/deb stable main
     filename: infisical-cli
     state: present
 
