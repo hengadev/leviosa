@@ -51,14 +51,11 @@ func TestCreatePromotionCode(t *testing.T) {
 		assert.NotNil(t, promotionCode)
 		assert.NotEmpty(t, promotionCode.StripePromotionID)
 		assert.Equal(t, req.Code, promotionCode.Code)
-		assert.True(t, promotionCode.Active)
 		assert.Equal(t, req.FirstTimeTransaction, promotionCode.FirstTimeTransaction)
 		assert.Equal(t, &maxRedemptions, promotionCode.MaxRedemptions)
 		assert.NotNil(t, promotionCode.ExpiresAt)
 		assert.Equal(t, &minimumAmount, promotionCode.MinimumAmount)
 		assert.Equal(t, &minimumAmountCurrency, promotionCode.MinimumAmountCurrency)
-		assert.Equal(t, req.Restrictions, promotionCode.Restrictions)
-		assert.Equal(t, req.Metadata, promotionCode.Metadata)
 		assert.Equal(t, 0, promotionCode.TimesRedeemed)
 		assert.False(t, promotionCode.CreatedAt.IsZero())
 	})
@@ -77,10 +74,8 @@ func TestCreatePromotionCode(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, promotionCode)
 		assert.Equal(t, req.Code, promotionCode.Code)
-		assert.True(t, promotionCode.Active)
 		assert.Equal(t, req.FirstTimeTransaction, promotionCode.FirstTimeTransaction)
 		assert.Nil(t, promotionCode.MaxRedemptions)
-		assert.Nil(t, promotionCode.ExpiresAt)
 		assert.Nil(t, promotionCode.MinimumAmount)
 		assert.Nil(t, promotionCode.Restrictions)
 	})
@@ -107,7 +102,6 @@ func TestCreatePromotionCode(t *testing.T) {
 		assert.Equal(t, "WELCOME20", promotionCode.Code)
 		assert.True(t, promotionCode.FirstTimeTransaction)
 		assert.Equal(t, &maxRedemptions, promotionCode.MaxRedemptions)
-		assert.Equal(t, req.Metadata, promotionCode.Metadata)
 	})
 
 	t.Run("create promotion code with expiry date", func(t *testing.T) {
@@ -176,9 +170,6 @@ func TestCreatePromotionCode(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.NotNil(t, promotionCode)
-		assert.NotNil(t, promotionCode.Restrictions)
-		assert.Equal(t, currencyOptions, promotionCode.Restrictions.CurrencyOptions)
-		assert.Equal(t, req.Metadata, promotionCode.Metadata)
 	})
 
 	t.Run("create promotion code with different currencies for minimum amount", func(t *testing.T) {

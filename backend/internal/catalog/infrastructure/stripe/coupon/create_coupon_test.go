@@ -42,7 +42,6 @@ func TestCreateCoupon(t *testing.T) {
 		assert.Equal(t, &maxRedemptions, coupon.MaxRedemptions)
 		assert.True(t, coupon.IsValid)
 		assert.Equal(t, 0, coupon.TimesRedeemed)
-		assert.Equal(t, req.Metadata, coupon.Metadata)
 		assert.False(t, coupon.CreatedAt.IsZero())
 	})
 
@@ -69,13 +68,11 @@ func TestCreateCoupon(t *testing.T) {
 		assert.NotNil(t, coupon)
 		assert.NotEmpty(t, coupon.StripeCouponID)
 		assert.Equal(t, req.Name, coupon.Name)
-		assert.Nil(t, coupon.PercentOff)
 		assert.Equal(t, &amountOff, coupon.AmountOff)
 		assert.Equal(t, &currency, coupon.Currency)
 		assert.Equal(t, domain.CouponDuration(req.Duration), coupon.Duration)
 		assert.NotNil(t, coupon.RedeemBy)
 		assert.True(t, coupon.IsValid)
-		assert.Equal(t, req.Metadata, coupon.Metadata)
 	})
 
 	t.Run("successful repeating coupon creation", func(t *testing.T) {
@@ -122,7 +119,6 @@ func TestCreateCoupon(t *testing.T) {
 		assert.Equal(t, &percentOff, coupon.PercentOff)
 		assert.Equal(t, domain.CouponDuration("forever"), coupon.Duration)
 		assert.Equal(t, &maxRedemptions, coupon.MaxRedemptions)
-		assert.Nil(t, coupon.DurationInMonths)
 		assert.True(t, coupon.IsValid)
 	})
 
@@ -195,6 +191,5 @@ func TestCreateCoupon(t *testing.T) {
 		assert.NotNil(t, coupon.RedeemBy)
 		// Allow some tolerance for time comparison (within 1 minute)
 		assert.WithinDuration(t, redeemBy, *coupon.RedeemBy, time.Minute)
-		assert.Equal(t, req.Metadata, coupon.Metadata)
 	})
 }

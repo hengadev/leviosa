@@ -7,11 +7,10 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
 	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/coupon"
 )
 
 func (s *service) CreateCoupon(ctx context.Context, req *domain.CreateCouponRequest) (*domain.Coupon, error) {
-	params := &stripe.CouponParams{
+	params := &stripe.CouponCreateParams{
 		Name: stripe.String(req.Name),
 	}
 
@@ -44,7 +43,7 @@ func (s *service) CreateCoupon(ctx context.Context, req *domain.CreateCouponRequ
 		params.Metadata = req.Metadata
 	}
 
-	stripeCoupon, err := coupon.New(params)
+	stripeCoupon, err := s.V1Coupons.Create(ctx, params)
 	if err != nil {
 		return nil, err
 	}

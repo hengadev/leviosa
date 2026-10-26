@@ -7,38 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	gostripe "github.com/stripe/stripe-go/v82"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// stripeGoLibrary points the stripe-go SDK's global API backend at an
-// httptest server for the duration of a test, then restores the previous
-// backend/key.
-//
-// The Service in this package (and the wider Stripe SDK v82 usage here) calls
-// package-level helpers like paymentintent.New/Get, which read the SDK's
-// process-global backend and API key rather than any per-Service client
-// configuration. Redirecting that global backend is therefore the only way to
-// exercise CreatePaymentIntent/RetrievePaymentIntent against a fake server in
-// a unit test.
-func withStripeTestBackend(t *testing.T, serverURL string) {
-	t.Helper()
-
-	prevKey := gostripe.Key
-	prevBackend := gostripe.GetBackend(gostripe.APIBackend)
-
-	gostripe.Key = "sk_test_dummy"
-	backend := gostripe.GetBackendWithConfig(gostripe.APIBackend, &gostripe.BackendConfig{
-		URL: gostripe.String(serverURL),
-	})
-	gostripe.SetBackend(gostripe.APIBackend, backend)
-
-	t.Cleanup(func() {
-		gostripe.Key = prevKey
-		gostripe.SetBackend(gostripe.APIBackend, prevBackend)
-	})
-}
 
 // TestCreatePaymentIntent_SetsReceiptEmail verifies that CreatePaymentIntent
 // sends the receipt_email parameter to Stripe when one is provided, so Stripe
@@ -65,9 +36,7 @@ func TestCreatePaymentIntent_SetsReceiptEmail(t *testing.T) {
 		}))
 		defer server.Close()
 
-		withStripeTestBackend(t, server.URL)
-
-		svc := NewService("sk_test_dummy", "", "whsec_dummy")
+		svc := NewService("sk_test_dummy", server.URL, "whsec_dummy")
 
 		id, secret, err := svc.CreatePaymentIntent(context.Background(), 1000, "eur", "Booking payment", "client@example.com", nil)
 
@@ -97,9 +66,7 @@ func TestCreatePaymentIntent_SetsReceiptEmail(t *testing.T) {
 		}))
 		defer server.Close()
 
-		withStripeTestBackend(t, server.URL)
-
-		svc := NewService("sk_test_dummy", "", "whsec_dummy")
+		svc := NewService("sk_test_dummy", server.URL, "whsec_dummy")
 
 		_, _, err := svc.CreatePaymentIntent(context.Background(), 2000, "eur", "Guestless booking payment", "", nil)
 
