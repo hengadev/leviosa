@@ -27,7 +27,7 @@ import (
 
 const (
 	guestEmail = "alice@example.com"
-	guestPhone = "+33612345678"
+	guestPhone = "0612345678"
 )
 
 // setupGuestBookingForLookup creates all infra and returns a guest booking with token.

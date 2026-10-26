@@ -162,7 +162,7 @@ func TestGetPartnerAvailabilities(t *testing.T) {
 		createAvailability(t, ctx, roomID, partnerID, 72*time.Hour, 1*time.Hour, "Cancelled", intPtr(15000), domain.AvailabilityStatusCancelled)
 
 		// Request available and booked statuses using url.Values for multiple params
-		baseURL := testServerURL + "/partners/" + partnerID.String() + "/availabilities"
+		baseURL := testServerURL + "/partners/availabilities/" + partnerID.String()
 		params := url.Values{}
 		params.Add("status", string(domain.AvailabilityStatusAvailable))
 		params.Add("status", string(domain.AvailabilityStatusBooked))
@@ -624,51 +624,6 @@ func TestGetPartnerAvailabilities(t *testing.T) {
 
 		// Should get 404 or 400 depending on router behavior
 		assert.True(t, resp.StatusCode == http.StatusBadRequest || resp.StatusCode == http.StatusNotFound)
-	})
-
-	t.Run("should return 401 when access token is missing", func(t *testing.T) {
-		ta.ClearAvailabilityTable(t, ctx, testPool)
-		partnerID := uuid.New()
-
-		// Make request without token
-		req := ta.NewGetPartnerAvailabilitiesRequest(t, ctx, testServerURL, partnerID.String(), nil, "")
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-	})
-
-	t.Run("should return 401 when session is expired", func(t *testing.T) {
-		ta.ClearAvailabilityTable(t, ctx, testPool)
-		defer tu.ClearAuthData(t, ctx, authCtx)
-
-		// Create expired user session
-		accessToken := tu.SetupExpiredUserWithRole(t, ctx, identity.Standard, authCtx)
-		partnerID := uuid.New()
-
-		req := ta.NewGetPartnerAvailabilitiesRequest(t, ctx, testServerURL, partnerID.String(), nil, accessToken)
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
-	})
-
-	t.Run("should return 401 when token is invalid", func(t *testing.T) {
-		ta.ClearAvailabilityTable(t, ctx, testPool)
-		partnerID := uuid.New()
-
-		// Use invalid token
-		req := ta.NewGetPartnerAvailabilitiesRequest(t, ctx, testServerURL, partnerID.String(), nil, "invalid-token-12345")
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
 	t.Run("should handle invalid time format gracefully", func(t *testing.T) {

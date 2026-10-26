@@ -76,7 +76,7 @@ func NewGetAvailabilityRequest(t *testing.T, ctx context.Context, serverURL stri
 // queryParams is optional - map of query parameters (e.g., {"status": "available", "limit": "10"})
 // accessToken is optional - if empty, no auth cookie is added (for testing unauthorized access)
 func NewGetPartnerAvailabilitiesRequest(t *testing.T, ctx context.Context, serverURL string, partnerID string, queryParams map[string]string, accessToken string) *http.Request {
-	urlStr := serverURL + "/partners/" + partnerID + "/availabilities"
+	urlStr := serverURL + "/partners/availabilities/" + partnerID
 
 	// Add query parameters if provided
 	if len(queryParams) > 0 {

@@ -72,7 +72,7 @@ func setupGuestBookingForCancel(t *testing.T, slotStartTime time.Time) (bookingI
 		"guest_first_name": "Bob",
 		"guest_last_name":  "Durand",
 		"guest_email":      "bob@example.com",
-		"guest_phone":      "+33698765432",
+		"guest_phone":      "0698765432",
 	}
 	bodyBytes, err := json.Marshal(reqBody)
 	require.NoError(t, err)
@@ -159,7 +159,7 @@ func setupGuestBookingWithCancellationWindow(t *testing.T, cancellationHours int
 		"guest_first_name": "Claire",
 		"guest_last_name":  "Dupont",
 		"guest_email":      "claire@example.com",
-		"guest_phone":      "+33611112222",
+		"guest_phone":      "0611112222",
 	}
 	bodyBytes, err := json.Marshal(reqBody)
 	require.NoError(t, err)
@@ -222,7 +222,7 @@ func TestCancelBookingPublic(t *testing.T) {
 		// Response must not leak guest contact fields
 		raw, _ := json.Marshal(result)
 		assert.NotContains(t, string(raw), "bob@example.com")
-		assert.NotContains(t, string(raw), "+33698765432")
+		assert.NotContains(t, string(raw), "0698765432")
 	})
 
 	t.Run("mismatched token returns 401", func(t *testing.T) {
