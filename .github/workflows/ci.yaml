@@ -221,7 +221,7 @@ jobs:
 
   build-images:
     name: 🐳 Build & Push ${{ matrix.app }} Image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Leviosa-care/leviosa'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'hengadev/leviosa'
     needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan, deploy-scripts]
     runs-on: ubuntu-latest
     permissions:
@@ -268,7 +268,7 @@ jobs:
 
   deploy-staging:
     name: 🚀 Deploy Staging
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'Leviosa-care/leviosa'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'hengadev/leviosa'
     # Every check job is listed again (not only through build-images), so the
     # deploy can never run after a check that did not pass.
     needs: [frontend-checks, backend-checks, backend-integration-tests, security-scan, deploy-scripts, build-images]

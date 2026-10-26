@@ -24,7 +24,7 @@ deploy_gate_ci_keys: []
 # Where root reads `deploy` and the compose files of the SHA it deploys. The
 # repository is public, so no credential. Only main is ever fetched: GitHub
 # also serves commits pushed to forks under this URL.
-deploy_gate_repo_url: https://github.com/Leviosa-care/leviosa.git
+deploy_gate_repo_url: https://github.com/hengadev/leviosa.git
 
 # Root-only (0700) state: the bare mirror of main (repo.git), each stack's
 # extracted release (release-<stack>) and the locks.
