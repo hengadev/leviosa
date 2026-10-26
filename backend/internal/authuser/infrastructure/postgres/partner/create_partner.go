@@ -16,7 +16,7 @@ func (r *Repository) CreatePartner(ctx context.Context, partner *domain.PartnerE
 			stripe_connected_account_id_encrypted, stripe_account_status, stripe_onboarding_complete,
 			dek_encrypted, key_version, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+			$1, $2, $3, $4, $5, $6, COALESCE($7, ARRAY[]::text[]), $8, $9, $10, $11, $12, $13, $14, $15, $16
 		)
 	`, r.schema)
 

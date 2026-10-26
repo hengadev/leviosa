@@ -16,7 +16,7 @@ func (r *Repository) UpdatePartner(ctx context.Context, partner *domain.PartnerE
 			experience = $3,
 			occupation = $4,
 			quote = $5,
-			tags = $6,
+			tags = COALESCE($6, ARRAY[]::text[]),
 			category_ids = $7,
 			product_ids = $8,
 			stripe_connected_account_id_encrypted = $9,
