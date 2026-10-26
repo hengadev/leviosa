@@ -88,9 +88,14 @@ variable "backup_noncurrent_version_days" {
 # ============================================
 
 variable "server_type" {
-  description = "Hetzner Cloud server type"
+  description = "Hetzner Cloud server type (cax11, cx23, cpx22, etc.). cax* is ARM: the app images are built for linux/arm64 too"
   type        = string
-  default     = "cpx22"
+  default     = "cax11"
+
+  validation {
+    condition     = can(regex("^(cax|cx|cpx)[0-9]{2}$", var.server_type))
+    error_message = "server_type must be a shared-vCPU Hetzner plan (e.g., cax11, cx23, cpx22)."
+  }
 }
 
 variable "server_location" {

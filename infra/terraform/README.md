@@ -13,7 +13,7 @@ profile and no local tfvars file.
 
 | Area | Resources |
 | --- | --- |
-| Hetzner | One `cpx22` in `nbg1` (`hcloud_server.main`), minimal cloud-init (Ansible does the rest), and its **primary IPs** (IPv4 + IPv6), which survive a server rebuild |
+| Hetzner | One `cax11` (ARM) in `nbg1` (`hcloud_server.main`), minimal cloud-init (Ansible does the rest), and its **primary IPs** (IPv4 + IPv6), which survive a server rebuild |
 | Cloudflare | Proxied records for `leviosa.care`, `www`, `admin`, `staff`, `staging`, `admin-staging`, `staff-staging`. Mail records (MX, SPF, DKIM, verification, DMARC) from the `email_*` inputs, empty until Zoho provides them (issue 036) |
 | AWS, per environment (`staging`, `prod`) | Private media bucket `leviosa-care-<env>-media` (SSE, versioning, non-current versions expire after 30 days); encx KEK: symmetric KMS key + `alias/leviosa-<env>`, `prevent_destroy`, 30-day deletion window; app IAM user `leviosa-<env>-app` with an access key and one policy: its own bucket and its own key only |
 | AWS, production backups | Bucket `leviosa-care-prod-backups` (SSE, versioning, lifecycle expiry); IAM user `leviosa-prod-backup` that can list, read and write it but **not delete** |

@@ -352,8 +352,8 @@ run "server_and_dns" {
   command = plan
 
   assert {
-    condition     = hcloud_server.main.server_type == "cpx22" && hcloud_server.main.location == "nbg1"
-    error_message = "The server must be a cpx22 in nbg1."
+    condition     = hcloud_server.main.server_type == "cax11" && hcloud_server.main.location == "nbg1"
+    error_message = "The server must be a cax11 in nbg1."
   }
 
   assert {
