@@ -109,8 +109,8 @@ func TestUpdateAvailability(t *testing.T) {
 
 		// Verify response data
 		assert.Equal(t, originalAvailability.ID, response.ID)
-		assert.Equal(t, newStartTime, response.StartTime)
-		assert.Equal(t, newEndTime, response.EndTime)
+		assert.True(t, newStartTime.Equal(response.StartTime), "start: want %s, got %s", newStartTime, response.StartTime)
+		assert.True(t, newEndTime.Equal(response.EndTime), "end: want %s, got %s", newEndTime, response.EndTime)
 		assert.Equal(t, newServiceType, response.ServiceType)
 		require.NotNil(t, response.PriceCents, "PriceCents should not be nil")
 		assert.Equal(t, newPriceCents, *response.PriceCents)
