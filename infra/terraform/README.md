@@ -131,8 +131,9 @@ The real IDs are not known to the repository yet. Fill in, commit, then run:
 6. **Old state gone** (issue 007): both old workspaces destroyed, the
    `production` workspace deleted, the `default` state empty, and the state
    bucket removed from the old state but still existing. The `import` blocks
-   in [`backend.tf`](backend.tf) adopt it (and its versioning, encryption
-   and public access block) on the first apply; afterwards they are no-ops.
+   in [`backend.tf`](backend.tf) adopt it (and its versioning and
+   encryption) on the first apply; afterwards they are no-ops. Its public
+   access block never existed, so the first apply creates it.
 7. **Bucket names**: S3 names are global. If `plan`/`apply` reports a name
    as taken, change `bucket_prefix` before anything holds data.
 
@@ -142,7 +143,7 @@ Then:
 cd infra/terraform
 infisical login        # once per computer / session
 make init
-make plan              # review: everything to add, the 4 state-bucket resources to import, nothing to destroy
+make plan              # review: everything to add, the 3 state-bucket resources to import, nothing to destroy
 make apply
 ```
 

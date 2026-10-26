@@ -3,7 +3,8 @@
 # It was created by the old workspace-based config and survived its teardown
 # (issue 007 removed it from the old state without deleting it). The import
 # blocks below adopt it into this state on the first apply; once it is in the
-# state they are no-ops.
+# state they are no-ops. The old config never set a public access block on
+# it, so that one is created, not imported.
 
 import {
   to = aws_s3_bucket.terraform_state
@@ -17,11 +18,6 @@ import {
 
 import {
   to = aws_s3_bucket_server_side_encryption_configuration.terraform_state
-  id = "leviosa-terraform-state"
-}
-
-import {
-  to = aws_s3_bucket_public_access_block.terraform_state
   id = "leviosa-terraform-state"
 }
 
