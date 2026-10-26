@@ -47,10 +47,22 @@ func (s *BookingService) GetDashboardStats(ctx context.Context) (*domain.Dashboa
 		return nil, fmt.Errorf("get published products: %w", err)
 	}
 
+	// GetUpcoming returns every confirmed booking: count only future slots
+	upcomingCount := 0
+	for _, bookingEncx := range upcomingBookingsEncx {
+		booking, err := domain.DecryptBookingEncx(ctx, s.crypto, bookingEncx)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt booking %s: %w", bookingEncx.ID, err)
+		}
+		if booking.SlotStartTime.After(now) {
+			upcomingCount++
+		}
+	}
+
 	stats := &domain.DashboardStats{
 		BookingsThisWeek:      len(thisWeekBookingsEncx),
 		RevenueThisWeek:       0,
-		UpcomingBookingsCount: len(upcomingBookingsEncx),
+		UpcomingBookingsCount: upcomingCount,
 		PendingBookingsCount:  len(pendingBookingsEncx),
 		ActiveProductsCount:   len(publishedProducts),
 		RecentBookings:        []domain.RecentBooking{},
@@ -180,6 +192,9 @@ func (s *BookingService) buildUpcomingBookings(ctx context.Context, now time.Tim
 
 // resolveUserName looks up a display name for a user, returning the fallback on error or empty result.
 func (s *BookingService) resolveUserName(ctx context.Context, userID uuid.UUID, fallback string) string {
+	if s.authUserClient == nil {
+		return fallback
+	}
 	name, err := s.authUserClient.GetUserName(ctx, userID)
 	if err != nil || name == "" {
 		return fallback
