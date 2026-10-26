@@ -18,7 +18,7 @@ func (s *CategoryService) GetCategoryByID(ctx context.Context, categoryIDStr str
 
 	category, err := s.sharedRepo.GetCategoryByID(ctx, categoryID)
 	if err != nil {
-		return nil, fmt.Errorf("get category with ID %s", categoryIDStr)
+		return nil, fmt.Errorf("get category with ID %s: %w", categoryIDStr, err)
 	}
 
 	return category, nil

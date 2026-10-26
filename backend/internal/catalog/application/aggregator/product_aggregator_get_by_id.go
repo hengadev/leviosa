@@ -11,7 +11,8 @@ import (
 func (s *ProductAggregatorService) GetProductByID(ctx context.Context, productIDStr string) (*domain.ProductAggregator, error) {
 	image, err := s.imageService.GetActiveImage(ctx, productIDStr, string(domain.ProductType))
 	if err != nil {
-		if !errors.Is(err, errs.ErrDomainNotFound) {
+		// No active image is not an error: the repository reports it as not found
+		if !errors.Is(err, errs.ErrDomainNotFound) && !errors.Is(err, errs.ErrRepositoryNotFound) {
 			return nil, err
 		}
 		image = nil
