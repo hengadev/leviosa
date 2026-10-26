@@ -21,7 +21,7 @@ SERVICES_ROOT=internal
 # Integration test paths (current structure)
 INTEGRATION_ROOT=test/integration
 # Integration suites run by test-integration: every domain plus cross-cutting suites
-INTEGRATION_SUITES=$(INTERNAL_SERVICES) encryption verify
+INTEGRATION_SUITES=$(INTERNAL_SERVICES) audit encryption migrations verify
 
 test-help: ## Show testing help message
 	@echo 'Leviosa Backend Testing Commands:'

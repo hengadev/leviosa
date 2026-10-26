@@ -88,7 +88,8 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOOS: linux
-        run: go test ./...
+        # test/integration has its own job below
+        run: go test $(go list ./... | grep -v /test/integration/)
 
   backend-integration-tests:
     name: 🧪 Backend Integration Tests
