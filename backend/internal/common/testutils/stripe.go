@@ -19,10 +19,19 @@ type StripeMockContainer struct {
 
 // SetupStripeMock starts a stripe-mock Docker container.
 // It will expose the mock Stripe API on a mapped port.
+//
+// stripe-mock validates every request against Stripe's OpenAPI spec but keeps
+// no state: a retrieve returns a fixture whatever the ID, unknown IDs succeed,
+// and metadata is not echoed back. Tests against it check that requests are
+// accepted and responses map, never what a later call reads back.
 func SetupStripeMock(ctx context.Context, t *testing.T) (*StripeMockContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:        "stripe/stripe-mock:latest", // Or a specific version like 'v0.124.0'
-		ExposedPorts: []string{"12111/tcp"},       // Default stripe-mock port
+		// Pinned to the last release on the API version stripe-go v82 sends
+		// (2025-08-27.basil): later releases validate requests against newer
+		// API versions (promotion codes need "promotion" instead of "coupon").
+		// Move it together with the stripe-go major version.
+		Image:        "stripe/stripe-mock:v0.196.0",
+		ExposedPorts: []string{"12111/tcp"}, // Default stripe-mock port
 		WaitingFor:   wait.ForListeningPort("12111/tcp").WithStartupTimeout(2 * time.Minute),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib" // Your Postgres driver
 	"github.com/testcontainers/testcontainers-go"
@@ -20,7 +21,12 @@ func SetupPostgres(ctx context.Context, t *testing.T) (*PostgresContainer, error
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:17.5-alpine3.21",
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForListeningPort("5432/tcp"),
+		// The image restarts once after initdb: the port opens before the
+		// second "ready" line, while connections still get 57P03.
+		WaitingFor: wait.ForAll(
+			wait.ForListeningPort("5432/tcp"),
+			wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
+		).WithDeadline(2 * time.Minute),
 		Env: map[string]string{
 			"POSTGRES_DB":       "testdb",
 			"POSTGRES_USER":     "testuser",
