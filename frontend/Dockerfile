@@ -11,7 +11,18 @@ COPY .npmrc* ./
 FROM base AS prod-deps
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
 
-FROM base AS build
+# Runs on the build machine's own platform even when building for another one:
+# its output (build/) is plain JavaScript, the same for every platform. Only
+# prod-deps, whose packages may carry native binaries, runs per target platform.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
+WORKDIR /usr/src/app
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY .npmrc* ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild esbuild
 
 COPY . .

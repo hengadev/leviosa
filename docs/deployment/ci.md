@@ -35,9 +35,10 @@ deploy-scripts ────────────┴────────�
   have no status override, and no check uses `continue-on-error`. Fix the
   check and push again.
 - **Images**: `henga/leviosa-backend:<sha>` and `henga/leviosa-frontend:<sha>`,
-  `linux/amd64`, where `<sha>` is the full 40-hex commit SHA (`github.sha`).
-  It is baked in with `--build-arg COMMIT_SHA=<sha>` and reported by the
-  backend's `/health` and the frontend's `/healthz`. CI pushes SHA tags only;
+  `linux/amd64` and `linux/arm64` (the server is an ARM cax11), where `<sha>`
+  is the full 40-hex commit SHA (`github.sha`). It is baked in with
+  `--build-arg COMMIT_SHA=<sha>` and reported by the backend's `/health` and
+  the frontend's `/healthz`. CI pushes SHA tags only;
   the `:prod` and `:staging` pins are local tags on the server
   ([infra/compose/README.md](../../infra/compose/README.md#image-pins)).
 
