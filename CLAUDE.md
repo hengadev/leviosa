@@ -101,7 +101,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 - Node.js adapter for SSR
 
 **Backend**:
-- Go 1.24.2 (modular monolith, single binary)
+- Go 1.26.10 (modular monolith, single binary)
 - PostgreSQL 17.5, Redis (alpine), RabbitMQ 3 (management)
 - AWS S3, AWS KMS (encx KEK; the pepper comes from configuration — ADR-0015)
 - External integrations: Stripe, SMTP (Zoho Mail), Twilio SMS (IE1 region, API key)
