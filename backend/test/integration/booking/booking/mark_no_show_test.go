@@ -61,7 +61,8 @@ func TestMarkNoShow(t *testing.T) {
 		clientToken, clientID := tsetup.SetupStandardUser(t, ctx, "client@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create availability
-		startTime := time.Now().Add(24 * time.Hour).Truncate(time.Hour)
+		// Two days ahead: the products allow cancelling up to 24h before the slot
+		startTime := time.Now().Add(48 * time.Hour).Truncate(time.Hour)
 		endTime := startTime.Add(2 * time.Hour)
 		availability := tavail.NewTestAvailability(t, partnerID, room.ID, startTime, endTime, 5000)
 		availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)

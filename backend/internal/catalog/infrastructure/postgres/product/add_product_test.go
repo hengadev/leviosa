@@ -52,8 +52,9 @@ func TestAddProduct(t *testing.T) {
 				assert.Equal(t, addedProduct.CancellationHours, fetchedProduct.CancellationHours)
 				assert.Equal(t, addedProduct.StripeProductID, fetchedProduct.StripeProductID)
 				assert.Equal(t, addedProduct.Metadata, fetchedProduct.Metadata)
-				// UpdatedAt is set by DB on insert, so it should be close to CreatedAt
-				assert.WithinDuration(t, addedProduct.CreatedAt, fetchedProduct.UpdatedAt, time.Second, "UpdatedAt should be set near CreatedAt by DB")
+				// UpdatedAt is set by DB on insert, so it should be close to CreatedAt,
+				// which is truncated to the second: allow that second on top of the latency
+				assert.WithinDuration(t, addedProduct.CreatedAt, fetchedProduct.UpdatedAt, 2*time.Second, "UpdatedAt should be set near CreatedAt by DB")
 			},
 		},
 		{
