@@ -216,7 +216,7 @@ func TestGetAllUsers(t *testing.T) {
 		assert.Equal(t, lastname, user.LastName)
 		assert.Equal(t, telephone, user.Telephone)
 		assert.Equal(t, picture, user.Picture)
-		assert.Equal(t, expectedBirthDate, user.BirthDate)
+		assert.Equal(t, expectedBirthDate.UTC(), user.BirthDate.UTC(), "same instant whatever the location")
 		assert.Equal(t, gender, user.Gender)
 		assert.Equal(t, address1, user.Address1)
 		assert.Equal(t, city, user.City)
