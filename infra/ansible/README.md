@@ -89,6 +89,17 @@ ssh-keygen -t ed25519 -C leviosa-<computer>
 `make setup` reads the server's IP through `infra/terraform/tf.sh output`,
 which also needs the `infisical login`.
 
+**Load this computer's key into the SSH agent first** (`eval "$(ssh-agent
+-s)"` if the terminal has none, then `ssh-add ~/.ssh/leviosa-<computer>`).
+Ansible connects to the IP, so `~/.ssh/config` does not apply, and it cannot
+type a passphrase: without the key every connection fails, and fail2ban bans
+this computer's IP after one or two runs (2 hours, or 24 hours for the DDoS
+jail). `make setup` and `make infisical-agent` therefore refuse to start
+unless the agent holds one of the keys file's operator keys
+([`check-agent-key.sh`](check-agent-key.sh), a local check that never
+connects). Banned anyway: connect from another IP (a phone hotspot) and run
+`fail2ban-client unban <ip>`.
+
 ## The keys file
 
 Who may log in is one small YAML file of **public keys**, kept outside the
