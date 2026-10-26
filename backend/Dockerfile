@@ -1,7 +1,16 @@
 # syntax=docker/dockerfile:1.4
 
-FROM golang:1.24.2-alpine AS builder
-RUN apk update && apk add --no-cache git gcc musl-dev
+# The builder runs on the build machine's own platform and cross-compiles for
+# the target one (linux/amd64 or linux/arm64): CGO stays on because encx keeps
+# its KEK-version database in SQLite (mattn/go-sqlite3), and tonistiigi/xx
+# supplies the target's C toolchain, so no stage compiles under emulation.
+FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.6.1 AS xx
+
+FROM --platform=$BUILDPLATFORM golang:1.24.2-alpine AS builder
+COPY --from=xx / /
+RUN apk add --no-cache git clang lld
+ARG TARGETPLATFORM
+RUN xx-apk add --no-cache gcc musl-dev
 
 WORKDIR /app
 
@@ -18,8 +27,9 @@ COPY . .
 # argument (local, ad-hoc) keep the "dev" sentinel instead of reporting a
 # misleading version.
 ARG COMMIT_SHA=dev
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w -X github.com/Leviosa-care/leviosa/backend/internal/app.ReleaseSHA=${COMMIT_SHA}" -v -o leviosa ./cmd/app
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -v -o seed ./cmd/seed/main.go
+ENV CGO_ENABLED=1
+RUN xx-go build -ldflags="-s -w -X github.com/Leviosa-care/leviosa/backend/internal/app.ReleaseSHA=${COMMIT_SHA}" -v -o leviosa ./cmd/app && xx-verify leviosa
+RUN xx-go build -ldflags="-s -w" -v -o seed ./cmd/seed/main.go && xx-verify seed
 
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
