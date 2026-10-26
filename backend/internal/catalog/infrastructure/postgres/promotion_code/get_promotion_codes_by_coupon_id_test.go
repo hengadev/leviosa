@@ -197,7 +197,8 @@ func TestGetPromotionCodesByCouponID(t *testing.T) {
 
 		// Basic code
 		assert.Nil(t, codeDetails["BASIC"].Restrictions)
-		assert.Nil(t, codeDetails["BASIC"].MaxRedemptions)
+		require.NotNil(t, codeDetails["BASIC"].MaxRedemptions)
+		assert.Equal(t, 50, *codeDetails["BASIC"].MaxRedemptions)
 
 		// Restricted code
 		require.NotNil(t, codeDetails["RESTRICTED"].Restrictions)

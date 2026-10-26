@@ -15,14 +15,12 @@ import (
 
 func TestGetAllPublishedProducts(t *testing.T) {
 	ctx := context.Background()
-	// Create categories to link products to
+	// Categories to link products to, inserted by each sub-test
 	catElectronics := td.NewValidCategory("Electronics")
 	catElectronics.ID = uuid.New()
-	td.InsertCategory(t, ctx, catElectronics, testPool)
 
 	catBooks := td.NewValidCategory("Books")
 	catBooks.ID = uuid.New()
-	td.InsertCategory(t, ctx, catBooks, testPool)
 
 	tests := []struct {
 		name   string

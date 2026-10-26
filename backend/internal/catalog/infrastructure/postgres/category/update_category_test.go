@@ -47,7 +47,7 @@ func TestUpdateCategory(t *testing.T) {
 			},
 		},
 		{
-			name: "Successfully update multiple fields (Name, Description, Status, Metadata)",
+			name: "Successfully update multiple fields (Name, Description, Status)",
 			setup: func(t *testing.T, ctx context.Context, categoryID uuid.UUID) {
 				cat := td.NewValidCategory("Initial Name")
 				cat.ID = categoryID
@@ -70,7 +70,6 @@ func TestUpdateCategory(t *testing.T) {
 				assert.Equal(t, "New Full Name", updatedCat.Name)
 				assert.Equal(t, "New Full Description", updatedCat.Description)
 				assert.Equal(t, domain.Draft, updatedCat.Status)
-				assert.Equal(t, map[string]any{"new_key": "new_value", "number": float64(123)}, updatedCat.Metadata, "Metadata should be updated") // JSON numbers unmarshal to float64
 			},
 		},
 		{
@@ -98,7 +97,6 @@ func TestUpdateCategory(t *testing.T) {
 				assert.Equal(t, "Existing Name", currentCat.Name)
 				assert.Equal(t, "Existing Description", currentCat.Description)
 				assert.Equal(t, domain.Draft, currentCat.Status)
-				assert.Equal(t, map[string]any{"initial": "data"}, currentCat.Metadata)
 			},
 		},
 		{

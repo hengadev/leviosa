@@ -2,7 +2,6 @@ package categoryRepository_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
@@ -104,42 +103,21 @@ func TestAddCategory(t *testing.T) {
 
 				// Verify the category was inserted correctly by querying the database
 				var (
-					dbID       uuid.UUID
-					dbName     string
-					dbDesc     string
-					dbStatus   string
-					dbMetadata []byte
+					dbID     uuid.UUID
+					dbName   string
+					dbDesc   string
+					dbStatus string
 				)
 
-				query := `SELECT id, name, description, status, metadata FROM catalog.categories WHERE id = $1`
+				query := `SELECT id, name, description, status FROM catalog.categories WHERE id = $1`
 				row := testPool.QueryRow(ctx, query, gotID)
-				err = row.Scan(&dbID, &dbName, &dbDesc, &dbStatus, &dbMetadata)
+				err = row.Scan(&dbID, &dbName, &dbDesc, &dbStatus)
 				require.NoError(t, err, "Failed to query inserted category")
 
 				assert.Equal(t, tt.category.ID, dbID)
 				assert.Equal(t, tt.category.Name, dbName)
 				assert.Equal(t, tt.category.Description, dbDesc)
 				assert.Equal(t, string(tt.category.Status), dbStatus)
-
-				// Compare metadata
-				var actualMetadata map[string]any
-				if len(dbMetadata) > 0 { // Check if metadata is not empty
-					err = json.Unmarshal(dbMetadata, &actualMetadata)
-					require.NoError(t, err, "Failed to unmarshal metadata from DB")
-				} else {
-					actualMetadata = nil // Treat empty JSON as nil map for comparison
-				}
-
-				// Normalize expected metadata for comparison (json.Marshal can reorder keys)
-				expectedMetadataJSON, _ := json.Marshal(tt.category.Metadata)
-				var expectedMetadata map[string]any
-				if len(expectedMetadataJSON) > 0 {
-					_ = json.Unmarshal(expectedMetadataJSON, &expectedMetadata)
-				} else {
-					expectedMetadata = nil
-				}
-
-				assert.Equal(t, expectedMetadata, actualMetadata, "Metadata mismatth")
 			}
 		})
 	}

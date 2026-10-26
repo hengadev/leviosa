@@ -23,6 +23,8 @@ import (
 
 func TestModifyProduct(t *testing.T) {
 	ctx := context.Background()
+	// Subtests clear before they run: leave nothing behind for the next test
+	t.Cleanup(func() { clearTables(t, ctx) })
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	t.Run("should successfully modify product name with valid admin token", func(t *testing.T) {
@@ -104,6 +106,11 @@ func TestModifyProduct(t *testing.T) {
 		product.Status = domain.Draft
 		th.InsertProduct(t, ctx, testPool, product)
 
+		// Publishing requires at least one image
+		image := th.NewValidImage(product.ID)
+		image.ParentType = domain.ProductType
+		th.InsertImage(t, ctx, image, testPool)
+
 		// Prepare update request
 		newStatus := domain.Published
 		updateReq := domain.UpdateProductRequest{
@@ -173,6 +180,11 @@ func TestModifyProduct(t *testing.T) {
 		product := th.NewValidProduct("Original Name", category.ID)
 		product.Status = domain.Draft
 		th.InsertProduct(t, ctx, testPool, product)
+
+		// Publishing requires at least one image
+		image := th.NewValidImage(product.ID)
+		image.ParentType = domain.ProductType
+		th.InsertImage(t, ctx, image, testPool)
 
 		// Prepare update request with multiple fields
 		newName := "Updated Name"
