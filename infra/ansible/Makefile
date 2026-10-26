@@ -58,13 +58,15 @@ KEYS_FILE ?= $(HOME)/leviosa-deploy-keys.yml
 # ============================================
 
 # Complete VPS setup (fresh server, and every later setup change). Run it
-# twice: the second run must report changed=0.
+# twice: the second run must report changed=0. Both setup targets first check,
+# locally, that this computer's operator key is in the SSH agent
+# (check-agent-key.sh): failed connections get this computer banned by fail2ban.
 setup:
 	@echo "==========================================="
 	@echo "Leviosa VPS Setup"
 	@echo "==========================================="
 	@echo ""
-	@test -f "$(KEYS_FILE)" || { echo "Error: keys file $(KEYS_FILE) not found (see deploy-keys.example.yml and README.md)."; exit 1; }
+	@./check-agent-key.sh "$(KEYS_FILE)"
 	@vps_ip="$(VPS_IP)"; domain="$(DOMAIN)"; \
 	if [ -z "$$vps_ip" ]; then \
 		echo "Error: could not read the VPS IP from Terraform."; \
@@ -98,6 +100,7 @@ infisical-agent:
 	@echo "Leviosa Infisical Agent - install or rotate"
 	@echo "==========================================="
 	@echo ""
+	@./check-agent-key.sh "$(KEYS_FILE)"
 	@vps_ip="$(VPS_IP)"; \
 	if [ -z "$$vps_ip" ]; then \
 		echo "Error: could not read the VPS IP from Terraform."; \
