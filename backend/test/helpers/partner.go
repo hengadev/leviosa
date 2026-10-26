@@ -147,8 +147,14 @@ func InsertPartnerEncx(t *testing.T, ctx context.Context, partnerEncx *domain.Pa
 			stripe_connected_account_id_encrypted, stripe_account_status, stripe_onboarding_complete,
 			dek_encrypted, key_version, created_at, updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+			$1, $2, $3, $4, $5, $6, COALESCE($7, ARRAY[]::text[]), $8, $9, $10, $11, $12, $13, $14, $15, $16
 		)`
+
+	// New partners start as pending (PartnerService.CreatePartner)
+	status := partnerEncx.StripeAccountStatus
+	if status == "" {
+		status = domain.StripeAccountStatusPending
+	}
 
 	_, err := pool.Exec(ctx, query,
 		partnerEncx.ID,
@@ -156,7 +162,7 @@ func InsertPartnerEncx(t *testing.T, ctx context.Context, partnerEncx *domain.Pa
 		partnerEncx.Bio, partnerEncx.Experience,
 		partnerEncx.Occupation, partnerEncx.Quote, partnerEncx.Tags,
 		partnerEncx.CategoryIDs, partnerEncx.ProductIDs,
-		partnerEncx.StripeConnectedAccountIDEncrypted, partnerEncx.StripeAccountStatus, partnerEncx.StripeOnboardingComplete,
+		partnerEncx.StripeConnectedAccountIDEncrypted, status, partnerEncx.StripeOnboardingComplete,
 		partnerEncx.DEKEncrypted, partnerEncx.KeyVersion,
 		partnerEncx.CreatedAt, partnerEncx.UpdatedAt,
 	)

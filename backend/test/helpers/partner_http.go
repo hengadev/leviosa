@@ -55,12 +55,19 @@ func NewGetPartnerMeRequest(t *testing.T, ctx context.Context, serverURL string,
 }
 
 // NewGetAllPartnersRequest creates an HTTP request for getting all partners
-func NewGetAllPartnersRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+func NewGetAllPartnersRequest(t *testing.T, ctx context.Context, serverURL string, accessToken string) *http.Request {
 	t.Helper()
 
 	url := serverURL + partnerEndpoints.GetAllPartnersEndpoint
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	require.NoError(t, err, "Failed to create HTTP request")
+
+	if accessToken != "" {
+		req.AddCookie(&http.Cookie{
+			Name:  ck.AccessTokenCookieName,
+			Value: accessToken,
+		})
+	}
 
 	return req
 }

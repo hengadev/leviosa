@@ -162,7 +162,7 @@ func TestValidateOTPCreatePendingUser(t *testing.T) {
 		assert.True(t, hasEncryptedFields, "User should have encrypted fields populated")
 	})
 
-	t.Run("should return unauthorized for invalid OTP code", func(t *testing.T) {
+	t.Run("should return bad request for invalid OTP code", func(t *testing.T) {
 		// Clean state
 		td.ClearAuthTestData(t, ctx, testPool, redisClient)
 
@@ -186,10 +186,10 @@ func TestValidateOTPCreatePendingUser(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Assert unauthorized response
+		// Assert bad request response
 		errorMsg, statusCode := td.ParseErrorResponse(t, resp)
-		assert.Contains(t, errorMsg, "mismatch")
-		assert.Equal(t, http.StatusUnauthorized, statusCode)
+		assert.Contains(t, errorMsg, "does not match")
+		assert.Equal(t, http.StatusBadRequest, statusCode)
 
 		// Verify no access cookie is set
 		cookies := resp.Cookies()

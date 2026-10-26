@@ -73,7 +73,7 @@ func TestRequestPasswordReset(t *testing.T) {
 		assert.Equal(t, otpCode, otp.Code)
 	})
 
-	t.Run("should return not found when email is not registered", func(t *testing.T) {
+	t.Run("should answer as for a registered email when email is not registered", func(t *testing.T) {
 		// Clean state
 		td.ClearAuthTestData(t, ctx, testPool, redisClient)
 		testNotifier.Reset()
@@ -87,11 +87,9 @@ func TestRequestPasswordReset(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Assert not found response
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-		errorMsg, statusCode := td.ParseErrorResponse(t, resp)
-		assert.Contains(t, errorMsg, "email is not registered")
-		assert.Equal(t, http.StatusNotFound, statusCode)
+		// Same response as a registered email, so the endpoint does not reveal
+		// which emails have an account
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
 		// Verify no OTP was created
 		emailBytes, err := encx.SerializeValue(request.Email)
@@ -290,10 +288,8 @@ func TestRequestPasswordReset(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Should return not found since user doesn't exist
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-		errorMsg, statusCode := td.ParseErrorResponse(t, resp)
-		assert.Contains(t, errorMsg, "email is not registered")
-		assert.Equal(t, http.StatusNotFound, statusCode)
+		// Not registered: same response as a registered email
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		td.AssertNoOTPSent(t, testNotifier)
 	})
 }

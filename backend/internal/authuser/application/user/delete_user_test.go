@@ -247,6 +247,16 @@ func (m *MockStripeService) CreateBillingPortalSession(ctx context.Context, cust
 	return args.String(0), args.Error(1)
 }
 
+// expectUserDecryption stubs the crypto calls DecryptUserEncx makes for a
+// fixture from buildBillingPortalUserEncx: the DEK, then the Stripe customer
+// ID when the fixture has one (the only encrypted field it sets).
+func expectUserDecryption(ctx context.Context, m *MockCryptoService, u *domain.UserEncx) {
+	m.On("DecryptDEKWithVersion", ctx, mock.Anything, mock.Anything).Return([]byte("test-dek-32-bytes-long-enough!!!"), nil)
+	if u.StripeCustomerIDEncrypted != nil {
+		m.On("DecryptData", ctx, mock.Anything, mock.Anything).Return(serializeString("cus_test123"), nil)
+	}
+}
+
 func TestDeleteUser(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()
@@ -258,15 +268,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:               userID,
-			Email:            "test@example.com",
-			StripeCustomerID: stripeCustomerID,
-		}
+		testUser := buildBillingPortalUserEncx(userID, stripeCustomerID)
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
+		expectUserDecryption(ctx, mockCrypto, testUser)
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(&stripe.Customer{ID: stripeCustomerID}, nil)
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)
 
@@ -288,15 +294,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:               userID,
-			Email:            "test@example.com",
-			StripeCustomerID: "", // No Stripe customer
-		}
+		testUser := buildBillingPortalUserEncx(userID, "")
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
+		expectUserDecryption(ctx, mockCrypto, testUser)
 		// Stripe should not be called when no customer ID
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)
 
@@ -327,7 +329,7 @@ func TestDeleteUser(t *testing.T) {
 
 		// Assert
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, errs.ErrDomainNotFound))
+		assert.ErrorIs(t, err, errs.ErrRepositoryNotFound)
 		mockRepo.AssertExpectations(t)
 	})
 
@@ -337,15 +339,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:               userID,
-			Email:            "test@example.com",
-			StripeCustomerID: stripeCustomerID,
-		}
+		testUser := buildBillingPortalUserEncx(userID, stripeCustomerID)
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
+		expectUserDecryption(ctx, mockCrypto, testUser)
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(nil, errs.ErrInvalidValue) // Stripe customer not found
 		mockRepo.On("DeleteUser", ctx, userID).Return(nil)                                       // Should still delete user
 
@@ -367,15 +365,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:               userID,
-			Email:            "test@example.com",
-			StripeCustomerID: stripeCustomerID,
-		}
+		testUser := buildBillingPortalUserEncx(userID, stripeCustomerID)
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
+		expectUserDecryption(ctx, mockCrypto, testUser)
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(nil, errs.NewExternalServiceErr(errors.New("stripe error"), "stripe unavailable"))
 
 		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
@@ -399,15 +393,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:               userID,
-			Email:            "test@example.com",
-			StripeCustomerID: stripeCustomerID,
-		}
+		testUser := buildBillingPortalUserEncx(userID, stripeCustomerID)
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(nil)
+		expectUserDecryption(ctx, mockCrypto, testUser)
 		mockStripe.On("DeleteCustomer", ctx, stripeCustomerID).Return(&stripe.Customer{ID: stripeCustomerID}, nil)
 		mockRepo.On("DeleteUser", ctx, userID).Return(errs.ErrRepositoryNotFound)
 
@@ -418,7 +408,7 @@ func TestDeleteUser(t *testing.T) {
 
 		// Assert
 		require.Error(t, err)
-		assert.True(t, errors.Is(err, errs.ErrDomainNotFound))
+		assert.ErrorIs(t, err, errs.ErrRepositoryNotFound)
 		mockRepo.AssertExpectations(t)
 		mockCrypto.AssertExpectations(t)
 		mockStripe.AssertExpectations(t)
@@ -430,14 +420,11 @@ func TestDeleteUser(t *testing.T) {
 		mockCrypto := new(MockCryptoService)
 		mockStripe := new(MockStripeService)
 
-		testUser := &domain.User{
-			ID:    userID,
-			Email: "test@example.com",
-		}
+		testUser := buildBillingPortalUserEncx(userID, "")
 
 		// Mock expectations
 		mockRepo.On("GetUserByID", ctx, userID).Return(testUser, nil)
-		mockCrypto.On("DecryptStruct", ctx, testUser).Return(errors.New("decryption failed"))
+		mockCrypto.On("DecryptDEKWithVersion", ctx, mock.Anything, mock.Anything).Return([]byte(nil), errors.New("decryption failed"))
 
 		service := userService.New(mockRepo, mockCrypto, mockStripe, nil)
 
