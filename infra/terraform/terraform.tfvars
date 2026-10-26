@@ -22,10 +22,12 @@ backup_noncurrent_version_days = 30
 
 # cax* is ARM, cx*/cpx* x86. Switching between the two cannot be done in
 # place: apply with -replace=hcloud_server.main.
-server_type         = "cax11"
-server_location     = "nbg1"
-server_image        = "ubuntu-24.04"
-enable_backups      = true
+server_type     = "cax11"
+server_location = "nbg1"
+server_image    = "ubuntu-24.04"
+# Off: Hetzner backups cost 20% of the server, and the server holds nothing
+# that Ansible + Infisical do not rebuild; the database goes to S3 (backups.tf).
+enable_backups      = false
 hcloud_ssh_key_name = "terraform-leviosa"
 
 # ============================================
