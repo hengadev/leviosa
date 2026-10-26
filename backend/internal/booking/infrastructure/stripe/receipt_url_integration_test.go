@@ -36,9 +36,7 @@ func TestMain(m *testing.M) {
 // charge's hosted receipt_url is surfaced on the returned PaymentIntentInfo,
 // via the "latest_charge" expand added to the retrieval call.
 func TestRetrievePaymentIntent_ReturnsReceiptURL(t *testing.T) {
-	withStripeTestBackend(t, stripeMockContainer.URL)
-
-	svc := NewService("sk_test_dummy", "", "whsec_dummy")
+	svc := NewService("sk_test_dummy", stripeMockContainer.URL, "whsec_dummy")
 
 	info, err := svc.RetrievePaymentIntent(context.Background(), "pi_test_receipt")
 

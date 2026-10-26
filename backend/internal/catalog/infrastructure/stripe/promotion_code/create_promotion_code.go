@@ -7,11 +7,10 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
 	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/promotioncode"
 )
 
 func (s *service) CreatePromotionCode(ctx context.Context, req *domain.CreatePromotionCodeRequest) (*domain.PromotionCode, error) {
-	params := &stripe.PromotionCodeParams{
+	params := &stripe.PromotionCodeCreateParams{
 		Coupon: stripe.String(req.CouponID),
 		Code:   stripe.String(req.Code),
 	}
@@ -32,7 +31,7 @@ func (s *service) CreatePromotionCode(ctx context.Context, req *domain.CreatePro
 	}
 
 	// Build restrictions (consolidates FirstTimeTransaction, MinimumAmount, CurrencyOptions)
-	restrictions := &stripe.PromotionCodeRestrictionsParams{
+	restrictions := &stripe.PromotionCodeCreateRestrictionsParams{
 		FirstTimeTransaction: stripe.Bool(req.FirstTimeTransaction),
 	}
 
@@ -42,16 +41,16 @@ func (s *service) CreatePromotionCode(ctx context.Context, req *domain.CreatePro
 	}
 
 	if req.Restrictions != nil && len(req.Restrictions.CurrencyOptions) > 0 {
-		currencyOptions := make(map[string]*stripe.PromotionCodeRestrictionsCurrencyOptionsParams)
+		currencyOptions := make(map[string]*stripe.PromotionCodeCreateRestrictionsCurrencyOptionsParams)
 		for _, currency := range req.Restrictions.CurrencyOptions {
-			currencyOptions[currency] = &stripe.PromotionCodeRestrictionsCurrencyOptionsParams{}
+			currencyOptions[currency] = &stripe.PromotionCodeCreateRestrictionsCurrencyOptionsParams{}
 		}
 		restrictions.CurrencyOptions = currencyOptions
 	}
 
 	params.Restrictions = restrictions
 
-	stripePromotionCode, err := promotioncode.New(params)
+	stripePromotionCode, err := s.V1PromotionCodes.Create(ctx, params)
 	if err != nil {
 		return nil, err
 	}

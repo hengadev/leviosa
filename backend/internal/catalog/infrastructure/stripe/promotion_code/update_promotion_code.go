@@ -6,11 +6,10 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
 	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/promotioncode"
 )
 
 func (s *service) UpdatePromotionCode(ctx context.Context, stripePromotionID string, req *domain.UpdatePromotionCodeRequest) (*domain.PromotionCode, error) {
-	params := &stripe.PromotionCodeParams{}
+	params := &stripe.PromotionCodeUpdateParams{}
 
 	if req.Active != nil {
 		params.Active = stripe.Bool(*req.Active)
@@ -20,7 +19,7 @@ func (s *service) UpdatePromotionCode(ctx context.Context, stripePromotionID str
 		params.Metadata = req.Metadata
 	}
 
-	stripePromotionCode, err := promotioncode.Update(stripePromotionID, params)
+	stripePromotionCode, err := s.V1PromotionCodes.Update(ctx, stripePromotionID, params)
 	if err != nil {
 		return nil, err
 	}

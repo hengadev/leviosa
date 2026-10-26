@@ -8,8 +8,6 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/stripe/stripe-go/v82"
-	"github.com/stripe/stripe-go/v82/paymentintent"
-	"github.com/stripe/stripe-go/v82/refund"
 	"github.com/stripe/stripe-go/v82/webhook"
 )
 
@@ -46,13 +44,13 @@ func NewService(apiKey, baseURL, webhookSecret string) *Service {
 // When receiptEmail is non-empty, it is set on the PaymentIntent so Stripe
 // automatically emails the client a hosted receipt once payment succeeds.
 func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) {
-	params := &stripe.PaymentIntentParams{
+	params := &stripe.PaymentIntentCreateParams{
 		Amount:      stripe.Int64(int64(amount)),
 		Currency:    stripe.String(currency),
 		Description: stripe.String(description),
 		Metadata:    metadata,
 		// Enable automatic payment methods
-		AutomaticPaymentMethods: &stripe.PaymentIntentAutomaticPaymentMethodsParams{
+		AutomaticPaymentMethods: &stripe.PaymentIntentCreateAutomaticPaymentMethodsParams{
 			Enabled: stripe.Bool(true),
 		},
 	}
@@ -61,7 +59,7 @@ func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency,
 		params.ReceiptEmail = stripe.String(receiptEmail)
 	}
 
-	pi, err := paymentintent.New(params)
+	pi, err := s.client.V1PaymentIntents.Create(ctx, params)
 	if err != nil {
 		return "", "", s.classifyStripeError("create payment intent", err)
 	}
@@ -73,7 +71,7 @@ func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency,
 func (s *Service) ConfirmPaymentIntent(ctx context.Context, paymentIntentID string) error {
 	params := &stripe.PaymentIntentConfirmParams{}
 
-	_, err := paymentintent.Confirm(paymentIntentID, params)
+	_, err := s.client.V1PaymentIntents.Confirm(ctx, paymentIntentID, params)
 	if err != nil {
 		return s.classifyStripeError("confirm payment intent", err)
 	}
@@ -85,10 +83,10 @@ func (s *Service) ConfirmPaymentIntent(ctx context.Context, paymentIntentID stri
 // The latest charge is expanded so the underlying charge's hosted receipt URL
 // can be surfaced to clients once payment has succeeded.
 func (s *Service) RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (*ports.PaymentIntentInfo, error) {
-	params := &stripe.PaymentIntentParams{}
+	params := &stripe.PaymentIntentRetrieveParams{}
 	params.AddExpand("latest_charge")
 
-	pi, err := paymentintent.Get(paymentIntentID, params)
+	pi, err := s.client.V1PaymentIntents.Retrieve(ctx, paymentIntentID, params)
 	if err != nil {
 		return nil, s.classifyStripeError("retrieve payment intent", err)
 	}
@@ -123,7 +121,7 @@ func (s *Service) RetrievePaymentIntent(ctx context.Context, paymentIntentID str
 
 // RefundPayment creates a refund for a payment
 func (s *Service) RefundPayment(ctx context.Context, paymentIntentID string, amount int, reason string) (string, error) {
-	params := &stripe.RefundParams{
+	params := &stripe.RefundCreateParams{
 		PaymentIntent: stripe.String(paymentIntentID),
 		Reason:        stripe.String(reason),
 	}
@@ -133,7 +131,7 @@ func (s *Service) RefundPayment(ctx context.Context, paymentIntentID string, amo
 		params.Amount = stripe.Int64(int64(amount))
 	}
 
-	ref, err := refund.New(params)
+	ref, err := s.client.V1Refunds.Create(ctx, params)
 	if err != nil {
 		return "", s.classifyStripeError("create refund", err)
 	}
@@ -145,7 +143,7 @@ func (s *Service) RefundPayment(ctx context.Context, paymentIntentID string, amo
 func (s *Service) CancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
 	params := &stripe.PaymentIntentCancelParams{}
 
-	_, err := paymentintent.Cancel(paymentIntentID, params)
+	_, err := s.client.V1PaymentIntents.Cancel(ctx, paymentIntentID, params)
 	if err != nil {
 		return s.classifyStripeError("cancel payment intent", err)
 	}

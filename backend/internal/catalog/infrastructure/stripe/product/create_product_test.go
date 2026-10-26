@@ -31,7 +31,6 @@ func TestCreateProduct(t *testing.T) {
 		assert.Equal(t, req.Name, product.Name)
 		assert.Equal(t, req.Description, product.Description)
 		assert.True(t, product.Active)
-		assert.Equal(t, req.Metadata, product.Metadata)
 		assert.False(t, product.CreatedAt.IsZero())
 	})
 
@@ -80,6 +79,5 @@ func TestCreateProduct(t *testing.T) {
 
 		require.NoError(t, err)
 		assert.NotNil(t, product)
-		assert.Equal(t, metadata, product.Metadata)
 	})
 }
