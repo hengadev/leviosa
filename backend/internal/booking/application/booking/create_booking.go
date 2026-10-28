@@ -32,7 +32,8 @@ import (
 //   - clientID: The user making the booking
 //   - productID: The product/service being booked
 //   - slotStartTime: Desired start time (must be aligned to 10-minute boundaries)
-//   - clientNotes: Optional notes from client
+//
+// No client notes are accepted: Leviosa stores no health data (ADR-0019).
 //
 // Returns:
 //   - Created booking with encrypted fields
@@ -43,7 +44,6 @@ func (s *BookingService) CreateBooking(
 	clientID *uuid.UUID,
 	productID uuid.UUID,
 	slotStartTime time.Time,
-	clientNotes string,
 	guestFirstName, guestLastName, guestEmail, guestPhone string,
 ) (*domain.Booking, error) {
 	// 1. Fetch and decrypt availability
@@ -154,11 +154,6 @@ func (s *BookingService) CreateBooking(
 	if len(s.tokenSecret) > 0 {
 		token := domain.GenerateBookingToken(booking.ID, booking.SlotEndTime, s.tokenSecret)
 		booking.SetToken(token)
-	}
-
-	// Set client notes if provided
-	if clientNotes != "" {
-		booking.SetClientNotes(clientNotes)
 	}
 
 	// 9. Create payment intent if booking has a price

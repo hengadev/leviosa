@@ -16,7 +16,8 @@ type AnalyticsSummaryResponse = domain.AnalyticsSummaryResponse
 type BookingService interface {
 	// CreateBooking creates a new booking with product and time slot information.
 	// Pass a non-nil clientID for registered users, or guest fields for guest bookings.
-	CreateBooking(ctx context.Context, availabilityID uuid.UUID, clientID *uuid.UUID, productID uuid.UUID, slotStartTime time.Time, clientNotes string, guestFirstName, guestLastName, guestEmail, guestPhone string) (*domain.Booking, error)
+	// No client notes are accepted (ADR-0019: no health data).
+	CreateBooking(ctx context.Context, availabilityID uuid.UUID, clientID *uuid.UUID, productID uuid.UUID, slotStartTime time.Time, guestFirstName, guestLastName, guestEmail, guestPhone string) (*domain.Booking, error)
 
 	// GetBooking retrieves a booking by ID
 	GetBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
@@ -27,9 +28,6 @@ type BookingService interface {
 	// enforced by CancelBooking) and infers refund amount/date from existing
 	// payment_status/timestamps. Used by the client booking detail endpoint.
 	GetBookingFinancialStatus(ctx context.Context, booking *domain.Booking) (*domain.BookingFinancialStatus, error)
-
-	// UpdateBookingNotes updates client or partner notes
-	UpdateBookingNotes(ctx context.Context, id uuid.UUID, clientNotes, partnerNotes string) (*domain.Booking, error)
 
 	// CancelBooking cancels a booking with reason
 	CancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error)

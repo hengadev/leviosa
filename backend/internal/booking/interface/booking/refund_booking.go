@@ -63,8 +63,6 @@ func (h *handler) RefundBooking(w http.ResponseWriter, r *http.Request) {
 		Currency:           booking.Currency,
 		PaymentStatus:      booking.PaymentStatus,
 		PaymentIntentID:    booking.PaymentIntentID,
-		ClientNotes:        booking.ClientNotes,
-		PartnerNotes:       booking.PartnerNotes,
 		CancellationReason: cancellationReason,
 		CancelledAt:        booking.CancelledAt,
 		CompletedAt:        booking.CompletedAt,

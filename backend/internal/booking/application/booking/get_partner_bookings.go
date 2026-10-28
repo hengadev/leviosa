@@ -29,15 +29,24 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 			PaymentStatus:   b.PaymentStatus,
 			TotalPriceCents: b.TotalPriceCents,
 			Currency:        b.Currency,
-			ClientNotes:     b.ClientNotes,
-			PartnerNotes:    b.PartnerNotes,
 			CompletedAt:     b.CompletedAt,
 		}
 
+		// Contact details (name, email, phone) only — never notes: Leviosa
+		// stores no health data (ADR-0019).
 		if b.IsGuestBooking() {
 			resp.ClientName = b.GuestDisplayName()
+			resp.ClientEmail = b.GuestEmail
+			resp.ClientPhone = b.GuestPhone
 		} else if s.authUserClient != nil {
-			resp.ClientName = s.resolveUserName(ctx, *b.ClientID, "Utilisateur inconnu")
+			name, email, phone, err := s.authUserClient.GetUserContact(ctx, *b.ClientID)
+			if err == nil {
+				if name != "" {
+					resp.ClientName = name
+				}
+				resp.ClientEmail = email
+				resp.ClientPhone = phone
+			}
 		}
 		if s.productService != nil {
 			resp.ProductName = s.resolveProductName(ctx, b.ProductID)
