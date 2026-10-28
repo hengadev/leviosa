@@ -18,7 +18,7 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Premium client** | A client role reserved for future elevated access (discounts, priority booking). Currently follows the same booking flow as a standard client. The distinction will become meaningful when service tiers or exclusive offerings are introduced. |
 | **Partner** | A wellness professional who offers services through the platform (role: `partner`). Has a public profile with bio, certifications, and specializations. |
 | **Staff** | _(removed)_ — this role was planned for internal ops users but was never fully implemented and has been retired. The `(staff)` frontend route group is the **Partner area** and is accessible to partners and administrators only. |
-| **Administrator** | Full platform access including user management, settings, and catalog (role: `administrator`). |
+| **Administrator** | Full platform access including user management, settings, and catalog (role: `administrator`). One person can be both an Administrator and a Partner; they then hold two separate User accounts, one per role. |
 
 ### Services & Pricing
 
@@ -26,8 +26,9 @@ These are the canonical terms used in code, documentation, and conversation. Use
 |------|------------|
 | **Category** | A top-level grouping of services (e.g., Massage, Therapy, Coaching). |
 | **Product** | A specific wellness service offered by a partner. Has a duration, buffer time, cancellation window, and images. Duration is always a multiple of 10 minutes, between 20 and 240 minutes. |
-| **Buffer time** | Mandatory rest/preparation time after a session ends before the next booking can start. Defined on the product. |
+| **Buffer time** | Mandatory rest/preparation time after a session ends before the next booking can start. Defined on the product. Never shown to clients: a client only sees their booking's start time. A product may set it to zero when its duration already includes the preparation time. |
 | **Cancellation window** | Number of hours before a session within which cancellation is no longer permitted. Defined on the product. |
+| **Deposit** | The part of a product's price paid online when booking (French: *acompte*, never *arrhes*). Defined per product as either a fixed amount or a percentage of the price. When a product has a deposit, only the deposit goes through Leviosa and the balance is paid at the practice; without one, the full price is paid online. Cancellation fee tiers apply to the amount paid online. |
 | **Price** | A Stripe-backed pricing record attached to a product. Can be one-time or recurring (monthly/yearly intervals). |
 
 ### Scheduling & Rooms
@@ -38,11 +39,18 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Room** | A treatment space within a building. Has a name, capacity, and allocation type. |
 | **Allocation** | The assignment of a room to a partner. Two types: `dedicated` (fixed time period, one partner) or `shared` (ongoing availability pool). |
 | **Availability** | A time window a partner offers for bookings. Can be a single occurrence or a recurring pattern (daily/weekly/monthly) with an optional end date. |
+| **Availability exception** | A date or date range on which a recurring availability does not apply (e.g. holidays, a training day). Closing a date never cancels the bookings already in it. |
+| **Slot** | A bookable start time offered to clients. Not stored: derived from a partner's availabilities, the product's duration and buffer time, and the existing bookings. The same availability yields different slots for products of different durations. Slots start at the availability's start and follow each other every duration + buffer time; a slot that would end after the availability is not offered. |
+| **Minimum notice** | The shortest delay between now and a slot's start for that slot to be bookable (e.g. 12 hours). |
+| **Booking horizon** | How far ahead clients can book (e.g. 8 weeks). Slots beyond it are not offered. |
 | **Booking** | A confirmed reservation by a client for a partner's service in a room. The core transactional entity. Tracks payment and progresses through a lifecycle. All bookings are 1-on-1 consultations. In client-facing UI the word "consultation" is used as a synonym, but the domain term and API surface always use "booking". There is no "event" or group-booking type. |
-| **Booking status** | The FSM governing a booking's lifecycle: `confirmed → completed | cancelled | no_show`. |
+| **Practitioner cancellation** | A booking cancelled by the partner or an administrator rather than by the client. Always fully refunded and notified to the client, whatever the cancellation fee tiers say; the tiers only apply to client cancellations. |
+| **Booking status** | The FSM governing a booking's lifecycle: `awaiting_payment → confirmed | expired`, then `confirmed → completed | cancelled | no_show` (ADR-0018). |
+| **Payment hold** | The time (e.g. 15 minutes) an `awaiting_payment` booking keeps its slot while the client pays. When it elapses unpaid, the booking is `expired` and the slot is offered again. |
 | **Booking claim** | The act of linking past guest bookings to a newly created User account. Triggered silently and automatically when a User registers with the same email or verified phone number that was used for a guest booking. |
 | **Booking token** | A signed, time-limited token embedded in the confirmation SMS/email that grants unauthenticated access to a specific booking's status page (`/bookings?token=xxx`). Used by guests to view or cancel their booking without an account. Falls back to manual lookup by booking reference + email/phone. |
 | **Earnings** | A read-only financial summary for a partner, derived by aggregating their completed bookings. Includes current-month revenue, last-month revenue, pending amounts, and a per-transaction history. Not a stored entity — computed on demand from the Booking table. |
+| **Practice page** | The public home page: one partner's profile and one product, with booking built in. The partner and product shown are chosen by an administrator in settings. In French at `/`, in English at `/en`. |
 | **Gap** | Unused time between bookings in a room schedule. The system detects gaps to surface upselling opportunities. |
 | **Utilization** | A metric measuring how efficiently a room's time is used (utilization % minus fragmentation penalty). Computed via a materialized view. |
 | **10-minute alignment** | All time slots are aligned to 10-minute boundaries for scheduling consistency. |
