@@ -6,6 +6,8 @@ export interface Booking {
 	id: string;
 	clientId: string;
 	clientName: string;
+	clientEmail: string;
+	clientPhone: string;
 	clientInitials: string;
 	productName: string;
 	startTime: string;
@@ -15,8 +17,6 @@ export interface Booking {
 	paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
 	amountInCents: number;
 	currency: string;
-	clientNotes: string;
-	partnerNotes: string;
 }
 
 export const load: PageServerLoad = async ({ locals, url, fetch }) => {
@@ -57,6 +57,8 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 				id: booking.id,
 				clientId: booking.client_id,
 				clientName: booking.client_name || 'Client inconnu',
+				clientEmail: booking.client_email || '',
+				clientPhone: booking.client_phone || '',
 				clientInitials,
 				productName: booking.product_name || 'Produit inconnu',
 				startTime: booking.slot_start_time,
@@ -65,9 +67,7 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 				status: booking.status || 'confirmed',
 				paymentStatus: booking.payment_status || 'pending',
 				amountInCents: booking.total_price_cents || 0,
-				currency: booking.currency || 'EUR',
-				clientNotes: booking.client_notes || '',
-				partnerNotes: booking.partner_notes || '',
+				currency: booking.currency || 'EUR'
 			};
 		});
 
