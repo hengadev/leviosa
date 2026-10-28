@@ -3,13 +3,9 @@
 	import {
 		Home,
 		Users,
-		CalendarDays,
 		NotebookPen,
-		Mail,
 		Package,
-		ChartSpline,
 		HandCoins,
-		Building2,
 		ExternalLink,
 	} from "@lucide/svelte";
 	import type { Component } from "svelte";
@@ -58,6 +54,9 @@
 	 * Desktop Navigation Structure
 	 * Using the original links from the old NavigationBar
 	 */
+	// v1 (single-practitioner launch): planning, messages, buildings and rooms,
+	// analytics, reviews and waitlist are hidden from the admin navigation.
+	// The routes stay in code.
 	const desktopNavigation: NavItem[] = [
 		{
 			href: "/admin",
@@ -70,34 +69,14 @@
 			icon: Users,
 		},
 		{
-			href: "/admin/planning",
-			label: "Planning",
-			icon: CalendarDays,
-		},
-		{
 			href: "/admin/bookings/consultations",
 			label: "Notes de seance",
 			icon: NotebookPen,
 		},
 		{
-			href: "/admin/messages",
-			label: "Messages",
-			icon: Mail,
-		},
-		{
 			href: "/admin/catalog",
 			label: "Catalogue",
 			icon: Package,
-		},
-		{
-			href: "/admin/buildings",
-			label: "Bâtiments",
-			icon: Building2,
-		},
-		{
-			href: "/admin/analytics",
-			label: "Analytics",
-			icon: ChartSpline,
 		},
 		{
 			href: "/admin/compta",
@@ -120,11 +99,6 @@
 			href: "/admin/users",
 			label: "Utilisateurs",
 			icon: Users,
-		},
-		{
-			href: "/admin/planning",
-			label: "Planning",
-			icon: CalendarDays,
 		},
 		{
 			href: "/admin/bookings/consultations",
@@ -221,7 +195,6 @@
 			<ul class="space-y-1">
 				{#each desktopNavigation as item (item.href)}
 					{@const active = isActive(item.href)}
-					{@const badge = item.href === '/admin/messages' ? unreadCount : 0}
 					<li>
 						<a
 							href={item.href}
@@ -236,11 +209,6 @@
 							<item.icon strokeWidth={active ? 2 : 1.5} size={20} />
 							{#if !isCollapsed}
 								<span class="tracking-tight flex-1">{item.label}</span>
-								{#if badge > 0}
-									<span class="px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full">
-										{badge > 99 ? '99+' : badge}
-									</span>
-								{/if}
 							{/if}
 						</a>
 					</li>

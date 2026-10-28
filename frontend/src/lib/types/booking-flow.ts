@@ -64,7 +64,6 @@ export type BookingRequest = {
     availability_id: string;
     product_id: string;
     slot_start_time: string;
-    client_notes?: string;
     client_id?: string;
     guest_first_name?: string;
     guest_last_name?: string;
@@ -85,7 +84,6 @@ export type BookingResponse = {
     total_price_cents: number;
     currency: string;
     payment_status: string;
-    client_notes?: string;
     guest_first_name?: string;
     guest_last_name?: string;
     guest_email?: string;
