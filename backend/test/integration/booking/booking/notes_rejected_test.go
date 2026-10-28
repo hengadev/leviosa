@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -22,14 +23,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// make test-func TEST_NAME=TestUpdateBookingNotes TEST_PATH=test/integration/booking/booking/update_booking_notes_test.go
+// ADR-0019: Leviosa stores no health data. The booking API neither accepts
+// nor returns client_notes/partner_notes. The DB columns stay, but no write
+// path reaches them and no response contains them.
+//
+// make test-func TEST_NAME=TestBookingNotesRejectedByAPI TEST_PATH=test/integration/booking/booking/notes_rejected_test.go
 
-func TestUpdateBookingNotes(t *testing.T) {
+func TestBookingNotesRejectedByAPI(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	// Helper function to create a complete booking setup
-	setupBooking := func(t *testing.T) (uuid.UUID, string, string) {
+	// Helper that creates a booking and returns its ID plus the client token.
+	setupBooking := func(t *testing.T) (uuid.UUID, string) {
 		t.Helper()
 
 		// Clean state
@@ -57,7 +62,7 @@ func TestUpdateBookingNotes(t *testing.T) {
 		require.NoError(t, err)
 
 		// Setup authenticated partner and client
-		partnerToken, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
+		_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@test.com", room.ID, testPool, authCtx.Redis, crypto)
 		clientToken, clientID := tsetup.SetupStandardUser(t, ctx, "client@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create availability
@@ -91,28 +96,38 @@ func TestUpdateBookingNotes(t *testing.T) {
 		defer respCreate.Body.Close()
 		require.Equal(t, http.StatusCreated, respCreate.StatusCode)
 
-		var createdBooking domain.BookingResponse
-		err = json.NewDecoder(respCreate.Body).Decode(&createdBooking)
+		body, err := io.ReadAll(respCreate.Body)
 		require.NoError(t, err)
+		var createdBooking domain.BookingResponse
+		require.NoError(t, json.Unmarshal(body, &createdBooking))
 
-		return createdBooking.ID, clientToken, partnerToken
+		// No notes keys in the create response
+		var raw map[string]any
+		require.NoError(t, json.Unmarshal(body, &raw))
+		assert.NotContains(t, raw, "client_notes")
+		assert.NotContains(t, raw, "partner_notes")
+
+		return createdBooking.ID, clientToken
 	}
 
-	t.Run("should successfully update client notes", func(t *testing.T) {
+	t.Run("should reject client_notes in the create request", func(t *testing.T) {
 		defer tu.ClearAuthData(t, ctx, authCtx)
 
-		// Setup booking
-		bookingID, clientToken, _ := setupBooking(t)
+		_, clientToken := setupBooking(t)
 
-		// Update client notes
-		clientNotes := "Updated client notes"
-		updateRequest := domain.UpdateBookingNotesRequest{
-			ClientNotes: clientNotes,
+		// A second availability is not needed: the request must be rejected on
+		// decode, before any booking logic runs.
+		requestBody := map[string]interface{}{
+			"availability_id": uuid.New().String(),
+			"client_id":       uuid.New().String(),
+			"product_id":      uuid.New().String(),
+			"slot_start_time": time.Now().Add(48 * time.Hour).Format(time.RFC3339),
+			"client_notes":    "My back hurts",
 		}
-		updateBytes, err := json.Marshal(updateRequest)
+		bodyBytes, err := json.Marshal(requestBody)
 		require.NoError(t, err)
 
-		req, err := http.NewRequest("PUT", testServerURL+"/bookings/"+bookingID.String()+"/notes", bytes.NewReader(updateBytes))
+		req, err := http.NewRequest("POST", testServerURL+"/bookings", bytes.NewReader(bodyBytes))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
@@ -121,103 +136,33 @@ func TestUpdateBookingNotes(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Assert HTTP response
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		// Unknown fields are rejected: the API does not accept notes writes
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
 
-		// Parse response
-		var updatedBooking domain.BookingResponse
-		err = json.NewDecoder(resp.Body).Decode(&updatedBooking)
+	t.Run("should return 404 for the removed notes endpoint", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+
+		bookingID, clientToken := setupBooking(t)
+
+		req, err := http.NewRequest("PUT", testServerURL+"/bookings/"+bookingID.String()+"/notes", bytes.NewReader([]byte(`{"partner_notes":"private"}`)))
 		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
 
-		// Assert updated notes
-		assert.Equal(t, clientNotes, updatedBooking.ClientNotes)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 
-		// Verify in database
+		// The route is gone: writes are rejected
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+
+		// Nothing landed in the legacy columns either
 		dbBookingEncx, err := bookingRepo.GetByID(ctx, bookingID)
 		require.NoError(t, err)
 		dbBooking, err := domain.DecryptBookingEncx(ctx, crypto, dbBookingEncx)
 		require.NoError(t, err)
-		assert.Equal(t, clientNotes, dbBooking.ClientNotes)
-	})
-
-	t.Run("should successfully update partner notes", func(t *testing.T) {
-		defer tu.ClearAuthData(t, ctx, authCtx)
-
-		// Setup booking
-		bookingID, _, partnerToken := setupBooking(t)
-
-		// Update partner notes
-		partnerNotes := "Updated partner notes"
-		updateRequest := domain.UpdateBookingNotesRequest{
-			PartnerNotes: partnerNotes,
-		}
-		updateBytes, err := json.Marshal(updateRequest)
-		require.NoError(t, err)
-
-		req, err := http.NewRequest("PUT", testServerURL+"/bookings/"+bookingID.String()+"/notes", bytes.NewReader(updateBytes))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Assert HTTP response
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-		// Parse response
-		var updatedBooking domain.BookingResponse
-		err = json.NewDecoder(resp.Body).Decode(&updatedBooking)
-		require.NoError(t, err)
-
-		// Assert updated notes
-		assert.Equal(t, partnerNotes, updatedBooking.PartnerNotes)
-	})
-
-	t.Run("should return 404 for non-existent booking", func(t *testing.T) {
-		defer tu.ClearAuthData(t, ctx, authCtx)
-
-		// Setup user
-		userToken := tu.SetupStandardUser(t, ctx, authCtx)
-
-		// Try to update non-existent booking
-		nonExistentID := uuid.New()
-		updateRequest := domain.UpdateBookingNotesRequest{
-			ClientNotes: "Some notes",
-		}
-		updateBytes, err := json.Marshal(updateRequest)
-		require.NoError(t, err)
-
-		req, err := http.NewRequest("PUT", testServerURL+"/bookings/"+nonExistentID.String()+"/notes", bytes.NewReader(updateBytes))
-		require.NoError(t, err)
-		req.Header.Set("Content-Type", "application/json")
-		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: userToken})
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Assert 404
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
-
-	t.Run("should return 415 for missing content-type header", func(t *testing.T) {
-		defer tu.ClearAuthData(t, ctx, authCtx)
-
-		// Setup user
-		userToken := tu.SetupStandardUser(t, ctx, authCtx)
-
-		req, err := http.NewRequest("PUT", testServerURL+"/bookings/"+uuid.New().String()+"/notes", bytes.NewReader([]byte("{}")))
-		require.NoError(t, err)
-		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: userToken})
-		// Intentionally not setting Content-Type
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Assert 415 Unsupported Media Type
-		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
+		assert.Empty(t, dbBooking.ClientNotes)
+		assert.Empty(t, dbBooking.PartnerNotes)
 	})
 }

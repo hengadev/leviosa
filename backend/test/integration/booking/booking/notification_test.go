@@ -77,7 +77,6 @@ func TestBookingConfirmationNotification(t *testing.T) {
 			"client_id":       clientID,
 			"product_id":      productID.String(),
 			"slot_start_time": slotStartTime.Format(time.RFC3339),
-			"client_notes":    "Looking forward to this session",
 		}
 		bodyBytes, err := json.Marshal(requestBody)
 		require.NoError(t, err)

@@ -53,8 +53,6 @@ func convertBookingsToResponses(bookings []*domain.Booking) []domain.BookingResp
 			Currency:           booking.Currency,
 			PaymentStatus:      booking.PaymentStatus,
 			PaymentIntentID:    booking.PaymentIntentID,
-			ClientNotes:        booking.ClientNotes,
-			PartnerNotes:       booking.PartnerNotes,
 			CancellationReason: cancellationReason,
 			CancelledAt:        booking.CancelledAt,
 			CompletedAt:        booking.CompletedAt,

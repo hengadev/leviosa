@@ -15,21 +15,22 @@ import (
 	bookingService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
 	roomAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
+	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
 	availabilityPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
 	buildingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
 	roomPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
-	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
 	authuserUserService "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
 	authuserUserPostgres "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
+	authuserClient "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
 
-	productService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/product"
 	priceService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/price"
-	productPostgres "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/postgres/product"
+	productService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/product"
 	pricePostgres "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/postgres/price"
+	productPostgres "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/postgres/product"
 	sharedPostgres "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/postgres/shared"
 	pricePayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/price"
 	productPayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/product"
@@ -227,16 +228,22 @@ func TestMain(m *testing.M) {
 
 	notificationSpy = NewSpyNotificationService()
 	auditLogger = audit.NewPostgresLogger(testPool)
+
+	// Real authuser user service: shared by the in-process AuthUserClient (so
+	// the partner agenda can resolve registered clients' contact details) and
+	// the notification adapter below.
+	authUserRepo := authuserUserPostgres.New(ctx, testPool)
+	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil, nil)
+
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
 		bookingService.WithTokenSecret(testTokenSecret),
-		bookingService.WithAuditLogger(auditLogger))
+		bookingService.WithAuditLogger(auditLogger),
+		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(nil, realAuthUserService)))
 
 	// Wire a real BookingNotificationAdapter (real user/room/building/product
 	// fetchers against the test DB) backed by SMS/email spies, so tests can
 	// assert that an SMS send is actually attempted end-to-end, not just that
 	// the notification port was invoked.
-	authUserRepo := authuserUserPostgres.New(ctx, testPool)
-	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil, nil)
 
 	realBuildingRepo := buildingPostgres.New(ctx, testPool)
 	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
