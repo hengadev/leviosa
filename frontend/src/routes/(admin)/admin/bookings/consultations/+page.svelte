@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import { Search, Filter, FileText, Calendar, Clock, User } from '@lucide/svelte';
+	import { Search, Filter, Calendar, Clock, User } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
 
@@ -140,7 +140,6 @@
 							</div>
 						</th>
 						<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Statut</th>
-						<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Notes</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -160,20 +159,10 @@
 									{getStatusLabel(consultation.status)}
 								</span>
 							</td>
-							<td class="py-4 px-6">
-								{#if consultation.hasNotes}
-									<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
-										<FileText size={12} />
-										<span>Notes</span>
-									</span>
-								{:else}
-									<span class="text-sm text-muted-foreground">—</span>
-								{/if}
-							</td>
 						</tr>
 					{:else}
 						<tr>
-							<td colspan="7" class="py-12 text-center text-muted-foreground">
+							<td colspan="6" class="py-12 text-center text-muted-foreground">
 								Aucune consultation trouvée
 							</td>
 						</tr>

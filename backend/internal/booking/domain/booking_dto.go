@@ -77,7 +77,6 @@ type CreateBookingRequest struct {
 	// No client_notes: Leviosa stores no health data (ADR-0019). The unknown-
 	// fields decoder rejects the key if a client sends it anyway.
 
-
 	// Guest fields (required when client_id is omitted)
 	GuestFirstName string `json:"guest_first_name,omitempty"`
 	GuestLastName  string `json:"guest_last_name,omitempty"`
