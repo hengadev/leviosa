@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/validation"
+	"github.com/google/uuid"
 	"github.com/hengadev/errsx"
 )
 
@@ -203,6 +204,50 @@ type GetCompanyHostingProviderResponse struct {
 	HostingProvider string `json:"hosting_provider"`
 }
 
+// Practice page settings: which partner and product the public practice page
+// shows (docs/issues/009-practice-page.md). Partner and product are UUIDs —
+// the page resolves them through the public catalog and partner endpoints.
+type SetPracticePagePartnerRequest struct {
+	PartnerID string `json:"partner_id" validate:"required,uuid"`
+}
+
+type SetPracticePagePartnerResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetPracticePagePartnerResponse struct {
+	PartnerID string `json:"partner_id"`
+}
+
+type SetPracticePageProductRequest struct {
+	ProductID string `json:"product_id" validate:"required,uuid"`
+}
+
+type SetPracticePageProductResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetPracticePageProductResponse struct {
+	ProductID string `json:"product_id"`
+}
+
+// SetPracticePageVideoRequest may be empty: an unset video URL makes the
+// practice page show its placeholder frame instead of a video.
+type SetPracticePageVideoRequest struct {
+	VideoURL string `json:"video_url" validate:"omitempty,url,max=500"`
+}
+
+type SetPracticePageVideoResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
+type GetPracticePageVideoResponse struct {
+	VideoURL string `json:"video_url"`
+}
+
 type ErrorResponse struct {
 	Error   string            `json:"error"`
 	Details map[string]string `json:"details,omitempty"`
@@ -288,6 +333,45 @@ func (d SetCompanyHostingProviderRequest) Valid(ctx context.Context) error {
 	}
 	if len(d.HostingProvider) > 500 {
 		errs.Set("hosting_provider_length", "hosting provider identity cannot exceed 500 characters")
+	}
+	return errs.AsError()
+}
+
+func (d SetPracticePagePartnerRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	if _, err := uuid.Parse(strings.TrimSpace(d.PartnerID)); err != nil {
+		errs.Set("partner_id_format", "practice page partner must be a UUID (the partner's ID from /partners)")
+	}
+	return errs.AsError()
+}
+
+func (d SetPracticePageProductRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	if _, err := uuid.Parse(strings.TrimSpace(d.ProductID)); err != nil {
+		errs.Set("product_id_format", "practice page product must be a UUID (the product's ID from /products)")
+	}
+	return errs.AsError()
+}
+
+func (d SetPracticePageVideoRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	trimmed := strings.TrimSpace(d.VideoURL)
+	if trimmed == "" {
+		return nil // clearing the video is valid: the page then shows the placeholder frame
+	}
+	if len(trimmed) > 500 {
+		errs.Set("video_url_length", "practice page video URL cannot exceed 500 characters")
+	}
+	u, err := url.ParseRequestURI(trimmed)
+	if err != nil {
+		errs.Set("video_url_format", "invalid URL format for practice page video")
+		return errs.AsError()
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		errs.Set("video_url_format", "practice page video URL must use http or https")
+	}
+	if u.Host == "" {
+		errs.Set("video_url_format", "practice page video URL must have a valid domain")
 	}
 	return errs.AsError()
 }
