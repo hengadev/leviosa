@@ -51,7 +51,7 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call service to create booking
-	booking, err := h.svc.CreateBooking(ctx, request.AvailabilityID, request.ClientID, request.ProductID, request.SlotStartTime, request.ClientNotes, request.GuestFirstName, request.GuestLastName, request.GuestEmail, request.GuestPhone)
+	booking, err := h.svc.CreateBooking(ctx, request.AvailabilityID, request.ClientID, request.ProductID, request.SlotStartTime, request.GuestFirstName, request.GuestLastName, request.GuestEmail, request.GuestPhone)
 	if err != nil {
 		var statusCode int
 		switch {
@@ -88,8 +88,6 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		Currency:           booking.Currency,
 		PaymentStatus:      booking.PaymentStatus,
 		PaymentIntentID:    booking.PaymentIntentID,
-		ClientNotes:        booking.ClientNotes,
-		PartnerNotes:       booking.PartnerNotes,
 		CancellationReason: cancellationReason,
 		CancelledAt:        booking.CancelledAt,
 		CompletedAt:        booking.CompletedAt,

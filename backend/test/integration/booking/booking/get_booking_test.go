@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -77,7 +78,6 @@ func TestGetBooking(t *testing.T) {
 			"client_id":       clientID,
 			"product_id":      productID.String(),
 			"slot_start_time": slotStartTime.Format(time.RFC3339),
-			"client_notes":    "Test notes",
 		}
 		bodyBytes, err := json.Marshal(requestBody)
 		require.NoError(t, err)
@@ -117,14 +117,22 @@ func TestGetBooking(t *testing.T) {
 		// Assert HTTP response
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+
 		// Parse response
 		var booking domain.BookingResponse
-		err = json.NewDecoder(resp.Body).Decode(&booking)
+		err = json.Unmarshal(body, &booking)
 		require.NoError(t, err)
 
 		// Assert booking details
 		assert.Equal(t, bookingID, booking.ID)
-		assert.Equal(t, "Test notes", booking.ClientNotes)
+
+		// ADR-0019: no notes anywhere in the response body
+		var raw map[string]any
+		require.NoError(t, json.Unmarshal(body, &raw))
+		assert.NotContains(t, raw, "client_notes")
+		assert.NotContains(t, raw, "partner_notes")
 	})
 
 	t.Run("should return 404 for non-existent booking", func(t *testing.T) {

@@ -18,7 +18,6 @@ type Handler interface {
 	GetDashboardStats(w http.ResponseWriter, r *http.Request)
 	GetAdminBookings(w http.ResponseWriter, r *http.Request)
 	GetUpcomingBookings(w http.ResponseWriter, r *http.Request)
-	UpdateBookingNotes(w http.ResponseWriter, r *http.Request)
 	CancelBooking(w http.ResponseWriter, r *http.Request)
 	AdminOverrideCancelBooking(w http.ResponseWriter, r *http.Request)
 	CancelBookingPublic(w http.ResponseWriter, r *http.Request)

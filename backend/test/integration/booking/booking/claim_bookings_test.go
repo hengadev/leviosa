@@ -71,7 +71,7 @@ func TestClaimBookings(t *testing.T) {
 
 		// Create guest bookings via the service (with real encryption)
 		guestEmail := "guest@example.com"
-		booking1, err := service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "Jean", "Dupont", guestEmail, "0612345678")
+		booking1, err := service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "Jean", "Dupont", guestEmail, "0612345678")
 		require.NoError(t, err)
 		assert.True(t, booking1.IsGuestBooking())
 		assert.Nil(t, booking1.ClientID)
@@ -86,7 +86,7 @@ func TestClaimBookings(t *testing.T) {
 		require.NoError(t, err)
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx2, testPool)
 
-		booking2, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "", "Jean", "Dupont", guestEmail, "0612345678")
+		booking2, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "Jean", "Dupont", guestEmail, "0612345678")
 		require.NoError(t, err)
 		assert.True(t, booking2.IsGuestBooking())
 
@@ -164,7 +164,7 @@ func TestClaimBookings(t *testing.T) {
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
 		// Create a guest booking with a DIFFERENT email
-		_, err = service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "Other", "Person", "other@example.com", "0600000000")
+		_, err = service.CreateBooking(ctx, availability.ID, nil, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "Other", "Person", "other@example.com", "0600000000")
 		require.NoError(t, err)
 
 		// Create a client user
@@ -247,13 +247,13 @@ func TestClaimBookings(t *testing.T) {
 		_, newID := tsetup.SetupStandardUser(t, ctx, "newuser@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
 		// Create a booking already owned by existing user
-		existingBooking, err := service.CreateBooking(ctx, availability.ID, &existingID, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "", "", "", "")
+		existingBooking, err := service.CreateBooking(ctx, availability.ID, &existingID, products[0].ID, time.Now().Add(24*time.Hour).Truncate(time.Hour), "", "", "", "")
 		require.NoError(t, err)
 		assert.NotNil(t, existingBooking.ClientID)
 
 		// Create a guest booking with an email
 		guestEmail := "guestshared@example.com"
-		guestBooking, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "", "Guest", "User", guestEmail, "")
+		guestBooking, err := service.CreateBooking(ctx, availability2.ID, nil, products[0].ID, time.Now().Add(48*time.Hour).Truncate(time.Hour), "Guest", "User", guestEmail, "")
 		require.NoError(t, err)
 		assert.Nil(t, guestBooking.ClientID)
 
