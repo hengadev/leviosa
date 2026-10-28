@@ -42,7 +42,7 @@ type Booking struct {
 	SlotEndTime   time.Time `json:"slot_end_time" encx:"encrypt"`   // Calculated: SlotStartTime + Product.Duration
 
 	// Legacy notes columns (kept in the schema, never collected or shown:
-// Leviosa stores no health data — ADR-0019). PartnerNotes is written only by
+	// Leviosa stores no health data — ADR-0019). PartnerNotes is written only by
 	// internal bookkeeping (refund tracking); ClientNotes is never written.
 	ClientNotes  string `json:"-" encx:"encrypt"`
 	PartnerNotes string `json:"-" encx:"encrypt"`
