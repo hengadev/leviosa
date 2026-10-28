@@ -2,19 +2,14 @@
 	import type { PageProps } from './$types';
 	import type { Booking } from './+page.server';
 	import { invalidateAll } from '$app/navigation';
-	import { Clock, MapPin, CheckCircle, XCircle, FileText, Save, X, Pencil, AlertCircle } from '@lucide/svelte';
+	import { Clock, MapPin, Mail, Phone, CheckCircle, XCircle, AlertCircle } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
 
 	type Tab = 'upcoming' | 'completed' | 'no_show' | 'cancelled' | 'all';
 	let activeTab = $state<Tab>((data.statusFilter as Tab) || 'upcoming');
-	let editingNotesId: string | null = $state(null);
-	let editingNotesValue = $state('');
-	let savingNotes = $state(false);
-	let notesError = $state('');
 	let actionLoading: Record<string, boolean> = $state({});
 	let actionError = $state('');
-	let noteOverrides: Record<string, string> = $state({});
 
 	function formatDateTime(iso: string): string {
 		return new Date(iso).toLocaleDateString('fr-FR', {
@@ -170,41 +165,6 @@
 			actionLoading = { ...actionLoading, [bookingId + '_noshow']: false };
 		}
 	}
-
-	function startEditNotes(booking: Booking) {
-		editingNotesId = booking.id;
-		editingNotesValue = noteOverrides[booking.id] ?? booking.partnerNotes;
-		notesError = '';
-	}
-
-	function cancelEditNotes() {
-		editingNotesId = null;
-		editingNotesValue = '';
-		notesError = '';
-	}
-
-	async function saveNotes(bookingId: string) {
-		savingNotes = true;
-		notesError = '';
-		try {
-			const res = await fetch(`/api/bookings/${bookingId}/notes`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ partner_notes: editingNotesValue }),
-			});
-			if (res.ok) {
-				noteOverrides = { ...noteOverrides, [bookingId]: editingNotesValue };
-				editingNotesId = null;
-				editingNotesValue = '';
-			} else {
-				notesError = 'Impossible de sauvegarder. Veuillez réessayer.';
-			}
-		} catch {
-			notesError = 'Erreur réseau. Veuillez réessayer.';
-		} finally {
-			savingNotes = false;
-		}
-	}
 </script>
 
 <svelte:head>
@@ -293,60 +253,29 @@
 							</span>
 						</div>
 
-						{#if booking.clientNotes}
-							<div class="mt-2 flex items-start gap-1.5 text-sm text-muted-foreground">
-								<FileText size={13} class="mt-0.5 flex-shrink-0" />
-								<p class="italic">{booking.clientNotes}</p>
+						<!-- Client contact details (no notes: Leviosa stores no health data, ADR-0019) -->
+						{#if booking.clientEmail || booking.clientPhone}
+							<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+								{#if booking.clientEmail}
+									<a
+										href="mailto:{booking.clientEmail}"
+										class="flex items-center gap-1.5 hover:text-foreground transition-colors"
+									>
+										<Mail size={13} />
+										{booking.clientEmail}
+									</a>
+								{/if}
+								{#if booking.clientPhone}
+									<a
+										href="tel:{booking.clientPhone}"
+										class="flex items-center gap-1.5 hover:text-foreground transition-colors"
+									>
+										<Phone size={13} />
+										{booking.clientPhone}
+									</a>
+								{/if}
 							</div>
 						{/if}
-
-						<!-- Partner Notes (inline editor) -->
-						<div class="mt-2">
-							{#if editingNotesId === booking.id}
-								<div class="flex flex-col gap-2">
-									<textarea
-										class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-										rows="2"
-										placeholder="Notes internes (visibles uniquement par vous)…"
-										bind:value={editingNotesValue}
-									></textarea>
-									{#if notesError}
-										<p class="text-xs text-red-600">{notesError}</p>
-									{/if}
-									<div class="flex gap-2">
-										<button
-											class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
-											onclick={() => saveNotes(booking.id)}
-											disabled={savingNotes}
-										>
-											<Save size={13} />
-											{savingNotes ? 'Enregistrement…' : 'Enregistrer'}
-										</button>
-										<button
-											class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
-											onclick={cancelEditNotes}
-										>
-											<X size={13} />
-											Annuler
-										</button>
-									</div>
-								</div>
-							{:else}
-								{@const displayNote = noteOverrides[booking.id] ?? booking.partnerNotes}
-								<button
-									class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-									onclick={() => startEditNotes(booking)}
-								>
-									{#if displayNote}
-										<Pencil size={13} />
-										<span class="italic">{displayNote}</span>
-									{:else}
-										<Pencil size={13} />
-										<span>Ajouter une note</span>
-									{/if}
-								</button>
-							{/if}
-						</div>
 					</div>
 
 					<!-- Amount + Actions -->

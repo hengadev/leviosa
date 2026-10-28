@@ -4,10 +4,6 @@
 	import {
 		Clock,
 		MapPin,
-		FileText,
-		Save,
-		X,
-		Pencil,
 		AlertCircle,
 		XCircle,
 		ArrowLeft,
@@ -24,12 +20,6 @@
 	const now = new Date();
 	let cancelling = $state(false);
 	let cancelError = $state('');
-
-	let editingNotes = $state(false);
-	let notesValue = $state(booking.client_notes ?? '');
-	let notesOverride = $state(booking.client_notes ?? '');
-	let savingNotes = $state(false);
-	let notesError = $state('');
 
 	function formatDate(iso: string): string {
 		return new Date(iso).toLocaleDateString('fr-FR', {
@@ -137,40 +127,6 @@
 			cancelError = 'Erreur réseau. Veuillez réessayer.';
 		} finally {
 			cancelling = false;
-		}
-	}
-
-	function startEditNotes() {
-		editingNotes = true;
-		notesValue = notesOverride;
-		notesError = '';
-	}
-
-	function cancelEditNotes() {
-		editingNotes = false;
-		notesValue = notesOverride;
-		notesError = '';
-	}
-
-	async function saveNotes() {
-		savingNotes = true;
-		notesError = '';
-		try {
-			const res = await fetch(`/api/bookings/${booking.id}/notes`, {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ client_notes: notesValue }),
-			});
-			if (res.ok) {
-				notesOverride = notesValue;
-				editingNotes = false;
-			} else {
-				notesError = 'Impossible de sauvegarder. Veuillez réessayer.';
-			}
-		} catch {
-			notesError = 'Erreur réseau. Veuillez réessayer.';
-		} finally {
-			savingNotes = false;
 		}
 	}
 </script>
@@ -282,70 +238,6 @@
 				</div>
 			</div>
 		{/if}
-
-		<!-- Partner notes (read-only) -->
-		{#if booking.partner_notes}
-			<div class="flex items-start gap-3">
-				<FileText size={18} class="text-muted-foreground mt-0.5 flex-shrink-0" />
-				<div>
-					<p class="text-sm font-medium text-muted-foreground">Notes du praticien</p>
-					<p class="text-foreground text-sm">{booking.partner_notes}</p>
-				</div>
-			</div>
-		{/if}
-
-		<!-- Client notes (editable) -->
-		<div class="flex items-start gap-3">
-			<FileText size={18} class="text-muted-foreground mt-0.5 flex-shrink-0" />
-			<div class="flex-1">
-				<p class="text-sm font-medium text-muted-foreground mb-2">Vos notes</p>
-				{#if editingNotes}
-					<div class="flex flex-col gap-2">
-						<textarea
-							class="w-full rounded-md border border-border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-							rows="3"
-							placeholder="Ajoutez une note pour le praticien…"
-							bind:value={notesValue}
-						></textarea>
-						{#if notesError}
-							<p class="text-xs text-red-600">{notesError}</p>
-						{/if}
-						<div class="flex gap-2">
-							<button
-								class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
-								onclick={saveNotes}
-								disabled={savingNotes}
-							>
-								<Save size={13} />
-								{savingNotes ? 'Enregistrement…' : 'Enregistrer'}
-							</button>
-							<button
-								class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted text-muted-foreground rounded-md hover:bg-muted/80 transition-colors"
-								onclick={cancelEditNotes}
-							>
-								<X size={13} />
-								Annuler
-							</button>
-						</div>
-					</div>
-				{:else}
-					<div class="flex items-start gap-2">
-						{#if notesOverride}
-							<p class="text-foreground text-sm flex-1">{notesOverride}</p>
-						{:else}
-							<p class="text-muted-foreground text-sm flex-1 italic">Aucune note</p>
-						{/if}
-						<button
-							class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-							onclick={startEditNotes}
-						>
-							<Pencil size={13} />
-							<span class="text-xs">{notesOverride ? 'Modifier' : 'Ajouter'}</span>
-						</button>
-					</div>
-				{/if}
-			</div>
-		</div>
 
 		<!-- Messaging shortcut (placeholder for Issue 008) -->
 		{#if booking.status === 'confirmed' || booking.status === 'completed'}

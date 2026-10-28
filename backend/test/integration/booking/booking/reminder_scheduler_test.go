@@ -218,7 +218,7 @@ func TestReminderScheduler_MarkSentOnNotificationError(t *testing.T) {
 // the decrypted booking domain object.
 func createBookingViaService(t *testing.T, ctx context.Context, availabilityID, clientID, partnerID, roomID, productID uuid.UUID, slotStart time.Time) *domain.Booking {
 	t.Helper()
-	b, err := service.CreateBooking(ctx, availabilityID, &clientID, productID, slotStart, "", "", "", "", "")
+	b, err := service.CreateBooking(ctx, availabilityID, &clientID, productID, slotStart, "", "", "", "")
 	require.NoError(t, err)
 	return b
 }

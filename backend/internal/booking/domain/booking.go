@@ -41,9 +41,11 @@ type Booking struct {
 	SlotStartTime time.Time `json:"slot_start_time" encx:"encrypt"` // Actual slot start (10-min aligned)
 	SlotEndTime   time.Time `json:"slot_end_time" encx:"encrypt"`   // Calculated: SlotStartTime + Product.Duration
 
-	// Booking details (encrypted for GDPR compliance)
-	ClientNotes  string `json:"client_notes,omitempty" encx:"encrypt"`
-	PartnerNotes string `json:"partner_notes,omitempty" encx:"encrypt"`
+	// Legacy notes columns (kept in the schema, never collected or shown:
+	// Leviosa stores no health data — ADR-0019). PartnerNotes is written only by
+	// internal bookkeeping (refund tracking); ClientNotes is never written.
+	ClientNotes  string `json:"-" encx:"encrypt"`
+	PartnerNotes string `json:"-" encx:"encrypt"`
 
 	// Guest contact fields (encrypted for GDPR compliance, used when ClientID is nil)
 	GuestFirstName string `json:"guest_first_name,omitempty" encx:"encrypt"`
@@ -127,13 +129,9 @@ func NewBooking(availabilityID uuid.UUID, clientID *uuid.UUID, partnerID, roomID
 	}, nil
 }
 
-// SetClientNotes sets notes from the client
-func (b *Booking) SetClientNotes(notes string) {
-	b.ClientNotes = notes
-	b.UpdatedAt = time.Now()
-}
-
-// SetPartnerNotes sets private notes from the partner
+// SetPartnerNotes records internal bookkeeping in the legacy partner-notes
+// column (e.g. refund tracking). It is never exposed through the API
+// (ADR-0019: no health data).
 func (b *Booking) SetPartnerNotes(notes string) {
 	b.PartnerNotes = notes
 	b.UpdatedAt = time.Now()

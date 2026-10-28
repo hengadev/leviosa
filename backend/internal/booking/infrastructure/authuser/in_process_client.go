@@ -82,3 +82,17 @@ func (c *InProcessClient) GetUserEmail(ctx context.Context, userID uuid.UUID) (s
 	}
 	return user.Email, nil
 }
+
+// GetUserContact retrieves the display name, email and phone for a user by
+// their ID in a single lookup, for the partner agenda's client contact card.
+func (c *InProcessClient) GetUserContact(ctx context.Context, userID uuid.UUID) (string, string, string, error) {
+	if c.userService == nil {
+		return "", "", "", nil
+	}
+	user, err := c.userService.GetUserByID(ctx, userID)
+	if err != nil {
+		return "", "", "", fmt.Errorf("get user by id %s: %w", userID, err)
+	}
+	name := strings.TrimSpace(fmt.Sprintf("%s %s", user.FirstName, user.LastName))
+	return name, user.Email, user.Telephone, nil
+}

@@ -37,8 +37,6 @@ export type BookingDTO = {
     total_price_cents: number
     currency: string
     payment_intent_id?: string
-    client_notes?: string
-    partner_notes?: string
     cancellation_reason?: string
     cancelled_at?: string
     completed_at?: string

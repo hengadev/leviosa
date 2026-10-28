@@ -31,6 +31,12 @@ type AuthUserClient interface {
 	// clients so Stripe emails them a hosted receipt automatically.
 	// Returns an empty string if the user is not found.
 	GetUserEmail(ctx context.Context, userID uuid.UUID) (string, error)
+
+	// GetUserContact returns the display name, email and phone for a user by
+	// their ID, resolved with a single lookup. Used by the partner agenda so a
+	// partner can contact a registered client (name, email, phone only — no
+	// notes or health data, ADR-0019). Empty strings when a value is unset.
+	GetUserContact(ctx context.Context, userID uuid.UUID) (name, email, phone string, err error)
 }
 
 // PartnerInfo represents basic partner information needed by booking module

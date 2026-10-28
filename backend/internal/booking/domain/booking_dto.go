@@ -21,8 +21,8 @@ type BookingResponse struct {
 	PaymentStatus      PaymentStatus         `json:"payment_status"`
 	PaymentIntentID    *string               `json:"payment_intent_id,omitempty"`
 	ReceiptURL         string                `json:"receipt_url,omitempty"`
-	ClientNotes        string                `json:"client_notes,omitempty"`
-	PartnerNotes       string                `json:"partner_notes,omitempty"`
+	// Notes (client_notes/partner_notes) are deliberately absent from every
+	// response: Leviosa stores no health data (ADR-0019). The DB columns stay.
 	CancellationReason *string               `json:"cancellation_reason,omitempty"`
 	CancelledAt        *time.Time            `json:"cancelled_at,omitempty"`
 	CompletedAt        *time.Time            `json:"completed_at,omitempty"`
@@ -74,18 +74,14 @@ type CreateBookingRequest struct {
 	ClientID       *uuid.UUID `json:"client_id,omitempty"`
 	ProductID      uuid.UUID `json:"product_id" validate:"required"`
 	SlotStartTime  time.Time `json:"slot_start_time" validate:"required"`
-	ClientNotes    string    `json:"client_notes,omitempty" validate:"max=1000"`
+	// No client_notes: Leviosa stores no health data (ADR-0019). The unknown-
+	// fields decoder rejects the key if a client sends it anyway.
 
 	// Guest fields (required when client_id is omitted)
 	GuestFirstName string `json:"guest_first_name,omitempty"`
 	GuestLastName  string `json:"guest_last_name,omitempty"`
 	GuestEmail     string `json:"guest_email,omitempty"`
 	GuestPhone     string `json:"guest_phone,omitempty"`
-}
-
-type UpdateBookingNotesRequest struct {
-	ClientNotes  string `json:"client_notes,omitempty" validate:"max=1000"`
-	PartnerNotes string `json:"partner_notes,omitempty" validate:"max=1000"`
 }
 
 type CancelBookingRequest struct {
@@ -117,6 +113,8 @@ type PartnerBookingResponse struct {
 	ID              uuid.UUID     `json:"id"`
 	ClientID        *uuid.UUID    `json:"client_id,omitempty"`
 	ClientName      string        `json:"client_name"`
+	ClientEmail     string        `json:"client_email,omitempty"`
+	ClientPhone     string        `json:"client_phone,omitempty"`
 	ProductName     string        `json:"product_name"`
 	RoomName        string        `json:"room_name"`
 	SlotStartTime   time.Time     `json:"slot_start_time"`
@@ -125,8 +123,6 @@ type PartnerBookingResponse struct {
 	PaymentStatus   PaymentStatus `json:"payment_status"`
 	TotalPriceCents int           `json:"total_price_cents"`
 	Currency        string        `json:"currency"`
-	ClientNotes     string        `json:"client_notes,omitempty"`
-	PartnerNotes    string        `json:"partner_notes,omitempty"`
 	CompletedAt     *time.Time    `json:"completed_at,omitempty"`
 }
 
