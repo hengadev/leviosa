@@ -80,7 +80,7 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 			"guest_first_name": "Jean",
 			"guest_last_name":  "Dupont",
 			"guest_email":      "jean.dupont@example.com",
-			"guest_phone":      "+33612345678",
+			"guest_phone":      "0612345678",
 		}
 		bodyBytes, err := json.Marshal(requestBody)
 		require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 		agenda := bookings[0]
 		assert.Equal(t, "Jean Dupont", agenda.ClientName)
 		assert.Equal(t, "jean.dupont@example.com", agenda.ClientEmail)
-		assert.Equal(t, "+33612345678", agenda.ClientPhone)
+		assert.Equal(t, "0612345678", agenda.ClientPhone)
 		assert.Equal(t, domain.BookingStatusConfirmed, agenda.Status)
 
 		// ADR-0019: no notes anywhere in the agenda response
