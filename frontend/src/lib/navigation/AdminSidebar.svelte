@@ -3,7 +3,7 @@
 	import {
 		Home,
 		Users,
-		NotebookPen,
+		CalendarCheck,
 		Package,
 		HandCoins,
 		ExternalLink,
@@ -70,8 +70,8 @@
 		},
 		{
 			href: "/admin/bookings/consultations",
-			label: "Notes de seance",
-			icon: NotebookPen,
+			label: "Réservations",
+			icon: CalendarCheck,
 		},
 		{
 			href: "/admin/catalog",
@@ -102,8 +102,8 @@
 		},
 		{
 			href: "/admin/bookings/consultations",
-			label: "Notes",
-			icon: NotebookPen,
+			label: "Réservations",
+			icon: CalendarCheck,
 		},
 		{
 			href: "/admin/catalog",
