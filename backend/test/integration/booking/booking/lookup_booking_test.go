@@ -67,7 +67,7 @@ func setupGuestBookingForLookup(t *testing.T) (bookingID uuid.UUID, token string
 	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
 	productID := products[0].ID
-	slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+	slotStartTime := startTime // the availability's first slot (slot engine grid)
 
 	reqBody := map[string]interface{}{
 		"availability_id":  availability.ID.String(),

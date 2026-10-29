@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	authuserDomain "github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 	authuserPorts "github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
@@ -19,12 +20,19 @@ import (
 // this can be replaced with an HTTP-based implementation without changing the
 // interface or business logic.
 type InProcessClient struct {
-	partnerService authuserPorts.PublicPartnerService
+	partnerService PartnerReader
 	userService    authuserPorts.UserService
 }
 
+// PartnerReader is the part of the authuser partner service the booking
+// module reads: the public operations plus a lookup by partner ID.
+type PartnerReader interface {
+	authuserPorts.PublicPartnerService
+	GetPartnerByID(ctx context.Context, partnerID uuid.UUID) (*authuserDomain.PartnerResponse, error)
+}
+
 // NewInProcessClient creates a new in-process AuthUserClient implementation.
-func NewInProcessClient(partnerService authuserPorts.PublicPartnerService, userService authuserPorts.UserService) bookingPorts.AuthUserClient {
+func NewInProcessClient(partnerService PartnerReader, userService authuserPorts.UserService) bookingPorts.AuthUserClient {
 	return &InProcessClient{
 		partnerService: partnerService,
 		userService:    userService,
@@ -56,6 +64,18 @@ func (c *InProcessClient) GetPartnerByUserID(ctx context.Context, userID uuid.UU
 		UserID:     partnerResponse.UserID,
 		IsVerified: isVerified,
 	}, nil
+}
+
+// GetPartnerUserID resolves a partner ID to the partner's user ID.
+func (c *InProcessClient) GetPartnerUserID(ctx context.Context, partnerID uuid.UUID) (uuid.UUID, error) {
+	if c.partnerService == nil {
+		return uuid.Nil, fmt.Errorf("resolve partner %s: no partner service", partnerID)
+	}
+	partner, err := c.partnerService.GetPartnerByID(ctx, partnerID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("get partner by id %s: %w", partnerID, err)
+	}
+	return partner.UserID, nil
 }
 
 // GetUserName retrieves the display name for a user by their ID.

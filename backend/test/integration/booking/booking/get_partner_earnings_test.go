@@ -104,7 +104,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 		require.NoError(t, err)
 
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,
@@ -183,7 +183,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 			tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 			require.NoError(t, err)
 
-			slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+			slotStartTime := startTime // the availability's first slot (slot engine grid)
 			requestBody := map[string]interface{}{
 				"availability_id": availability.ID.String(),
 				"client_id":       clientID,
@@ -310,7 +310,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 			tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 			require.NoError(t, err)
 
-			slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+			slotStartTime := startTime // the availability's first slot (slot engine grid)
 			requestBody := map[string]interface{}{
 				"availability_id": availability.ID.String(),
 				"client_id":       clientID,

@@ -19,6 +19,12 @@ type BookingService interface {
 	// No client notes are accepted (ADR-0019: no health data).
 	CreateBooking(ctx context.Context, availabilityID uuid.UUID, clientID *uuid.UUID, productID uuid.UUID, slotStartTime time.Time, guestFirstName, guestLastName, guestEmail, guestPhone string) (*domain.Booking, error)
 
+	// GetFreeSlots returns the free slots for a partner (partner ID, not user
+	// ID) and a product whose start falls in [from, to), computed by the slot
+	// engine under the current booking policy. Booking creation accepts only
+	// a start this would return.
+	GetFreeSlots(ctx context.Context, partnerID, productID uuid.UUID, from, to time.Time) (*domain.FreeSlots, error)
+
 	// GetBooking retrieves a booking by ID
 	GetBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 

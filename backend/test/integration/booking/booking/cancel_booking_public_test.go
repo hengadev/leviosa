@@ -63,7 +63,7 @@ func setupGuestBookingForCancel(t *testing.T, slotStartTime time.Time) (bookingI
 	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
 	pid := products[0].ID
-	slotStart := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+	slotStart := startTime // the availability's first slot (slot engine grid)
 
 	reqBody := map[string]interface{}{
 		"availability_id":  availability.ID.String(),
