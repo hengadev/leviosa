@@ -1,4 +1,5 @@
 import { env } from "$env/dynamic/private";
+import { parseDeposit, type Deposit } from "$lib/deposit";
 import { mockPartners, mockProducts, mockPrices, mockUsers } from "$lib/data/mockData";
 
 // Server-side loading for the practice page (issue 009), shared by `/` (fr)
@@ -19,6 +20,8 @@ export type PracticeProduct = {
     name: string;
     durationMin: number;
     priceCents: number | null;
+    /** Optional deposit (acompte, issue 013); null: the full price is paid online. */
+    deposit: Deposit | null;
     /** Hours before the session until which cancellation is free (seed placeholder). */
     freeCancellationHours: number;
 };
@@ -63,6 +66,7 @@ type PublicProduct = {
         name: string;
         duration: number;
         cancellationHours: number;
+        deposit?: unknown;
     };
 };
 
@@ -92,6 +96,7 @@ function mockPracticeData(): PracticePageData {
                   name: product.name,
                   durationMin: product.duration,
                   priceCents: price?.amount ?? null,
+                  deposit: parseDeposit(product.deposit),
                   freeCancellationHours: 24,
               }
             : null,
@@ -137,6 +142,7 @@ export async function loadPracticePage(fetchFn: typeof fetch): Promise<PracticeP
                 name: publicProduct.product.name,
                 durationMin: publicProduct.product.duration,
                 priceCents: price?.amount ?? null,
+                deposit: parseDeposit(publicProduct.product.deposit),
                 freeCancellationHours: publicProduct.product.cancellationHours ?? 24,
             };
         }

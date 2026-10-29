@@ -47,11 +47,23 @@ export const strings = {
         price: "Tarif",
         address: "Adresse",
         payment: "Paiement",
+        /** Payment fact without a deposit: the full price is paid online. */
         paymentValue: "En ligne, par carte",
         minutes: (n: number) => `${n} min`,
+        // price and deposit (issue 013): the deposit is an *acompte*, never *arrhes*
+        priceWithDeposit: (price: string, deposit: string) => `${price}, dont ${deposit} d'acompte en ligne`,
+        paymentDeposit: "Acompte en ligne, solde au cabinet",
+        paymentSummaryFull: (price: string) => `${price} en ligne, par carte`,
+        paymentSummaryDeposit: (deposit: string, balance: string) =>
+            `${deposit} d'acompte en ligne par carte, solde de ${balance} au cabinet`,
+        /** The pay button (issue 014): names the amount charged online. */
+        payDeposit: (deposit: string) => `Payer l'acompte de ${deposit}`,
+        payFull: (price: string) => `Payer ${price}`,
         // booking card
-        intro: (h: number) =>
-            `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne. Annulation gratuite jusqu'à ${h} h avant.`,
+        intro: (h: number, deposit: string | null) =>
+            deposit
+                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde est à régler au cabinet. Annulation gratuite jusqu'à ${h} h avant.`
+                : `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne. Annulation gratuite jusqu'à ${h} h avant.`,
         pickDay: "Choisissez un jour pour voir les horaires.",
         noSlots: "Aucun créneau ce jour-là.",
         slotsLeft: (n: number) => (n === 1 ? "1 créneau" : `${n} créneaux`),
@@ -76,8 +88,17 @@ export const strings = {
         payment: "Payment",
         paymentValue: "Online, by card",
         minutes: (n: number) => `${n} min`,
-        intro: (h: number) =>
-            `Pick one of the practice's open slots, then pay for the session online. Free cancellation up to ${h} h before.`,
+        priceWithDeposit: (price: string, deposit: string) => `${price}, including a ${deposit} deposit online`,
+        paymentDeposit: "Deposit online, balance at the practice",
+        paymentSummaryFull: (price: string) => `${price} online, by card`,
+        paymentSummaryDeposit: (deposit: string, balance: string) =>
+            `${deposit} deposit online by card, ${balance} balance at the practice`,
+        payDeposit: (deposit: string) => `Pay the ${deposit} deposit`,
+        payFull: (price: string) => `Pay ${price}`,
+        intro: (h: number, deposit: string | null) =>
+            deposit
+                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid at the practice. Free cancellation up to ${h} h before.`
+                : `Pick one of the practice's open slots, then pay for the session online. Free cancellation up to ${h} h before.`,
         pickDay: "Pick a day to see the times.",
         noSlots: "No slots that day.",
         slotsLeft: (n: number) => (n === 1 ? "1 slot" : `${n} slots`),
