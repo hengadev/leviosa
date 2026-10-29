@@ -134,6 +134,13 @@ func (s *IntegrationEmailSpy) Snapshot() ([]notificationDomain.BookingConfirmati
 		append([]notificationDomain.BookingPartnerNoticeRequest(nil), s.PartnerNotices...)
 }
 
+// Reminders returns a copy of the booking reminders recorded so far.
+func (s *IntegrationEmailSpy) Reminders() []notificationDomain.BookingReminderRequest {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]notificationDomain.BookingReminderRequest(nil), s.BookingReminders...)
+}
+
 // Reset forgets every recorded email.
 func (s *IntegrationEmailSpy) Reset() {
 	s.mu.Lock()
