@@ -45,51 +45,6 @@ func TestBookingCancellationTemplateRenders(t *testing.T) {
 	assertContains(t, buf.String(), "2026")
 }
 
-func TestBookingReminderTemplateRenders(t *testing.T) {
-	tmpl := parseTemplateOrFail(t, "booking_reminder")
-
-	data := struct {
-		FirstName   string
-		LastName    string
-		BookingID   string
-		ProductName string
-		RoomName    string
-		Building    string
-		Address     string
-		Date        string
-		Time        string
-		PartnerName string
-		Year        int
-	}{
-		FirstName:   "Alice",
-		LastName:    "Smith",
-		BookingID:   "550e8400-e29b-41d4-a716-446655440000",
-		ProductName: "Massage Therapy",
-		RoomName:    "Room A",
-		Building:    "Main Building",
-		Address:     "123 Rue de Paris, 75001 Paris",
-		Date:        "Monday, 15 June 2026",
-		Time:        "10:00 – 11:00",
-		PartnerName: "Bob Jones",
-		Year:        2026,
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		t.Fatalf("failed to execute booking_reminder template: %v", err)
-	}
-
-	assertContains(t, buf.String(), "Massage Therapy")
-	assertContains(t, buf.String(), "Bob Jones")
-	assertContains(t, buf.String(), "Room A")
-	assertContains(t, buf.String(), "Main Building")
-	assertContains(t, buf.String(), "123 Rue de Paris")
-	assertContains(t, buf.String(), "Monday, 15 June 2026")
-	assertContains(t, buf.String(), "10:00 – 11:00")
-	assertContains(t, buf.String(), "550e8400-e29b-41d4-a716-446655440000")
-	assertContains(t, buf.String(), "2026")
-}
-
 func TestPaymentFailedTemplateRenders(t *testing.T) {
 	tmpl := parseTemplateOrFail(t, "payment_failed")
 

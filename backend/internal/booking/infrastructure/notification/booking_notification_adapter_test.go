@@ -708,6 +708,51 @@ func TestSendBookingReminder_SendsEmail(t *testing.T) {
 	assertEqual(t, "ToEmail", "client@example.com", emailSpy.bookingReminders[0].ToEmail)
 }
 
+func TestSendBookingReminder_LocaleAddressAndManageLink(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Alice Smith"
+	data.PartnerName = "Bob Jones"
+	data.ProductName = "Massage Therapy"
+	data.Address = "Building address"
+	data.Locale = "en"
+	data.Token = "abc123token"
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	adapter.settingsProvider = &stubSettingsProvider{companyAddress: "12 rue de la Paix, 75002 Paris"}
+
+	if err := adapter.sendBookingReminderEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.bookingReminders) != 1 {
+		t.Fatalf("expected 1 reminder email, got %d", len(spy.bookingReminders))
+	}
+	req := spy.bookingReminders[0]
+	assertEqual(t, "Locale", "en", string(req.Locale))
+	assertEqual(t, "ToFirstName", "Alice", req.ToFirstName)
+	assertEqual(t, "PartnerName", "Bob Jones", req.PartnerName)
+	assertEqual(t, "ProductName", "Massage Therapy", req.ProductName)
+	assertEqual(t, "Address", "12 rue de la Paix, 75002 Paris", req.Address)
+	assertEqual(t, "ManageURL", "https://app.leviosa.com/bookings?token=abc123token", req.ManageURL)
+	if !req.StartTime.Equal(data.SlotStartTime) || !req.EndTime.Equal(data.SlotEndTime) {
+		t.Errorf("reminder times %v–%v, want %v–%v", req.StartTime, req.EndTime, data.SlotStartTime, data.SlotEndTime)
+	}
+}
+
+func TestSendBookingReminder_MissingLocaleIsFrench(t *testing.T) {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.Locale = ""
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	if err := adapter.sendBookingReminderEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	assertEqual(t, "Locale", "fr", string(spy.bookingReminders[0].Locale))
+}
+
 func TestSendBookingReminder_FireAndForget(t *testing.T) {
 	data := makeBookingData()
 	data.ClientEmail = "client@example.com"
