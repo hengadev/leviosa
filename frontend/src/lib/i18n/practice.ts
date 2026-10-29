@@ -65,10 +65,19 @@ export const strings = {
         payDeposit: (deposit: string) => `Payer l'acompte de ${deposit}`,
         payFull: (price: string) => `Payer ${price}`,
         // booking card
-        intro: (h: number, deposit: string | null) =>
-            deposit
-                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde est à régler au cabinet. Annulation gratuite jusqu'à ${h} h avant.`
-                : `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne. Annulation gratuite jusqu'à ${h} h avant.`,
+        /**
+         * fullRefundHours: notice from which the cancellation tiers refund in
+         * full (null: the terms of sale state the conditions).
+         */
+        intro: (fullRefundHours: number | null, deposit: string | null) =>
+            (deposit
+                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde est à régler au cabinet.`
+                : `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne.`) +
+            (fullRefundHours === null
+                ? " Les conditions d'annulation figurent dans les conditions générales de vente."
+                : deposit
+                  ? ` Acompte intégralement remboursé en cas d'annulation jusqu'à ${fullRefundHours} h avant.`
+                  : ` Séance intégralement remboursée en cas d'annulation jusqu'à ${fullRefundHours} h avant.`),
         pickDay: "Choisissez un jour pour voir les horaires.",
         noSlots: "Aucun créneau ce jour-là.",
         slotsLeft: (n: number) => (n === 1 ? "1 créneau" : `${n} créneaux`),
@@ -121,6 +130,56 @@ export const strings = {
             "Le temps prévu pour payer est écoulé et ce créneau ne vous est plus réservé. Aucun paiement n'a été débité. Choisissez à nouveau un créneau.",
         latePaymentRefunded:
             "Votre paiement est arrivé après la fin du délai et ce créneau a été réservé entre-temps. Il vous est intégralement remboursé, un e-mail vous le confirme. Choisissez un autre créneau.",
+        // booking page (/bookings, issue 017), opened from the booking link
+        booking: {
+            pageTitle: "Ma réservation",
+            heading: "Votre réservation",
+            status: {
+                awaiting_payment: "En attente de paiement",
+                expired: "Expirée",
+                confirmed: "Confirmée",
+                cancelled: "Annulée",
+                completed: "Terminée",
+                no_show: "Absence",
+            } as Record<string, string>,
+            service: "Prestation",
+            practitioner: "Praticien",
+            date: "Date",
+            time: "Heure",
+            timeZoneNote: "heure de Paris",
+            totalPrice: "Tarif de la séance",
+            paidOnline: "Payé en ligne",
+            balanceDue: "Solde au cabinet",
+            refunded: "Remboursé",
+            reference: "Référence",
+            // refund preview (what a cancellation made now would give)
+            previewHeading: "Si vous annulez maintenant",
+            previewFull: (amount: string) => `${amount} vous sont remboursés, soit l'intégralité de votre paiement en ligne.`,
+            previewPartial: (amount: string, percentage: number, paid: string) =>
+                `${amount} vous sont remboursés, soit ${percentage} % des ${paid} payés en ligne.`,
+            previewNone: (paid: string) =>
+                `Selon les conditions d'annulation, les ${paid} payés en ligne ne sont pas remboursés à ce stade.`,
+            previewNothingPaid: "Aucun paiement en ligne n'a été effectué : il n'y a rien à rembourser.",
+            previewTier: (hours: number) =>
+                hours > 0 ? `Barème appliqué : annulation au moins ${hours} h avant la séance.` : "Barème appliqué : annulation tardive.",
+            cancel: "Annuler la réservation",
+            confirmHeading: "Confirmer l'annulation ?",
+            confirmRefund: (amount: string) => `Vous serez remboursé de ${amount}. L'annulation est définitive et le créneau sera libéré.`,
+            confirmNoRefund: "Aucun remboursement ne s'applique. L'annulation est définitive et le créneau sera libéré.",
+            confirm: "Confirmer l'annulation",
+            cancelling: "Annulation…",
+            keep: "Garder ma réservation",
+            // result
+            cancelledHeading: "Votre réservation est annulée",
+            cancelledRefund: (amount: string) =>
+                `${amount} vous sont remboursés sur votre moyen de paiement, sous 5 à 10 jours ouvrés selon votre banque.`,
+            cancelledNoRefund: "Selon les conditions d'annulation, cette annulation ne donne pas lieu à un remboursement.",
+            cancelledEmail: "Un e-mail de confirmation vous a été envoyé.",
+            cancelFailed: "L'annulation n'a pas pu être enregistrée. Réessayez dans un instant.",
+            notCancellable: "Cette réservation ne peut plus être annulée.",
+            bookAgain: "Réserver une autre séance",
+            backToPractice: "Retour au cabinet",
+        },
         // footer
         legal: "Mentions légales",
         privacy: "Confidentialité",
@@ -146,10 +205,15 @@ export const strings = {
             `${deposit} deposit online by card, ${balance} balance at the practice`,
         payDeposit: (deposit: string) => `Pay the ${deposit} deposit`,
         payFull: (price: string) => `Pay ${price}`,
-        intro: (h: number, deposit: string | null) =>
-            deposit
-                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid at the practice. Free cancellation up to ${h} h before.`
-                : `Pick one of the practice's open slots, then pay for the session online. Free cancellation up to ${h} h before.`,
+        intro: (fullRefundHours: number | null, deposit: string | null) =>
+            (deposit
+                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid at the practice.`
+                : `Pick one of the practice's open slots, then pay for the session online.`) +
+            (fullRefundHours === null
+                ? " The cancellation terms are set out in the terms of sale."
+                : deposit
+                  ? ` The deposit is refunded in full if you cancel up to ${fullRefundHours} h before.`
+                  : ` The session is refunded in full if you cancel up to ${fullRefundHours} h before.`),
         pickDay: "Pick a day to see the times.",
         noSlots: "No slots that day.",
         slotsLeft: (n: number) => (n === 1 ? "1 slot" : `${n} slots`),
@@ -200,6 +264,53 @@ export const strings = {
             "The time set aside for payment has run out and this slot is no longer held for you. You haven't been charged. Please pick a slot again.",
         latePaymentRefunded:
             "Your payment arrived after the time limit and this slot was booked in the meantime. You're being refunded in full, and an email confirms it. Please pick another slot.",
+        booking: {
+            pageTitle: "My booking",
+            heading: "Your booking",
+            status: {
+                awaiting_payment: "Awaiting payment",
+                expired: "Expired",
+                confirmed: "Confirmed",
+                cancelled: "Cancelled",
+                completed: "Completed",
+                no_show: "Missed",
+            } as Record<string, string>,
+            service: "Treatment",
+            practitioner: "Practitioner",
+            date: "Date",
+            time: "Time",
+            timeZoneNote: "Paris time",
+            totalPrice: "Session price",
+            paidOnline: "Paid online",
+            balanceDue: "Balance at the practice",
+            refunded: "Refunded",
+            reference: "Reference",
+            previewHeading: "If you cancel now",
+            previewFull: (amount: string) => `${amount} is refunded to you, the whole of your online payment.`,
+            previewPartial: (amount: string, percentage: number, paid: string) =>
+                `${amount} is refunded to you, ${percentage}% of the ${paid} paid online.`,
+            previewNone: (paid: string) =>
+                `Under the cancellation terms, the ${paid} paid online is not refunded at this point.`,
+            previewNothingPaid: "Nothing was paid online, so there is nothing to refund.",
+            previewTier: (hours: number) =>
+                hours > 0 ? `Terms applied: cancelling at least ${hours} h before the session.` : "Terms applied: late cancellation.",
+            cancel: "Cancel the booking",
+            confirmHeading: "Cancel this booking?",
+            confirmRefund: (amount: string) => `You'll be refunded ${amount}. Cancelling is final and the slot will be released.`,
+            confirmNoRefund: "No refund applies. Cancelling is final and the slot will be released.",
+            confirm: "Confirm cancellation",
+            cancelling: "Cancelling…",
+            keep: "Keep my booking",
+            cancelledHeading: "Your booking is cancelled",
+            cancelledRefund: (amount: string) =>
+                `${amount} is being refunded to your payment method, within 5 to 10 business days depending on your bank.`,
+            cancelledNoRefund: "Under the cancellation terms, this cancellation is not refunded.",
+            cancelledEmail: "A confirmation email is on its way.",
+            cancelFailed: "The cancellation couldn't be saved. Please try again in a moment.",
+            notCancellable: "This booking can no longer be cancelled.",
+            bookAgain: "Book another session",
+            backToPractice: "Back to the practice",
+        },
         legal: "Legal notice",
         privacy: "Privacy",
         terms: "Terms",
@@ -236,7 +347,7 @@ export const infoBlocks = {
             },
             {
                 title: "Annulation et retard",
-                body: "Annulation gratuite jusqu'à 24 h avant, depuis le lien reçu par e-mail. En cas de retard, la séance se termine à l'heure prévue.",
+                body: "Vous pouvez annuler depuis le lien reçu par e-mail ; le remboursement dépend du délai, selon les conditions générales de vente. En cas de retard, la séance se termine à l'heure prévue.",
             },
         ],
     },
@@ -261,7 +372,7 @@ export const infoBlocks = {
             },
             {
                 title: "Cancellation and lateness",
-                body: "Free cancellation up to 24 h before, from the link in your email. If you're late, the session still ends at the planned time.",
+                body: "You can cancel from the link in your email; the refund depends on how much notice you give, as set out in the terms of sale. If you're late, the session still ends at the planned time.",
             },
         ],
     },
