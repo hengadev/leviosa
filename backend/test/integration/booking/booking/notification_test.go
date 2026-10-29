@@ -241,7 +241,7 @@ func TestBookingCancellationNotification(t *testing.T) {
 		assert.Equal(t, partnerID, notification.PartnerID, "notification should reference the partner")
 		assert.Equal(t, productID, notification.ProductID, "notification should reference the product")
 		assert.Equal(t, room.ID, notification.RoomID, "notification should reference the room")
-		assert.Equal(t, "Client needs to reschedule", notification.CancellationReason, "notification should include the cancellation reason")
+		assert.Equal(t, "client", notification.CancelledBy, "notification should say the client cancelled")
 		assert.NotNil(t, notification.CancelledAt, "notification should include cancelled_at timestamp")
 	})
 }

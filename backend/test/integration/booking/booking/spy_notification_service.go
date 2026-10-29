@@ -21,9 +21,10 @@ type SpyNotificationService struct {
 	DisputeAlerts        []bookingPorts.BookingNotificationData
 	LatePaymentRefunds   []bookingPorts.BookingNotificationData
 
-	// forward, when set, also hands every booking confirmation to a real
-	// notification service (the BookingNotificationAdapter), so a test can
-	// follow a booking-confirmed event down to the emails it sends.
+	// forward, when set, also hands every booking confirmation (and
+	// cancellation) to a real notification service (the
+	// BookingNotificationAdapter), so a test can follow the event down to the
+	// emails it sends.
 	forward bookingPorts.BookingNotificationService
 }
 
@@ -71,8 +72,12 @@ func (s *SpyNotificationService) SendPaymentFailed(ctx context.Context, data boo
 
 func (s *SpyNotificationService) SendBookingCancellation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.BookingCancellations = append(s.BookingCancellations, data)
+	next := s.forward
+	s.mu.Unlock()
+	if next != nil {
+		return next.SendBookingCancellation(ctx, data)
+	}
 	return nil
 }
 
