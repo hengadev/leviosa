@@ -205,3 +205,78 @@ func TestParseLocale(t *testing.T) {
 		}
 	}
 }
+
+func testReminderRequest(locale Locale) BookingReminderRequest {
+	start := time.Date(2026, 11, 3, 13, 30, 0, 0, time.UTC) // 14:30 in Paris
+	return BookingReminderRequest{
+		ToEmail:     "client@example.com",
+		ToFirstName: "Alice",
+		ToLastName:  "Smith",
+		Locale:      locale,
+		BookingID:   "550e8400-e29b-41d4-a716-446655440000",
+		ProductName: "Massage",
+		PartnerName: "Bob Jones",
+		Address:     "12 rue de la Paix, 75002 Paris",
+		StartTime:   start,
+		EndTime:     start.Add(time.Hour),
+		ManageURL:   "https://leviosa.test/bookings?token=abc",
+	}
+}
+
+func TestComposeBookingReminder_French(t *testing.T) {
+	email := ComposeBookingReminder(testReminderRequest(LocaleFR), composeNow)
+
+	if email.Subject != "Rappel : votre rendez-vous du mardi 3 novembre 2026 à 14h30" {
+		t.Errorf("subject = %q", email.Subject)
+	}
+	if email.Template != BookingReminderTemplate {
+		t.Errorf("template = %q", email.Template)
+	}
+	if len(email.Attachments) != 0 {
+		t.Errorf("the reminder has no attachment, got %d", len(email.Attachments))
+	}
+	body := renderComposed(t, email)
+	for _, want := range []string{
+		`lang="fr"`, "Votre rendez-vous approche", "Bonjour Alice,", "Massage", "mardi 3 novembre 2026",
+		"14h30 – 15h30", "12 rue de la Paix, 75002 Paris", "Bob Jones",
+		"Gérer ma réservation", "https://leviosa.test/bookings?token=abc",
+		"550e8400-e29b-41d4-a716-446655440000", "Tous droits réservés.",
+	} {
+		assertContains(t, body, want)
+	}
+}
+
+func TestComposeBookingReminder_English(t *testing.T) {
+	email := ComposeBookingReminder(testReminderRequest(LocaleEN), composeNow)
+
+	if email.Subject != "Reminder: your appointment on Tuesday 3 November 2026 at 14:30" {
+		t.Errorf("subject = %q", email.Subject)
+	}
+	body := renderComposed(t, email)
+	for _, want := range []string{
+		`lang="en"`, "Your appointment is coming up", "Hello Alice,", "Tuesday 3 November 2026",
+		"14:30 – 15:30", "12 rue de la Paix, 75002 Paris", "Bob Jones", "Treatment", "Address",
+		"Manage my booking", "https://leviosa.test/bookings?token=abc", "All rights reserved.",
+	} {
+		assertContains(t, body, want)
+	}
+	for _, french := range []string{"Bonjour", "Rendez-vous", "Gérer"} {
+		if strings.Contains(body, french) {
+			t.Errorf("English reminder contains French %q", french)
+		}
+	}
+}
+
+func TestComposeBookingReminder_MissingLocaleIsFrench(t *testing.T) {
+	email := ComposeBookingReminder(testReminderRequest(""), composeNow)
+	assertContains(t, renderComposed(t, email), `lang="fr"`)
+}
+
+func TestComposeBookingReminder_NoManageLinkWithoutToken(t *testing.T) {
+	req := testReminderRequest(LocaleFR)
+	req.ManageURL = ""
+	body := renderComposed(t, ComposeBookingReminder(req, composeNow))
+	if strings.Contains(body, "Gérer ma réservation") {
+		t.Error("no manage button without a manage link")
+	}
+}
