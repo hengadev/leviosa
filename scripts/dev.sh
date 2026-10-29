@@ -94,7 +94,10 @@ if ! seed_log=$(SEED_DATA_PATH="$SEED_DATA_PATH" go run ./cmd/seed 2>&1); then
 fi
 echo "$seed_log" | grep -E 'Seeded|completed' || true
 
-[ -d "$FRONTEND/node_modules" ] || (cd "$FRONTEND" && pnpm install)
+# Every run: a pull can add dependencies, and an up-to-date install takes a second.
+# CI=true: pnpm may need to recreate node_modules (another pnpm version installed it)
+# and would otherwise stop on a prompt.
+(cd "$FRONTEND" && CI=true pnpm install --frozen-lockfile --prefer-offline --reporter=silent)
 
 BACKEND_PID=
 cleanup() { [ -n "$BACKEND_PID" ] && kill "$BACKEND_PID" 2>/dev/null || true; }
