@@ -26,6 +26,20 @@
       "address2": ""
     }
   ],
+  "clients": [
+    {
+      "email": "client@example.com",
+      "password": "ChangeMe321!",
+      "first_name": "Client",
+      "last_name": "Test",
+      "role": "standard",
+      "telephone": "+33600000003",
+      "postal_code": "75010",
+      "city": "Paris",
+      "address1": "3 Rue Example",
+      "address2": ""
+    }
+  ],
   "practice": {
     "partner": {
       "email": "camille.martin@example.com",
