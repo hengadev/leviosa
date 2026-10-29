@@ -25,6 +25,16 @@
 - [ ] `/bookings` — public booking lookup works
 - [ ] Legal pages (privacy, terms) render
 
+### Practice page — payment hold expiry (staging, Stripe test mode)
+
+Set the payment hold to 1–2 minutes in the booking policy settings first.
+
+- [ ] Pick a slot, enter the details, then wait on the payment form past the hold: the card says the time to pay has run out (FR at `/`, EN at `/en`), no Stripe error is shown, and "Choisir un autre créneau" / "Pick another slot" goes back to the calendar with the slots reloaded
+- [ ] Same, but click pay after the hold elapsed: the expiry message shows and no payment is taken
+- [ ] After the expiry job ran (about a minute), the abandoned slot is offered again and the PaymentIntent shows as canceled in the Stripe dashboard; no "payment failed" email is sent
+- [ ] A payment that succeeds after the hold (Stripe CLI: resend `payment_intent.succeeded`) on a slot still free confirms the booking and sends one confirmation email
+- [ ] The same on a slot another client booked meanwhile is refunded in full in Stripe, the client gets the refund email in their language, and no confirmation email is sent
+
 ---
 
 ## Client Area (`/client`)
