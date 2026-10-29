@@ -238,6 +238,13 @@ func (c *SMTPClient) SendBookingPartnerNoticeEmail(ctx context.Context, req doma
 	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingPartnerNotice(req, time.Now()))
 }
 
+// SendLatePaymentRefundEmail tells a client, in the booking's locale, that
+// their payment arrived after the hold and was refunded in full because the
+// slot was no longer available.
+func (c *SMTPClient) SendLatePaymentRefundEmail(ctx context.Context, req domain.LatePaymentRefundRequest) error {
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeLatePaymentRefund(req, time.Now()))
+}
+
 // sendComposed sends an email composed by the domain. The sender falls back
 // to the SMTP username, as for every booking email.
 func (c *SMTPClient) sendComposed(ctx context.Context, to string, email domain.ComposedEmail) error {
