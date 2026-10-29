@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ .Lang }}">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Confirmation de réservation — Leviosa</title>
+    <title>{{ .T.Title }} — Leviosa</title>
   </head>
   <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #eaeaea;">
     <div style="max-width: 600px; margin: 0 auto;">
@@ -27,120 +27,87 @@
               <tr>
                 <td style="padding: 40px 30px;">
                   <h1 style="color: #1e1e1e; font-size: 24px; font-weight: normal; margin: 0 0 20px; text-align: center;">
-                    Confirmation de Réservation
+                    {{ .T.Title }}
                   </h1>
 
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                    Bonjour {{ .FirstName }},
+                    {{ .T.Greeting }}{{ if .FirstName }} {{ .FirstName }}{{ end }},
                   </p>
 
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                    Nous vous confirmons que votre réservation a bien été enregistrée. Nous avons hâte de vous accueillir !
+                    {{ .T.Intro }}
                   </p>
 
                   <!-- Booking Details -->
                   <div style="background-color: #f4f4f4; border-radius: 6px; padding: 20px; margin: 30px 0;">
                     <h2 style="color: #1e1e1e; font-size: 18px; font-weight: normal; margin: 0 0 15px; text-align: center;">
-                      Détails de votre réservation
+                      {{ .T.DetailsHeading }}
                     </h2>
 
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; width: 40%; vertical-align: top;">
-                          Service
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; vertical-align: top;">
-                          {{ .ProductName }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; width: 45%; vertical-align: top;">{{ .T.ServiceLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; vertical-align: top;">{{ .ProductName }}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Date et heure
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .Date }} à {{ .Time }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.DateLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .Date }}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Thérapeute
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .PartnerName }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.TimeLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .TimeRange }}</td>
                       </tr>
+                      {{ if .PartnerName }}
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Salle
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .RoomName }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.PractitionerLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .PartnerName }}</td>
                       </tr>
+                      {{ end }}
+                      {{ if .Address }}
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Établissement
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .Building }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.AddressLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .Address }}</td>
                       </tr>
+                      {{ end }}
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Adresse
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .Address }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.PaidOnlineLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .AmountPaid }}</td>
                       </tr>
+                      {{ if .BalanceDue }}
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Montant
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .Amount }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.BalanceLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .BalanceDue }}</td>
                       </tr>
+                      {{ end }}
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Référence
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .BookingID }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .T.ReferenceLabel }}</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 12px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .BookingID }}</td>
                       </tr>
                     </table>
                   </div>
 
-                  <!-- Guest access link (only for bookings made without an account) -->
-                  {{ if .BookingTokenURL }}
+                  {{ if .ManageURL }}
                   <div style="background-color: #f0f4ff; border-left: 4px solid #1e1e1e; padding: 15px; margin: 30px 0; border-radius: 0 6px 6px 0;">
                     <p style="color: #444444; font-size: 14px; margin: 0 0 12px; line-height: 1.5;">
-                      Vous avez réservé en tant qu'invité. Consultez ou annulez votre réservation à tout moment via ce lien :
+                      {{ .T.ManageText }}
                     </p>
                     <div style="text-align: center;">
-                      <a href="{{ .BookingTokenURL }}" style="background-color: #1e1e1e; color: #ffffff; padding: 10px 24px; border-radius: 4px; text-decoration: none; font-size: 14px; display: inline-block; font-weight: bold;">
-                        Voir ma réservation
+                      <a href="{{ .ManageURL }}" style="background-color: #1e1e1e; color: #ffffff; padding: 10px 24px; border-radius: 4px; text-decoration: none; font-size: 14px; display: inline-block; font-weight: bold;">
+                        {{ .T.ManageButton }}
                       </a>
                     </div>
                   </div>
                   {{ end }}
 
-                  <!-- Cancellation Policy -->
-                  <div style="background-color: #fff8f0; border-left: 4px solid #e6a817; padding: 15px; margin: 30px 0; border-radius: 0 6px 6px 0;">
-                    <h3 style="color: #1e1e1e; font-size: 16px; margin: 0 0 10px;">
-                      Politique d'annulation
-                    </h3>
-                    <p style="color: #444444; font-size: 14px; margin: 0; line-height: 1.5;">
-                      Vous pouvez annuler ou reporter votre rendez-vous jusqu'à 24 heures avant l'heure prévue sans frais. Toute annulation effectuée moins de 24 heures avant le rendez-vous pourra entraîner des frais d'annulation.
-                    </p>
-                  </div>
+                  <p style="color: #666666; font-size: 13px; line-height: 1.5; margin: 0 0 20px;">
+                    {{ .T.CalendarNote }}
+                  </p>
 
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                    Nous nous réjouissons de vous accueillir prochainement,
+                    {{ .T.SignOff }}
                   </p>
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0;">
-                    L'équipe Leviosa
+                    {{ .T.Team }}
                   </p>
                 </td>
               </tr>
@@ -148,7 +115,7 @@
               <!-- Footer -->
               <tr>
                 <td style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #666666; font-size: 14px;">
-                  <p style="margin: 0;">&copy; {{ .Year }} Leviosa. Tous droits réservés.</p>
+                  <p style="margin: 0;">&copy; {{ .Year }} Leviosa. {{ .T.Rights }}</p>
                 </td>
               </tr>
             </table>

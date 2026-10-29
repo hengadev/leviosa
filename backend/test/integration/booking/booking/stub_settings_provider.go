@@ -11,8 +11,13 @@ type stubSettingsProvider struct{}
 func (s *stubSettingsProvider) GetCompanyEmail(ctx context.Context) (string, error) {
 	return "admin@leviosa.test", nil
 }
+
+// stubPracticeAddress is the practice address (company setting) booking
+// emails show.
+const stubPracticeAddress = "12 rue de la Paix, 75002 Paris"
+
 func (s *stubSettingsProvider) GetCompanyLegalAddress(ctx context.Context) (string, error) {
-	return "", nil
+	return stubPracticeAddress, nil
 }
 func (s *stubSettingsProvider) GetCompanyInstagram(ctx context.Context) (string, error) {
 	return "", nil

@@ -11,10 +11,10 @@ import (
 func (s *BookingService) buildNotificationData(booking *domain.Booking, productName string) ports.BookingNotificationData {
 	data := ports.BookingNotificationData{
 		// Required identifiers
-		BookingID:  booking.ID,
-		PartnerID:  booking.PartnerID,
-		RoomID:     booking.RoomID,
-		ProductID:  booking.ProductID,
+		BookingID: booking.ID,
+		PartnerID: booking.PartnerID,
+		RoomID:    booking.RoomID,
+		ProductID: booking.ProductID,
 
 		// Required timing
 		SlotStartTime: booking.SlotStartTime,
@@ -23,6 +23,10 @@ func (s *BookingService) buildNotificationData(booking *domain.Booking, productN
 		// Required payment details
 		TotalPriceCents: booking.TotalPriceCents,
 		Currency:        booking.Currency,
+		// Known on a booking just confirmed (at creation, or by the payment
+		// webhook from the PaymentIntent amount); zero otherwise.
+		AmountPaidOnlineCents: booking.AmountDueOnlineCents,
+		Locale:                string(booking.Locale),
 
 		// Optional pre-populated details
 		ProductName: productName,
@@ -39,11 +43,13 @@ func (s *BookingService) buildNotificationData(booking *domain.Booking, productN
 	// Populate guest contact fields for guest bookings
 	if booking.IsGuestBooking() {
 		data.IsGuestBooking = true
-		data.GuestEmail    = booking.GuestEmail
-		data.GuestPhone    = booking.GuestPhone
-		data.ClientName    = booking.GuestDisplayName()
-		data.ClientEmail   = booking.GuestEmail
-		data.ClientPhone   = booking.GuestPhone
+		data.GuestEmail = booking.GuestEmail
+		data.GuestPhone = booking.GuestPhone
+		data.ClientName = booking.GuestDisplayName()
+		data.ClientFirstName = booking.GuestFirstName
+		data.ClientLastName = booking.GuestLastName
+		data.ClientEmail = booking.GuestEmail
+		data.ClientPhone = booking.GuestPhone
 	}
 
 	// Include booking token for notification bridge (may be empty for legacy bookings)
