@@ -137,6 +137,9 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 			if confirmed {
 				_ = booking.Confirm()
 				_ = booking.MarkPaymentPaid()
+				// What the client paid online, for the confirmation email
+				// (the amount due online is not persisted).
+				booking.AmountDueOnlineCents = event.Amount
 				sendBookingConfirmed = true
 			}
 			break

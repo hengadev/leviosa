@@ -11,13 +11,31 @@ import (
 // SpyNotificationService records all notification calls for test assertions.
 // It implements bookingPorts.BookingNotificationService.
 type SpyNotificationService struct {
-	mu                    sync.Mutex
-	BookingConfirmations  []bookingPorts.BookingNotificationData
-	PaymentConfirmations  []bookingPorts.BookingNotificationData
-	PaymentFailed         []bookingPorts.BookingNotificationData
-	BookingCancellations  []bookingPorts.BookingNotificationData
-	BookingReminders      []bookingPorts.BookingNotificationData
-	DisputeAlerts         []bookingPorts.BookingNotificationData
+	mu                   sync.Mutex
+	BookingConfirmations []bookingPorts.BookingNotificationData
+	PaymentConfirmations []bookingPorts.BookingNotificationData
+	PaymentFailed        []bookingPorts.BookingNotificationData
+	BookingCancellations []bookingPorts.BookingNotificationData
+	BookingReminders     []bookingPorts.BookingNotificationData
+	DisputeAlerts        []bookingPorts.BookingNotificationData
+
+	// forward, when set, also hands every booking confirmation to a real
+	// notification service (the BookingNotificationAdapter), so a test can
+	// follow a booking-confirmed event down to the emails it sends.
+	forward bookingPorts.BookingNotificationService
+}
+
+// ForwardConfirmationsTo makes the spy hand booking confirmations to next as
+// well; the returned function stops it.
+func (s *SpyNotificationService) ForwardConfirmationsTo(next bookingPorts.BookingNotificationService) (stop func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.forward = next
+	return func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		s.forward = nil
+	}
 }
 
 func NewSpyNotificationService() *SpyNotificationService {
@@ -26,8 +44,12 @@ func NewSpyNotificationService() *SpyNotificationService {
 
 func (s *SpyNotificationService) SendBookingConfirmation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.BookingConfirmations = append(s.BookingConfirmations, data)
+	next := s.forward
+	s.mu.Unlock()
+	if next != nil {
+		return next.SendBookingConfirmation(ctx, data)
+	}
 	return nil
 }
 
@@ -75,6 +97,13 @@ type IntegrationSMSSpy struct {
 	Messages []notificationDomain.GenericSMSRequest
 }
 
+// Count returns how many SMS were attempted.
+func (s *IntegrationSMSSpy) Count() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.Messages)
+}
+
 func (s *IntegrationSMSSpy) SendOTP(ctx context.Context, req notificationDomain.OTPSMSRequest) error {
 	return nil
 }
@@ -94,6 +123,22 @@ type IntegrationEmailSpy struct {
 	BookingConfirmations []notificationDomain.BookingConfirmationRequest
 	BookingCancellations []notificationDomain.BookingCancellationRequest
 	BookingReminders     []notificationDomain.BookingReminderRequest
+	PartnerNotices       []notificationDomain.BookingPartnerNoticeRequest
+}
+
+// Snapshot returns copies of the booking-confirmed emails recorded so far.
+func (s *IntegrationEmailSpy) Snapshot() ([]notificationDomain.BookingConfirmationRequest, []notificationDomain.BookingPartnerNoticeRequest) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]notificationDomain.BookingConfirmationRequest(nil), s.BookingConfirmations...),
+		append([]notificationDomain.BookingPartnerNoticeRequest(nil), s.PartnerNotices...)
+}
+
+// Reset forgets every recorded email.
+func (s *IntegrationEmailSpy) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.BookingConfirmations, s.BookingCancellations, s.BookingReminders, s.PartnerNotices = nil, nil, nil, nil
 }
 
 func (s *IntegrationEmailSpy) SendOTPEmail(ctx context.Context, req notificationDomain.OTPEmailRequest) error {
@@ -118,6 +163,12 @@ func (s *IntegrationEmailSpy) SendBookingConfirmationEmail(ctx context.Context, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.BookingConfirmations = append(s.BookingConfirmations, req)
+	return nil
+}
+func (s *IntegrationEmailSpy) SendBookingPartnerNoticeEmail(ctx context.Context, req notificationDomain.BookingPartnerNoticeRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.PartnerNotices = append(s.PartnerNotices, req)
 	return nil
 }
 func (s *IntegrationEmailSpy) SendBookingCancellationEmail(ctx context.Context, req notificationDomain.BookingCancellationRequest) error {
