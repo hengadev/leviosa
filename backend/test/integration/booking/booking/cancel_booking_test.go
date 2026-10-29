@@ -94,6 +94,8 @@ func TestCancelBooking(t *testing.T) {
 		var createdBooking domain.BookingResponse
 		err = json.NewDecoder(respCreate.Body).Decode(&createdBooking)
 		require.NoError(t, err)
+		// A new booking awaits payment until Stripe confirms it (ADR-0018).
+		confirmBookingPayment(t, ctx, createdBooking.ID)
 
 		return createdBooking.ID, clientToken, partnerToken
 	}
