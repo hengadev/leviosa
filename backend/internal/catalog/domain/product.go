@@ -22,8 +22,11 @@ type Product struct {
 	BufferTime        int                `json:"bufferTime"`        // in minutes
 	CancellationHours int                `json:"cancellationHours"` // in hours
 	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
-	StripeProductID   string             `json:"stripeProductId,omitempty"` // ID of the product in Stripe
-	Metadata          map[string]any     `json:"metadata,omitempty"`        // Flexible storage for type-specific attributes
+	// Deposit is the optional part of the price paid online when booking
+	// (issue 013). Nil means the full price is paid online.
+	Deposit         *Deposit       `json:"deposit,omitempty"`
+	StripeProductID string         `json:"stripeProductId,omitempty"` // ID of the product in Stripe
+	Metadata        map[string]any `json:"metadata,omitempty"`        // Flexible storage for type-specific attributes
 }
 
 func (p Product) Valid(ctx context.Context) error {
@@ -46,6 +49,9 @@ func (p Product) Valid(ctx context.Context) error {
 	}
 	if err := ValidateCancellationTiers(p.CancellationTiers); err != nil {
 		errs.Set("cancellationTiers", err.Error())
+	}
+	if err := p.Deposit.Validate(); err != nil {
+		errs.Set("deposit", err.Error())
 	}
 	// Enum field validation using the IsValid() methods
 	if !p.Status.IsValid() {

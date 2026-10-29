@@ -13,6 +13,11 @@ import (
 // If the price creation fails, it attempts to remove the newly created product.
 // The function returns a composite error if the rollback also fails.
 func (s *ProductAggregatorService) CreateProductWithPrice(ctx context.Context, request *domain.CreateProductWithPriceRequest) (string, string, error) {
+	// The deposit and the price are both known only here: check the fixed
+	// deposit does not exceed the price before creating anything (issue 013).
+	if err := request.Product.Deposit.ValidateAgainstPrice(request.Price.Amount); err != nil {
+		return "", "", errs.NewInvalidValueErr(fmt.Sprintf("deposit: %s", err.Error()))
+	}
 	productID, err := s.productService.CreateProduct(ctx, &request.Product)
 	if err != nil {
 		// domain error are alredy handled

@@ -73,6 +73,21 @@ func generateUpdateQuery(schema, productID string, req *domain.UpdateProductRequ
 		args = append(args, tiersJSON)
 		argCounter++
 	}
+	if req.Deposit.Present {
+		// An object sets or replaces the deposit; JSON null (a nil Value)
+		// removes it.
+		var depositJSON []byte
+		if req.Deposit.Value != nil {
+			var err error
+			depositJSON, err = json.Marshal(req.Deposit.Value)
+			if err != nil {
+				return "", nil, fmt.Errorf("failed to marshal deposit to JSON: %w", err)
+			}
+		}
+		sets = append(sets, fmt.Sprintf("deposit = $%d", argCounter))
+		args = append(args, depositJSON)
+		argCounter++
+	}
 	// For map[string]any like Metadata, you'd typically store it as JSONB in PostgreSQL.
 	// Marshal it to JSON before adding to args.
 	if req.Metadata != nil {

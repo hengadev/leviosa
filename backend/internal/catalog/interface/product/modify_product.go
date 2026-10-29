@@ -58,7 +58,8 @@ func (h *handler) ModifyProduct(w http.ResponseWriter, r *http.Request) {
 
 	if req.Name == nil && req.Description == nil && req.Status == nil && req.Metadata == nil &&
 		req.CategoryID == nil && req.Duration == nil && req.Availability == nil &&
-		req.BufferTime == nil && req.CancellationHours == nil && req.CancellationTiers == nil {
+		req.BufferTime == nil && req.CancellationHours == nil && req.CancellationTiers == nil &&
+		!req.Deposit.Present {
 		httpx.RespondWithError(w, errors.New("no updatable fields provided in request body"), http.StatusBadRequest)
 		return
 	}

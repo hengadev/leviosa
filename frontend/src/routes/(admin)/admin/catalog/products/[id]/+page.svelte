@@ -4,6 +4,7 @@
 	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, DollarSign, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
 	import type { PageData, ActionData } from "./$types";
 	import type { CancellationTier } from "$lib/data/mockData";
+	import DepositField from "../../DepositField.svelte";
 	import { getToastContext } from "$lib/components/toast";
 
 	let { data, form }: { data: PageData, form: ActionData } = $props();
@@ -406,6 +407,9 @@
 					</div>
 				</div>
 			</div>
+
+			<!-- Deposit (acompte) -->
+			<DepositField deposit={data.product.deposit ?? null} priceEuros={price} />
 
 			<!-- Cancellation Fee Tiers -->
 			<div class="pt-4 border-t border-border-card">

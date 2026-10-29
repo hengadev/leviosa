@@ -11,6 +11,9 @@ import (
 type SharedRepository interface {
 	GetProductByID(ctx context.Context, productID uuid.UUID) (*domain.Product, error)
 	GetStripeProductAndPriceIDs(ctx context.Context, productID uuid.UUID) (string, []string, error)
+	// GetActivePriceAmounts returns the amounts in cents of the product's
+	// active prices (empty when it has none).
+	GetActivePriceAmounts(ctx context.Context, productID uuid.UUID) ([]int, error)
 	GetCategoryByID(ctx context.Context, categoryID uuid.UUID) (*domain.Category, error)
 	DeactivatePrices(ctx context.Context, priceIDs []string) error // Specific deactivation if needed, or handled by UpdatePrice
 	ReactivatePrices(ctx context.Context, stripePriceIDs []string) error
