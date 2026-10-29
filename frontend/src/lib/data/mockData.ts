@@ -1,3 +1,4 @@
+import type { Deposit } from "$lib/deposit";
 // Central mock data file for leviosa frontend
 // Consolidates all domain entity mock data in one place
 
@@ -199,6 +200,7 @@ export const mockProducts = [
         availability: "in-person" as const,
         bufferTime: 10,
         cancellationHours: 24,
+        deposit: { type: "fixed", value: 2000 } as Deposit, // mock placeholder deposit (issue 013)
         stripeProductId: "prod_stripe_1",
         metadata: { intensity: "high", targetAreas: ["back", "shoulders", "neck"] },
         createdAt: "2025-01-01T10:00:00Z",
@@ -808,6 +810,8 @@ export type CardType = {
     bufferTime: number;
     cancellationHours: number;
     cancellationTiers?: CancellationTier[];
+    /** Optional deposit (acompte), issue 013. Absent: the full price is paid online. */
+    deposit?: Deposit | null;
 };
 
 export const mockAdminCategories: Category[] = [
@@ -858,6 +862,7 @@ export const mockAdminCards: CardType[] = [
         availability: "in-person",
         bufferTime: 15,
         cancellationHours: 24,
+        deposit: { type: "fixed", value: 2000 }, // mock placeholder deposit (issue 013)
     },
     {
         id: "c34021e4-9d95-4f84-903c-8bb2b3a0cd51",
