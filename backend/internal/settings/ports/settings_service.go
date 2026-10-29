@@ -23,6 +23,10 @@ type SettingsService interface {
 	GetCompanyRegistrationNumber(ctx context.Context) (*domain.GetCompanyRegistrationNumberResponse, error)
 	GetCompanyVatNumber(ctx context.Context) (*domain.GetCompanyVatNumberResponse, error)
 	GetCompanyHostingProvider(ctx context.Context) (*domain.GetCompanyHostingProviderResponse, error)
+	// practice page
+	GetPracticePagePartner(ctx context.Context) (*domain.GetPracticePagePartnerResponse, error)
+	GetPracticePageProduct(ctx context.Context) (*domain.GetPracticePageProductResponse, error)
+	GetPracticePageVideo(ctx context.Context) (*domain.GetPracticePageVideoResponse, error)
 	// setters
 	SetCompanyName(ctx context.Context, request *domain.SetCompanyNameRequest) (*domain.SetCompanyNameResponse, error)
 	SetCompanyEmail(ctx context.Context, request *domain.SetCompanyEmailRequest) (*domain.SetCompanyEmailResponse, error)
@@ -38,6 +42,9 @@ type SettingsService interface {
 	SetCompanyRegistrationNumber(ctx context.Context, request *domain.SetCompanyRegistrationNumberRequest) (*domain.SetCompanyRegistrationNumberResponse, error)
 	SetCompanyVatNumber(ctx context.Context, request *domain.SetCompanyVatNumberRequest) (*domain.SetCompanyVatNumberResponse, error)
 	SetCompanyHostingProvider(ctx context.Context, request *domain.SetCompanyHostingProviderRequest) (*domain.SetCompanyHostingProviderResponse, error)
+	SetPracticePagePartner(ctx context.Context, request *domain.SetPracticePagePartnerRequest) (*domain.SetPracticePagePartnerResponse, error)
+	SetPracticePageProduct(ctx context.Context, request *domain.SetPracticePageProductRequest) (*domain.SetPracticePageProductResponse, error)
+	SetPracticePageVideo(ctx context.Context, request *domain.SetPracticePageVideoRequest) (*domain.SetPracticePageVideoResponse, error)
 	// COMMENTED OUT: Event publishing is now an internal implementation detail
 	// External modules should access settings via this interface's getter methods
 	// PublishSettingUpdate(ctx context.Context, key string, value any) error

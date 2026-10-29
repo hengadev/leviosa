@@ -68,6 +68,46 @@ func NewGetCompanyAddressRequest(t *testing.T, ctx context.Context, serverURL st
 	return req
 }
 
+func NewGetPracticePagePartnerRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetPracticePagePartnerEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetPracticePagePartnerRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetPracticePagePartnerRequest) *http.Request {
+	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.SetPracticePagePartnerEndpoint, request)
+}
+
+func NewGetPracticePageProductRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetPracticePageProductEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetPracticePageProductRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetPracticePageProductRequest) *http.Request {
+	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.SetPracticePageProductEndpoint, request)
+}
+
+func NewGetPracticePageVideoRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetPracticePageVideoEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetPracticePageVideoRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetPracticePageVideoRequest) *http.Request {
+	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.SetPracticePageVideoEndpoint, request)
+}
+
+func newJSONRequest(t *testing.T, ctx context.Context, method, url string, request any) *http.Request {
+	jsonBody, err := json.Marshal(request)
+	require.NoError(t, err)
+
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(jsonBody))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
 func NewSetCompanyAddressRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetCompanyLegalAddressRequest) *http.Request {
 	jsonBody, err := json.Marshal(request)
 	require.NoError(t, err)

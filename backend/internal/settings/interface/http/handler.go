@@ -29,6 +29,13 @@ type Handler interface {
 	SetCompanyVatNumber(w http.ResponseWriter, r *http.Request)
 	GetCompanyHostingProvider(w http.ResponseWriter, r *http.Request)
 	SetCompanyHostingProvider(w http.ResponseWriter, r *http.Request)
+	// Practice page settings
+	GetPracticePagePartner(w http.ResponseWriter, r *http.Request)
+	SetPracticePagePartner(w http.ResponseWriter, r *http.Request)
+	GetPracticePageProduct(w http.ResponseWriter, r *http.Request)
+	SetPracticePageProduct(w http.ResponseWriter, r *http.Request)
+	GetPracticePageVideo(w http.ResponseWriter, r *http.Request)
+	SetPracticePageVideo(w http.ResponseWriter, r *http.Request)
 	// OTP settings
 	GetOTPDuration(w http.ResponseWriter, r *http.Request)
 	SetOTPDuration(w http.ResponseWriter, r *http.Request)

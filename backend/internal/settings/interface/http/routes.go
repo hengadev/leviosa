@@ -41,6 +41,16 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST "+SetCompanyVatNumberEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyVatNumber)))
 	router.HandleFunc("POST "+SetCompanyHostingProviderEndpoint, RequireAdministrator(mw.EnableCORS(h.SetCompanyHostingProvider)))
 
+	// Public practice page settings (GET only — the practice page is public)
+	router.HandleFunc("GET "+GetPracticePagePartnerEndpoint, mw.EnableCORS(h.GetPracticePagePartner))
+	router.HandleFunc("GET "+GetPracticePageProductEndpoint, mw.EnableCORS(h.GetPracticePageProduct))
+	router.HandleFunc("GET "+GetPracticePageVideoEndpoint, mw.EnableCORS(h.GetPracticePageVideo))
+
+	// Admin-only practice page settings (writes only — reads are public, above)
+	router.HandleFunc("POST "+SetPracticePagePartnerEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePagePartner)))
+	router.HandleFunc("POST "+SetPracticePageProductEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageProduct)))
+	router.HandleFunc("POST "+SetPracticePageVideoEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageVideo)))
+
 	// Admin-only OTP settings (all access)
 	router.HandleFunc("GET "+AdminGetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.GetOTPDuration)))
 	router.HandleFunc("POST "+AdminSetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.SetOTPDuration)))

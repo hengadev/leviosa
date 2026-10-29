@@ -1,10 +1,29 @@
-import { redirect, isRedirect, error, isHttpError, type Handle, type RequestEvent } from '@sveltejs/kit';
+import { redirect, isRedirect, error, isHttpError, type Handle, type RequestEvent, type ResolveOptions } from '@sveltejs/kit';
 import { env } from "$env/dynamic/private"
 
 import { handleLoginRedirect } from '$lib/utils/redirect';
 import { getMockUserByRole } from '$lib/data/user';
 import { isAdminDomain, isStaffDomain, getSessionCookieName, getCookieDomain } from '$lib/server/hostname';
 import { forwardAuthCookies } from '$lib/utils/auth-helpers';
+
+// The single-practitioner practice page replaced the multi-practitioner
+// public site (issue 009): these routes now redirect to it so no old URL is a
+// dead end. Legal pages, /bookings and /auth stay where they are.
+const LEGACY_PUBLIC_ROUTE_PREFIXES = ['/services', '/team', '/about', '/contact', '/book'];
+
+// The practice page is French at `/` and English at `/en`; every other route
+// is French. app.html ships <html lang="fr">, and the page transform swaps it
+// for the English pages so assistive tech reads the right language (WCAG).
+function resolveWithPageLang(
+    event: RequestEvent,
+    resolve: (event: RequestEvent, opts?: ResolveOptions) => Promise<Response> | Response,
+): Response | Promise<Response> {
+    const lang = event.url.pathname === '/en' || event.url.pathname.startsWith('/en/') ? 'en' : 'fr';
+    return resolve(event, {
+        transformPageChunk: ({ html }) =>
+            lang === 'fr' ? html : html.replace('<html lang="fr">', `<html lang="${lang}">`),
+    });
+}
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// Detect hostname and set domain context
@@ -25,12 +44,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(302, '/staff');
 	}
 
+    // Old multi-practitioner public routes now lead to the practice page
+    // (covers their sub-paths too, e.g. /services/{id} or /book/confirmation).
+    if (LEGACY_PUBLIC_ROUTE_PREFIXES.some((prefix) => event.url.pathname === prefix || event.url.pathname.startsWith(prefix + '/'))) {
+        throw redirect(308, '/');
+    }
+
     if (env.COMING_SOON === 'true') {
         const exemptPaths = ['/coming-soon', '/healthz', '/robots.txt', '/sitemap.xml'];
         if (!exemptPaths.includes(event.url.pathname)) {
             throw redirect(302, '/coming-soon')
         }
-        return await resolve(event)
+        return await resolveWithPageLang(event, resolve);
     }
 
     event.locals.sessionCookieName = sessionCookieName;
@@ -40,7 +65,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         const mockRole = event.cookies.get('mock_session');
         const mockUser = mockRole ? getMockUserByRole(mockRole) : null;
         if (mockUser) event.locals.user = mockUser;
-        return await resolve(event);
+        return await resolveWithPageLang(event, resolve);
     }
 
     // Routes that require authentication - all others are public
@@ -50,7 +75,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     };
 
     if (!requiresAuth(event.url.pathname)) {
-        return await resolve(event);
+        return await resolveWithPageLang(event, resolve);
     }
 
     const sessionID = event.cookies.get(sessionCookieName);
@@ -84,7 +109,7 @@ export const handle: Handle = async ({ event, resolve }) => {
         return fetch(input, init);
     };
 
-    return await resolve(event);
+    return await resolveWithPageLang(event, resolve);
 };
 
 function getClientIP(request: Request): string {

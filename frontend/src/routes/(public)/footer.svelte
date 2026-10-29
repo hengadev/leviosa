@@ -35,20 +35,14 @@
             <div class="flex flex-col gap-4">
                 <p class="uppercase text-white/30 text-[10px] tracking-widest">Explorer</p>
                 <nav class="flex flex-col gap-3">
-                    <a href="/services" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
-                        Services
+                    <a href="/" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
+                        Le cabinet
                     </a>
-                    <a href="/team" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
-                        L'équipe
-                    </a>
-                    <a href="/about" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
-                        À propos
-                    </a>
-                    <a href="/book" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
+                    <a href="/#reserver" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
                         Réserver
                     </a>
-                    <a href="/contact" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
-                        Contact
+                    <a href="/bookings" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
+                        Mes réservations
                     </a>
                 </nav>
             </div>
