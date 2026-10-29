@@ -71,7 +71,7 @@ func (s *BookingService) CreateBooking(
 	// not started, a recurring one whose series has not ended (the engine
 	// below checks the requested occurrence).
 	if !availability.IsAvailable() {
-		return nil, fmt.Errorf("availability is no longer available for booking")
+		return nil, errs.NewConflictErr(errAvailabilityClosed)
 	}
 
 	// 2. Fetch product from catalog service
@@ -222,6 +222,10 @@ func (s *BookingService) CreateBooking(
 
 	return booking, nil
 }
+
+// errAvailabilityClosed is the conflict a booking gets on an availability
+// that was deleted (cancelled), blocked or has ended.
+var errAvailabilityClosed = errors.New("availability is no longer available for booking")
 
 // errSlotTaken is the conflict a booking gets when another one holds its slot.
 var errSlotTaken = errors.New("time slot is already booked")
