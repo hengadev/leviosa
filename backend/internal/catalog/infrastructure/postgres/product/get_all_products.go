@@ -25,6 +25,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 		p.buffer_time,
 		p.cancellation_hours,
 		p.cancellation_tiers,
+		p.deposit,
 		p.metadata,
 		c.id,
 		c.name,
@@ -47,6 +48,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 			pr          domain.ProductRes
 			metaProd    []byte
 			tiers       []byte
+			deposit     []byte
 			cat         domain.Category
 			description sql.NullString
 		)
@@ -63,6 +65,7 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 			&pr.BufferTime,
 			&pr.CancellationHours,
 			&tiers,
+			&deposit,
 			&metaProd,
 			&cat.ID,
 			&cat.Name,
@@ -88,6 +91,12 @@ func (r *ProductRepository) GetAllProducts(ctx context.Context) ([]*domain.Produ
 		if tiers != nil {
 			if err := json.Unmarshal(tiers, &pr.CancellationTiers); err != nil {
 				return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product cancellation tiers: %w", err))
+			}
+		}
+
+		if deposit != nil {
+			if err := json.Unmarshal(deposit, &pr.Deposit); err != nil {
+				return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product deposit: %w", err))
 			}
 		}
 

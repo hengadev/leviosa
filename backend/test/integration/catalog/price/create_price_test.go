@@ -77,6 +77,30 @@ func TestCreatePrice(t *testing.T) {
 		assert.True(t, dbPrice.IsActive) // Prices are active by default
 	})
 
+	t.Run("should return 400 when the new price is below the product's fixed deposit", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+
+		// A product whose fixed deposit is 30 € (issue 013).
+		td.ClearProductsTable(t, ctx, testPool)
+		td.ClearPricesTable(t, ctx, testPool)
+		td.ClearCategoriesTable(t, ctx, testPool)
+		category := td.NewValidCategory("deposit category")
+		td.InsertCategory(t, ctx, category, testPool)
+		product := td.NewValidProduct("Deposit Product", category.ID)
+		product.Deposit = &domain.Deposit{Type: domain.DepositFixed, Value: 3000}
+		td.InsertProduct(t, ctx, testPool, product)
+
+		request := td.NewValidCreatePriceRequest() // 20 €
+		req := th.NewCreatePriceRequest(t, ctx, testServerURL, product.ID.String(), request, accessToken)
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		assert.Empty(t, td.GetAllPricesForProduct(t, ctx, product.ID, testPool))
+	})
+
 	t.Run("should return 401 when access token is missing", func(t *testing.T) {
 		td.ClearProductsTable(t, ctx, testPool)
 		td.ClearPricesTable(t, ctx, testPool)

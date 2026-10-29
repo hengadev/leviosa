@@ -24,6 +24,14 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		}
 	}
 
+	var depositJSON []byte
+	if p.Deposit != nil {
+		depositJSON, err = json.Marshal(p.Deposit)
+		if err != nil {
+			return "", errs.NewInvalidInputErr(fmt.Errorf("failed to encode product deposit: %w", err))
+		}
+	}
+
 	query := fmt.Sprintf(`
 	INSERT INTO %s.products (
 		id,
@@ -37,11 +45,12 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		buffer_time,
 		cancellation_hours,
 		cancellation_tiers,
+		deposit,
 		stripe_product_id,
 		metadata
 	) VALUES (
 		$1, $2, $3, $4, $5, $6, $7,
-		$8, $9, $10, $11, $12, $13
+		$8, $9, $10, $11, $12, $13, $14
 	) RETURNING id`, r.schema)
 
 	var newID string
@@ -57,6 +66,7 @@ func (r *ProductRepository) AddProduct(ctx context.Context, p *domain.Product) (
 		p.BufferTime,
 		p.CancellationHours,
 		tiersJSON,
+		depositJSON,
 		p.StripeProductID,
 		metadataJSON,
 	).Scan(&newID)

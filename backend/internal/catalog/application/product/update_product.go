@@ -26,6 +26,13 @@ func (s *ProductService) UpdateProduct(ctx context.Context, productIDStr string,
 		return errs.NewInvalidValueErr("product")
 	}
 
+	// A new deposit must fit every active price of the product (issue 013).
+	if product.Deposit.Present && product.Deposit.Value != nil {
+		if err := s.validateDepositAgainstActivePrices(ctx, productID, product.Deposit.Value); err != nil {
+			return err
+		}
+	}
+
 	if product.Status != nil && *product.Status == "published" {
 		images, err := s.imageRepo.GetImagesByParentID(ctx, productID, domain.ProductType)
 		if err != nil {
@@ -67,5 +74,22 @@ func (s *ProductService) UpdateProduct(ctx context.Context, productIDStr string,
 		return fmt.Errorf("update product: %w", err)
 	}
 
+	return nil
+}
+
+// validateDepositAgainstActivePrices rejects a deposit that does not fit one
+// of the product's active prices (a fixed deposit above a price). A product
+// without active prices has nothing to check against yet; adding a price
+// later re-validates the deposit (PriceService.CreatePrice).
+func (s *ProductService) validateDepositAgainstActivePrices(ctx context.Context, productID uuid.UUID, deposit *domain.Deposit) error {
+	amounts, err := s.sharedRepo.GetActivePriceAmounts(ctx, productID)
+	if err != nil {
+		return fmt.Errorf("get active prices to validate the deposit: %w", err)
+	}
+	for _, amount := range amounts {
+		if err := deposit.ValidateAgainstPrice(amount); err != nil {
+			return errs.NewInvalidValueErr(fmt.Sprintf("deposit: %s", err.Error()))
+		}
+	}
 	return nil
 }
