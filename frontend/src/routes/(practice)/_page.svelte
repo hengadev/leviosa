@@ -153,7 +153,7 @@
     <!-- The session explained: the hour as a proportional timeline, then the
          practical points as a disclosure list (native details/summary, so it
          works without JavaScript). -->
-    <section class="px-4 py-16 text-neutral-950 sm:py-24">
+    <section class="bg-white px-4 py-16 text-neutral-950 sm:py-24">
         <div class="mx-auto max-w-5xl">
             <div class="max-w-2xl">
                 <h2 class="text-3xl font-black tracking-[-0.03em] text-balance uppercase sm:text-4xl">{info.heading}</h2>
