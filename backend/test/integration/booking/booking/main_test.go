@@ -12,10 +12,13 @@ import (
 	"testing"
 	"time"
 
+	bookingAdapters "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
+	availabilityAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/availability"
 	bookingService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
 	roomAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
 	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
+	allocationPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/allocation"
 	availabilityPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
 	buildingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
@@ -113,6 +116,10 @@ var (
 	// Real settings repository behind the booking policy: tests change the
 	// policy through it, as the admin settings endpoint does.
 	settingsRepo settingsPorts.SettingsRepository
+
+	// Real availability service: the partner area creates, edits and deletes
+	// availabilities through it (recurring availability tests).
+	availabilitySvc ports.AvailabilityService
 )
 
 // suiteMinimumNoticeHours is the minimum notice the suite runs with: most
@@ -273,6 +280,13 @@ func TestMain(m *testing.M) {
 		bookingService.WithAuditLogger(auditLogger),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
 		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)))
+
+	allocationRepo, err := allocationPostgres.New(ctx, testPool)
+	if err != nil {
+		log.Fatalf("Failed to create allocation repository: %v", err)
+	}
+	availabilitySvc = availabilityAppService.New(availabilityRepo, allocationRepo, roomPostgres.New(ctx, testPool),
+		bookingAdapters.NewRoomScheduleRepository(testPool), catalogProductService, crypto)
 
 	// Wire a real BookingNotificationAdapter (real user/room/building/product
 	// fetchers against the test DB) backed by SMS/email spies, so tests can

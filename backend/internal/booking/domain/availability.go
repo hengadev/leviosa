@@ -169,9 +169,18 @@ func (a *Availability) Block() {
 	a.UpdatedAt = time.Now()
 }
 
-// IsAvailable checks if the slot is available for booking
+// IsAvailable checks if the availability is open for booking: available,
+// and not started yet for a one-off one, or with a series that has not ended
+// for a recurring one (its first occurrence is usually in the past).
 func (a *Availability) IsAvailable() bool {
-	return a.Status == AvailabilityStatusAvailable && a.StartTime.After(time.Now())
+	if a.Status != AvailabilityStatusAvailable {
+		return false
+	}
+	now := time.Now()
+	if a.IsRecurring && a.RecurrencePattern != nil {
+		return !a.SeriesEndedBefore(now)
+	}
+	return a.StartTime.After(now)
 }
 
 // Duration returns the duration of the availability slot

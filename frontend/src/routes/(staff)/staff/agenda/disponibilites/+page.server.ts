@@ -1,9 +1,14 @@
 import type { PageServerLoad } from './$types';
 import { redirect, isRedirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
+import { today } from '@internationalized/date';
+import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
+import { occurrences, practiceDate } from './occurrences';
 
 export interface Availability {
 	id: string;
+	/** Unique per occurrence: a recurring availability appears on several days. */
+	key: string;
 	date: string;
 	startTime: string;
 	endTime: string;
@@ -47,6 +52,7 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	}
 
 	const partnerId = locals.user.id;
+	const weekOffset = Math.max(0, Math.min(52, parseInt(url.searchParams.get('semaine') ?? '0', 10) || 0));
 
 	try {
 		// Fetch availabilities and allocations in parallel
@@ -64,11 +70,15 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 		}
 
 		// Process availabilities
-		let availabilities: AvailabilityDay[] = [];
+		let availabilities: AvailabilityDay[] = emptyWeek(weekOffset);
+		let series: Availability[] = [];
 		if (availRes.ok) {
 			const data = await availRes.json();
 			if (Array.isArray(data)) {
-				availabilities = groupByDay(data);
+				availabilities = groupByDay(data, weekOffset);
+				series = data
+					.filter((a: any) => a.recurrence_pattern && a.status !== 'cancelled')
+					.map((a: any) => toAvailability(a, a.start_time, a.end_time, a.id));
 			}
 		} else {
 			console.error(`Failed to fetch availabilities: ${availRes.status} ${availRes.statusText}`);
@@ -98,61 +108,80 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 			console.error(`Failed to fetch allocations: ${allocRes.status} ${allocRes.statusText}`);
 		}
 
-		return { availabilities, allocations, partnerId };
+		return { availabilities, series, allocations, partnerId, weekOffset };
 	} catch (err) {
 		if (isRedirect(err)) throw err;
 		console.error('Error loading availabilities:', err);
-		return { availabilities: [], allocations: [], partnerId };
+		return { availabilities: emptyWeek(weekOffset), series: [], allocations: [], partnerId, weekOffset };
 	}
 };
 
-function groupByDay(slots: any[]): AvailabilityDay[] {
-	const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-	const today = new Date();
-	today.setHours(0, 0, 0, 0);
+const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+function toAvailability(slot: any, startTime: string, endTime: string, key: string): Availability {
+	return {
+		id: slot.id,
+		key,
+		date: practiceDate(startTime).toString(),
+		startTime,
+		endTime,
+		status: slot.status || 'available',
+		roomId: slot.room_id,
+		roomName: slot.room_id || 'Salle inconnue',
+		maxCapacity: slot.max_capacity || 1,
+		serviceType: slot.service_type,
+		priceCents: slot.price_cents ?? undefined,
+		notes: slot.notes,
+		isRecurring: !!slot.recurrence_pattern,
+		recurrencePattern: slot.recurrence_pattern ?? undefined,
+		createdAt: slot.created_at,
+		updatedAt: slot.updated_at
+	};
+}
+
+// The week shown: seven days from today (practice time zone), weekOffset weeks ahead.
+function weekDays(weekOffset: number) {
+	const first = today(PRACTICE_TIME_ZONE).add({ weeks: weekOffset });
+	return Array.from({ length: 7 }, (_, i) => first.add({ days: i }));
+}
+
+function emptyWeek(weekOffset: number): AvailabilityDay[] {
+	return groupByDay([], weekOffset);
+}
+
+// One-off availabilities on their day, and every occurrence of the recurring
+// ones that fall in the week (a deleted series shows no occurrence).
+function groupByDay(slots: any[], weekOffset: number): AvailabilityDay[] {
+	const days = weekDays(weekOffset);
+	const first = days[0];
+	const last = days[days.length - 1];
 	const slotsByDate = new Map<string, Availability[]>();
+	const add = (availability: Availability) => {
+		if (!slotsByDate.has(availability.date)) slotsByDate.set(availability.date, []);
+		slotsByDate.get(availability.date)!.push(availability);
+	};
 
 	for (const slot of slots) {
-		const startDate = new Date(slot.start_time);
-		const dateKey = startDate.toISOString().split('T')[0];
-
-		const availability: Availability = {
-			id: slot.id,
-			date: dateKey,
-			startTime: slot.start_time,
-			endTime: slot.end_time,
-			status: slot.status || 'available',
-			roomId: slot.room_id,
-			roomName: slot.room_id || 'Salle inconnue',
-			maxCapacity: slot.max_capacity || 1,
-			serviceType: slot.service_type,
-			priceCents: slot.price_cents ?? undefined,
-			notes: slot.notes,
-			isRecurring: !!slot.recurrence_pattern,
-			recurrencePattern: slot.recurrence_pattern ?? undefined,
-			createdAt: slot.created_at,
-			updatedAt: slot.updated_at
-		};
-
-		if (!slotsByDate.has(dateKey)) {
-			slotsByDate.set(dateKey, []);
+		if (slot.recurrence_pattern) {
+			if (slot.status === 'cancelled') continue;
+			for (const o of occurrences(slot.start_time, slot.end_time, slot.recurrence_pattern, first, last)) {
+				add(toAvailability(slot, o.start, o.end, `${slot.id}-${o.start}`));
+			}
+		} else {
+			add(toAvailability(slot, slot.start_time, slot.end_time, slot.id));
 		}
-		slotsByDate.get(dateKey)!.push(availability);
 	}
 
 	const availabilities: AvailabilityDay[] = [];
-	for (let i = 0; i < 7; i++) {
-		const d = new Date(today.getTime());
-		d.setDate(d.getDate() + i);
-		const dateKey = d.toISOString().split('T')[0];
-		const dayName = dayNames[d.getDay()];
-
-		const slots = slotsByDate.get(dateKey) || [];
-		if (slots.length > 0 || d.getDay() !== 0) {
-			availabilities.push({ date: dateKey, dayName, slots });
+	for (const d of days) {
+		const dateKey = d.toString();
+		const daySlots = (slotsByDate.get(dateKey) || []).sort((a, b) =>
+			a.startTime.localeCompare(b.startTime)
+		);
+		const weekdayIndex = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
+		if (daySlots.length > 0 || weekdayIndex !== 0) {
+			availabilities.push({ date: dateKey, dayName: dayNames[weekdayIndex], slots: daySlots });
 		}
 	}
-
 	return availabilities;
 }
