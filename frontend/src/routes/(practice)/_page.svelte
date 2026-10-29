@@ -94,7 +94,7 @@
     </section>
 
     <!-- Booking card: the heading, intro and session summary in the left
-         panel; the (static, for now) calendar area on the right. -->
+         panel; the calendar of free slots on the right. -->
     <section id="reserver" class="scroll-mt-16 bg-neutral-50 px-4 py-14 text-neutral-950 sm:py-20">
         <div
             class="mx-auto grid max-w-5xl overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)] lg:grid-cols-[minmax(0,19rem)_minmax(0,1fr)]"
@@ -124,7 +124,7 @@
                 </ul>
             </aside>
             <div class="p-6 sm:p-8">
-                <Booking {locale} />
+                <Booking {locale} booking={data.booking} />
             </div>
         </div>
     </section>
