@@ -73,7 +73,7 @@ dev-down:
 	@./scripts/dev.sh down
 
 email-preview:
-	@cd backend && go run ./cmd/emailpreview -out tmp/email-preview
+	@cd backend && go run ./cmd/emailpreview -out $(CURDIR)/backend/tmp/email-preview
 
 dev-logs:
 	docker compose -p leviosa-dev -f backend/compose.yaml logs -f
