@@ -4,6 +4,7 @@ import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate } from 'sveltekit-superforms';
 import { env } from '$env/dynamic/private';
 import { productSchema, productDefaults } from '../../schemas';
+import { depositFromForm, type Deposit } from "$lib/deposit";
 import { mockAdminCategories, type Category, type CancellationTier } from "$lib/data/mockData";
 
 interface BackendCategory {
@@ -33,6 +34,7 @@ interface CreateProductRequest {
 	bufferTime: number;
 	cancellationHours: number;
 	cancellationTiers?: CancellationTier[];
+	deposit?: Deposit;
 	stripeProductId?: string;
 }
 
@@ -105,6 +107,10 @@ export const actions: Actions = {
 		if (stripeProductId) {
 			requestBody.stripeProductId = stripeProductId;
 		}
+
+		const deposit = depositFromForm(formData.get('depositType'), formData.get('depositValue'));
+		if (!deposit.ok) return fail(400, { error: deposit.error });
+		if (deposit.deposit) requestBody.deposit = deposit.deposit;
 
 		if (cancellationTiersStr) {
 			try {

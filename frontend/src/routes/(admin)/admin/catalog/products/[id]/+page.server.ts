@@ -4,6 +4,7 @@ import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate } from 'sveltekit-superforms';
 import { env } from '$env/dynamic/private';
 import { productSchema, productDefaults } from '../../schemas';
+import { depositFromForm, parseDeposit } from "$lib/deposit";
 import { mockAdminCards, mockAdminCategories, type CardType, type Category, type CancellationTier } from "$lib/data/mockData";
 
 interface BackendCategory {
@@ -33,6 +34,7 @@ interface BackendProductAggregator {
 		bufferTime: number;
 		cancellationHours: number;
 		cancellationTiers?: CancellationTier[];
+		deposit?: unknown;
 	};
 	prices?: {
 		amount: number;
@@ -87,6 +89,7 @@ function mapBackendProductToFrontend(agg: BackendProductAggregator): CardType {
 		bufferTime: prod.bufferTime,
 		cancellationHours: prod.cancellationHours,
 		cancellationTiers: prod.cancellationTiers ?? [],
+		deposit: parseDeposit(prod.deposit),
 	};
 }
 
@@ -198,6 +201,11 @@ export const actions: Actions = {
 		const cancellationHoursStr = formData.get('cancellationHours') as string | null;
 		const cancellationTiersStr = formData.get('cancellationTiers') as string | null;
 
+		// The form always carries the deposit fields: "none" sends null,
+		// which removes the deposit (issue 013).
+		const deposit = depositFromForm(formData.get('depositType'), formData.get('depositValue'));
+		if (!deposit.ok) return fail(400, { error: deposit.error });
+
 		// Build the PATCH body — only include fields that are present
 		const body: Record<string, unknown> = {};
 		if (name != null) body.name = name;
@@ -208,6 +216,7 @@ export const actions: Actions = {
 		if (availability != null) body.availability = availability;
 		if (bufferTimeStr != null) body.bufferTime = parseInt(bufferTimeStr, 10);
 		if (cancellationHoursStr != null) body.cancellationHours = parseInt(cancellationHoursStr, 10);
+		if (formData.has('depositType')) body.deposit = deposit.deposit;
 		if (cancellationTiersStr != null) {
 			try {
 				const parsed: CancellationTier[] = JSON.parse(cancellationTiersStr);
