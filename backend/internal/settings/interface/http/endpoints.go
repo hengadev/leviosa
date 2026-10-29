@@ -126,6 +126,15 @@ const (
 	SetPracticePageProductEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePageProductPath
 	SetPracticePageVideoEndpoint   = AdminSettingsBasePath + PracticePageBasePath + PracticePageVideoPath
 
+	// === Booking Policy Settings ===
+	// Minimum notice and booking horizon the slot engine applies
+	// (docs/issues/010-slot-engine.md). Public read (the practice page shows
+	// the bookable range), admin write.
+	BookingPolicyPath = "/booking-policy"
+
+	GetBookingPolicyEndpoint = SettingsBasePath + BookingPolicyPath
+	SetBookingPolicyEndpoint = AdminSettingsBasePath + BookingPolicyPath
+
 	// === Bulk Settings Endpoints ===
 
 	BulkPath = "/bulk"

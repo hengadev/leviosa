@@ -36,6 +36,9 @@ type Handler interface {
 	SetPracticePageProduct(w http.ResponseWriter, r *http.Request)
 	GetPracticePageVideo(w http.ResponseWriter, r *http.Request)
 	SetPracticePageVideo(w http.ResponseWriter, r *http.Request)
+	// Booking policy settings
+	GetBookingPolicy(w http.ResponseWriter, r *http.Request)
+	SetBookingPolicy(w http.ResponseWriter, r *http.Request)
 	// OTP settings
 	GetOTPDuration(w http.ResponseWriter, r *http.Request)
 	SetOTPDuration(w http.ResponseWriter, r *http.Request)

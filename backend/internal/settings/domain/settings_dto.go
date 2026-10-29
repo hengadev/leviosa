@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
@@ -248,6 +249,33 @@ type GetPracticePageVideoResponse struct {
 	VideoURL string `json:"video_url"`
 }
 
+// Booking policy (docs/issues/010-slot-engine.md): the slot engine offers no
+// slot closer to now than the minimum notice, and none further than the
+// horizon. Both have defaults, so the policy always has a value.
+const (
+	DefaultBookingMinimumNoticeHours = 12
+	DefaultBookingHorizonWeeks       = 8
+
+	MaxBookingMinimumNoticeHours = 168 // one week
+	MinBookingHorizonWeeks       = 1
+	MaxBookingHorizonWeeks       = 52
+)
+
+type GetBookingPolicyResponse struct {
+	MinimumNoticeHours int `json:"minimum_notice_hours"`
+	HorizonWeeks       int `json:"horizon_weeks"`
+}
+
+type SetBookingPolicyRequest struct {
+	MinimumNoticeHours int `json:"minimum_notice_hours" validate:"min=0,max=168"`
+	HorizonWeeks       int `json:"horizon_weeks" validate:"min=1,max=52"`
+}
+
+type SetBookingPolicyResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+}
+
 type ErrorResponse struct {
 	Error   string            `json:"error"`
 	Details map[string]string `json:"details,omitempty"`
@@ -349,6 +377,17 @@ func (d SetPracticePageProductRequest) Valid(ctx context.Context) error {
 	var errs errsx.Map
 	if _, err := uuid.Parse(strings.TrimSpace(d.ProductID)); err != nil {
 		errs.Set("product_id_format", "practice page product must be a UUID (the product's ID from /products)")
+	}
+	return errs.AsError()
+}
+
+func (d SetBookingPolicyRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	if d.MinimumNoticeHours < 0 || d.MinimumNoticeHours > MaxBookingMinimumNoticeHours {
+		errs.Set("minimum_notice_hours", fmt.Sprintf("minimum notice must be between 0 and %d hours", MaxBookingMinimumNoticeHours))
+	}
+	if d.HorizonWeeks < MinBookingHorizonWeeks || d.HorizonWeeks > MaxBookingHorizonWeeks {
+		errs.Set("horizon_weeks", fmt.Sprintf("booking horizon must be between %d and %d weeks", MinBookingHorizonWeeks, MaxBookingHorizonWeeks))
 	}
 	return errs.AsError()
 }
