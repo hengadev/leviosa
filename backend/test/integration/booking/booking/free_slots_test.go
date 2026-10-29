@@ -38,6 +38,7 @@ type slotFixture struct {
 	partnerUserID  uuid.UUID
 	productID      uuid.UUID
 	availabilityID uuid.UUID
+	roomID         uuid.UUID
 	day            time.Time // the availability's date, midnight Europe/Paris
 	clientID       uuid.UUID
 }
@@ -52,6 +53,22 @@ func (f slotFixture) at(hour, minute int) time.Time {
 // a 15-minute buffer: the engine's grid is 09:00, 10:15, 11:30 (12:45 would
 // end after 13:00).
 func setupSlotFixture(t *testing.T, ctx context.Context) slotFixture {
+	t.Helper()
+	fixture := setupSlotPartner(t, ctx)
+
+	availability := tavail.NewTestAvailability(t, fixture.partnerUserID, fixture.roomID, fixture.at(9, 0), fixture.at(13, 0), 0)
+	availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
+	require.NoError(t, err)
+	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
+	fixture.availabilityID = availability.ID
+
+	return fixture
+}
+
+// setupSlotPartner is setupSlotFixture without the availability: a partner
+// with an allocated room, a client and the 60-minute product (15-minute
+// buffer); day is three days from now.
+func setupSlotPartner(t *testing.T, ctx context.Context) slotFixture {
 	t.Helper()
 
 	tbooking.ClearBookingsTable(t, ctx, testPool)
@@ -85,16 +102,10 @@ func setupSlotFixture(t *testing.T, ctx context.Context) slotFixture {
 		partnerID:     partnerEncx.ID,
 		partnerUserID: partnerUserID,
 		productID:     products[0].ID,
+		roomID:        room.ID,
 		day:           time.Date(inThreeDays.Year(), inThreeDays.Month(), inThreeDays.Day(), 0, 0, 0, 0, domain.PracticeLocation),
 		clientID:      clientID,
 	}
-
-	availability := tavail.NewTestAvailability(t, partnerUserID, room.ID, fixture.at(9, 0), fixture.at(13, 0), 0)
-	availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
-	require.NoError(t, err)
-	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
-	fixture.availabilityID = availability.ID
-
 	return fixture
 }
 
