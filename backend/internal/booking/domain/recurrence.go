@@ -33,6 +33,8 @@ import "time"
 //     Until's date (in the practice time zone) is still offered, whatever
 //     time of day Until holds.
 //   - An unknown pattern type yields the anchor occurrence only.
+//   - Availability exceptions (issue 012) close dates: OccurrencesExcept
+//     drops the occurrences starting on a closed date (WithoutExceptions).
 //
 // A one-off availability is its own single occurrence.
 
@@ -102,6 +104,40 @@ func (a *Availability) Occurrences(from, to time.Time) []AvailabilityWindow {
 		}
 	}
 	return windows
+}
+
+// OccurrencesExcept returns the availability's occurrences overlapping
+// [from, to), minus those closed by an availability exception: the ones whose
+// start date, in the practice time zone, falls in an exception of this
+// availability. Exceptions of other availabilities are ignored, so callers
+// may pass every exception they loaded.
+func (a *Availability) OccurrencesExcept(from, to time.Time, exceptions []AvailabilityException) []AvailabilityWindow {
+	return WithoutExceptions(a.Occurrences(from, to), exceptions)
+}
+
+// WithoutExceptions drops the windows whose start date (practice time zone)
+// falls in an exception of the window's own availability. It is pure and
+// keeps the windows' order.
+func WithoutExceptions(windows []AvailabilityWindow, exceptions []AvailabilityException) []AvailabilityWindow {
+	if len(exceptions) == 0 {
+		return windows
+	}
+	kept := make([]AvailabilityWindow, 0, len(windows))
+	for _, window := range windows {
+		if !closedBy(window, exceptions) {
+			kept = append(kept, window)
+		}
+	}
+	return kept
+}
+
+func closedBy(window AvailabilityWindow, exceptions []AvailabilityException) bool {
+	for _, exception := range exceptions {
+		if exception.AvailabilityID == window.AvailabilityID && exception.CoversInstant(window.Start) {
+			return true
+		}
+	}
+	return false
 }
 
 // SeriesEndedBefore reports whether a recurring availability has no

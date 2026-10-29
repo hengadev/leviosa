@@ -13,13 +13,27 @@ import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
 // the backend's expansion (backend/internal/booking/domain/recurrence.go),
 // which is what the practice page offers: wall-clock times in Europe/Paris,
 // the series starts on its first day, weekly weeks start on Monday, a monthly
-// series skips months without its day, and the end date is inclusive.
+// series skips months without its day, the end date is inclusive, and an
+// occurrence starting on a date closed by an availability exception is
+// skipped (domain.WithoutExceptions).
 
 export interface RecurrencePattern {
 	type: string;
 	interval: number;
 	until?: string;
 	days_of_week?: number[];
+}
+
+/** A date range (YYYY-MM-DD, both ends inclusive) on which a series does not apply. */
+export interface AvailabilityException {
+	id: string;
+	startDate: string;
+	endDate: string;
+}
+
+/** Whether the calendar date (YYYY-MM-DD) is closed by one of the exceptions. */
+export function isClosed(date: string, exceptions: AvailabilityException[]): boolean {
+	return exceptions.some((e) => e.startDate <= date && date <= e.endDate);
 }
 
 export interface OccurrenceWindow {
@@ -82,14 +96,16 @@ function at(day: CalendarDate, clock: ZonedDateTime): string {
 
 /**
  * The occurrences of a series starting on the calendar days [first, last]
- * (practice time zone), given its first occurrence (startIso, endIso).
+ * (practice time zone), given its first occurrence (startIso, endIso),
+ * minus those starting on a date closed by an exception.
  */
 export function occurrences(
 	startIso: string,
 	endIso: string,
 	pattern: RecurrencePattern,
 	first: CalendarDate,
-	last: CalendarDate
+	last: CalendarDate,
+	exceptions: AvailabilityException[] = []
 ): OccurrenceWindow[] {
 	const anchorStart = parseAbsolute(startIso, zone);
 	const anchorEnd = parseAbsolute(endIso, zone);
@@ -106,6 +122,7 @@ export function occurrences(
 	const out: OccurrenceWindow[] = [];
 	for (let day = from; day.compare(to) <= 0; day = day.add({ days: 1 })) {
 		if (!occursOn(pattern, day, anchor)) continue;
+		if (isClosed(day.toString(), exceptions)) continue;
 		out.push({ start: at(day, anchorStart), end: at(day.add({ days: span }), anchorEnd) });
 	}
 	return out;
