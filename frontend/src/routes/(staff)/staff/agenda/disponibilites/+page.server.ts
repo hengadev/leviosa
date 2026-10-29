@@ -3,7 +3,7 @@ import { redirect, isRedirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import { today } from '@internationalized/date';
 import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
-import { occurrences, practiceDate } from './occurrences';
+import { occurrences, practiceDate, type AvailabilityException } from './occurrences';
 
 export interface Availability {
 	id: string;
@@ -26,6 +26,8 @@ export interface Availability {
 		until?: string;
 		days_of_week?: number[];
 	};
+	/** A recurring series' availability exceptions (closed dates), by start date. */
+	exceptions: AvailabilityException[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -75,10 +77,15 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 		if (availRes.ok) {
 			const data = await availRes.json();
 			if (Array.isArray(data)) {
-				availabilities = groupByDay(data, weekOffset);
-				series = data
-					.filter((a: any) => a.recurrence_pattern && a.status !== 'cancelled')
-					.map((a: any) => toAvailability(a, a.start_time, a.end_time, a.id));
+				const recurring = data.filter((a: any) => a.recurrence_pattern && a.status !== 'cancelled');
+				const exceptions = await loadExceptions(
+					fetch,
+					recurring.map((a: any) => a.id)
+				);
+				availabilities = groupByDay(data, weekOffset, exceptions);
+				series = recurring.map((a: any) =>
+					toAvailability(a, a.start_time, a.end_time, a.id, exceptions.get(a.id))
+				);
 			}
 		} else {
 			console.error(`Failed to fetch availabilities: ${availRes.status} ${availRes.statusText}`);
@@ -116,9 +123,46 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	}
 };
 
+// The availability exceptions of each recurring series (issue 012). A series
+// whose exceptions cannot be read shows all its occurrences.
+async function loadExceptions(
+	fetch: typeof globalThis.fetch,
+	ids: string[]
+): Promise<Map<string, AvailabilityException[]>> {
+	const entries = await Promise.all(
+		ids.map(async (id): Promise<[string, AvailabilityException[]]> => {
+			try {
+				const res = await fetch(`${env.API_URL}/availabilities/${id}/exceptions`, {
+					headers: { 'Content-Type': 'application/json' }
+				});
+				if (!res.ok) {
+					console.error(`Failed to fetch exceptions of ${id}: ${res.status} ${res.statusText}`);
+					return [id, []];
+				}
+				const data = await res.json();
+				return [id, Array.isArray(data) ? data.map(toException) : []];
+			} catch (err) {
+				console.error(`Failed to fetch exceptions of ${id}:`, err);
+				return [id, []];
+			}
+		})
+	);
+	return new Map(entries);
+}
+
+function toException(e: any): AvailabilityException {
+	return { id: e.id, startDate: e.start_date, endDate: e.end_date };
+}
+
 const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-function toAvailability(slot: any, startTime: string, endTime: string, key: string): Availability {
+function toAvailability(
+	slot: any,
+	startTime: string,
+	endTime: string,
+	key: string,
+	exceptions: AvailabilityException[] = []
+): Availability {
 	return {
 		id: slot.id,
 		key,
@@ -134,6 +178,7 @@ function toAvailability(slot: any, startTime: string, endTime: string, key: stri
 		notes: slot.notes,
 		isRecurring: !!slot.recurrence_pattern,
 		recurrencePattern: slot.recurrence_pattern ?? undefined,
+		exceptions,
 		createdAt: slot.created_at,
 		updatedAt: slot.updated_at
 	};
@@ -146,12 +191,17 @@ function weekDays(weekOffset: number) {
 }
 
 function emptyWeek(weekOffset: number): AvailabilityDay[] {
-	return groupByDay([], weekOffset);
+	return groupByDay([], weekOffset, new Map());
 }
 
 // One-off availabilities on their day, and every occurrence of the recurring
-// ones that fall in the week (a deleted series shows no occurrence).
-function groupByDay(slots: any[], weekOffset: number): AvailabilityDay[] {
+// ones that fall in the week (a deleted series shows no occurrence, and a
+// closed date none of its series' occurrences).
+function groupByDay(
+	slots: any[],
+	weekOffset: number,
+	exceptions: Map<string, AvailabilityException[]>
+): AvailabilityDay[] {
 	const days = weekDays(weekOffset);
 	const first = days[0];
 	const last = days[days.length - 1];
@@ -164,7 +214,8 @@ function groupByDay(slots: any[], weekOffset: number): AvailabilityDay[] {
 	for (const slot of slots) {
 		if (slot.recurrence_pattern) {
 			if (slot.status === 'cancelled') continue;
-			for (const o of occurrences(slot.start_time, slot.end_time, slot.recurrence_pattern, first, last)) {
+			const closed = exceptions.get(slot.id) ?? [];
+			for (const o of occurrences(slot.start_time, slot.end_time, slot.recurrence_pattern, first, last, closed)) {
 				add(toAvailability(slot, o.start, o.end, `${slot.id}-${o.start}`));
 			}
 		} else {
