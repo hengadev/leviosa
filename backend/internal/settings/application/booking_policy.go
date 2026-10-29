@@ -12,9 +12,10 @@ import (
 )
 
 // Booking policy settings (docs/issues/010-slot-engine.md): the minimum
-// notice and the booking horizon the slot engine applies. Unlike the practice
+// notice and the booking horizon the slot engine applies, and the payment
+// hold an unpaid booking keeps its slot for (issue 014, ADR-0018). Unlike the practice
 // page settings, the policy always has a value: an unset key reads as its
-// default (12 h, 8 weeks), so the public page and booking creation never wait
+// default (12 h, 8 weeks, 15 min), so the public page and booking creation never wait
 // on an administrator to configure it. Changing a value takes effect on the
 // next slot query, without a release.
 
@@ -27,7 +28,11 @@ func (s *SettingsService) GetBookingPolicy(ctx context.Context) (*domain.GetBook
 	if err != nil {
 		return nil, fmt.Errorf("get booking horizon: %w", err)
 	}
-	return &domain.GetBookingPolicyResponse{MinimumNoticeHours: notice, HorizonWeeks: horizon}, nil
+	hold, err := s.intOrDefault(ctx, settings.BookingPaymentHoldMinutes, domain.DefaultPaymentHoldMinutes)
+	if err != nil {
+		return nil, fmt.Errorf("get booking payment hold: %w", err)
+	}
+	return &domain.GetBookingPolicyResponse{MinimumNoticeHours: notice, HorizonWeeks: horizon, PaymentHoldMinutes: hold}, nil
 }
 
 func (s *SettingsService) SetBookingPolicy(ctx context.Context, request *domain.SetBookingPolicyRequest) (*domain.SetBookingPolicyResponse, error) {
@@ -44,6 +49,11 @@ func (s *SettingsService) SetBookingPolicy(ctx context.Context, request *domain.
 		return nil, fmt.Errorf("set booking horizon: %w", err)
 	}
 	s.auditFieldUpdate(ctx, settings.BookingHorizonWeeks, request.HorizonWeeks)
+
+	if err := s.repo.SetInt(ctx, NewSetting(settings.BookingPaymentHoldMinutes, request.PaymentHoldMinutes)); err != nil {
+		return nil, fmt.Errorf("set booking payment hold: %w", err)
+	}
+	s.auditFieldUpdate(ctx, settings.BookingPaymentHoldMinutes, request.PaymentHoldMinutes)
 
 	return &domain.SetBookingPolicyResponse{Success: true}, nil
 }
