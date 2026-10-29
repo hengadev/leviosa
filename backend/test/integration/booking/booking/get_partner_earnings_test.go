@@ -121,8 +121,21 @@ func TestGetPartnerEarnings(t *testing.T) {
 
 		respCreate, err := client.Do(reqCreate)
 		require.NoError(t, err)
+		var created domain.BookingResponse
+		require.NoError(t, json.NewDecoder(respCreate.Body).Decode(&created))
 		respCreate.Body.Close()
 		require.Equal(t, http.StatusCreated, respCreate.StatusCode)
+
+		// While it awaits payment the booking is not an appointment: no
+		// earnings, no transaction (ADR-0018).
+		awaiting := fetchEarnings(t, client, partnerID, partnerToken)
+		assert.Equal(t, 0, awaiting.PendingCents, "a booking awaiting payment is not pending earnings")
+		assert.Empty(t, awaiting.Transactions, "a booking awaiting payment is not a transaction")
+
+		// A confirmed booking whose payment is still pending (e.g. nothing was
+		// due online, or one confirmed before payment holds existed).
+		_, err = testPool.Exec(ctx, `UPDATE booking.bookings SET status = 'confirmed' WHERE id = $1`, created.ID)
+		require.NoError(t, err)
 
 		req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
 		require.NoError(t, err)
@@ -218,6 +231,8 @@ func TestGetPartnerEarnings(t *testing.T) {
 
 		updatePaymentStatus := func(booking domain.BookingResponse, paymentStatus domain.PaymentStatus) {
 			bookingID := booking.ID
+			// Stripe confirms the booking (ADR-0018)
+			confirmBookingPayment(t, ctx, bookingID)
 			// The client pays through Stripe, then the frontend reports the payment
 			require.NoError(t, paymentService.ConfirmPaymentIntent(ctx, *booking.PaymentIntentID))
 
@@ -265,8 +280,10 @@ func TestGetPartnerEarnings(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, 2*price, summary.CurrentMonthCents, "should sum paid bookings in current month")
-		assert.Equal(t, price, summary.PendingCents, "should sum pending bookings")
-		assert.Len(t, summary.Transactions, 3, "should have 3 transactions")
+		// The third booking still awaits payment: not an appointment, so
+		// neither pending earnings nor a transaction (ADR-0018).
+		assert.Equal(t, 0, summary.PendingCents, "a booking awaiting payment is not pending earnings")
+		assert.Len(t, summary.Transactions, 2, "should have the 2 confirmed bookings as transactions")
 	})
 
 	t.Run("cross-month boundary bookings should count correctly", func(t *testing.T) {
@@ -333,6 +350,8 @@ func TestGetPartnerEarnings(t *testing.T) {
 			var createdBooking domain.BookingResponse
 			err = json.NewDecoder(respCreate.Body).Decode(&createdBooking)
 			require.NoError(t, err)
+			// Stripe confirms the booking (ADR-0018)
+			confirmBookingPayment(t, ctx, createdBooking.ID)
 
 			reqPayment, err := http.NewRequest("POST", testServerURL+"/bookings/"+createdBooking.ID.String()+"/payment", nil)
 			require.NoError(t, err)
@@ -361,6 +380,7 @@ func TestGetPartnerEarnings(t *testing.T) {
 		lastMonthBooking.ProductID = products[0].ID
 		lastMonthBooking.SlotStartTime = time.Date(lastMonth.Year(), lastMonth.Month(), 15, 10, 0, 0, 0, now.Location())
 		lastMonthBooking.SlotEndTime = lastMonthBooking.SlotStartTime.Add(time.Hour)
+		require.NoError(t, lastMonthBooking.Confirm())
 		lastMonthBooking.PaymentStatus = domain.PaymentStatusPaid
 		lastMonthEncx, err := domain.ProcessBookingEncx(ctx, crypto, lastMonthBooking)
 		require.NoError(t, err)
@@ -524,4 +544,21 @@ func nextMonday(t time.Time) time.Time {
 		daysUntilMonday = 7
 	}
 	return t.AddDate(0, 0, daysUntilMonday)
+}
+
+// fetchEarnings returns the partner's earnings summary.
+func fetchEarnings(t *testing.T, client *http.Client, partnerID uuid.UUID, partnerToken string) domain.EarningsSummary {
+	t.Helper()
+	req, err := http.NewRequest("GET", testServerURL+"/partners/earnings/"+partnerID.String(), nil)
+	require.NoError(t, err)
+	req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var summary domain.EarningsSummary
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&summary))
+	return summary
 }

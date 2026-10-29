@@ -17,7 +17,7 @@ import (
 )
 
 // Booking policy settings: minimum notice and booking horizon applied by the
-// slot engine (docs/issues/010-slot-engine.md).
+// slot engine (docs/issues/010-slot-engine.md), and the payment hold (issue 014).
 //
 // make test-func TEST_NAME=TestBookingPolicySettings TEST_PATH=test/integration/settings/booking_policy_test.go
 
@@ -51,6 +51,7 @@ func TestBookingPolicySettings(t *testing.T) {
 		policy := getPolicy(t)
 		assert.Equal(t, 12, policy.MinimumNoticeHours)
 		assert.Equal(t, 8, policy.HorizonWeeks)
+		assert.Equal(t, 15, policy.PaymentHoldMinutes)
 	})
 
 	t.Run("should persist an administrator's values and serve them at once", func(t *testing.T) {
@@ -59,7 +60,7 @@ func TestBookingPolicySettings(t *testing.T) {
 
 		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
 		req := withAuth(th.NewSetBookingPolicyRequest(t, ctx, testServerURL,
-			domain.SetBookingPolicyRequest{MinimumNoticeHours: 2, HorizonWeeks: 4}), accessToken)
+			domain.SetBookingPolicyRequest{MinimumNoticeHours: 2, HorizonWeeks: 4, PaymentHoldMinutes: 20}), accessToken)
 
 		resp, err := client.Do(req)
 		require.NoError(t, err)
@@ -68,10 +69,12 @@ func TestBookingPolicySettings(t *testing.T) {
 
 		assert.Equal(t, 2, th.GetSettingIntByKey(t, ctx, settings.BookingMinimumNoticeHours, testPool).Value)
 		assert.Equal(t, 4, th.GetSettingIntByKey(t, ctx, settings.BookingHorizonWeeks, testPool).Value)
+		assert.Equal(t, 20, th.GetSettingIntByKey(t, ctx, settings.BookingPaymentHoldMinutes, testPool).Value)
 
 		policy := getPolicy(t)
 		assert.Equal(t, 2, policy.MinimumNoticeHours)
 		assert.Equal(t, 4, policy.HorizonWeeks)
+		assert.Equal(t, 20, policy.PaymentHoldMinutes)
 	})
 
 	t.Run("should return 400 for an out-of-range horizon", func(t *testing.T) {
@@ -80,7 +83,7 @@ func TestBookingPolicySettings(t *testing.T) {
 
 		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
 		req := withAuth(th.NewSetBookingPolicyRequest(t, ctx, testServerURL,
-			domain.SetBookingPolicyRequest{MinimumNoticeHours: 12, HorizonWeeks: 0}), accessToken)
+			domain.SetBookingPolicyRequest{MinimumNoticeHours: 12, HorizonWeeks: 0, PaymentHoldMinutes: 15}), accessToken)
 
 		resp, err := client.Do(req)
 		require.NoError(t, err)
@@ -94,7 +97,7 @@ func TestBookingPolicySettings(t *testing.T) {
 
 		accessToken := tu.SetupStandardUser(t, ctx, authCtx)
 		req := withAuth(th.NewSetBookingPolicyRequest(t, ctx, testServerURL,
-			domain.SetBookingPolicyRequest{MinimumNoticeHours: 0, HorizonWeeks: 52}), accessToken)
+			domain.SetBookingPolicyRequest{MinimumNoticeHours: 0, HorizonWeeks: 52, PaymentHoldMinutes: 15}), accessToken)
 
 		resp, err := client.Do(req)
 		require.NoError(t, err)

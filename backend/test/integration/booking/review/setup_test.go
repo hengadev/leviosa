@@ -133,6 +133,8 @@ func newBookingForPartner(t *testing.T, ctx context.Context, client *http.Client
 
 	var created domain.BookingResponse
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&created))
+	// A new booking awaits payment until Stripe confirms it (ADR-0018).
+	tbooking.ConfirmPayment(t, ctx, bookingSvc, bookingRepo, created.ID)
 
 	return &bookingFixture{
 		BookingID:    created.ID,

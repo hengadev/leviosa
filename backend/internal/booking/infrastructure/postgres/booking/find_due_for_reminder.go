@@ -23,6 +23,8 @@ func (r *Repository) FindBookingsDueForReminder(ctx context.Context) ([]*domain.
 			b.guest_email_encrypted, b.guest_phone_encrypted,
 			b.token,
 			b.reminded_at,
+			b.hold_expires_at,
+			b.locale,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
@@ -48,6 +50,8 @@ func (r *Repository) FindBookingsDueForReminder(ctx context.Context) ([]*domain.
 			&b.GuestEmailEncrypted, &b.GuestPhoneEncrypted,
 			&b.Token,
 			&b.RemindedAt,
+			&b.HoldExpiresAt,
+			&b.Locale,
 			&b.CreatedAt, &b.UpdatedAt,
 			&b.DEKEncrypted, &b.KeyVersion, &b.Metadata,
 		); err != nil {

@@ -280,6 +280,9 @@ func NewTestBooking(t *testing.T) *domain.Booking {
 	b.ProductID = uuid.New()
 	b.SlotStartTime = slotStart
 	b.SlotEndTime = slotStart.Add(time.Hour)
+	// An appointment: a new booking awaits payment until Stripe confirms it
+	// (ADR-0018); tests about held bookings set the status back.
+	require.NoError(t, b.Confirm())
 	return b
 }
 

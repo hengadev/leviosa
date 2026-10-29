@@ -62,7 +62,7 @@ type Settings = {
 
 // Booking policy applied by the slot engine to the public calendar and to
 // booking creation. The backend answers the defaults while it is unset.
-type BookingPolicySettings = { minimumNoticeHours: number; horizonWeeks: number }
+type BookingPolicySettings = { minimumNoticeHours: number; horizonWeeks: number; paymentHoldMinutes: number }
 
 // Options for the practice page selectors: the partners and products the
 // administrator can put on the public page.
@@ -195,14 +195,22 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     try {
         const policyRes = await fetch(`${env.API_URL}/settings/booking-policy`)
         if (policyRes.ok) {
-            const policy: { minimum_notice_hours: number; horizon_weeks: number } = await policyRes.json()
-            bookingPolicy = { minimumNoticeHours: policy.minimum_notice_hours, horizonWeeks: policy.horizon_weeks }
+            const policy: { minimum_notice_hours: number; horizon_weeks: number; payment_hold_minutes?: number } = await policyRes.json()
+            bookingPolicy = {
+                minimumNoticeHours: policy.minimum_notice_hours,
+                horizonWeeks: policy.horizon_weeks,
+                paymentHoldMinutes: policy.payment_hold_minutes ?? bookingPolicyDefaults.payment_hold_minutes,
+            }
         }
     } catch {
         bookingPolicy = null
     }
     if (MOCK_MODE && !bookingPolicy) {
-        bookingPolicy = { minimumNoticeHours: bookingPolicyDefaults.minimum_notice_hours, horizonWeeks: bookingPolicyDefaults.horizon_weeks }
+        bookingPolicy = {
+            minimumNoticeHours: bookingPolicyDefaults.minimum_notice_hours,
+            horizonWeeks: bookingPolicyDefaults.horizon_weeks,
+            paymentHoldMinutes: bookingPolicyDefaults.payment_hold_minutes,
+        }
     }
 
     return {
@@ -275,7 +283,7 @@ export const actions = {
         }
 
         if (MOCK_MODE) {
-            console.log('[MOCK] Updating booking policy:', form.data.minimum_notice_hours, form.data.horizon_weeks)
+            console.log('[MOCK] Updating booking policy:', form.data.minimum_notice_hours, form.data.horizon_weeks, form.data.payment_hold_minutes)
             return { bookingPolicyForm: form }
         }
 
@@ -290,13 +298,14 @@ export const actions = {
             body: JSON.stringify({
                 minimum_notice_hours: form.data.minimum_notice_hours,
                 horizon_weeks: form.data.horizon_weeks,
+                payment_hold_minutes: form.data.payment_hold_minutes,
             }),
         })
 
         if (!res.ok) {
             switch (res.status) {
                 case 400:
-                    return setError(form, "Valeurs invalides (délai : 0 à 168 h ; horizon : 1 à 52 semaines).")
+                    return setError(form, "Valeurs invalides (délai : 0 à 168 h ; horizon : 1 à 52 semaines ; maintien : 5 à 60 min).")
                 case 401:
                     return setError(form, "Non autorisé. Veuillez vous reconnecter.")
                 case 403:

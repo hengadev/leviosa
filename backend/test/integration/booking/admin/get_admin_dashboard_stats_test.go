@@ -141,6 +141,16 @@ func TestGetAdminDashboardStats(t *testing.T) {
 		pendingBooking.Status = domain.BookingStatusConfirmed
 		tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, pendingBooking))
 
+		// Not appointments (ADR-0018): a booking awaiting payment and one
+		// whose hold expired are counted nowhere.
+		for _, status := range domain.NonAppointmentStatuses() {
+			heldBooking := tbooking.NewTestBooking(t)
+			heldBooking.CreatedAt = startOfISOWeek.Add(5 * time.Hour)
+			heldBooking.PaymentStatus = domain.PaymentStatusPending
+			heldBooking.Status = status
+			tbooking.InsertBookingEncx(t, ctx, testPool, tbooking.EncryptTestBooking(t, ctx, crypto, heldBooking))
+		}
+
 		req, err := http.NewRequest("GET", testServerURL+"/admin/dashboard/stats", nil)
 		require.NoError(t, err)
 		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: adminToken})

@@ -251,10 +251,16 @@ type GetPracticePageVideoResponse struct {
 
 // Booking policy (docs/issues/010-slot-engine.md): the slot engine offers no
 // slot closer to now than the minimum notice, and none further than the
-// horizon. Both have defaults, so the policy always has a value.
+// horizon. The payment hold (issue 014, ADR-0018) is how long an unpaid
+// booking keeps its slot while the client pays. All have defaults, so the
+// policy always has a value.
 const (
 	DefaultBookingMinimumNoticeHours = 12
 	DefaultBookingHorizonWeeks       = 8
+	DefaultPaymentHoldMinutes        = 15
+
+	MinPaymentHoldMinutes = 5
+	MaxPaymentHoldMinutes = 60
 
 	MaxBookingMinimumNoticeHours = 168 // one week
 	MinBookingHorizonWeeks       = 1
@@ -264,11 +270,13 @@ const (
 type GetBookingPolicyResponse struct {
 	MinimumNoticeHours int `json:"minimum_notice_hours"`
 	HorizonWeeks       int `json:"horizon_weeks"`
+	PaymentHoldMinutes int `json:"payment_hold_minutes"`
 }
 
 type SetBookingPolicyRequest struct {
 	MinimumNoticeHours int `json:"minimum_notice_hours" validate:"min=0,max=168"`
 	HorizonWeeks       int `json:"horizon_weeks" validate:"min=1,max=52"`
+	PaymentHoldMinutes int `json:"payment_hold_minutes" validate:"min=5,max=60"`
 }
 
 type SetBookingPolicyResponse struct {
@@ -388,6 +396,9 @@ func (d SetBookingPolicyRequest) Valid(ctx context.Context) error {
 	}
 	if d.HorizonWeeks < MinBookingHorizonWeeks || d.HorizonWeeks > MaxBookingHorizonWeeks {
 		errs.Set("horizon_weeks", fmt.Sprintf("booking horizon must be between %d and %d weeks", MinBookingHorizonWeeks, MaxBookingHorizonWeeks))
+	}
+	if d.PaymentHoldMinutes < MinPaymentHoldMinutes || d.PaymentHoldMinutes > MaxPaymentHoldMinutes {
+		errs.Set("payment_hold_minutes", fmt.Sprintf("payment hold must be between %d and %d minutes", MinPaymentHoldMinutes, MaxPaymentHoldMinutes))
 	}
 	return errs.AsError()
 }

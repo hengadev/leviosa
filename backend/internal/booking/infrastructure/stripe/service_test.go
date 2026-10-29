@@ -16,13 +16,15 @@ import (
 // can email the client a hosted receipt automatically once payment succeeds.
 func TestCreatePaymentIntent_SetsReceiptEmail(t *testing.T) {
 	t.Run("includes receipt_email when provided", func(t *testing.T) {
-		var gotReceiptEmail string
+		var gotReceiptEmail, gotAmount, gotCurrency string
 		var sawReceiptEmail bool
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			require.NoError(t, r.ParseForm())
 			sawReceiptEmail = r.Form.Has("receipt_email")
 			gotReceiptEmail = r.Form.Get("receipt_email")
+			gotAmount = r.Form.Get("amount")
+			gotCurrency = r.Form.Get("currency")
 
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(map[string]any{
@@ -38,9 +40,11 @@ func TestCreatePaymentIntent_SetsReceiptEmail(t *testing.T) {
 
 		svc := NewService("sk_test_dummy", server.URL, "whsec_dummy")
 
-		id, secret, err := svc.CreatePaymentIntent(context.Background(), 1000, "eur", "Booking payment", "client@example.com", nil)
+		id, secret, err := svc.CreatePaymentIntent(context.Background(), 1000, "EUR", "Booking payment", "client@example.com", nil)
 
 		require.NoError(t, err)
+		assert.Equal(t, "1000", gotAmount, "the PaymentIntent charges the amount given (the amount due online)")
+		assert.Equal(t, "eur", gotCurrency, "Stripe currency codes are lowercase")
 		assert.Equal(t, "pi_test_123", id)
 		assert.Equal(t, "pi_test_123_secret_abc", secret)
 		assert.True(t, sawReceiptEmail, "expected receipt_email to be sent to Stripe")

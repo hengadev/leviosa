@@ -5,11 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
-	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
 	tsetup "github.com/Leviosa-care/leviosa/backend/test/helpers/booking"
 	tavail "github.com/Leviosa-care/leviosa/backend/test/helpers/booking/availability"
@@ -18,7 +18,6 @@ import (
 	tr "github.com/Leviosa-care/leviosa/backend/test/helpers/booking/room"
 	tcatalog "github.com/Leviosa-care/leviosa/backend/test/helpers/catalog"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +26,10 @@ func TestBookingConfirmationNotification(t *testing.T) {
 	ctx := context.Background()
 	client := &http.Client{Timeout: 10 * time.Second}
 
-	t.Run("should send booking confirmation notification after booking is created", func(t *testing.T) {
+	// Booking lifecycle (ADR-0018): create → awaiting_payment, nothing sent;
+	// payment webhook → confirmed, booking-confirmed event emitted once, even
+	// when Stripe delivers the webhook twice.
+	t.Run("should send the booking confirmation once Stripe confirms the payment, never at creation", func(t *testing.T) {
 		// Clean state
 		tbooking.ClearBookingsTable(t, ctx, testPool)
 		tavail.ClearAvailabilityTable(t, ctx, testPool)
@@ -95,11 +97,30 @@ func TestBookingConfirmationNotification(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 		// Parse response to get booking ID
-		var booking domain.BookingResponse
+		var booking domain.CreateBookingResponse
 		err = json.NewDecoder(resp.Body).Decode(&booking)
 		require.NoError(t, err)
 
-		// Assert notification was sent
+		// The booking awaits payment, held for the default 15 minutes, with
+		// the PaymentIntent's client secret for the Payment Element.
+		assert.Equal(t, domain.BookingStatusAwaitingPayment, booking.Status)
+		assert.NotEmpty(t, booking.ClientSecret)
+		assert.Equal(t, booking.TotalPriceCents, booking.AmountDueOnlineCents, "no deposit: the full price is due online")
+		require.NotNil(t, booking.HoldExpiresAt)
+		assert.WithinDuration(t, time.Now().Add(15*time.Minute), *booking.HoldExpiresAt, time.Minute)
+		assert.Empty(t, notificationSpy.BookingConfirmations, "nothing is sent while the booking awaits payment")
+
+		// Stripe delivers payment_intent.succeeded twice.
+		event := paymentSucceededEvent(t, ctx, booking.ID)
+		require.NoError(t, service.HandlePaymentWebhook(ctx, event))
+		require.NoError(t, service.HandlePaymentWebhook(ctx, event))
+
+		bookingEncx, err := bookingRepo.GetByID(ctx, booking.ID)
+		require.NoError(t, err)
+		assert.Equal(t, domain.BookingStatusConfirmed, bookingEncx.Status)
+		assert.Equal(t, domain.PaymentStatusPaid, bookingEncx.PaymentStatus)
+
+		// Assert notification was sent once
 		require.Len(t, notificationSpy.BookingConfirmations, 1, "expected exactly one booking confirmation notification")
 
 		notification := notificationSpy.BookingConfirmations[0]
@@ -185,8 +206,10 @@ func TestBookingCancellationNotification(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&createdBooking)
 		require.NoError(t, err)
 
-		// Assert booking confirmation was sent on creation
-		require.Len(t, notificationSpy.BookingConfirmations, 1, "expected booking confirmation after creation")
+		// Nothing is sent at creation; the payment confirms the booking.
+		require.Empty(t, notificationSpy.BookingConfirmations, "nothing is sent while the booking awaits payment")
+		confirmBookingPayment(t, ctx, createdBooking.ID)
+		require.Len(t, notificationSpy.BookingConfirmations, 1, "expected booking confirmation once paid")
 
 		// Reset spy to isolate cancellation notifications
 		notificationSpy.BookingConfirmations = nil
@@ -227,7 +250,7 @@ func TestPaymentConfirmationNotification(t *testing.T) {
 	ctx := context.Background()
 	httpClient := &http.Client{Timeout: 10 * time.Second}
 
-	t.Run("should send payment confirmation notification after payment webhook", func(t *testing.T) {
+	t.Run("should confirm the booking once when the payment webhook is delivered concurrently", func(t *testing.T) {
 		// Clean state
 		tbooking.ClearBookingsTable(t, ctx, testPool)
 		tavail.ClearAvailabilityTable(t, ctx, testPool)
@@ -296,57 +319,33 @@ func TestPaymentConfirmationNotification(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&booking)
 		require.NoError(t, err)
 
-		// Simulate payment success via webhook
-		paymentIntentID := "pi_test_" + uuid.New().String()[:8]
-		webhookEvent := &ports.WebhookEvent{
-			ID:              "evt_test_" + uuid.New().String(),
-			Type:            ports.WebhookEventPaymentIntentSucceeded,
-			PaymentIntentID: paymentIntentID,
-			Status:          "succeeded",
-			Amount:          booking.TotalPriceCents,
-			Currency:        booking.Currency,
-			Metadata: map[string]string{
-				"booking_id": booking.ID.String(),
-			},
+		require.Equal(t, domain.BookingStatusAwaitingPayment, booking.Status)
+
+		// Concurrent deliveries of the same payment_intent.succeeded event:
+		// the conditional confirmation lets exactly one of them through.
+		event := paymentSucceededEvent(t, ctx, booking.ID)
+		var wg sync.WaitGroup
+		errsCh := make(chan error, 4)
+		for range 4 {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				errsCh <- service.HandlePaymentWebhook(ctx, event)
+			}()
+		}
+		wg.Wait()
+		close(errsCh)
+		for err := range errsCh {
+			require.NoError(t, err)
 		}
 
-		// First set the payment intent ID on the booking via mock
-		mockPayment, ok := paymentService.(*MockPaymentService)
-		require.True(t, ok, "payment service should be MockPaymentService")
-		mockPayment.paymentIntents[paymentIntentID] = &ports.PaymentIntentInfo{
-			ID:           paymentIntentID,
-			Status:       ports.PaymentIntentStatusSucceeded,
-			Amount:       booking.TotalPriceCents,
-			Currency:     booking.Currency,
-			ClientSecret: "cs_test",
-			Metadata: map[string]string{
-				"booking_id": booking.ID.String(),
-			},
-		}
+		// The confirmation carries the payment: one booking confirmation, no
+		// separate payment confirmation.
+		require.Len(t, notificationSpy.BookingConfirmations, 1, "expected one booking confirmation after payment success")
+		assert.Empty(t, notificationSpy.PaymentConfirmations)
 
-		// Update booking with payment intent ID
-		bookingEncx, err := bookingRepo.GetByID(ctx, booking.ID)
-		require.NoError(t, err)
-		decryptedBooking, err := domain.DecryptBookingEncx(ctx, crypto, bookingEncx)
-		require.NoError(t, err)
-		decryptedBooking.SetPaymentIntentID(paymentIntentID)
-		updatedEncx, err := domain.ProcessBookingEncx(ctx, crypto, decryptedBooking)
-		require.NoError(t, err)
-		err = bookingRepo.Update(ctx, updatedEncx)
-		require.NoError(t, err)
-
-		// Process webhook
-		err = service.HandlePaymentWebhook(ctx, webhookEvent)
-		require.NoError(t, err)
-
-		// Assert booking confirmation was sent on creation
-		require.Len(t, notificationSpy.BookingConfirmations, 1, "expected booking confirmation after creation")
-
-		// Assert payment confirmation was sent
-		require.Len(t, notificationSpy.PaymentConfirmations, 1, "expected payment confirmation after payment success")
-
-		paymentNotif := notificationSpy.PaymentConfirmations[0]
-		assert.Equal(t, booking.ID, paymentNotif.BookingID, "payment notification should reference the booking")
-		assert.Equal(t, clientID, paymentNotif.ClientID, "payment notification should reference the client")
+		confirmation := notificationSpy.BookingConfirmations[0]
+		assert.Equal(t, booking.ID, confirmation.BookingID, "the confirmation should reference the booking")
+		assert.Equal(t, clientID, confirmation.ClientID, "the confirmation should reference the client")
 	})
 }

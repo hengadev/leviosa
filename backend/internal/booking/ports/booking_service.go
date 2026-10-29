@@ -16,8 +16,11 @@ type AnalyticsSummaryResponse = domain.AnalyticsSummaryResponse
 type BookingService interface {
 	// CreateBooking creates a new booking with product and time slot information.
 	// Pass a non-nil clientID for registered users, or guest fields for guest bookings.
-	// No client notes are accepted (ADR-0019: no health data).
-	CreateBooking(ctx context.Context, availabilityID uuid.UUID, clientID *uuid.UUID, productID uuid.UUID, slotStartTime time.Time, guestFirstName, guestLastName, guestEmail, guestPhone string) (*domain.Booking, error)
+	// No client notes are accepted (ADR-0019: no health data). The booking
+	// starts awaiting payment, held for the payment hold, and carries the
+	// PaymentIntent's client secret (ADR-0018); locale is the language the
+	// client booked in (empty means French).
+	CreateBooking(ctx context.Context, availabilityID uuid.UUID, clientID *uuid.UUID, productID uuid.UUID, slotStartTime time.Time, guestFirstName, guestLastName, guestEmail, guestPhone string, locale domain.BookingLocale) (*domain.Booking, error)
 
 	// GetFreeSlots returns the free slots for a partner (partner ID, not user
 	// ID) and a product whose start falls in [from, to), computed by the slot

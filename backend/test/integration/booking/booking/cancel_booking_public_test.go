@@ -91,6 +91,8 @@ func setupGuestBookingForCancel(t *testing.T, slotStartTime time.Time) (bookingI
 	err = json.NewDecoder(resp.Body).Decode(&created)
 	require.NoError(t, err)
 	require.NotEmpty(t, created.Token, "booking token must be present")
+	// A new booking awaits payment until Stripe confirms it (ADR-0018).
+	confirmBookingPayment(t, ctx, created.ID)
 
 	return created.ID, created.Token, pid
 }
@@ -178,6 +180,8 @@ func setupGuestBookingWithCancellationWindow(t *testing.T, cancellationHours int
 	err = json.NewDecoder(resp.Body).Decode(&created)
 	require.NoError(t, err)
 	require.NotEmpty(t, created.Token)
+	// A new booking awaits payment until Stripe confirms it (ADR-0018).
+	confirmBookingPayment(t, ctx, created.ID)
 
 	return created.ID, created.Token
 }

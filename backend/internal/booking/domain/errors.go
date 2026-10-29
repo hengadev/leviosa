@@ -56,6 +56,9 @@ var (
 	ErrCannotMarkCompletedAsNoShow     = errors.New("cannot mark completed booking as no-show")
 	ErrCannotDisputeUnpaidBooking      = errors.New("cannot dispute a booking that is not paid")
 	ErrCannotResolveNonDisputedBooking = errors.New("cannot resolve dispute for a booking that is not disputed")
+	ErrBookingNotAwaitingPayment       = errors.New("booking is not awaiting payment")
+	ErrBookingNotConfirmed             = errors.New("booking is not confirmed: it is awaiting payment or expired")
+	ErrInvalidBookingLocale            = errors.New("booking locale must be 'fr' or 'en'")
 )
 
 // Booking token errors

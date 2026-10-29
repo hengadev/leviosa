@@ -54,10 +54,11 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 	// Setup users
 	_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner-reminder@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-	// Create three bookings:
+	// Create four bookings:
 	// 1. Due within the window, reminded_at IS NULL → should be reminded
 	// 2. Outside the window → should NOT be reminded
 	// 3. Already reminded → should NOT be reminded again
+	// 4. Within the window but awaiting payment → should NOT be reminded
 
 	now := time.Now()
 
@@ -100,6 +101,20 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 	// Mark booking 3 as already reminded
 	err = bookingRepo.MarkReminderSent(ctx, booking3.ID)
 	require.NoError(t, err)
+
+	// Booking 4: due in 9 hours but still awaiting payment → not an
+	// appointment, never reminded (ADR-0018)
+	startTime4 := now.Add(9 * time.Hour).Truncate(time.Hour)
+	availability4 := tavail.NewTestAvailability(t, partnerID, room.ID, startTime4, startTime4.Add(2*time.Hour), 0)
+	availabilityEncx4, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability4)
+	require.NoError(t, err)
+	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx4, testPool)
+
+	_, clientID4 := tsetup.SetupStandardUser(t, ctx, "client-reminder4@example.com", room.ID, testPool, authCtx.Redis, crypto)
+
+	booking4, err := service.CreateBooking(ctx, availability4.ID, &clientID4, products[0].ID, startTime4, "", "", "", "", "")
+	require.NoError(t, err)
+	require.Equal(t, domain.BookingStatusAwaitingPayment, booking4.Status)
 
 	// Reset spies. Use the real notification adapter (backed by SMS/email
 	// spies) rather than the port-level notificationSpy so we can assert
@@ -214,12 +229,14 @@ func TestReminderScheduler_MarkSentOnNotificationError(t *testing.T) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// createBookingViaService creates a booking through the service layer and returns
-// the decrypted booking domain object.
+// createBookingViaService creates a booking through the service layer, has
+// Stripe confirm its payment (ADR-0018) and returns the decrypted booking
+// domain object.
 func createBookingViaService(t *testing.T, ctx context.Context, availabilityID, clientID, partnerID, roomID, productID uuid.UUID, slotStart time.Time) *domain.Booking {
 	t.Helper()
-	b, err := service.CreateBooking(ctx, availabilityID, &clientID, productID, slotStart, "", "", "", "")
+	b, err := service.CreateBooking(ctx, availabilityID, &clientID, productID, slotStart, "", "", "", "", "")
 	require.NoError(t, err)
+	confirmBookingPayment(t, ctx, b.ID)
 	return b
 }
 

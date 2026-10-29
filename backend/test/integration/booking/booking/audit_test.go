@@ -82,6 +82,8 @@ func setupAuditBooking(t *testing.T, ctx context.Context, client *http.Client) (
 
 	var createdBooking domain.BookingResponse
 	require.NoError(t, json.NewDecoder(respCreate.Body).Decode(&createdBooking))
+	// A new booking awaits payment until Stripe confirms it (ADR-0018).
+	confirmBookingPayment(t, ctx, createdBooking.ID)
 
 	return createdBooking.ID, clientToken, partnerToken
 }

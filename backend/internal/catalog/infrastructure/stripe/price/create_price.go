@@ -9,14 +9,29 @@ import (
 )
 
 func (s *service) CreatePrice(ctx context.Context, input domain.CreateStripePriceRequest) (*domain.PaymentPrice, error) {
+	stripePrice, err := s.Client.V1Prices.Create(ctx, createPriceParams(input))
+	if err != nil {
+		return nil, err
+	}
+
+	return mapStripePriceToPaymentPrice(stripePrice), nil
+}
+
+// createPriceParams builds the Stripe request. A one-time price (the price
+// of a booked session) has no recurring interval: Stripe accepts only day,
+// week, month or year there, so sending "one_time" would fail the creation.
+func createPriceParams(input domain.CreateStripePriceRequest) *stripe.PriceCreateParams {
 	params := &stripe.PriceCreateParams{
 		Product:    stripe.String(input.ProductID),
 		UnitAmount: stripe.Int64(int64(input.Amount)),
 		Currency:   stripe.String(input.Currency),
-		Recurring: &stripe.PriceCreateRecurringParams{
+		Active:     stripe.Bool(input.Active),
+	}
+
+	if input.Interval != "" && domain.Interval(input.Interval) != domain.OneTime {
+		params.Recurring = &stripe.PriceCreateRecurringParams{
 			Interval: stripe.String(input.Interval),
-		},
-		Active: stripe.Bool(input.Active),
+		}
 	}
 
 	if input.Nickname != "" {
@@ -27,12 +42,7 @@ func (s *service) CreatePrice(ctx context.Context, input domain.CreateStripePric
 		params.Metadata = input.Metadata
 	}
 
-	stripePrice, err := s.Client.V1Prices.Create(ctx, params)
-	if err != nil {
-		return nil, err
-	}
-
-	return mapStripePriceToPaymentPrice(stripePrice), nil
+	return params
 }
 
 func mapStripePriceToPaymentPrice(stripePrice *stripe.Price) *domain.PaymentPrice {

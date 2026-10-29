@@ -50,8 +50,14 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	locale, err := domain.ParseBookingLocale(request.Locale)
+	if err != nil {
+		httpx.RespondWithError(w, errs.NewInvalidValueErr(fmt.Sprintf("locale: %v", err)), http.StatusBadRequest)
+		return
+	}
+
 	// Call service to create booking
-	booking, err := h.svc.CreateBooking(ctx, request.AvailabilityID, request.ClientID, request.ProductID, request.SlotStartTime, request.GuestFirstName, request.GuestLastName, request.GuestEmail, request.GuestPhone)
+	booking, err := h.svc.CreateBooking(ctx, request.AvailabilityID, request.ClientID, request.ProductID, request.SlotStartTime, request.GuestFirstName, request.GuestLastName, request.GuestEmail, request.GuestPhone, locale)
 	if err != nil {
 		var statusCode int
 		switch {
@@ -76,7 +82,7 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		cancellationReason = &booking.CancellationReason
 	}
 
-	response := domain.BookingResponse{
+	response := domain.CreateBookingResponse{BookingResponse: domain.BookingResponse{
 		ID:                 booking.ID,
 		AvailabilityID:     booking.AvailabilityID,
 		ClientID:           booking.ClientID,
@@ -98,6 +104,11 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		GuestEmail:         booking.GuestEmail,
 		GuestPhone:         booking.GuestPhone,
 		Token:              booking.Token,
+	},
+		ClientSecret:         booking.PaymentClientSecret,
+		AmountDueOnlineCents: booking.AmountDueOnlineCents,
+		HoldExpiresAt:        booking.HoldExpiresAt,
+		Locale:               string(booking.Locale),
 	}
 
 	logger.InfoContext(ctx, "Handler: Booking created successfully",
