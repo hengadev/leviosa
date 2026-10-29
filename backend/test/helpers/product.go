@@ -49,9 +49,9 @@ func InsertProduct(t *testing.T, ctx context.Context, pool *pgxpool.Pool, produc
 	INSERT INTO catalog.products (
 		id, name, description, category_id, duration,
 		created_at, updated_at, status, availability,
-		buffer_time, cancellation_hours, stripe_product_id, metadata
+		buffer_time, cancellation_hours, stripe_product_id, metadata, deposit
 	) VALUES (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
 	)`
 
 	// Handle NULLable fields for database insertion
@@ -69,6 +69,12 @@ func InsertProduct(t *testing.T, ctx context.Context, pool *pgxpool.Pool, produc
 		finalMetadata = metadataJSON
 	}
 
+	var depositJSON []byte
+	if product.Deposit != nil {
+		depositJSON, err = json.Marshal(product.Deposit)
+		require.NoError(t, err, "Failed to marshal deposit for product insertion")
+	}
+
 	_, err = pool.Exec(ctx, query,
 		product.ID,
 		product.Name,
@@ -83,6 +89,7 @@ func InsertProduct(t *testing.T, ctx context.Context, pool *pgxpool.Pool, produc
 		product.CancellationHours,
 		product.StripeProductID,
 		finalMetadata,
+		depositJSON,
 	)
 	require.NoError(t, err, fmt.Sprintf("Failed to pre-insert product '%s' for category %s", product.Name, product.CategoryID))
 }
@@ -106,13 +113,15 @@ func GetProductByID(t *testing.T, ctx context.Context, productID uuid.UUID, pool
 			buffer_time,
 			cancellation_hours,
 			stripe_product_id,
-			metadata
+			metadata,
+			deposit
 		FROM catalog.products
 		WHERE id = $1
 	`
 
 	var prod domain.Product
 	var metadataJSON []byte
+	var depositJSON []byte
 
 	err := pool.QueryRow(ctx, query, productID).Scan(
 		&prod.ID,
@@ -128,6 +137,7 @@ func GetProductByID(t *testing.T, ctx context.Context, productID uuid.UUID, pool
 		&prod.CancellationHours,
 		&prod.StripeProductID,
 		&metadataJSON,
+		&depositJSON,
 	)
 
 	if err != nil {
@@ -140,6 +150,11 @@ func GetProductByID(t *testing.T, ctx context.Context, productID uuid.UUID, pool
 	if metadataJSON != nil {
 		err = json.Unmarshal(metadataJSON, &prod.Metadata)
 		require.NoError(t, err, "Failed to unmarshal metadata from database")
+	}
+
+	if depositJSON != nil {
+		err = json.Unmarshal(depositJSON, &prod.Deposit)
+		require.NoError(t, err, "Failed to unmarshal deposit from database")
 	}
 
 	return &prod, nil

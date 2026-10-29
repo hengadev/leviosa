@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -64,6 +65,9 @@ type PracticeProductSeed struct {
 	CancellationHours int    `json:"cancellation_hours"`
 	PriceCents        int    `json:"price_cents"`
 	Currency          string `json:"currency"`
+	// Deposit is a PLACEHOLDER (issue 013): the practitioner's real deposit
+	// is unknown and is set in the admin product form before launch.
+	Deposit *catalogDomain.Deposit `json:"deposit,omitempty"`
 }
 
 type PracticeBuildingSeed struct {
@@ -156,7 +160,7 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 		partnerID, practice.Partner.FirstName, practice.Partner.LastName,
 		practice.Product.Name, practice.Product.DurationMinutes, practice.Product.PriceCents,
 		practice.Room.Name)
-	log.Printf("NOTE: practice values (name, bio, title, address, price) are seed placeholders — replace with the practitioner's real content before launch")
+	log.Printf("NOTE: practice values (name, bio, title, address, price, deposit) are seed placeholders — replace with the practitioner's real content before launch")
 	return nil
 }
 
@@ -183,19 +187,31 @@ func seedProduct(ctx context.Context, db *pgxpool.Pool, categoryID uuid.UUID, pr
 		BufferTime:        product.BufferMinutes,
 		CancellationHours: product.CancellationHours,
 		StripeProductID:   seedStripeProductID,
+		Deposit:           product.Deposit,
 	}
 	if err := domainProduct.Valid(ctx); err != nil {
 		return uuid.Nil, fmt.Errorf("product invalid: %w", err)
+	}
+	if err := domainProduct.Deposit.ValidateAgainstPrice(product.PriceCents); err != nil {
+		return uuid.Nil, fmt.Errorf("product deposit invalid: %w", err)
+	}
+	var depositJSON []byte
+	if domainProduct.Deposit != nil {
+		var err error
+		if depositJSON, err = json.Marshal(domainProduct.Deposit); err != nil {
+			return uuid.Nil, fmt.Errorf("encode product deposit: %w", err)
+		}
 	}
 
 	var id uuid.UUID
 	err := db.QueryRow(ctx, `
 		INSERT INTO catalog.products (
 			id, name, description, category_id, duration, created_at, updated_at,
-			status, availability, buffer_time, cancellation_hours, stripe_product_id
+			status, availability, buffer_time, cancellation_hours, stripe_product_id,
+			deposit
 		) VALUES (
 			$1, $2, $3, $4, $5, NOW(), NOW(),
-			$6, $7, $8, $9, $10
+			$6, $7, $8, $9, $10, $11
 		)
 		ON CONFLICT (name) DO UPDATE SET
 			description = EXCLUDED.description,
@@ -205,11 +221,13 @@ func seedProduct(ctx context.Context, db *pgxpool.Pool, categoryID uuid.UUID, pr
 			availability = EXCLUDED.availability,
 			buffer_time = EXCLUDED.buffer_time,
 			cancellation_hours = EXCLUDED.cancellation_hours,
+			deposit = EXCLUDED.deposit,
 			updated_at = NOW()
 		RETURNING id
 	`, domainProduct.ID, domainProduct.Name, domainProduct.Description, domainProduct.CategoryID,
 		domainProduct.Duration, domainProduct.Status, domainProduct.Availability,
 		domainProduct.BufferTime, domainProduct.CancellationHours, domainProduct.StripeProductID,
+		depositJSON,
 	).Scan(&id)
 	return id, err
 }

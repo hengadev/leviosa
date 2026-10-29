@@ -1,5 +1,5 @@
 {
-  "_readme": "Every practice value below (name, bio, title, address, price, product copy) is a PLACEHOLDER invented for local development. The practitioner's real content replaces it before launch (issue 021). The practice page video setting is intentionally not seeded: the page shows its placeholder frame until a real video is configured in settings.",
+  "_readme": "Every practice value below (name, bio, title, address, price, deposit, product copy) is a PLACEHOLDER invented for local development. The practitioner's real content replaces it before launch (issue 021). The practice page video setting is intentionally not seeded: the page shows its placeholder frame until a real video is configured in settings.",
   "admins": [
     {
       "email": "admin@example.com",
@@ -51,7 +51,9 @@
       "buffer_minutes": 0,
       "cancellation_hours": 24,
       "price_cents": 7000,
-      "currency": "EUR"
+      "currency": "EUR",
+      "_deposit_readme": "PLACEHOLDER deposit (acompte): the practitioner's real deposit is unknown. 'fixed' value is cents, 'percent' value is whole percentage points of the price. Remove the field for the full price to be paid online.",
+      "deposit": { "type": "fixed", "value": 2000 }
     },
     "building": {
       "name": "Cabinet Leviosa",
