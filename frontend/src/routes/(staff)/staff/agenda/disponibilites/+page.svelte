@@ -19,6 +19,8 @@
 	import Modal from '$lib/ui/Modal.svelte';
 	import { FormInput } from '$lib/ui/bits-components';
 	import { FormSelect } from '$lib/ui/bits-components';
+	import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
+	import { practiceDate, practiceInstant } from './occurrences';
 
 	let { data }: PageProps = $props();
 
@@ -45,6 +47,7 @@
 	let formDaysOfWeek = $state<number[]>([]);
 
 	// --- Edit form state ---
+	let editDate = $state('');
 	let editStartTime = $state('');
 	let editEndTime = $state('');
 	let editNotes = $state('');
@@ -77,15 +80,35 @@
 	);
 
 	// --- Helpers ---
+	// Dates (YYYY-MM-DD) are calendar days; instants are shown in the practice time zone.
 	function formatDate(dateStr: string): string {
-		return new Date(dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+		return new Date(`${dateStr.slice(0, 10)}T12:00:00Z`).toLocaleDateString('fr-FR', {
+			day: 'numeric',
+			month: 'short',
+			timeZone: 'UTC'
+		});
 	}
 
 	function formatTime(iso: string): string {
 		return new Date(iso).toLocaleTimeString('fr-FR', {
 			hour: '2-digit',
-			minute: '2-digit'
+			minute: '2-digit',
+			timeZone: PRACTICE_TIME_ZONE
 		});
+	}
+
+	// HH:MM of an instant in the practice time zone.
+	function practiceClock(iso: string): string {
+		return new Date(iso).toLocaleTimeString('fr-FR', {
+			hour: '2-digit',
+			minute: '2-digit',
+			hourCycle: 'h23',
+			timeZone: PRACTICE_TIME_ZONE
+		});
+	}
+
+	function todayDate(): string {
+		return practiceDate(new Date().toISOString()).toString();
 	}
 
 	function statusBadge(status: string): string {
@@ -118,36 +141,34 @@
 		}
 	}
 
+	const weekdayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
 	function recurrenceLabel(slot: Availability): string {
 		if (!slot.recurrencePattern) return '';
 		const p = slot.recurrencePattern;
-		const interval = p.interval > 1 ? ` toutes les ${p.interval} ` : ' ';
+		const n = p.interval > 1 ? p.interval : 1;
 		switch (p.type) {
 			case 'daily':
-				return `Quotidien${interval.trimStart()}`;
-			case 'weekly':
-				return `Hebdomadaire${interval.trimStart()}`;
-			case 'monthly':
-				return `Mensuel${interval.trimStart()}`;
+				return n > 1 ? `Tous les ${n} jours` : 'Tous les jours';
+			case 'weekly': {
+				const days = [...(p.days_of_week ?? [])]
+					.sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+					.map((d) => weekdayNames[d])
+					.join(', ');
+				return n > 1 ? `Toutes les ${n} semaines, le ${days}` : `Chaque semaine, le ${days}`;
+			}
+			case 'monthly': {
+				const day = practiceDate(slot.startTime).day;
+				return n > 1 ? `Tous les ${n} mois, le ${day}` : `Chaque mois, le ${day}`;
+			}
 			default:
 				return p.type;
 		}
 	}
 
-	// Build an RFC3339 UTC timestamp from a local date + HH:MM time
+	// An RFC3339 instant from a date + HH:MM wall-clock time in the practice time zone.
 	function toDatetime(date: string, time: string): string {
-		return new Date(`${date}T${time}:00`).toISOString();
-	}
-
-	// Format an ISO timestamp for a datetime-local input (YYYY-MM-DDTHH:MM, local time)
-	function toDatetimeLocal(iso: string): string {
-		const d = new Date(iso);
-		const year = d.getFullYear();
-		const month = String(d.getMonth() + 1).padStart(2, '0');
-		const day = String(d.getDate()).padStart(2, '0');
-		const hours = String(d.getHours()).padStart(2, '0');
-		const minutes = String(d.getMinutes()).padStart(2, '0');
-		return `${year}-${month}-${day}T${hours}:${minutes}`;
+		return practiceInstant(date, time);
 	}
 
 	// --- Time options (10-min aligned) ---
@@ -200,7 +221,7 @@
 
 	// --- Reset form ---
 	function resetCreateForm() {
-		formDate = new Date().toISOString().split('T')[0];
+		formDate = todayDate();
 		formStartTime = '09:00';
 		formEndTime = '10:00';
 		formRoomId = activeAllocations[0]?.roomId ?? '';
@@ -210,12 +231,13 @@
 		formRecurrenceType = 'weekly';
 		formRecurrenceInterval = '1';
 		formRecurrenceEndDate = '';
-		formDaysOfWeek = [new Date().getDay()];
+		formDaysOfWeek = [new Date(`${formDate}T12:00:00Z`).getUTCDay()];
 		conflictWarning = null;
 		formError = null;
 	}
 
 	function resetEditForm() {
+		editDate = '';
 		editStartTime = '';
 		editEndTime = '';
 		editNotes = '';
@@ -240,6 +262,18 @@
 
 		if (startIso >= endIso) {
 			formError = "L'heure de début doit être antérieure à l'heure de fin.";
+			submitting = false;
+			return;
+		}
+
+		if (startIso <= new Date().toISOString()) {
+			formError = 'Le créneau doit commencer dans le futur.';
+			submitting = false;
+			return;
+		}
+
+		if (formIsRecurring && formRecurrenceEndDate && formRecurrenceEndDate < formDate) {
+			formError = 'La date de fin doit suivre le premier jour.';
 			submitting = false;
 			return;
 		}
@@ -274,9 +308,8 @@
 				body.pattern = {
 					type: formRecurrenceType,
 					interval: parseInt(formRecurrenceInterval, 10) || 1,
-					until: formRecurrenceEndDate
-						? new Date(`${formRecurrenceEndDate}T23:59:59`).toISOString()
-						: undefined,
+					// The end date is inclusive: the series' last day.
+					until: formRecurrenceEndDate ? toDatetime(formRecurrenceEndDate, '23:59') : undefined,
 					days_of_week: formRecurrenceType === 'weekly' ? formDaysOfWeek : undefined
 				};
 
@@ -323,14 +356,27 @@
 		formError = null;
 		conflictWarning = null;
 
-		if (!editStartTime || !editEndTime) {
-			formError = 'Horaires obligatoires.';
+		if (!editDate || !editStartTime || !editEndTime) {
+			formError = 'Date et horaires obligatoires.';
 			submitting = false;
 			return;
 		}
 
-		const startIso = new Date(editStartTime).toISOString();
-		const endIso = new Date(editEndTime).toISOString();
+		const startIso = toDatetime(editDate, editStartTime);
+		const endIso = toDatetime(editDate, editEndTime);
+
+		if (startIso >= endIso) {
+			formError = "L'heure de début doit être antérieure à l'heure de fin.";
+			submitting = false;
+			return;
+		}
+		if (startIso <= new Date().toISOString()) {
+			formError = selectedSlot.isRecurring
+				? 'Choisissez un premier jour à venir : la modification s’applique à partir de cette date.'
+				: 'Le créneau doit commencer dans le futur.';
+			submitting = false;
+			return;
+		}
 
 		// Check conflict (exclude current slot)
 		checkingConflict = true;
@@ -387,7 +433,7 @@
 
 			if (!res.ok) {
 				const err = await res.json().catch(() => ({}));
-				formError = err.message || "Erreur lors de l'annulation.";
+				formError = err.message || 'Erreur lors de la suppression.';
 				submitting = false;
 				return;
 			}
@@ -408,17 +454,32 @@
 		createModalOpen = true;
 	}
 
+	// A recurring availability is edited from a first day on (the series'
+	// first occurrence moves there); by default the later of its current
+	// first day and tomorrow. Existing bookings never move.
 	function openEditModal(slot: Availability) {
-		selectedSlot = slot;
+		const series = slot.isRecurring
+			? ((data.series as Availability[]).find((a) => a.id === slot.id) ?? slot)
+			: slot;
+		selectedSlot = series;
 		resetEditForm();
-		editStartTime = toDatetimeLocal(slot.startTime);
-		editEndTime = toDatetimeLocal(slot.endTime);
-		editNotes = slot.notes ?? '';
+		if (series.isRecurring) {
+			const tomorrow = practiceDate(new Date(Date.now() + 24 * 3600 * 1000).toISOString()).toString();
+			const first = practiceDate(series.startTime).toString();
+			editDate = first > tomorrow ? first : tomorrow;
+		} else {
+			editDate = practiceDate(series.startTime).toString();
+		}
+		editStartTime = practiceClock(series.startTime);
+		editEndTime = practiceClock(series.endTime);
+		editNotes = series.notes ?? '';
 		editModalOpen = true;
 	}
 
 	function openCancelConfirm(slot: Availability) {
-		selectedSlot = slot;
+		selectedSlot = slot.isRecurring
+			? ((data.series as Availability[]).find((a) => a.id === slot.id) ?? slot)
+			: slot;
 		formError = null;
 		cancelConfirmOpen = true;
 	}
@@ -438,7 +499,7 @@
 		<div>
 			<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Agenda</p>
 			<h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">Disponibilités</h1>
-			<p class="text-muted-foreground mt-3 text-sm">Gérez vos créneaux pour les 7 prochains jours</p>
+			<p class="text-muted-foreground mt-3 text-sm">Vos disponibilités ponctuelles et récurrentes, semaine par semaine</p>
 			<div class="mt-4 h-px w-16 bg-foreground/20"></div>
 		</div>
 		<button
@@ -446,9 +507,56 @@
 			class="inline-flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
 		>
 			<Plus size={16} />
-			Nouveau créneau
+			Nouvelle disponibilité
 		</button>
 	</div>
+
+	<!-- Recurring availabilities -->
+	{#if data.series.length > 0}
+		<div class="mb-8 bg-background rounded-xl border border-border overflow-hidden">
+			<div class="bg-muted/50 px-5 py-3 border-b border-border flex items-center gap-2">
+				<Repeat size={15} class="text-muted-foreground" />
+				<h2 class="font-semibold text-foreground">Disponibilités récurrentes</h2>
+			</div>
+			<div class="divide-y divide-border">
+				{#each data.series as serie (serie.id)}
+					<div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+						<div class="flex-1">
+							<p class="text-sm font-medium text-foreground">
+								{recurrenceLabel(serie)} · {formatTime(serie.startTime)} – {formatTime(serie.endTime)}
+							</p>
+							<p class="text-xs text-muted-foreground mt-0.5">
+								Depuis le {formatDate(serie.date)}
+								{#if serie.recurrencePattern?.until}
+									· jusqu’au {formatDate(practiceDate(serie.recurrencePattern.until).toString())}
+								{:else}
+									· sans date de fin
+								{/if}
+							</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={() => openEditModal(serie)}
+								class="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
+								title="Modifier la série"
+								aria-label="Modifier la série"
+							>
+								<Pencil size={14} />
+							</button>
+							<button
+								onclick={() => openCancelConfirm(serie)}
+								class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+								title="Supprimer la série"
+								aria-label="Supprimer la série"
+							>
+								<X size={14} />
+							</button>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<!-- Room Allocations Info -->
 	{#if activeAllocations.length > 0}
@@ -501,16 +609,34 @@
 	<div
 		class="flex items-center justify-between mb-6 bg-background rounded-xl border border-border p-4"
 	>
-		<button class="p-2 hover:bg-muted rounded-md transition-colors" disabled>
-			<ChevronLeft size={20} class="text-muted-foreground" />
-		</button>
+		{#if data.weekOffset > 0}
+			<a
+				href="?semaine={data.weekOffset - 1}"
+				class="p-2 hover:bg-muted rounded-md transition-colors"
+				aria-label="Semaine précédente"
+			>
+				<ChevronLeft size={20} class="text-muted-foreground" />
+			</a>
+		{:else}
+			<span class="p-2 opacity-40" aria-hidden="true"><ChevronLeft size={20} class="text-muted-foreground" /></span>
+		{/if}
 		<div class="flex items-center gap-2">
 			<CalendarClock size={18} class="text-muted-foreground" />
-			<span class="font-semibold text-foreground">Cette semaine</span>
+			<span class="font-semibold text-foreground">
+				{#if data.weekOffset === 0}
+					7 prochains jours
+				{:else if data.availabilities.length > 0}
+					À partir du {formatDate(data.availabilities[0].date)}
+				{/if}
+			</span>
 		</div>
-		<button class="p-2 hover:bg-muted rounded-md transition-colors" disabled>
+		<a
+			href="?semaine={data.weekOffset + 1}"
+			class="p-2 hover:bg-muted rounded-md transition-colors"
+			aria-label="Semaine suivante"
+		>
 			<ChevronRight size={20} class="text-muted-foreground" />
-		</button>
+		</a>
 	</div>
 
 	<!-- Status Filter -->
@@ -537,7 +663,7 @@
 					</h2>
 				</div>
 				<div class="divide-y divide-border">
-					{#each day.slots as slot (slot.id)}
+					{#each day.slots as slot (slot.key)}
 						<div class="p-4 sm:p-5 hover:bg-muted/20 transition-colors">
 							<div class="flex flex-col sm:flex-row sm:items-center gap-3">
 								<div
@@ -548,8 +674,9 @@
 										{formatTime(slot.startTime)} – {formatTime(slot.endTime)}
 									</span>
 									{#if slot.isRecurring}
-										<span class="text-xs text-muted-foreground" title={recurrenceLabel(slot)}>
+										<span class="text-xs text-muted-foreground inline-flex items-center gap-1" title={recurrenceLabel(slot)}>
 											<Repeat size={12} class="inline" />
+											<span class="sr-only">Récurrente :</span>{recurrenceLabel(slot)}
 										</span>
 									{/if}
 								</div>
@@ -577,14 +704,14 @@
 										<button
 											onclick={() => openEditModal(slot)}
 											class="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
-											title="Modifier ce créneau"
+											title={slot.isRecurring ? 'Modifier la série' : 'Modifier ce créneau'}
 										>
 											<Pencil size={14} />
 										</button>
 										<button
 											onclick={() => openCancelConfirm(slot)}
 											class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
-											title="Annuler ce créneau"
+											title={slot.isRecurring ? 'Supprimer la série' : 'Supprimer ce créneau'}
 										>
 											<X size={14} />
 										</button>
@@ -627,10 +754,10 @@
 			required
 		/>
 
-		<!-- Date -->
+		<!-- Date (the first day of a recurring availability) -->
 		<div class="space-y-2">
 			<label class="text-sm font-medium text-foreground" for="create-date">
-				Date <span class="text-destructive ml-1">*</span>
+				{formIsRecurring ? 'Premier jour' : 'Date'} <span class="text-destructive ml-1">*</span>
 			</label>
 			<input
 				id="create-date"
@@ -684,6 +811,7 @@
 			<button
 				type="button"
 				role="switch"
+				aria-label="Récurrent"
 				aria-checked={formIsRecurring}
 				onclick={() => (formIsRecurring = !formIsRecurring)}
 				class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out {formIsRecurring
@@ -743,7 +871,7 @@
 
 				<div class="space-y-2">
 					<label class="text-sm font-medium text-foreground" for="create-recurrence-end">
-						Date de fin de récurrence
+						Dernier jour (facultatif)
 					</label>
 					<input
 						id="create-recurrence-end"
@@ -778,7 +906,13 @@
 </Modal>
 
 <!-- ========== EDIT MODAL ========== -->
-<Modal bind:isOpen={editModalOpen} title="Modifier le créneau" description="Modifiez les horaires de ce créneau.">
+<Modal
+	bind:isOpen={editModalOpen}
+	title={selectedSlot?.isRecurring ? 'Modifier la série' : 'Modifier le créneau'}
+	description={selectedSlot?.isRecurring
+		? 'Les nouveaux horaires s’appliquent à partir du jour choisi. Les réservations déjà prises ne bougent pas.'
+		: 'Modifiez les horaires de ce créneau. Les réservations déjà prises ne bougent pas.'}
+>
 	<div class="space-y-4">
 		{#if formError}
 			<div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">{formError}</div>
@@ -798,27 +932,43 @@
 			</div>
 		{/if}
 
-		<!-- Start / End time for edit -->
+		<!-- Date / Start / End time for edit (10-minute steps, ADR-0006) -->
+		<div class="space-y-2">
+			<label class="text-sm font-medium text-foreground" for="edit-date">
+				{selectedSlot?.isRecurring ? 'À partir du' : 'Date'}
+			</label>
+			<input
+				id="edit-date"
+				type="date"
+				bind:value={editDate}
+				min={todayDate()}
+				class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+			/>
+		</div>
 		<div class="grid grid-cols-2 gap-3">
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-foreground" for="edit-start"
-					>Début</label
-				>
-				<input
+				<label class="text-sm font-medium text-foreground" for="edit-start">Début</label>
+				<select
 					id="edit-start"
-					type="datetime-local"
 					bind:value={editStartTime}
 					class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				/>
+				>
+					{#each timeOptions as opt}
+						<option value={opt}>{opt}</option>
+					{/each}
+				</select>
 			</div>
 			<div class="space-y-2">
 				<label class="text-sm font-medium text-foreground" for="edit-end">Fin</label>
-				<input
+				<select
 					id="edit-end"
-					type="datetime-local"
 					bind:value={editEndTime}
 					class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-				/>
+				>
+					{#each timeOptions as opt}
+						<option value={opt}>{opt}</option>
+					{/each}
+				</select>
 			</div>
 		</div>
 
@@ -850,8 +1000,10 @@
 <!-- ========== CANCEL CONFIRM MODAL ========== -->
 <Modal
 	bind:isOpen={cancelConfirmOpen}
-	title="Annuler le créneau"
-	description="Êtes-vous sûr de vouloir annuler ce créneau ? Cette action est irréversible."
+	title={selectedSlot?.isRecurring ? 'Supprimer la série' : 'Supprimer le créneau'}
+	description={selectedSlot?.isRecurring
+		? 'La série ne proposera plus aucun créneau. Les réservations déjà prises sont conservées : annulez-les une à une si besoin.'
+		: 'Ce créneau ne sera plus proposé. Les réservations déjà prises sont conservées : annulez-les une à une si besoin.'}
 >
 	<div class="space-y-4">
 		{#if formError}
@@ -861,6 +1013,7 @@
 		{#if selectedSlot}
 			<div class="p-3 bg-muted rounded-md text-sm">
 				<p class="font-medium text-foreground">
+					{#if selectedSlot.isRecurring}{recurrenceLabel(selectedSlot)} ·{:else}{formatDate(selectedSlot.date)} ·{/if}
 					{formatTime(selectedSlot.startTime)} – {formatTime(selectedSlot.endTime)}
 				</p>
 				<p class="text-muted-foreground mt-1">
@@ -884,7 +1037,7 @@
 				{#if submitting}
 					<Loader2 size={14} class="animate-spin" />
 				{/if}
-				Confirmer l'annulation
+				Supprimer
 			</button>
 		</div>
 	</div>
