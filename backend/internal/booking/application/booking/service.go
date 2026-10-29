@@ -20,6 +20,7 @@ type BookingService struct {
 	tokenSecret         []byte
 	audit               audit.Logger
 	policyProvider      ports.BookingPolicyProvider
+	exceptionRepo       ports.AvailabilityExceptionRepository
 }
 
 // New creates a new instance of the booking service

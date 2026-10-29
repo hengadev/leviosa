@@ -96,8 +96,13 @@ func (s *BookingService) CreateBooking(
 		return nil, err
 	}
 	// The windows are the availability's occurrences containing the start:
-	// for a recurring availability, any occurrence of its series.
-	windows := availability.Occurrences(slotStartTime, slotStartTime.Add(time.Nanosecond))
+	// for a recurring availability, any occurrence of its series not closed
+	// by an availability exception.
+	exceptions, err := s.exceptionsOf(ctx, availability)
+	if err != nil {
+		return nil, err
+	}
+	windows := availability.OccurrencesExcept(slotStartTime, slotStartTime.Add(time.Nanosecond), exceptions)
 	query, err := s.slotQuery(ctx, availability.UserID, windows, product, policy, now)
 	if err != nil {
 		return nil, err

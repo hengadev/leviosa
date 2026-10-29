@@ -20,9 +20,9 @@ import (
 // page and the server can never disagree on what is bookable.
 //
 // Recurring availabilities are expanded into their occurrences over the
-// requested range (Availability.Occurrences, issue 011); availability
-// exceptions (issue 012) will be subtracted before the windows reach the
-// engine. Occupancy is partner-wide: every booking of the partner that
+// requested range (Availability.Occurrences, issue 011), minus the
+// occurrences closed by an availability exception (issue 012,
+// OccurrencesExcept). Occupancy is partner-wide: every booking of the partner that
 // occupies time (Booking.OccupiesTime, ADR-0018) blocks the slots of all the
 // partner's availabilities, since one practitioner sees one client at a time.
 
@@ -81,13 +81,22 @@ func (s *BookingService) GetFreeSlots(ctx context.Context, partnerID, productID 
 		return nil, fmt.Errorf("list partner availabilities: %w", err)
 	}
 
-	var windows []domain.AvailabilityWindow
+	availabilities := make([]*domain.Availability, 0, len(availabilitiesEncx))
 	for _, availabilityEncx := range availabilitiesEncx {
 		availability, err := domain.DecryptAvailabilityEncx(ctx, s.crypto, availabilityEncx)
 		if err != nil {
 			return nil, errs.NewNotDecryptedErr("availability", err)
 		}
-		windows = append(windows, availability.Occurrences(from, to)...)
+		availabilities = append(availabilities, availability)
+	}
+	exceptions, err := s.exceptionsOf(ctx, availabilities...)
+	if err != nil {
+		return nil, err
+	}
+
+	var windows []domain.AvailabilityWindow
+	for _, availability := range availabilities {
+		windows = append(windows, availability.OccurrencesExcept(from, to, exceptions)...)
 	}
 
 	query, err := s.slotQuery(ctx, partnerUserID, windows, product, policy, now)
