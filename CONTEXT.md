@@ -38,7 +38,7 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Building** | A physical location that contains treatment rooms. |
 | **Room** | A treatment space within a building. Has a name, capacity, and allocation type. |
 | **Allocation** | The assignment of a room to a partner. Two types: `dedicated` (fixed time period, one partner) or `shared` (ongoing availability pool). |
-| **Availability** | A time window a partner offers for bookings. Can be a single occurrence or a recurring pattern (daily/weekly/monthly) with an optional end date. |
+| **Availability** | A time window a partner offers for bookings. Can be a single occurrence or a recurring pattern (daily/weekly/monthly) with an optional end date. A recurring availability is expanded into occurrences in Europe/Paris (wall-clock times kept across daylight-saving changes). Editing one applies from the chosen day on; deleting one deactivates it. Neither ever moves or cancels the bookings already made. |
 | **Availability exception** | A date or date range on which a recurring availability does not apply (e.g. holidays, a training day). Closing a date never cancels the bookings already in it. |
 | **Slot** | A bookable start time offered to clients. Not stored: derived from a partner's availabilities, the product's duration and buffer time, and the existing bookings. The same availability yields different slots for products of different durations. Slots start at the availability's start and follow each other every duration + buffer time; a slot that would end after the availability is not offered. |
 | **Minimum notice** | The shortest delay between now and a slot's start for that slot to be bookable (e.g. 12 hours). |
