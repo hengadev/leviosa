@@ -59,6 +59,7 @@ passes any extra key through to its consumer with no template change.
 | `CLIENT_IP_HEADER` | ✓ | ✓ | ✓ | `backend.env`, `frontend.env` | operator |
 | `COMING_SOON` | ✓ (`true` until launch) | ✓ | ✓ (`false`) | `backend.env`, `frontend.env` → the frontend redirects everything to `/coming-soon` | operator |
 | `PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC` | optional | optional | | `backend.env`, `frontend.env` → the analytics script | operator |
+| `PUBLIC_STRIPE_PUBLISHABLE_KEY` | live | **test** | **test** | `backend.env`, `frontend.env` → the practice page's Stripe Payment Element (public by design; same Stripe account and mode as `STRIPE_SECRET_KEY`). Unset: the booking card cannot take payments | operator |
 
 Other backend knobs (`LOG_LEVEL`, `RATE_LIMIT_*`, `REMINDER_*`, ...) may be
 added to `/app`; they reach `backend.env` only. A new **frontend** key needs a
