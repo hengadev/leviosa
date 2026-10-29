@@ -105,6 +105,24 @@ func (m *mockSettingsService) SetCompanyVatNumber(ctx context.Context, req *sett
 func (m *mockSettingsService) SetCompanyHostingProvider(ctx context.Context, req *settingsDomain.SetCompanyHostingProviderRequest) (*settingsDomain.SetCompanyHostingProviderResponse, error) {
 	return nil, nil
 }
+func (m *mockSettingsService) GetPracticePagePartner(ctx context.Context) (*settingsDomain.GetPracticePagePartnerResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetPracticePageProduct(ctx context.Context) (*settingsDomain.GetPracticePageProductResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) GetPracticePageVideo(ctx context.Context) (*settingsDomain.GetPracticePageVideoResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetPracticePagePartner(ctx context.Context, req *settingsDomain.SetPracticePagePartnerRequest) (*settingsDomain.SetPracticePagePartnerResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetPracticePageProduct(ctx context.Context, req *settingsDomain.SetPracticePageProductRequest) (*settingsDomain.SetPracticePageProductResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetPracticePageVideo(ctx context.Context, req *settingsDomain.SetPracticePageVideoRequest) (*settingsDomain.SetPracticePageVideoResponse, error) {
+	return nil, nil
+}
 
 func TestSettingsProvider_GetCompanyLogo_returnsURLFromService(t *testing.T) {
 	const wantURL = "https://s3.example.com/logo.png"
