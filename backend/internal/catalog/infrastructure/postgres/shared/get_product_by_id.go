@@ -30,6 +30,7 @@ func (r *SharedRepository) GetProductByID(ctx context.Context, productID uuid.UU
 		buffer_time,
 		cancellation_hours,
 		cancellation_tiers,
+		deposit,
 		stripe_product_id,
 		metadata
 	FROM catalog.products
@@ -40,6 +41,7 @@ func (r *SharedRepository) GetProductByID(ctx context.Context, productID uuid.UU
 		pr       domain.Product
 		metaProd []byte
 		tiers    []byte
+		deposit  []byte
 	)
 
 	err := r.pool.QueryRow(ctx, query, productID).Scan(
@@ -55,6 +57,7 @@ func (r *SharedRepository) GetProductByID(ctx context.Context, productID uuid.UU
 		&pr.BufferTime,
 		&pr.CancellationHours,
 		&tiers,
+		&deposit,
 		&pr.StripeProductID,
 		&metaProd,
 	)
@@ -74,6 +77,12 @@ func (r *SharedRepository) GetProductByID(ctx context.Context, productID uuid.UU
 	if tiers != nil {
 		if err := json.Unmarshal(tiers, &pr.CancellationTiers); err != nil {
 			return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product cancellation tiers: %w", err))
+		}
+	}
+
+	if deposit != nil {
+		if err := json.Unmarshal(deposit, &pr.Deposit); err != nil {
+			return nil, errs.NewInvalidInputErr(fmt.Errorf("failed to unmarshal product deposit: %w", err))
 		}
 	}
 
