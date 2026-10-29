@@ -403,6 +403,7 @@
                             onclick={() => {
                                 $bookingPolicyForm.minimum_notice_hours = data.bookingPolicy?.minimumNoticeHours ?? 12;
                                 $bookingPolicyForm.horizon_weeks = data.bookingPolicy?.horizonWeeks ?? 8;
+                                $bookingPolicyForm.payment_hold_minutes = data.bookingPolicy?.paymentHoldMinutes ?? 15;
                                 bookingPolicyDialogOpen = true;
                             }}
                         >
@@ -416,6 +417,14 @@
                             <div class="font-medium text-sm">Horizon de réservation</div>
                             <div class="text-sm text-foreground-alt mt-1">
                                 {formatWeeks(data.bookingPolicy.horizonWeeks)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">Maintien du créneau pendant le paiement</div>
+                            <div class="text-sm text-foreground-alt mt-1">
+                                {data.bookingPolicy.paymentHoldMinutes} min
                             </div>
                         </div>
                     </div>
@@ -1094,7 +1103,7 @@
                 Modifier la politique de réservation
             </Dialog.Title>
             <Dialog.Description class="text-foreground-alt !mt-1 text-sm">
-                Aucun créneau n'est proposé avant le délai minimum, ni au-delà de l'horizon
+                Aucun créneau n'est proposé avant le délai minimum, ni au-delà de l'horizon. Un créneau reste réservé au client le temps du paiement
             </Dialog.Description>
 
             <Separator.Root class="bg-muted mx-5 !mb-2 !mt-5 block h-px" />
@@ -1128,6 +1137,21 @@
                         class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
                     />
                     <p class="text-xs text-foreground-alt">De 1 à 52 semaines. Par défaut : 8 semaines.</p>
+                </div>
+
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="booking-payment-hold" class="text-sm font-medium">Maintien pendant le paiement (minutes)</Label.Root>
+                    <input
+                        id="booking-payment-hold"
+                        name="payment_hold_minutes"
+                        type="number"
+                        min="5"
+                        max="60"
+                        step="1"
+                        bind:value={$bookingPolicyForm.payment_hold_minutes}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    />
+                    <p class="text-xs text-foreground-alt">De 5 à 60 min. Par défaut : 15 min. Passé ce délai sans paiement, le créneau est proposé à nouveau.</p>
                 </div>
 
                 {#if $bookingPolicyErrors._errors?.length}

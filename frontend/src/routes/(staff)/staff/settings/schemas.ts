@@ -52,10 +52,12 @@ export const practicePageSchema = type({
 })
 
 // Booking Policy Settings Schema (slot engine): minimum notice in hours,
-// booking horizon in weeks — the same bounds the backend enforces.
+// booking horizon in weeks, payment hold in minutes (ADR-0018) — the same
+// bounds the backend enforces.
 export const bookingPolicySchema = type({
     minimum_notice_hours: "0 <= number.integer <= 168",
     horizon_weeks: "1 <= number.integer <= 52",
+    payment_hold_minutes: "5 <= number.integer <= 60",
 })
 
 // Types
@@ -102,6 +104,7 @@ export const practicePageDefaults: PracticePage = {
 export const bookingPolicyDefaults: BookingPolicy = {
     minimum_notice_hours: 12,
     horizon_weeks: 8,
+    payment_hold_minutes: 15,
 }
 
 export const otpDurationDefaults: OtpDuration = {
