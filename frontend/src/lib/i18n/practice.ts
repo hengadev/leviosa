@@ -116,6 +116,11 @@ export const strings = {
             "Ce créneau n'a pas pu vous être réservé. Si un paiement a été débité, il vous sera remboursé. Choisissez un autre créneau.",
         viewBooking: "Voir ma réservation",
         newBooking: "Choisir un autre créneau",
+        holdExpiredHeading: "Le délai de paiement est écoulé",
+        holdExpired:
+            "Le temps prévu pour payer est écoulé et ce créneau ne vous est plus réservé. Aucun paiement n'a été débité. Choisissez à nouveau un créneau.",
+        latePaymentRefunded:
+            "Votre paiement est arrivé après la fin du délai et ce créneau a été réservé entre-temps. Il vous est intégralement remboursé, un e-mail vous le confirme. Choisissez un autre créneau.",
         // footer
         legal: "Mentions légales",
         privacy: "Confidentialité",
@@ -190,6 +195,11 @@ export const strings = {
             "This slot couldn't be held for you. If you were charged, you'll be refunded. Please pick another slot.",
         viewBooking: "View my booking",
         newBooking: "Pick another slot",
+        holdExpiredHeading: "Your time to pay has run out",
+        holdExpired:
+            "The time set aside for payment has run out and this slot is no longer held for you. You haven't been charged. Please pick a slot again.",
+        latePaymentRefunded:
+            "Your payment arrived after the time limit and this slot was booked in the meantime. You're being refunded in full, and an email confirms it. Please pick another slot.",
         legal: "Legal notice",
         privacy: "Privacy",
         terms: "Terms",

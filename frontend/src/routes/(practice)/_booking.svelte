@@ -1,6 +1,7 @@
 <script lang="ts">
     import { ChevronLeft, ChevronRight } from "@lucide/svelte";
     import { onMount, tick } from "svelte";
+    import { invalidateAll } from "$app/navigation";
     import { cap, dictionary, fmt, type Locale } from "$lib/i18n/practice";
     import type { PracticeBooking, PracticeSlot } from "./practice";
     import Checkout from "./_checkout.svelte";
@@ -81,6 +82,11 @@
         resumeToken = null;
         await tick();
         calendarHeading?.focus();
+        // The slots changed since the page loaded (a hold expired, a slot was
+        // taken): reload them from the slot engine.
+        void invalidateAll().catch(() => {
+            // keep the slots already shown
+        });
     }
 
     onMount(() => {
