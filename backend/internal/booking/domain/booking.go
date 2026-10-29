@@ -69,6 +69,9 @@ const (
 	PaymentStatusPaid     PaymentStatus = "paid"
 	PaymentStatusFailed   PaymentStatus = "failed"
 	PaymentStatusRefunded PaymentStatus = "refunded"
+	// PaymentStatusPartiallyRefunded: a cancellation tier refunded part of
+	// the amount paid online (ADR-0014).
+	PaymentStatusPartiallyRefunded PaymentStatus = "partially_refunded"
 	PaymentStatusDisputed PaymentStatus = "disputed"
 )
 
@@ -133,6 +136,19 @@ type Booking struct {
 	// AmountDueOnlineCents is what the PaymentIntent charges (the deposit, or
 	// the full price), set on the booking just created. Never persisted.
 	AmountDueOnlineCents int `json:"-"`
+
+	// AmountPaidOnlineCents is what the client paid online, recorded when
+	// the booking is confirmed (0 when nothing was due online). Nil on
+	// bookings confirmed before it was recorded.
+	AmountPaidOnlineCents *int `json:"amount_paid_online_cents,omitempty"`
+
+	// CancelledBy is who cancelled the booking; empty when not cancelled, or
+	// cancelled before it was recorded.
+	CancelledBy CancellationActor `json:"cancelled_by,omitempty"`
+
+	// RefundedAmountCents is what the cancellation refunded (0 when its tier
+	// refunds nothing); nil when the booking was not cancelled that way.
+	RefundedAmountCents *int `json:"refunded_amount_cents,omitempty"`
 
 	// Administrative fields
 	CreatedAt time.Time `json:"created_at"`

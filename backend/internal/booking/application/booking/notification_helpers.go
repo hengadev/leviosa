@@ -34,6 +34,7 @@ func (s *BookingService) buildNotificationData(booking *domain.Booking, productN
 		// Cancellation details (populated by caller if applicable)
 		CancellationReason: booking.CancellationReason,
 		CancelledAt:        booking.CancelledAt,
+		CancelledBy:        string(booking.CancelledBy),
 	}
 
 	if booking.ClientID != nil {

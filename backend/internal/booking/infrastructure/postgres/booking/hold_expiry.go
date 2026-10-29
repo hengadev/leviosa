@@ -19,7 +19,7 @@ import (
 // ConfirmGuarded takes the partner's agenda lock (as CreateGuarded does),
 // locks the booking row, and confirms it only if verify accepts the
 // partner's other occupying bookings as they stand under the lock.
-func (r *Repository) ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID, verify func(current *domain.BookingEncx, others []*domain.BookingEncx) error) (bool, error) {
+func (r *Repository) ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID, amountPaidOnlineCents int, verify func(current *domain.BookingEncx, others []*domain.BookingEncx) error) (bool, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return false, errs.ClassifyPgError("begin guarded booking confirmation", err)
@@ -63,10 +63,10 @@ func (r *Repository) ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID
 
 	update := fmt.Sprintf(`
 		UPDATE %s.bookings
-		SET status = $2, payment_status = $3, updated_at = NOW()
+		SET status = $2, payment_status = $3, amount_paid_online_cents = $4, updated_at = NOW()
 		WHERE id = $1
 	`, r.schema)
-	if _, err := tx.Exec(ctx, update, id, domain.BookingStatusConfirmed, domain.PaymentStatusPaid); err != nil {
+	if _, err := tx.Exec(ctx, update, id, domain.BookingStatusConfirmed, domain.PaymentStatusPaid, amountPaidOnlineCents); err != nil {
 		return false, errs.ClassifyPgError("confirm booking", err)
 	}
 	if err := tx.Commit(ctx); err != nil {

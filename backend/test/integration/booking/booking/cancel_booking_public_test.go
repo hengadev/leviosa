@@ -281,10 +281,11 @@ func TestCancelBookingPublic(t *testing.T) {
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 	})
 
-	t.Run("cancel inside cancellation window returns 422", func(t *testing.T) {
+	t.Run("cancel inside the legacy cancellation window is allowed", func(t *testing.T) {
 		defer tu.ClearAuthData(t, context.Background(), authCtx)
 
-		// Product requires 48 hours notice, booking is 1 hour away
+		// The legacy window (48 hours) no longer blocks: a client can always
+		// cancel (ADR-0014). The product has no tiers: refunded in full.
 		bookingID, token := setupGuestBookingWithCancellationWindow(t, 48)
 
 		cancelBody := domain.CancelBookingRequest{Reason: "Too late to cancel"}
@@ -300,7 +301,13 @@ func TestCancelBookingPublic(t *testing.T) {
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusUnprocessableEntity, resp.StatusCode)
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+		var result domain.PublicBookingLookupResponse
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&result))
+		assert.Equal(t, domain.BookingStatusCancelled, result.Status)
+		require.NotNil(t, result.RefundedAmountCents)
+		assert.Equal(t, 8000, *result.RefundedAmountCents)
+		assert.Equal(t, domain.PaymentStatusRefunded, result.PaymentStatus)
 	})
 
 	t.Run("missing token returns 400", func(t *testing.T) {

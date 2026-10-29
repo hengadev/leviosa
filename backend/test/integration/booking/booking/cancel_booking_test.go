@@ -130,11 +130,13 @@ func TestCancelBooking(t *testing.T) {
 		err = json.NewDecoder(resp.Body).Decode(&cancelledBooking)
 		require.NoError(t, err)
 
-		// Assert booking is cancelled
+		// Assert booking is cancelled by the client; no reason is collected
+		// (ADR-0019), whatever the body says.
 		assert.Equal(t, domain.BookingStatusCancelled, cancelledBooking.Status)
 		assert.NotNil(t, cancelledBooking.CancelledAt)
-		assert.NotNil(t, cancelledBooking.CancellationReason)
-		assert.Equal(t, "Client needs to reschedule", *cancelledBooking.CancellationReason)
+		assert.Nil(t, cancelledBooking.CancellationReason)
+		assert.Equal(t, domain.CancelledByClient, cancelledBooking.CancelledBy)
+		require.NotNil(t, cancelledBooking.RefundedAmountCents)
 
 		// Verify in database
 		dbBooking, err := bookingRepo.GetByID(ctx, bookingID)
@@ -204,23 +206,5 @@ func TestCancelBooking(t *testing.T) {
 
 		// Assert 400 Bad Request
 		assert.Equal(t, http.StatusBadRequest, resp2.StatusCode)
-	})
-
-	t.Run("should return 415 for missing content-type header", func(t *testing.T) {
-		defer tu.ClearAuthData(t, ctx, authCtx)
-
-		userToken := tu.SetupStandardUser(t, ctx, authCtx)
-
-		req, err := http.NewRequest("POST", testServerURL+"/bookings/"+uuid.New().String()+"/cancel", bytes.NewReader([]byte(`{"reason":"test"}`)))
-		require.NoError(t, err)
-		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: userToken})
-		// Intentionally not setting Content-Type
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-
-		// Assert 415 Unsupported Media Type
-		assert.Equal(t, http.StatusUnsupportedMediaType, resp.StatusCode)
 	})
 }

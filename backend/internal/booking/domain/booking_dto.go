@@ -28,6 +28,10 @@ type BookingResponse struct {
 	CompletedAt        *time.Time            `json:"completed_at,omitempty"`
 	Availability       *AvailabilityResponse `json:"availability,omitempty"`
 
+	// Who cancelled and what the cancellation refunded (ADR-0014).
+	CancelledBy         CancellationActor `json:"cancelled_by,omitempty"`
+	RefundedAmountCents *int              `json:"refunded_amount_cents,omitempty"`
+
 	// Booking token for public guest access
 	Token string `json:"token,omitempty"`
 
@@ -100,6 +104,9 @@ type CreateBookingResponse struct {
 	Locale               string     `json:"locale,omitempty"`
 }
 
+// CancelBookingRequest is the body of the admin override cancellation. The
+// client cancellation takes no body: no free-text field in the cancellation
+// flow (ADR-0019).
 type CancelBookingRequest struct {
 	Reason string `json:"reason" validate:"required,min=1,max=500"`
 }
@@ -171,6 +178,33 @@ type PublicBookingLookupResponse struct {
 	TotalPriceCents int           `json:"total_price_cents"`
 	Currency        string        `json:"currency"`
 	PaymentStatus   PaymentStatus `json:"payment_status"`
+
+	// Locale the client booked in ("fr" or "en"); the booking page is shown
+	// in it.
+	Locale BookingLocale `json:"locale"`
+
+	// AmountPaidOnlineCents is what the client paid online (the deposit, or
+	// the full price); the balance is paid at the practice.
+	AmountPaidOnlineCents int `json:"amount_paid_online_cents"`
+
+	// RefundPreview is what the client would get back if they cancelled now;
+	// set only while the booking can be cancelled. The cancellation applies
+	// the same rule.
+	RefundPreview *RefundPreview `json:"refund_preview,omitempty"`
+
+	// Who cancelled and what was refunded, once cancelled.
+	CancelledBy         CancellationActor `json:"cancelled_by,omitempty"`
+	CancelledAt         *time.Time        `json:"cancelled_at,omitempty"`
+	RefundedAmountCents *int              `json:"refunded_amount_cents,omitempty"`
+}
+
+// RefundPreview is the refund a cancellation made now would give.
+type RefundPreview struct {
+	AmountCents int `json:"amount_cents"`
+	Percentage  int `json:"percentage"`
+	// MinHoursBefore is the threshold of the cancellation tier that applies;
+	// nil when the product has no tiers (the whole amount is refunded).
+	MinHoursBefore *int `json:"min_hours_before,omitempty"`
 }
 
 // AdminBookingsListResponse is the paginated response for the admin bookings list.

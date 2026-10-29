@@ -23,6 +23,7 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Booking
 			reminded_at,
 			hold_expires_at,
 			locale,
+			amount_paid_online_cents, cancelled_by, refunded_amount_cents,
 			created_at, updated_at,
 			dek_encrypted, key_version, metadata
 		FROM %s.bookings
@@ -57,6 +58,9 @@ func (r *Repository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Booking
 		&bookingEncx.RemindedAt,
 		&bookingEncx.HoldExpiresAt,
 		&bookingEncx.Locale,
+		&bookingEncx.AmountPaidOnlineCents,
+		&bookingEncx.CancelledBy,
+		&bookingEncx.RefundedAmountCents,
 		&bookingEncx.CreatedAt,
 		&bookingEncx.UpdatedAt,
 		&bookingEncx.DEKEncrypted,

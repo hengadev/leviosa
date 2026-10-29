@@ -117,7 +117,7 @@
             <aside class="space-y-5 border-b border-neutral-200 p-6 sm:p-8 lg:border-r lg:border-b-0">
                 <h2 class="text-2xl font-bold tracking-tight">{t.bookSession}</h2>
                 <p class="text-pretty text-neutral-600">
-                    {t.intro(data.product?.freeCancellationHours ?? 24, payment?.deposit ?? null)}
+                    {t.intro(data.product?.fullRefundHours ?? null, payment?.deposit ?? null)}
                 </p>
                 <ul class="space-y-2.5 border-t border-neutral-200 pt-5 text-sm text-neutral-700">
                     <li class="flex items-center gap-2.5">
