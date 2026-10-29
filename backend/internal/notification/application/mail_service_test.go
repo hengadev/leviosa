@@ -171,7 +171,10 @@ func (f *fakeEmailClient) SendBookingConfirmationEmail(ctx context.Context, req 
 func (f *fakeEmailClient) SendBookingPartnerNoticeEmail(ctx context.Context, req domain.BookingPartnerNoticeRequest) error {
 	return nil
 }
-func (f *fakeEmailClient) SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error {
+func (f *fakeEmailClient) SendBookingClientCancellationEmail(ctx context.Context, req domain.BookingClientCancellationRequest) error {
+	return nil
+}
+func (f *fakeEmailClient) SendBookingPartnerCancellationEmail(ctx context.Context, req domain.BookingPartnerCancellationRequest) error {
 	return nil
 }
 func (f *fakeEmailClient) SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error {

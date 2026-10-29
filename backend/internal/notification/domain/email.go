@@ -56,20 +56,6 @@ type PaymentNotificationRequest struct {
 	RetryURL    string `json:"retry_url,omitempty"` // non-empty for payment_failed emails
 }
 
-// Booking Cancellation Email
-type BookingCancellationRequest struct {
-	ToEmail     string `json:"to_email"`
-	ToFirstName string `json:"to_first_name"`
-	ToLastName  string `json:"to_last_name"`
-	BookingID   string `json:"booking_id"`
-	ProductName string `json:"product_name"`
-	RoomName    string `json:"room_name"`
-	Date        string `json:"date"`
-	Time        string `json:"time"`
-	Reason      string `json:"reason"`
-	Year        int    `json:"year"`
-}
-
 // BookingReminderRequest is the client reminder sent 24 hours before a
 // confirmed booking, written in the locale the client booked in (composed by
 // ComposeBookingReminder). Like every booking email it carries no health
