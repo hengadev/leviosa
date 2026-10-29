@@ -19,7 +19,7 @@ export const GET: RequestHandler = ({ url }) => {
         'Disallow: /client',
         'Disallow: /auth',
         'Disallow: /api',
-        'Disallow: /book/confirmation',
+        'Disallow: /bookings',
         'Disallow: /coming-soon',
         '',
         `Sitemap: ${url.origin}/sitemap.xml`,
