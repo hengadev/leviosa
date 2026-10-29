@@ -58,6 +58,7 @@ import (
 	availabilitySvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/availability"
 	bookingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
+	exceptionSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/exception"
 	metricsSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/metrics"
 	reviewSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/review"
 	roomSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
@@ -69,6 +70,7 @@ import (
 	availabilityRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
 	buildingRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
+	exceptionRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/exception"
 	metricsRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/metrics"
 	reviewRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/review"
 	roomRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
@@ -152,6 +154,7 @@ type Container struct {
 	RoomRepo           bookingPorts.RoomRepository
 	AllocationRepo     bookingPorts.RoomAllocationRepository
 	AvailabilityRepo   bookingPorts.AvailabilityRepository
+	ExceptionRepo      bookingPorts.AvailabilityExceptionRepository
 	BookingRepo        bookingPorts.BookingRepository
 	MetricsRepo        bookingPorts.MetricsRepository
 	RoomScheduleRepo   bookingPorts.RoomScheduleRepository
@@ -182,6 +185,7 @@ type Container struct {
 	RoomService         bookingPorts.RoomService
 	AllocationService   bookingPorts.RoomAllocationService
 	AvailabilityService bookingPorts.AvailabilityService
+	ExceptionService    bookingPorts.AvailabilityExceptionService
 	BookingService      bookingPorts.BookingService
 	MetricsService      bookingPorts.MetricsService
 	PaymentService      bookingPorts.PaymentService
@@ -352,6 +356,7 @@ func (c *Container) setupRepositories(ctx context.Context) error {
 		return fmt.Errorf("create allocation repo: %w", err)
 	}
 	c.AvailabilityRepo = availabilityRepo.New(ctx, c.DB)
+	c.ExceptionRepo = exceptionRepo.New(ctx, c.DB)
 	c.BookingRepo = bookingRepo.New(ctx, c.DB)
 	c.MetricsRepo = metricsRepo.New(c.DB)
 	c.RoomScheduleRepo = roomScheduleRepo.NewRoomScheduleRepository(c.DB)
@@ -519,7 +524,9 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
 		bookingSvc.WithAuditLogger(c.AuditLogger),
 		bookingSvc.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(c.SettingsService)),
+		bookingSvc.WithAvailabilityExceptionRepository(c.ExceptionRepo),
 	)
+	c.ExceptionService = exceptionSvc.New(c.ExceptionRepo, c.AvailabilityRepo, c.BookingRepo, c.Crypto)
 
 	c.PaymentService = bookingStripe
 
