@@ -24,8 +24,11 @@ func (s *BookingService) GetDashboardStats(ctx context.Context) (*domain.Dashboa
 		return nil, fmt.Errorf("get upcoming bookings: %w", err)
 	}
 
+	// Appointments only: bookings awaiting payment or expired are not
+	// pending payments of real appointments (ADR-0018).
 	pendingFilter := ports.BookingFilter{
 		PaymentStatus: []domain.PaymentStatus{domain.PaymentStatusPending},
+		ExcludeStatus: domain.NonAppointmentStatuses(),
 	}
 
 	pendingBookingsEncx, err := s.bookingRepo.List(ctx, pendingFilter)
@@ -34,7 +37,8 @@ func (s *BookingService) GetDashboardStats(ctx context.Context) (*domain.Dashboa
 	}
 
 	thisWeekFilter := ports.BookingFilter{
-		CreatedAfter: &startOfISOWeek,
+		CreatedAfter:  &startOfISOWeek,
+		ExcludeStatus: domain.NonAppointmentStatuses(),
 	}
 
 	thisWeekBookingsEncx, err := s.bookingRepo.List(ctx, thisWeekFilter)

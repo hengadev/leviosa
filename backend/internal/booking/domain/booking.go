@@ -7,15 +7,59 @@ import (
 	"github.com/google/uuid"
 )
 
-// BookingStatus defines the lifecycle status of a booking
+// BookingStatus defines the lifecycle status of a booking.
+//
+// A booking starts awaiting payment and holds its slot during the payment
+// hold (ADR-0018):
+//
+//	awaiting_payment → confirmed | expired
+//	confirmed → completed | cancelled | no_show
 type BookingStatus string
 
 const (
-	BookingStatusConfirmed BookingStatus = "confirmed"
-	BookingStatusCancelled BookingStatus = "cancelled"
-	BookingStatusCompleted BookingStatus = "completed"
-	BookingStatusNoShow    BookingStatus = "no_show"
+	BookingStatusAwaitingPayment BookingStatus = "awaiting_payment"
+	BookingStatusExpired         BookingStatus = "expired"
+	BookingStatusConfirmed       BookingStatus = "confirmed"
+	BookingStatusCancelled       BookingStatus = "cancelled"
+	BookingStatusCompleted       BookingStatus = "completed"
+	BookingStatusNoShow          BookingStatus = "no_show"
 )
+
+// NonAppointmentStatuses are the statuses of bookings that are not real
+// appointments: a booking still awaiting payment, or one whose hold expired
+// unpaid. Agenda, earnings, reminders and financial views exclude them
+// (ADR-0018).
+func NonAppointmentStatuses() []BookingStatus {
+	return []BookingStatus{BookingStatusAwaitingPayment, BookingStatusExpired}
+}
+
+// IsAppointment reports whether the booking is a real appointment, i.e. not
+// awaiting payment and not expired.
+func (b *Booking) IsAppointment() bool {
+	return b.Status != BookingStatusAwaitingPayment && b.Status != BookingStatusExpired
+}
+
+// BookingLocale is the language the client booked in; notifications about
+// the booking are sent in it.
+type BookingLocale string
+
+const (
+	BookingLocaleFR BookingLocale = "fr"
+	BookingLocaleEN BookingLocale = "en"
+)
+
+// ParseBookingLocale accepts "fr" or "en"; an empty value is French, the
+// practice's default language.
+func ParseBookingLocale(value string) (BookingLocale, error) {
+	switch BookingLocale(value) {
+	case "", BookingLocaleFR:
+		return BookingLocaleFR, nil
+	case BookingLocaleEN:
+		return BookingLocaleEN, nil
+	default:
+		return "", ErrInvalidBookingLocale
+	}
+}
 
 // PaymentStatus defines the payment state of a booking
 type PaymentStatus string
@@ -73,12 +117,31 @@ type Booking struct {
 	// Reminder tracking
 	RemindedAt *time.Time `json:"reminded_at,omitempty"`
 
+	// Payment hold (ADR-0018): while awaiting payment, the booking keeps its
+	// slot until HoldExpiresAt.
+	HoldExpiresAt *time.Time `json:"hold_expires_at,omitempty"`
+
+	// Locale the client booked in (fr or en); empty on bookings made before
+	// it was recorded, read as French.
+	Locale BookingLocale `json:"locale,omitempty"`
+
+	// PaymentClientSecret is the PaymentIntent's client secret, returned to
+	// the client that just created the booking so the page can mount the
+	// Stripe Payment Element. Never persisted.
+	PaymentClientSecret string `json:"-"`
+
+	// AmountDueOnlineCents is what the PaymentIntent charges (the deposit, or
+	// the full price), set on the booking just created. Never persisted.
+	AmountDueOnlineCents int `json:"-"`
+
 	// Administrative fields
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// NewBooking creates a new booking.
+// NewBooking creates a new booking, awaiting payment (ADR-0018): it becomes
+// confirmed only once its payment succeeds (Confirm), or expired when its
+// hold elapses unpaid (Expire).
 // Either clientID must be non-nil, or guest contact fields must be provided.
 // For guest bookings: guestFirstName, guestLastName, and at least one of guestEmail or guestPhone are required.
 func NewBooking(availabilityID uuid.UUID, clientID *uuid.UUID, partnerID, roomID uuid.UUID, totalPriceCents int, currency string, guestFirstName, guestLastName, guestEmail, guestPhone string) (*Booking, error) {
@@ -119,7 +182,7 @@ func NewBooking(availabilityID uuid.UUID, clientID *uuid.UUID, partnerID, roomID
 		TotalPriceCents: totalPriceCents,
 		Currency:        currency,
 		PaymentStatus:   PaymentStatusPending,
-		Status:          BookingStatusConfirmed,
+		Status:          BookingStatusAwaitingPayment,
 		GuestFirstName:  guestFirstName,
 		GuestLastName:   guestLastName,
 		GuestEmail:      guestEmail,
@@ -202,8 +265,45 @@ func (b *Booking) ResolveDispute(stripeDisputeStatus string) error {
 	return nil
 }
 
+// HoldUntil starts the payment hold: the booking keeps its slot until
+// expiresAt while it awaits payment.
+func (b *Booking) HoldUntil(expiresAt time.Time) error {
+	if b.Status != BookingStatusAwaitingPayment {
+		return ErrBookingNotAwaitingPayment
+	}
+	b.HoldExpiresAt = &expiresAt
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
+// Confirm moves a booking awaiting payment to confirmed, once its payment
+// succeeded (or when nothing is due online). Any other status is refused, so
+// a second confirmation of the same booking is detectable.
+func (b *Booking) Confirm() error {
+	if b.Status != BookingStatusAwaitingPayment {
+		return ErrBookingNotAwaitingPayment
+	}
+	b.Status = BookingStatusConfirmed
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
+// Expire moves a booking awaiting payment to expired: its hold elapsed
+// unpaid and its slot is offered again.
+func (b *Booking) Expire() error {
+	if b.Status != BookingStatusAwaitingPayment {
+		return ErrBookingNotAwaitingPayment
+	}
+	b.Status = BookingStatusExpired
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
 // Cancel cancels the booking with a reason
 func (b *Booking) Cancel(reason string) error {
+	if !b.IsAppointment() {
+		return ErrBookingNotConfirmed
+	}
 	if b.Status == BookingStatusCompleted {
 		return ErrCannotCancelCompletedBooking
 	}
@@ -221,6 +321,9 @@ func (b *Booking) Cancel(reason string) error {
 
 // Complete marks the booking as completed
 func (b *Booking) Complete() error {
+	if !b.IsAppointment() {
+		return ErrBookingNotConfirmed
+	}
 	if b.Status == BookingStatusCancelled {
 		return ErrCannotCompleteBooking
 	}
@@ -237,6 +340,9 @@ func (b *Booking) Complete() error {
 
 // MarkNoShow marks the booking as a no-show
 func (b *Booking) MarkNoShow() error {
+	if !b.IsAppointment() {
+		return ErrBookingNotConfirmed
+	}
 	if b.Status == BookingStatusCancelled {
 		return ErrCannotMarkCancelledAsNoShow
 	}

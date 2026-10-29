@@ -37,7 +37,9 @@ func (r *Repository) Update(ctx context.Context, booking *domain.BookingEncx) er
 			updated_at = $25,
 			dek_encrypted = $26,
 			key_version = $27,
-			metadata = $28
+			metadata = $28,
+			hold_expires_at = $29,
+			locale = $30
 		WHERE id = $1
 	`, r.schema)
 
@@ -70,6 +72,8 @@ func (r *Repository) Update(ctx context.Context, booking *domain.BookingEncx) er
 		booking.DEKEncrypted,
 		booking.KeyVersion,
 		booking.Metadata,
+		booking.HoldExpiresAt,
+		booking.Locale,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("update booking", err)

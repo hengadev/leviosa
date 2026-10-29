@@ -13,6 +13,19 @@ type BookingRepository interface {
 	// Create stores a new booking
 	Create(ctx context.Context, booking *domain.BookingEncx) error
 
+	// CreateGuarded stores a new booking under a lock on its availability.
+	// verify receives the availability's bookings as they stand once the
+	// lock is held and refuses the insert by returning an error (returned
+	// as is). Two clients booking the same availability at the same moment
+	// are serialised here, so the second one sees the first one's booking.
+	CreateGuarded(ctx context.Context, booking *domain.BookingEncx, verify func(existing []*domain.BookingEncx) error) error
+
+	// ConfirmAwaitingPayment moves a booking from awaiting_payment to
+	// confirmed with its payment paid, only if it is still awaiting payment.
+	// It reports whether this call made the transition, so a payment webhook
+	// delivered twice (even concurrently) confirms the booking once.
+	ConfirmAwaitingPayment(ctx context.Context, id uuid.UUID) (bool, error)
+
 	// GetByID retrieves a booking by its ID
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.BookingEncx, error)
 
@@ -72,8 +85,11 @@ type BookingFilter struct {
 	RoomID         *uuid.UUID
 	AvailabilityID *uuid.UUID
 
-	// Status filters
+	// Status filters. ExcludeStatus drops bookings in those statuses even
+	// when Status names them: views of real appointments pass
+	// domain.NonAppointmentStatuses() (ADR-0018).
 	Status        []domain.BookingStatus
+	ExcludeStatus []domain.BookingStatus
 	PaymentStatus []domain.PaymentStatus
 
 	// Time-based filters

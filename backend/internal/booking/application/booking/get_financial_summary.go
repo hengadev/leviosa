@@ -28,6 +28,9 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 			domain.PaymentStatusRefunded,
 			domain.PaymentStatusDisputed,
 		},
+		// Appointments only: a payment on a booking awaiting confirmation or
+		// expired is not revenue yet (ADR-0018).
+		ExcludeStatus:  domain.NonAppointmentStatuses(),
 		CreatedAfter:   &from,
 		OrderBy:        "created_at",
 		OrderDirection: "desc",

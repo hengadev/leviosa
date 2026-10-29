@@ -31,5 +31,6 @@ func (p *InProcessBookingPolicyProvider) GetBookingPolicy(ctx context.Context) (
 	return domain.BookingPolicy{
 		MinimumNotice: time.Duration(policy.MinimumNoticeHours) * time.Hour,
 		Horizon:       time.Duration(policy.HorizonWeeks) * 7 * 24 * time.Hour,
+		PaymentHold:   time.Duration(policy.PaymentHoldMinutes) * time.Minute,
 	}, nil
 }
