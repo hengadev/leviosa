@@ -137,6 +137,9 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 	if err := seedDedicatedAllocation(ctx, db, crypto, roomID, userID); err != nil {
 		return fmt.Errorf("seed practice allocation: %w", err)
 	}
+	if err := seedRoomOpeningHours(ctx, db, roomID); err != nil {
+		return fmt.Errorf("seed practice room opening hours: %w", err)
+	}
 
 	// 5. The practice page settings: which partner and product the public
 	// page shows, and the practice address it displays. No release needed to
@@ -372,21 +375,51 @@ func seedBuildingAndRoom(ctx context.Context, db *pgxpool.Pool, crypto encx.Cryp
 	if err != nil {
 		if _, err := db.Exec(ctx, `
 			INSERT INTO booking.rooms (
-				id, building_id, name_encrypted, name_hash,
-				capacity, is_active, created_at, updated_at,
-				dek_encrypted, key_version
+				id, building_id, name_encrypted, name_hash, description_encrypted,
+				room_number_encrypted, room_number_hash, capacity, equipment_encrypted,
+				is_active, created_at, updated_at,
+				dek_encrypted, key_version, metadata
 			) VALUES (
-				$1, $2, $3, $4, $5, TRUE, $6, $7, $8, $9
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10, $11, $12, $13, $14
 			)
 		`, roomEncx.ID, roomEncx.BuildingID, roomEncx.NameEncrypted, roomEncx.NameHash,
-			roomEncx.Capacity, roomEncx.CreatedAt, roomEncx.UpdatedAt,
-			roomEncx.DEKEncrypted, roomEncx.KeyVersion,
+			roomEncx.DescriptionEncrypted, roomEncx.RoomNumberEncrypted, roomEncx.RoomNumberHash,
+			roomEncx.Capacity, roomEncx.EquipmentEncrypted,
+			roomEncx.CreatedAt, roomEncx.UpdatedAt,
+			roomEncx.DEKEncrypted, roomEncx.KeyVersion, roomEncx.Metadata,
 		); err != nil {
 			return uuid.Nil, err
 		}
 		roomID = roomEncx.ID
 	}
 	return roomID, nil
+}
+
+// seedRoomOpeningHours opens the practice room every day from 07:00 to 22:00.
+// One-off availabilities are refused on a day the room has no operating hours,
+// and v1 hides buildings and rooms from the admin, so without these rows the
+// partner could not open time at all. PLACEHOLDER hours: wide enough that the
+// partner's own availabilities are the real constraint. Idempotent.
+func seedRoomOpeningHours(ctx context.Context, db *pgxpool.Pool, roomID uuid.UUID) error {
+	var existing int
+	if err := db.QueryRow(ctx, `SELECT COUNT(*) FROM booking.room_availability_schedules WHERE room_id = $1`, roomID).Scan(&existing); err != nil {
+		return err
+	}
+	if existing > 0 {
+		return nil
+	}
+	now := time.Now()
+	for day := 0; day < 7; day++ {
+		if _, err := db.Exec(ctx, `
+			INSERT INTO booking.room_availability_schedules (
+				id, room_id, day_of_week, specific_date, open_time, close_time,
+				priority, is_active, created_at, updated_at
+			) VALUES ($1, $2, $3, NULL, '07:00', '22:00', 0, TRUE, $4, $4)
+		`, uuid.New(), roomID, day, now); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func seedDedicatedAllocation(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, roomID, userID uuid.UUID) error {
