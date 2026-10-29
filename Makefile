@@ -7,7 +7,7 @@
 # (infra/compose/README.md, infra/ansible/roles/deploy_gate/README.md).
 
 .PHONY: help \
-		local-dev local-start local-stop local-restart stripe-listen \
+		dev dev-down dev-logs local-dev local-start local-stop local-restart stripe-listen \
 		setup \
 		infra-init infra-plan infra-apply infra-output infra-destroy \
 		ansible-logs ansible-logs-staging ansible-status ansible-status-staging
@@ -18,6 +18,10 @@ help:
 	@echo "================"
 	@echo ""
 	@echo "Local Development:"
+	@echo "  make dev              - Deps in Docker, backend + frontend natively, seeded accounts and agenda"
+	@echo "                           (http://localhost:5180; accounts in backend/cmd/seed/seed_data.example.json)"
+	@echo "  make dev-down         - Stop the make dev dependencies (wipes their data)"
+	@echo "  make dev-logs         - Follow the make dev dependency logs"
 	@echo "  make local-dev        - Start frontend (native) and backend deps (Docker), hot reload"
 	@echo "  make local-start      - Start the whole app in Docker, mirroring the production stack"
 	@echo "                           (prod Dockerfiles, migrate+admin one-offs, LocalStack S3/KMS; no hot reload)"
@@ -57,6 +61,18 @@ help:
 # ===========================================
 # Local Development
 # ===========================================
+
+# Everything but the dependencies runs natively (fast restarts, no image build);
+# the dependency stack is backend/compose.yaml under its own project and ports,
+# so it runs beside local-dev. Re-seeds on every start. See scripts/dev.sh.
+dev:
+	@./scripts/dev.sh
+
+dev-down:
+	@./scripts/dev.sh down
+
+dev-logs:
+	docker compose -p leviosa-dev -f backend/compose.yaml logs -f
 
 local-dev:
 	@if [ ! -f backend/development.env ]; then \
