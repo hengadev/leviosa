@@ -43,6 +43,12 @@ type BookingService interface {
 	// (ADR-0014). No reason is collected (ADR-0019).
 	CancelBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
+	// CancelBookingByPractitioner cancels a confirmed booking as a
+	// practitioner cancellation, refunding everything paid online whatever
+	// the tiers. Only the booking's partner (callerID) or an administrator
+	// may do it; anyone else gets errs.ErrForbidden.
+	CancelBookingByPractitioner(ctx context.Context, id uuid.UUID, callerID uuid.UUID, callerIsAdmin bool) (*domain.Booking, error)
+
 	// CompleteBooking marks a booking as completed
 	CompleteBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
