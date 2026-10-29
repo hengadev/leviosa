@@ -17,6 +17,7 @@ type EmailService interface {
 
 	// Booking-related email notifications
 	SendBookingConfirmationEmail(ctx context.Context, req domain.BookingConfirmationRequest) error
+	SendBookingPartnerNoticeEmail(ctx context.Context, req domain.BookingPartnerNoticeRequest) error
 	SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error
 	SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error
 

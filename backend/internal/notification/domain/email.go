@@ -54,24 +54,6 @@ type PaymentNotificationRequest struct {
 	RetryURL    string `json:"retry_url,omitempty"` // non-empty for payment_failed emails
 }
 
-// Booking Confirmation Email
-type BookingConfirmationRequest struct {
-	ToEmail         string `json:"to_email"`
-	ToFirstName     string `json:"to_first_name"`
-	ToLastName      string `json:"to_last_name"`
-	BookingID       string `json:"booking_id"`
-	ProductName     string `json:"product_name"`
-	RoomName        string `json:"room_name"`
-	Building        string `json:"building"`
-	Address         string `json:"address"`
-	Date            string `json:"date"`
-	Time            string `json:"time"`
-	PartnerName     string `json:"partner_name"`
-	Amount          string `json:"amount"`
-	Year            int    `json:"year"`
-	BookingTokenURL string `json:"booking_token_url,omitempty"` // non-empty only for guest bookings
-}
-
 // Booking Cancellation Email
 type BookingCancellationRequest struct {
 	ToEmail     string `json:"to_email"`
@@ -137,4 +119,13 @@ type EmailRequest struct {
 	Data       interface{}
 	CarbonCopy map[string]string // email -> name
 	Images     map[string]string // path -> rename
+	// Attachments are added as attachment parts (multipart/mixed).
+	Attachments []EmailAttachment
+}
+
+// EmailAttachment is a file attached to an email.
+type EmailAttachment struct {
+	Filename    string
+	ContentType string
+	Data        []byte
 }
