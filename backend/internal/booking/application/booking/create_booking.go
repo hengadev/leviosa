@@ -30,8 +30,9 @@ import (
 //  7. Create the PaymentIntent for the amount due online; its client secret
 //     is returned on the booking (never persisted). With nothing due online
 //     the booking is confirmed at once
-//  8. Persist under a lock on the availability, re-checking the slot, so two
-//     clients submitting the same slot cannot both get it
+//  8. Persist under a lock on the partner's agenda, re-checking the slot
+//     against all the partner's bookings, so two clients submitting
+//     overlapping slots cannot both get them
 //
 // No notification is sent while the booking awaits payment: the
 // booking-confirmed event is emitted when the payment webhook confirms it.
@@ -66,7 +67,9 @@ func (s *BookingService) CreateBooking(
 		return nil, errs.NewNotDecryptedErr("availability", err)
 	}
 
-	// Verify availability is still open for bookings
+	// Verify availability is still open for bookings: a one-off one that has
+	// not started, a recurring one whose series has not ended (the engine
+	// below checks the requested occurrence).
 	if !availability.IsAvailable() {
 		return nil, fmt.Errorf("availability is no longer available for booking")
 	}
@@ -92,7 +95,10 @@ func (s *BookingService) CreateBooking(
 	if err != nil {
 		return nil, err
 	}
-	query, err := s.slotQuery(ctx, []*domain.Availability{availability}, product, policy, now)
+	// The windows are the availability's occurrences containing the start:
+	// for a recurring availability, any occurrence of its series.
+	windows := availability.Occurrences(slotStartTime, slotStartTime.Add(time.Nanosecond))
+	query, err := s.slotQuery(ctx, availability.UserID, windows, product, policy, now)
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +180,9 @@ func (s *BookingService) CreateBooking(
 		return nil, fmt.Errorf("confirm booking with nothing due online: %w", err)
 	}
 
-	// 8. Encrypt and persist under the availability lock, re-checking the
-	// slot against the bookings committed meanwhile.
+	// 8. Encrypt and persist under the partner's agenda lock, re-checking the
+	// slot against the partner's bookings committed meanwhile, in any of
+	// their availabilities.
 	bookingEncx, err := domain.ProcessBookingEncx(ctx, s.crypto, booking)
 	if err != nil {
 		return nil, fmt.Errorf("encrypt booking: %w", err)

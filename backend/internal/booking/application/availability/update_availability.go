@@ -12,7 +12,12 @@ import (
 	"github.com/hengadev/encx"
 )
 
-// func (s *AvailabilityService) UpdateAvailability(ctx context.Context, id uuid.UUID, startTime, endTime time.Time, serviceType string, priceCents *int, notes string) (*domain.Availability, error) {
+// UpdateAvailability edits an availability's times or details. For a
+// recurring availability the new start is the series' new first occurrence:
+// it cannot be in the past, so an edit applies from now on (docs/issues/
+// 011-recurring-availabilities.md). Bookings are never moved or cancelled:
+// they hold their own slot times, keep their status, and still occupy the
+// partner's time, so the edited series offers no slot overlapping them.
 func (s *AvailabilityService) UpdateAvailability(ctx context.Context, request *domain.UpdateAvailabilityRequest) (*domain.Availability, error) {
 	if err := request.Valid(ctx); err != nil {
 		return nil, errs.NewInvalidValueErr(err.Error())

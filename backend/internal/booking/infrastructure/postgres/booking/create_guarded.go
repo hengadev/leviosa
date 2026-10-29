@@ -21,12 +21,16 @@ type querier interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
-// CreateGuarded inserts a booking while holding a row lock on its
-// availability. Slot times are encrypted at rest, so no database constraint
-// can refuse an overlap: instead every booking creation on an availability
-// takes the same lock, reads the bookings under it and lets verify decide.
-// A second client submitting the same slot waits for the first one's commit
-// and then sees its booking.
+// CreateGuarded inserts a booking while holding a lock on its partner's
+// agenda. Slot times are encrypted at rest, so no database constraint can
+// refuse an overlap: instead every booking creation for a partner takes the
+// same transaction-scoped advisory lock, reads the partner's bookings under
+// it and lets verify decide. Occupancy is partner-wide (one practitioner
+// cannot see two clients at once, whichever availability each booked), so
+// the lock is too: a second client submitting an overlapping slot, in the
+// same availability or another one of the partner, waits for the first one's
+// commit and then sees its booking. The availability row is locked as well,
+// so it cannot change while the booking is being written.
 func (r *Repository) CreateGuarded(ctx context.Context, bookingEncx *domain.BookingEncx, verify func(existing []*domain.BookingEncx) error) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -34,13 +38,17 @@ func (r *Repository) CreateGuarded(ctx context.Context, bookingEncx *domain.Book
 	}
 	defer tx.Rollback(ctx) //nolint:errcheck // a no-op once committed
 
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`, partnerLockKey(bookingEncx.PartnerID)); err != nil {
+		return errs.ClassifyPgError("lock partner agenda", err)
+	}
+
 	lock := fmt.Sprintf(`SELECT id FROM %s.availabilities WHERE id = $1 FOR UPDATE`, r.schema)
 	var lockedID any
 	if err := tx.QueryRow(ctx, lock, bookingEncx.AvailabilityID).Scan(&lockedID); err != nil {
 		return errs.ClassifyPgError("lock availability", err)
 	}
 
-	existing, err := r.bookingsByAvailability(ctx, tx, bookingEncx.AvailabilityID)
+	existing, err := r.occupyingBookingsByPartner(ctx, tx, bookingEncx.PartnerID)
 	if err != nil {
 		return err
 	}
@@ -55,6 +63,11 @@ func (r *Repository) CreateGuarded(ctx context.Context, bookingEncx *domain.Book
 		return errs.ClassifyPgError("commit guarded booking creation", err)
 	}
 	return nil
+}
+
+// partnerLockKey names the advisory lock of a partner's agenda.
+func partnerLockKey(partnerID uuid.UUID) string {
+	return "booking.partner-agenda:" + partnerID.String()
 }
 
 // ConfirmAwaitingPayment is a conditional update: only the call that finds

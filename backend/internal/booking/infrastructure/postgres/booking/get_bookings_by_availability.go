@@ -15,9 +15,24 @@ func (r *Repository) GetBookingsByAvailability(ctx context.Context, availability
 	return r.bookingsByAvailability(ctx, r.pool, availabilityID)
 }
 
-// bookingsByAvailability reads an availability's bookings through q: the
-// pool, or the transaction CreateGuarded holds.
+// bookingsByAvailability reads an availability's bookings through q.
 func (r *Repository) bookingsByAvailability(ctx context.Context, q querier, availabilityID uuid.UUID) ([]*domain.BookingEncx, error) {
+	return r.selectBookings(ctx, q, "get bookings by availability", `WHERE availability_id = $1`, availabilityID)
+}
+
+// occupyingBookingsByPartner reads a partner's bookings that may occupy time
+// (every status but cancelled and expired) through q: the pool, or the
+// transaction CreateGuarded holds. Slot times are encrypted, so the time
+// filtering happens after decryption (Booking.OccupiesTime and the engine).
+func (r *Repository) occupyingBookingsByPartner(ctx context.Context, q querier, partnerID uuid.UUID) ([]*domain.BookingEncx, error) {
+	return r.selectBookings(ctx, q, "get occupying bookings by partner",
+		`WHERE user_id = $1 AND status NOT IN ($2, $3)`,
+		partnerID, domain.BookingStatusCancelled, domain.BookingStatusExpired)
+}
+
+// selectBookings reads bookings matching where (with its args) through q,
+// sorted by slot_start_time_encrypted (only stable, not chronological).
+func (r *Repository) selectBookings(ctx context.Context, q querier, operation, where string, args ...any) ([]*domain.BookingEncx, error) {
 	query := `
 		SELECT
 			id,
@@ -54,13 +69,13 @@ func (r *Repository) bookingsByAvailability(ctx context.Context, q querier, avai
 			key_version,
 			metadata
 		FROM booking.bookings
-		WHERE availability_id = $1
+		` + where + `
 		ORDER BY slot_start_time_encrypted ASC
 	`
 
-	rows, err := q.Query(ctx, query, availabilityID)
+	rows, err := q.Query(ctx, query, args...)
 	if err != nil {
-		return nil, errs.ClassifyPgError("get bookings by availability", err)
+		return nil, errs.ClassifyPgError(operation, err)
 	}
 	defer rows.Close()
 
