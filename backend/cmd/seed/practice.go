@@ -316,15 +316,15 @@ func seedPartnerProfile(ctx context.Context, db *pgxpool.Pool, crypto encx.Crypt
 func seedBuildingAndRoom(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, buildingSeed PracticeBuildingSeed, roomSeed PracticeRoomSeed) (uuid.UUID, error) {
 	now := time.Now()
 	building := &bookingDomain.Building{
-		ID:        uuid.New(),
-		Name:      buildingSeed.Name,
-		Address:   buildingSeed.Address,
-		City:      buildingSeed.City,
+		ID:         uuid.New(),
+		Name:       buildingSeed.Name,
+		Address:    buildingSeed.Address,
+		City:       buildingSeed.City,
 		PostalCode: buildingSeed.PostalCode,
-		Country:   buildingSeed.Country,
-		IsActive:  true,
-		CreatedAt: now,
-		UpdatedAt: now,
+		Country:    buildingSeed.Country,
+		IsActive:   true,
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	}
 	buildingEncx, err := bookingDomain.ProcessBuildingEncx(ctx, crypto, building)
 	if err != nil {
