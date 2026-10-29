@@ -111,7 +111,7 @@ func newBookingForPartner(t *testing.T, ctx context.Context, client *http.Client
 	require.NoError(t, err)
 	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
 
-	slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+	slotStartTime := startTime // the availability's first slot (slot engine grid)
 	requestBody := map[string]interface{}{
 		"availability_id": availability.ID.String(),
 		"client_id":       clientID,

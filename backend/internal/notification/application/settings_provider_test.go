@@ -161,3 +161,10 @@ func TestSettingsProvider_GetCompanyLogo_cachesResult(t *testing.T) {
 		t.Errorf("got logo URL %q after cache, want cached %q", got, wantURL)
 	}
 }
+
+func (m *mockSettingsService) GetBookingPolicy(ctx context.Context) (*settingsDomain.GetBookingPolicyResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetBookingPolicy(ctx context.Context, req *settingsDomain.SetBookingPolicyRequest) (*settingsDomain.SetBookingPolicyResponse, error) {
+	return nil, nil
+}

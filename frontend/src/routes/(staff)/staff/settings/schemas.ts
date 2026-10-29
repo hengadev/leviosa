@@ -51,6 +51,13 @@ export const practicePageSchema = type({
     video_url: "string",
 })
 
+// Booking Policy Settings Schema (slot engine): minimum notice in hours,
+// booking horizon in weeks — the same bounds the backend enforces.
+export const bookingPolicySchema = type({
+    minimum_notice_hours: "0 <= number.integer <= 168",
+    horizon_weeks: "1 <= number.integer <= 52",
+})
+
 // Types
 export type CompanyName = Infer<typeof companyNameSchema>
 export type CompanyEmail = Infer<typeof companyEmailSchema>
@@ -58,6 +65,7 @@ export type CompanyPhone = Infer<typeof companyPhoneSchema>
 export type CompanyAddress = Infer<typeof companyAddressSchema>
 export type CompanyInstagram = Infer<typeof companyInstagramSchema>
 export type PracticePage = Infer<typeof practicePageSchema>
+export type BookingPolicy = Infer<typeof bookingPolicySchema>
 export type OtpDuration = Infer<typeof otpDurationSchema>
 export type OtpLength = Infer<typeof otpLengthSchema>
 export type OtpMaxAttempts = Infer<typeof otpMaxAttemptsSchema>
@@ -89,6 +97,11 @@ export const practicePageDefaults: PracticePage = {
     partner_id: "",
     product_id: "",
     video_url: "",
+}
+
+export const bookingPolicyDefaults: BookingPolicy = {
+    minimum_notice_hours: 12,
+    horizon_weeks: 8,
 }
 
 export const otpDurationDefaults: OtpDuration = {

@@ -55,8 +55,10 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var statusCode int
 		switch {
-		case errors.Is(err, errs.ErrInvalidInput):
+		case errors.Is(err, errs.ErrInvalidInput), errors.Is(err, errs.ErrInvalidValue):
 			statusCode = http.StatusBadRequest
+		case errors.Is(err, errs.ErrConflict):
+			statusCode = http.StatusConflict
 		case errors.Is(err, errs.ErrRepositoryNotFound):
 			statusCode = http.StatusBadRequest
 		case errors.Is(err, errs.ErrUniqueViolation):

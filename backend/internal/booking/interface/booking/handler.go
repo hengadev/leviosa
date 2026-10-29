@@ -10,6 +10,7 @@ import (
 type Handler interface {
 	RegisterRoutes(router *http.ServeMux)
 	LookupBooking(w http.ResponseWriter, r *http.Request)
+	GetFreeSlots(w http.ResponseWriter, r *http.Request)
 	CreateBooking(w http.ResponseWriter, r *http.Request)
 	GetBooking(w http.ResponseWriter, r *http.Request)
 	GetClientBookings(w http.ResponseWriter, r *http.Request)

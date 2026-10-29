@@ -22,6 +22,11 @@ type AuthUserClient interface {
 	// Returns error if partner not found or if there's a system error.
 	GetPartnerByUserID(ctx context.Context, userID uuid.UUID) (*PartnerInfo, error)
 
+	// GetPartnerUserID resolves a partner ID (the public partner profile, as
+	// the practice page settings hold it) to the partner's user ID, which
+	// availabilities and bookings reference.
+	GetPartnerUserID(ctx context.Context, partnerID uuid.UUID) (uuid.UUID, error)
+
 	// GetUserName returns the display name ("FirstName LastName") for a user.
 	// Returns an empty string if the user is not found.
 	GetUserName(ctx context.Context, userID uuid.UUID) (string, error)

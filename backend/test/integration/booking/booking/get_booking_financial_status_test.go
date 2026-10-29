@@ -62,7 +62,8 @@ func setupBookingAt(t *testing.T, ctx context.Context, client *http.Client, slot
 	clientToken, clientID := tsetup.SetupStandardUser(t, ctx, "client-fin@test.com", room.ID, testPool, authCtx.Redis, crypto)
 
 	slotStartTime := time.Now().Add(slotOffset).Truncate(10 * time.Minute)
-	availability := tavail.NewTestAvailability(t, partnerID, room.ID, slotStartTime.Add(-10*time.Minute), slotStartTime.Add(2*time.Hour), 5000)
+	// The availability starts at the slot: its first grid point.
+	availability := tavail.NewTestAvailability(t, partnerID, room.ID, slotStartTime, slotStartTime.Add(2*time.Hour), 5000)
 	availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
 	require.NoError(t, err)
 	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
