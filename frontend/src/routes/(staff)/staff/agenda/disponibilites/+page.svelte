@@ -14,13 +14,15 @@
 		Check,
 		Loader2,
 		Repeat,
-		Building2
+		Building2,
+		CalendarOff
 	} from '@lucide/svelte';
+	import { invalidateAll } from '$app/navigation';
 	import Modal from '$lib/ui/Modal.svelte';
 	import { FormInput } from '$lib/ui/bits-components';
 	import { FormSelect } from '$lib/ui/bits-components';
 	import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
-	import { practiceDate, practiceInstant } from './occurrences';
+	import { practiceDate, practiceInstant, type AvailabilityException } from './occurrences';
 
 	let { data }: PageProps = $props();
 
@@ -51,6 +53,15 @@
 	let editStartTime = $state('');
 	let editEndTime = $state('');
 	let editNotes = $state('');
+
+	// --- Availability exception (closed dates) state ---
+	let exceptionModalOpen = $state(false);
+	let exceptionSeries: Availability | null = $state(null);
+	let exceptionStart = $state('');
+	let exceptionEnd = $state('');
+	let exceptionError = $state<string | null>(null);
+	let exceptionNotice = $state<string | null>(null);
+	let deletingExceptionId = $state<string | null>(null);
 
 	// --- Loading / error states ---
 	let submitting = $state(false);
@@ -484,6 +495,87 @@
 		cancelConfirmOpen = true;
 	}
 
+	// --- Availability exceptions (closed dates of a recurring series) ---
+	function exceptionLabel(e: AvailabilityException): string {
+		return e.startDate === e.endDate
+			? `Fermé le ${formatDate(e.startDate)}`
+			: `Fermé du ${formatDate(e.startDate)} au ${formatDate(e.endDate)}`;
+	}
+
+	// Closing dates never cancels the bookings already on them.
+	function affectedBookingsNotice(n: number): string | null {
+		if (n <= 0) return null;
+		return n === 1
+			? '1 réservation sur ces dates — elle reste confirmée ; annulez-la si besoin.'
+			: `${n} réservations sur ces dates — elles restent confirmées ; annulez-les une par une si besoin.`;
+	}
+
+	function openExceptionModal(serie: Availability) {
+		exceptionSeries = serie;
+		exceptionStart = todayDate();
+		exceptionEnd = '';
+		exceptionError = null;
+		exceptionModalOpen = true;
+	}
+
+	async function handleCreateException() {
+		if (!exceptionSeries) return;
+		exceptionError = null;
+		if (!exceptionStart) {
+			exceptionError = 'Choisissez le premier jour fermé.';
+			return;
+		}
+		if (exceptionEnd && exceptionEnd < exceptionStart) {
+			exceptionError = 'Le dernier jour doit suivre le premier.';
+			return;
+		}
+		submitting = true;
+		try {
+			const res = await fetch(`/api/availabilities/${exceptionSeries.id}/exceptions`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					start_date: exceptionStart,
+					end_date: exceptionEnd || undefined
+				})
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => ({}));
+				exceptionError = err.message || 'Erreur lors de la fermeture des dates.';
+				return;
+			}
+			const created = await res.json();
+			exceptionNotice = affectedBookingsNotice(created.affected_bookings ?? 0);
+			exceptionModalOpen = false;
+			exceptionSeries = null;
+			await invalidateAll();
+		} catch (e: any) {
+			exceptionError = e.message || 'Erreur réseau.';
+		} finally {
+			submitting = false;
+		}
+	}
+
+	async function handleDeleteException(serie: Availability, e: AvailabilityException) {
+		deletingExceptionId = e.id;
+		exceptionNotice = null;
+		try {
+			const res = await fetch(`/api/availabilities/${serie.id}/exceptions/${e.id}`, {
+				method: 'DELETE'
+			});
+			if (!res.ok && res.status !== 404) {
+				const err = await res.json().catch(() => ({}));
+				exceptionNotice = err.message || 'Erreur lors de la réouverture des dates.';
+				return;
+			}
+			await invalidateAll();
+		} catch (err: any) {
+			exceptionNotice = err.message || 'Erreur réseau.';
+		} finally {
+			deletingExceptionId = null;
+		}
+	}
+
 	async function refreshPage() {
 		// Full page reload to refetch from server
 		window.location.reload();
@@ -518,6 +610,22 @@
 				<Repeat size={15} class="text-muted-foreground" />
 				<h2 class="font-semibold text-foreground">Disponibilités récurrentes</h2>
 			</div>
+			{#if exceptionNotice}
+				<div
+					class="px-5 py-3 border-b border-border bg-amber-50 text-amber-800 text-sm flex items-start gap-2"
+					role="status"
+				>
+					<AlertTriangle size={16} class="mt-0.5 shrink-0" />
+					<span class="flex-1">{exceptionNotice}</span>
+					<button
+						onclick={() => (exceptionNotice = null)}
+						class="p-0.5 rounded hover:bg-amber-100"
+						aria-label="Fermer le message"
+					>
+						<X size={14} />
+					</button>
+				</div>
+			{/if}
 			<div class="divide-y divide-border">
 				{#each data.series as serie (serie.id)}
 					<div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -533,8 +641,41 @@
 									· sans date de fin
 								{/if}
 							</p>
+							{#if serie.exceptions.length > 0}
+								<ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Dates fermées">
+									{#each serie.exceptions as exception (exception.id)}
+										<li
+											class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-muted text-xs text-foreground"
+										>
+											<CalendarOff size={12} class="text-muted-foreground" />
+											{exceptionLabel(exception)}
+											<button
+												onclick={() => handleDeleteException(serie, exception)}
+												disabled={deletingExceptionId === exception.id}
+												class="p-0.5 rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+												title="Rouvrir ces dates"
+												aria-label="Rouvrir : {exceptionLabel(exception)}"
+											>
+												{#if deletingExceptionId === exception.id}
+													<Loader2 size={12} class="animate-spin" />
+												{:else}
+													<X size={12} />
+												{/if}
+											</button>
+										</li>
+									{/each}
+								</ul>
+							{/if}
 						</div>
 						<div class="flex items-center gap-2">
+							<button
+								onclick={() => openExceptionModal(serie)}
+								class="p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
+								title="Fermer des dates"
+								aria-label="Fermer des dates"
+							>
+								<CalendarOff size={14} />
+							</button>
 							<button
 								onclick={() => openEditModal(serie)}
 								class="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
@@ -1038,6 +1179,72 @@
 					<Loader2 size={14} class="animate-spin" />
 				{/if}
 				Supprimer
+			</button>
+		</div>
+	</div>
+</Modal>
+
+<!-- ========== CLOSE DATES (AVAILABILITY EXCEPTION) MODAL ========== -->
+<Modal
+	bind:isOpen={exceptionModalOpen}
+	title="Fermer des dates"
+	description="La série ne proposera aucun créneau ces jours-là. Les réservations déjà prises sont conservées."
+>
+	<div class="space-y-4">
+		{#if exceptionError}
+			<div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">{exceptionError}</div>
+		{/if}
+
+		{#if exceptionSeries}
+			<div class="p-3 bg-muted rounded-md text-sm">
+				<p class="font-medium text-foreground">
+					{recurrenceLabel(exceptionSeries)} · {formatTime(exceptionSeries.startTime)} – {formatTime(exceptionSeries.endTime)}
+				</p>
+			</div>
+		{/if}
+
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+			<div class="space-y-2">
+				<label class="text-sm font-medium text-foreground" for="exception-start">Du</label>
+				<input
+					id="exception-start"
+					type="date"
+					bind:value={exceptionStart}
+					min={todayDate()}
+					class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				/>
+			</div>
+			<div class="space-y-2">
+				<label class="text-sm font-medium text-foreground" for="exception-end">
+					Au (facultatif)
+				</label>
+				<input
+					id="exception-end"
+					type="date"
+					bind:value={exceptionEnd}
+					min={exceptionStart || todayDate()}
+					class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+				/>
+			</div>
+		</div>
+		<p class="text-xs text-muted-foreground">Sans dernier jour, seul le premier jour est fermé.</p>
+
+		<div class="flex justify-end gap-3 pt-2">
+			<button
+				onclick={() => (exceptionModalOpen = false)}
+				class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+			>
+				Annuler
+			</button>
+			<button
+				onclick={handleCreateException}
+				disabled={submitting}
+				class="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+			>
+				{#if submitting}
+					<Loader2 size={14} class="animate-spin" />
+				{/if}
+				Fermer ces dates
 			</button>
 		</div>
 	</div>
