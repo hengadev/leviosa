@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	catalogDomain "github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/google/uuid"
 )
@@ -83,19 +85,56 @@ func (s *BookingService) LookupBookingByRefAndContact(ctx context.Context, ref s
 	return s.toPublicResponse(ctx, booking), nil
 }
 
-// toPublicResponse converts a decrypted booking to a public lookup response.
-// No guest contact fields or internal IDs are exposed.
+// toPublicResponse converts a decrypted booking to a public lookup response,
+// with the refund a cancellation made now would give.
 func (s *BookingService) toPublicResponse(ctx context.Context, booking *domain.Booking) *domain.PublicBookingLookupResponse {
+	product, err := s.bookingProduct(ctx, booking)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read the product of a looked-up booking",
+			"booking_id", booking.ID, "error", err)
+		product = nil
+	}
+	return s.publicResponse(ctx, booking, product)
+}
+
+// publicResponse is the booking as the booking page shows it. No guest
+// contact fields or internal IDs are exposed.
+func (s *BookingService) publicResponse(ctx context.Context, booking *domain.Booking, product *catalogDomain.ProductRes) *domain.PublicBookingLookupResponse {
+	locale := booking.Locale
+	if locale == "" {
+		locale = domain.BookingLocaleFR
+	}
 	resp := &domain.PublicBookingLookupResponse{
-		ID:              booking.ID,
-		SlotStartTime:   booking.SlotStartTime,
-		SlotEndTime:     booking.SlotEndTime,
-		Status:          booking.Status,
-		TotalPriceCents: booking.TotalPriceCents,
-		Currency:        booking.Currency,
-		PaymentStatus:   booking.PaymentStatus,
-		ProductName:     s.resolveProductName(ctx, booking.ProductID),
-		PartnerName:     s.resolveUserName(ctx, booking.PartnerID, "Praticien inconnu"),
+		ID:                  booking.ID,
+		SlotStartTime:       booking.SlotStartTime,
+		SlotEndTime:         booking.SlotEndTime,
+		Status:              booking.Status,
+		TotalPriceCents:     booking.TotalPriceCents,
+		Currency:            booking.Currency,
+		PaymentStatus:       booking.PaymentStatus,
+		Locale:              locale,
+		PartnerName:         s.resolveUserName(ctx, booking.PartnerID, "Praticien inconnu"),
+		CancelledBy:         booking.CancelledBy,
+		CancelledAt:         booking.CancelledAt,
+		RefundedAmountCents: booking.RefundedAmountCents,
+	}
+	if product != nil {
+		resp.ProductName = product.Name
+	} else if s.productService != nil {
+		resp.ProductName = s.resolveProductName(ctx, booking.ProductID)
+	}
+	if booking.PaymentStatus != domain.PaymentStatusPending && booking.PaymentStatus != domain.PaymentStatusFailed {
+		resp.AmountPaidOnlineCents = amountPaidOnline(booking, product)
+	}
+
+	if booking.IsCancellable() {
+		refund := s.cancellationRefund(booking, product, domain.CancelledByClient, s.now())
+		preview := &domain.RefundPreview{AmountCents: refund.AmountCents, Percentage: refund.Percentage}
+		if refund.Tier != nil {
+			hours := refund.Tier.MinHoursBefore
+			preview.MinHoursBefore = &hours
+		}
+		resp.RefundPreview = preview
 	}
 
 	return resp

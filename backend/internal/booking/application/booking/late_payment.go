@@ -33,7 +33,7 @@ func (s *BookingService) settleHeldPayment(ctx context.Context, booking *domain.
 	buffer := s.bufferOf(ctx, booking.ProductID, buffers, 0)
 	wasExpired := booking.Status == domain.BookingStatusExpired
 
-	confirmed, err := s.bookingRepo.ConfirmGuarded(ctx, booking.ID, booking.PartnerID, func(current *domain.BookingEncx, others []*domain.BookingEncx) error {
+	confirmed, err := s.bookingRepo.ConfirmGuarded(ctx, booking.ID, booking.PartnerID, event.Amount, func(current *domain.BookingEncx, others []*domain.BookingEncx) error {
 		// Read the clock under the lock: a booking created before it saw
 		// this hold either running (and was refused) or elapsed (and is
 		// among others).
@@ -63,9 +63,11 @@ func (s *BookingService) settleHeldPayment(ctx context.Context, booking *domain.
 
 	_ = booking.ConfirmLatePayment()
 	_ = booking.MarkPaymentPaid()
-	// What the client paid online, for the confirmation email (the amount
-	// due online is not persisted).
+	// What the client paid online: recorded by ConfirmGuarded for refunds,
+	// and shown in the confirmation email.
 	booking.AmountDueOnlineCents = event.Amount
+	paid := event.Amount
+	booking.AmountPaidOnlineCents = &paid
 	if wasExpired {
 		slog.InfoContext(ctx, "late payment confirmed an expired booking, its slot still free",
 			"booking_id", booking.ID, "stripe_event_id", event.ID)

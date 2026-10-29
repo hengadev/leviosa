@@ -1,6 +1,8 @@
 package booking
 
 import (
+	"time"
+
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	catalogPorts "github.com/Leviosa-care/leviosa/backend/internal/catalog/ports"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
@@ -22,6 +24,7 @@ type BookingService struct {
 	policyProvider      ports.BookingPolicyProvider
 	exceptionRepo       ports.AvailabilityExceptionRepository
 	latePaymentNotifier ports.LatePaymentNotificationService
+	clock               func() time.Time
 }
 
 // New creates a new instance of the booking service
@@ -87,4 +90,18 @@ func WithLatePaymentNotifier(n ports.LatePaymentNotificationService) Option {
 // cases simply skip writing an audit entry.
 func WithAuditLogger(l audit.Logger) Option {
 	return func(s *BookingService) { s.audit = l }
+}
+
+// WithClock replaces the clock the cancellation refund (its preview and the
+// cancellation itself) reads. Tests pin it; production uses time.Now.
+func WithClock(now func() time.Time) Option {
+	return func(s *BookingService) { s.clock = now }
+}
+
+// now is the service's clock.
+func (s *BookingService) now() time.Time {
+	if s.clock != nil {
+		return s.clock()
+	}
+	return time.Now()
 }
