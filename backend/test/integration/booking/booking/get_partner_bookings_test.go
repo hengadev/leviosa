@@ -72,7 +72,7 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 
 		// Create a guest booking via the public endpoint
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id":  availability.ID.String(),
 			"product_id":       productID.String(),
@@ -166,7 +166,7 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 
 		// Create an authenticated booking
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,

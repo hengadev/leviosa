@@ -71,7 +71,7 @@ func TestBookingConfirmationNotification(t *testing.T) {
 
 		// Prepare booking request
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,
@@ -161,7 +161,7 @@ func TestBookingCancellationNotification(t *testing.T) {
 
 		// Create booking
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,
@@ -272,7 +272,7 @@ func TestPaymentConfirmationNotification(t *testing.T) {
 
 		// Prepare booking request
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,

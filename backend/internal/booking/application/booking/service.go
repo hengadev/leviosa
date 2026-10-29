@@ -19,6 +19,7 @@ type BookingService struct {
 	crypto              encx.CryptoService
 	tokenSecret         []byte
 	audit               audit.Logger
+	policyProvider      ports.BookingPolicyProvider
 }
 
 // New creates a new instance of the booking service
@@ -63,6 +64,13 @@ func WithAuthUserClient(c ports.AuthUserClient) Option {
 // WithTokenSecret sets the HMAC secret used to sign booking tokens.
 func WithTokenSecret(secret []byte) Option {
 	return func(s *BookingService) { s.tokenSecret = secret }
+}
+
+// WithBookingPolicyProvider injects the source of the booking policy
+// (minimum notice, horizon) the slot engine applies. Without it the defaults
+// apply (12 h, 8 weeks).
+func WithBookingPolicyProvider(p ports.BookingPolicyProvider) Option {
+	return func(s *BookingService) { s.policyProvider = p }
 }
 
 // WithAuditLogger injects the audit-log port used to record sensitive

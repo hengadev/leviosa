@@ -71,7 +71,7 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 
 	_, clientID1 := tsetup.SetupStandardUser(t, ctx, "client-reminder1@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-	booking1 := createBookingViaService(t, ctx, availability1.ID, clientID1, partnerID, room.ID, products[0].ID, startTime1.Add(30*time.Minute))
+	booking1 := createBookingViaService(t, ctx, availability1.ID, clientID1, partnerID, room.ID, products[0].ID, startTime1)
 
 	// Booking 2: due in 48 hours (outside 24h window)
 	startTime2 := now.Add(48 * time.Hour).Truncate(time.Hour)
@@ -83,7 +83,7 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 
 	_, clientID2 := tsetup.SetupStandardUser(t, ctx, "client-reminder2@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-	booking2 := createBookingViaService(t, ctx, availability2.ID, clientID2, partnerID, room.ID, products[0].ID, startTime2.Add(30*time.Minute))
+	booking2 := createBookingViaService(t, ctx, availability2.ID, clientID2, partnerID, room.ID, products[0].ID, startTime2)
 
 	// Booking 3: due in 6 hours but already reminded
 	startTime3 := now.Add(6 * time.Hour).Truncate(time.Hour)
@@ -95,7 +95,7 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 
 	_, clientID3 := tsetup.SetupStandardUser(t, ctx, "client-reminder3@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-	booking3 := createBookingViaService(t, ctx, availability3.ID, clientID3, partnerID, room.ID, products[0].ID, startTime3.Add(30*time.Minute))
+	booking3 := createBookingViaService(t, ctx, availability3.ID, clientID3, partnerID, room.ID, products[0].ID, startTime3)
 
 	// Mark booking 3 as already reminded
 	err = bookingRepo.MarkReminderSent(ctx, booking3.ID)
@@ -192,7 +192,7 @@ func TestReminderScheduler_MarkSentOnNotificationError(t *testing.T) {
 
 	_, clientID := tsetup.SetupStandardUser(t, ctx, "client-reminder-err@example.com", room.ID, testPool, authCtx.Redis, crypto)
 
-	booking := createBookingViaService(t, ctx, availability.ID, clientID, partnerID, room.ID, products[0].ID, startTime.Add(30*time.Minute))
+	booking := createBookingViaService(t, ctx, availability.ID, clientID, partnerID, room.ID, products[0].ID, startTime)
 
 	// Create a notification service that always errors
 	errorNotif := &errorNotificationService{}
