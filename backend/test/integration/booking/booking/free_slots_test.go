@@ -36,6 +36,7 @@ import (
 type slotFixture struct {
 	partnerID      uuid.UUID // public partner profile ID (what the settings hold)
 	partnerUserID  uuid.UUID
+	partnerToken   string // the partner's session (access token cookie)
 	productID      uuid.UUID
 	availabilityID uuid.UUID
 	roomID         uuid.UUID
@@ -92,7 +93,7 @@ func setupSlotPartner(t *testing.T, ctx context.Context) slotFixture {
 	require.NoError(t, err)
 	require.NoError(t, tr.InsertRoomEncx(t, ctx, testPool, roomEncx))
 
-	_, partnerUserID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner-slots@example.com", room.ID, testPool, authCtx.Redis, crypto)
+	partnerToken, partnerUserID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner-slots@example.com", room.ID, testPool, authCtx.Redis, crypto)
 	partnerEncx, err := th.GetPartnerEncxByUserID(t, ctx, partnerUserID, testPool)
 	require.NoError(t, err)
 	_, clientID := tsetup.SetupStandardUser(t, ctx, "client-slots@example.com", room.ID, testPool, authCtx.Redis, crypto)
@@ -101,6 +102,7 @@ func setupSlotPartner(t *testing.T, ctx context.Context) slotFixture {
 	fixture := slotFixture{
 		partnerID:     partnerEncx.ID,
 		partnerUserID: partnerUserID,
+		partnerToken:  partnerToken,
 		productID:     products[0].ID,
 		roomID:        room.ID,
 		day:           time.Date(inThreeDays.Year(), inThreeDays.Month(), inThreeDays.Day(), 0, 0, 0, 0, domain.PracticeLocation),
