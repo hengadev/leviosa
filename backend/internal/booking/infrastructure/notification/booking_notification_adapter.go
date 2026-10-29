@@ -140,6 +140,13 @@ func (a *BookingNotificationAdapter) SendPaymentDisputeAlert(ctx context.Context
 	return nil
 }
 
+// SendLatePaymentRefund tells the client their late payment was refunded
+// (fire-and-forget).
+func (a *BookingNotificationAdapter) SendLatePaymentRefund(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	go a.sendAsync(detach(ctx), "late payment refund", data, a.sendLatePaymentRefundEmail)
+	return nil
+}
+
 // sendAsync runs the notification dispatch in a goroutine (fire-and-forget).
 func (a *BookingNotificationAdapter) sendAsync(
 	ctx context.Context,
@@ -500,6 +507,49 @@ func (a *BookingNotificationAdapter) sendPaymentDisputeAlertEmail(ctx context.Co
 	}
 
 	return a.emailService.SendPaymentDisputeAlertEmail(ctx, req)
+}
+
+// sendLatePaymentRefundEmail sends the client, in the booking's locale, the
+// email saying their payment arrived after the hold and was refunded in full
+// because the slot was no longer available. No partner notice: the booking
+// never became an appointment.
+func (a *BookingNotificationAdapter) sendLatePaymentRefundEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	a.enrichData(ctx, &data)
+
+	if data.ClientEmail == "" {
+		return fmt.Errorf("no client email available for late payment refund")
+	}
+
+	locale := notificationDomain.ParseLocale(data.Locale)
+	clientFirst, clientLast := clientNames(data)
+	req := notificationDomain.LatePaymentRefundRequest{
+		ToEmail:             data.ClientEmail,
+		ToFirstName:         clientFirst,
+		ToLastName:          clientLast,
+		Locale:              locale,
+		BookingID:           data.BookingID.String(),
+		ProductName:         data.ProductName,
+		StartTime:           data.SlotStartTime,
+		EndTime:             data.SlotEndTime,
+		RefundedAmountCents: data.RefundedAmountCents,
+		Currency:            data.Currency,
+		BookAgainURL:        a.practicePageURL(locale),
+	}
+	return a.emailService.SendLatePaymentRefundEmail(ctx, req)
+}
+
+// practicePageURL is the public practice page in the given language ("/"
+// in French, "/en" in English), where a client books. Empty without a
+// frontend origin.
+func (a *BookingNotificationAdapter) practicePageURL(locale notificationDomain.Locale) string {
+	origin := strings.TrimRight(a.frontendOrigin, "/")
+	if origin == "" {
+		return ""
+	}
+	if locale == notificationDomain.LocaleEN {
+		return origin + "/en"
+	}
+	return origin + "/"
 }
 
 // buildTokenURL is the manage link of a booking: the booking token page on

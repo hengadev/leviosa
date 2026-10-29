@@ -13,6 +13,51 @@ import (
 type MockPaymentService struct {
 	mu             sync.Mutex // concurrent bookings create intents at once
 	paymentIntents map[string]*ports.PaymentIntentInfo
+	refunds        []MockRefund
+	cancels        []string
+}
+
+// MockRefund is one refund the booking service asked the payment port for.
+type MockRefund struct {
+	PaymentIntentID string
+	Amount          int
+	Reason          string
+}
+
+// RefundsFor returns the refunds made on a PaymentIntent.
+func (m *MockPaymentService) RefundsFor(paymentIntentID string) []MockRefund {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var refunds []MockRefund
+	for _, refund := range m.refunds {
+		if refund.PaymentIntentID == paymentIntentID {
+			refunds = append(refunds, refund)
+		}
+	}
+	return refunds
+}
+
+// CancelsOf counts the cancel calls made on a PaymentIntent.
+func (m *MockPaymentService) CancelsOf(paymentIntentID string) int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	count := 0
+	for _, id := range m.cancels {
+		if id == paymentIntentID {
+			count++
+		}
+	}
+	return count
+}
+
+// IntentStatus returns a PaymentIntent's status.
+func (m *MockPaymentService) IntentStatus(paymentIntentID string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if intent, ok := m.paymentIntents[paymentIntentID]; ok {
+		return intent.Status
+	}
+	return ""
 }
 
 // NewMockPaymentService creates a new mock payment service
@@ -84,6 +129,7 @@ func (m *MockPaymentService) RefundPayment(ctx context.Context, paymentIntentID 
 		return "", fmt.Errorf("payment intent must be succeeded to refund")
 	}
 
+	m.refunds = append(m.refunds, MockRefund{PaymentIntentID: paymentIntentID, Amount: amount, Reason: reason})
 	refundID := "re_test_" + uuid.New().String()[:8]
 	return refundID, nil
 }
@@ -98,6 +144,7 @@ func (m *MockPaymentService) CancelPaymentIntent(ctx context.Context, paymentInt
 		return fmt.Errorf("payment intent not found: %s", paymentIntentID)
 	}
 
+	m.cancels = append(m.cancels, paymentIntentID)
 	intent.Status = ports.PaymentIntentStatusCanceled
 	return nil
 }

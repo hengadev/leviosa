@@ -124,7 +124,11 @@ func (s *Service) RetrievePaymentIntent(ctx context.Context, paymentIntentID str
 func (s *Service) RefundPayment(ctx context.Context, paymentIntentID string, amount int, reason string) (string, error) {
 	params := &stripe.RefundCreateParams{
 		PaymentIntent: stripe.String(paymentIntentID),
-		Reason:        stripe.String(reason),
+	}
+	// Stripe accepts only its own reasons; a refund none of them describes
+	// (a late payment on a slot taken meanwhile) is sent without one.
+	if reason != "" {
+		params.Reason = stripe.String(reason)
 	}
 
 	// If amount is specified, create a partial refund
