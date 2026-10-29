@@ -18,6 +18,7 @@ import (
 	tr "github.com/Leviosa-care/leviosa/backend/test/helpers/booking/room"
 	tcatalog "github.com/Leviosa-care/leviosa/backend/test/helpers/catalog"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,21 +94,18 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 		require.NoError(t, err)
 		defer respCreate.Body.Close()
 		require.Equal(t, http.StatusCreated, respCreate.StatusCode)
+		var created domain.BookingResponse
+		require.NoError(t, json.NewDecoder(respCreate.Body).Decode(&created))
 
-		// Fetch the partner agenda
-		req, err := http.NewRequest("GET", testServerURL+"/partners/bookings/"+partnerID.String(), nil)
-		require.NoError(t, err)
-		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
-
-		resp, err := client.Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-
+		// While the booking awaits payment it is not an appointment: the
+		// partner agenda does not show it (ADR-0018).
 		var bookings []domain.PartnerBookingResponse
+		require.NoError(t, json.Unmarshal(fetchPartnerAgenda(t, client, partnerID, partnerToken), &bookings))
+		assert.Empty(t, bookings, "a booking awaiting payment never appears in the partner agenda")
+
+		confirmBookingPayment(t, ctx, created.ID)
+
+		body := fetchPartnerAgenda(t, client, partnerID, partnerToken)
 		require.NoError(t, json.Unmarshal(body, &bookings))
 		require.Len(t, bookings, 1)
 
@@ -185,6 +183,10 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 		require.NoError(t, err)
 		defer respCreate.Body.Close()
 		require.Equal(t, http.StatusCreated, respCreate.StatusCode)
+		var created domain.BookingResponse
+		require.NoError(t, json.NewDecoder(respCreate.Body).Decode(&created))
+		// A new booking awaits payment until Stripe confirms it (ADR-0018).
+		confirmBookingPayment(t, ctx, created.ID)
 
 		// Fetch the partner agenda
 		req, err := http.NewRequest("GET", testServerURL+"/partners/bookings/"+partnerID.String(), nil)
@@ -206,4 +208,21 @@ func TestGetPartnerBookingsContactDetails(t *testing.T) {
 		assert.Contains(t, bookings[0].ClientEmail, "client2@test.com")
 		assert.Equal(t, "Standard User", bookings[0].ClientName)
 	})
+}
+
+// fetchPartnerAgenda returns the raw body of the partner agenda.
+func fetchPartnerAgenda(t *testing.T, client *http.Client, partnerID uuid.UUID, partnerToken string) []byte {
+	t.Helper()
+	req, err := http.NewRequest("GET", testServerURL+"/partners/bookings/"+partnerID.String(), nil)
+	require.NoError(t, err)
+	req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
+
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	return body
 }

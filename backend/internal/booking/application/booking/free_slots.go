@@ -21,8 +21,8 @@ import (
 //
 // This slice covers one-off availabilities. Recurring availabilities (issue
 // 011) will be expanded into occurrences and availability exceptions (012)
-// subtracted before the windows reach the engine; held `awaiting_payment`
-// bookings (014) join the occupancies through Booking.OccupiesTime.
+// subtracted before the windows reach the engine. Bookings awaiting payment
+// occupy time while their hold runs (Booking.OccupiesTime, ADR-0018).
 
 // GetFreeSlots returns the free slots of a partner's one-off availabilities
 // for a product, starting in [from, to).
@@ -132,18 +132,37 @@ func (s *BookingService) slotQuery(
 		if err != nil && !errors.Is(err, errs.ErrRepositoryNotFound) {
 			return domain.SlotEngineQuery{}, fmt.Errorf("list bookings of availability %s: %w", availability.ID, err)
 		}
-		for _, bookingEncx := range bookingsEncx {
-			booking, err := domain.DecryptBookingEncx(ctx, s.crypto, bookingEncx)
-			if err != nil {
-				return domain.SlotEngineQuery{}, fmt.Errorf("decrypt existing booking %s: %w", bookingEncx.ID, err)
-			}
-			if !booking.OccupiesTime() {
-				continue
-			}
-			query.Occupancies = append(query.Occupancies, booking.Occupancy(s.bufferOf(ctx, booking.ProductID, buffers, query.BufferTime)))
+		occupancies, err := s.occupancies(ctx, bookingsEncx, buffers, query.BufferTime, now)
+		if err != nil {
+			return domain.SlotEngineQuery{}, err
 		}
+		query.Occupancies = append(query.Occupancies, occupancies...)
 	}
 	return query, nil
+}
+
+// occupancies decrypts bookings and returns the intervals of those occupying
+// time at now (confirmed ones, and those awaiting payment while their hold
+// runs), each extended by its own product's buffer time.
+func (s *BookingService) occupancies(
+	ctx context.Context,
+	bookingsEncx []*domain.BookingEncx,
+	buffers map[uuid.UUID]time.Duration,
+	fallbackBuffer time.Duration,
+	now time.Time,
+) ([]domain.SlotOccupancy, error) {
+	var occupancies []domain.SlotOccupancy
+	for _, bookingEncx := range bookingsEncx {
+		booking, err := domain.DecryptBookingEncx(ctx, s.crypto, bookingEncx)
+		if err != nil {
+			return nil, fmt.Errorf("decrypt existing booking %s: %w", bookingEncx.ID, err)
+		}
+		if !booking.OccupiesTime(now) {
+			continue
+		}
+		occupancies = append(occupancies, booking.Occupancy(s.bufferOf(ctx, booking.ProductID, buffers, fallbackBuffer)))
+	}
+	return occupancies, nil
 }
 
 // bufferOf returns the buffer time of a booked product, memoised per query.

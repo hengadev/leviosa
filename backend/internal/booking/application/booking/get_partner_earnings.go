@@ -14,7 +14,8 @@ import (
 const earningsMaxFetch = 10000
 
 func (s *BookingService) GetPartnerEarnings(ctx context.Context, partnerID uuid.UUID) (*domain.EarningsSummary, error) {
-	filter := ports.BookingFilter{Limit: earningsMaxFetch}
+	// Earnings count appointments only (ADR-0018).
+	filter := ports.BookingFilter{Limit: earningsMaxFetch, ExcludeStatus: domain.NonAppointmentStatuses()}
 	bookingsEncx, err := s.bookingRepo.GetByPartnerID(ctx, partnerID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("get partner bookings: %w", err)

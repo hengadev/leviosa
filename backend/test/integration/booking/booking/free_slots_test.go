@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -174,7 +175,7 @@ func TestFreeSlots(t *testing.T) {
 
 		// A booking at 10:15 takes that slot; its buffer ends at 11:30, so
 		// 11:30 stays free.
-		_, err := service.CreateBooking(ctx, f.availabilityID, &f.clientID, f.productID, f.at(10, 15), "", "", "", "")
+		_, err := service.CreateBooking(ctx, f.availabilityID, &f.clientID, f.productID, f.at(10, 15), "", "", "", "", "")
 		require.NoError(t, err)
 
 		status, body = getFreeSlots(t, client, f.partnerID, f.productID, day, day)
@@ -266,5 +267,68 @@ func TestCreateBookingValidatesWithTheSlotEngine(t *testing.T) {
 		f := setupSlotFixture(t, ctx)
 		require.Equal(t, http.StatusCreated, postBooking(t, client, f.availabilityID, f.productID, f.at(10, 15)))
 		assert.Equal(t, http.StatusConflict, postBooking(t, client, f.availabilityID, f.productID, f.at(10, 15)))
+	})
+}
+
+// make test-func TEST_NAME=TestPaymentHoldKeepsTheSlot TEST_PATH=test/integration/booking/booking/free_slots_test.go
+
+// A booking awaiting payment holds its slot during the payment hold
+// (ADR-0018): no second client is offered it or can book it.
+func TestPaymentHoldKeepsTheSlot(t *testing.T) {
+	ctx := context.Background()
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	t.Run("should not offer a held slot to a second client during the hold", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+		day := f.day.Format(time.DateOnly)
+
+		held, err := service.CreateBooking(ctx, f.availabilityID, nil, f.productID, f.at(10, 15), "Claire", "Dupont", "claire@example.com", "0611112222", "fr")
+		require.NoError(t, err)
+		require.Equal(t, domain.BookingStatusAwaitingPayment, held.Status)
+
+		status, body := getFreeSlots(t, client, f.partnerID, f.productID, day, day)
+		require.Equal(t, http.StatusOK, status)
+		assertSameInstants(t, []time.Time{f.at(9, 0), f.at(11, 30)}, slotStarts(body))
+		assert.Equal(t, http.StatusConflict, postBooking(t, client, f.availabilityID, f.productID, f.at(10, 15)),
+			"a second client cannot book the held slot")
+
+		// Once the hold has elapsed unpaid, the slot is offered again, even
+		// before the expiry job marks the booking expired.
+		_, err = testPool.Exec(ctx, `UPDATE booking.bookings SET hold_expires_at = NOW() - INTERVAL '1 minute' WHERE id = $1`, held.ID)
+		require.NoError(t, err)
+
+		status, body = getFreeSlots(t, client, f.partnerID, f.productID, day, day)
+		require.Equal(t, http.StatusOK, status)
+		assertSameInstants(t, []time.Time{f.at(9, 0), f.at(10, 15), f.at(11, 30)}, slotStarts(body))
+	})
+
+	t.Run("should give a slot submitted by several clients at once to only one of them", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+
+		const clients = 5
+		statuses := make(chan int, clients)
+		var wg sync.WaitGroup
+		for range clients {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				statuses <- postBooking(t, client, f.availabilityID, f.productID, f.at(11, 30))
+			}()
+		}
+		wg.Wait()
+		close(statuses)
+
+		counts := map[int]int{}
+		for status := range statuses {
+			counts[status]++
+		}
+		assert.Equal(t, 1, counts[http.StatusCreated], "statuses: %v", counts)
+		assert.Equal(t, clients-1, counts[http.StatusConflict], "statuses: %v", counts)
+
+		bookings, err := bookingRepo.GetBookingsByAvailability(ctx, f.availabilityID)
+		require.NoError(t, err)
+		assert.Len(t, bookings, 1)
 	})
 }

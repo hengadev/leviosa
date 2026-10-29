@@ -9,6 +9,12 @@ import (
 )
 
 func (r *Repository) Create(ctx context.Context, bookingEncx *domain.BookingEncx) error {
+	return r.insert(ctx, r.pool, bookingEncx)
+}
+
+// insert writes a new booking through exec: the pool, or the transaction
+// CreateGuarded holds.
+func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domain.BookingEncx) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s.bookings (
 			id, availability_id, client_id, user_id, room_id,
@@ -21,17 +27,19 @@ func (r *Repository) Create(ctx context.Context, bookingEncx *domain.BookingEncx
 			token,
 			reminded_at,
 			created_at, updated_at,
-			dek_encrypted, key_version, metadata
+			dek_encrypted, key_version, metadata,
+			hold_expires_at, locale
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
 			$19, $20, $21, $22,
 			$23,
 			$24,
-			$25, $26, $27, $28, $29
+			$25, $26, $27, $28, $29,
+			$30, $31
 		)
 	`, r.schema)
 
-	_, err := r.pool.Exec(ctx, query,
+	_, err := exec.Exec(ctx, query,
 		bookingEncx.ID,
 		bookingEncx.AvailabilityID,
 		bookingEncx.ClientID,
@@ -61,6 +69,8 @@ func (r *Repository) Create(ctx context.Context, bookingEncx *domain.BookingEncx
 		bookingEncx.DEKEncrypted,
 		bookingEncx.KeyVersion,
 		bookingEncx.Metadata,
+		bookingEncx.HoldExpiresAt,
+		bookingEncx.Locale,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("create booking", err)

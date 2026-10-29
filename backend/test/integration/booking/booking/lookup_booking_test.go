@@ -95,6 +95,8 @@ func setupGuestBookingForLookup(t *testing.T) (bookingID uuid.UUID, token string
 	err = json.NewDecoder(resp.Body).Decode(&created)
 	require.NoError(t, err)
 	require.NotEmpty(t, created.Token, "booking token must be present when WithTokenSecret is configured")
+	// A new booking awaits payment until Stripe confirms it (ADR-0018).
+	confirmBookingPayment(t, ctx, created.ID)
 
 	return created.ID, created.Token
 }

@@ -27,9 +27,11 @@ const (
 
 	// Booking policy (docs/issues/010-slot-engine.md): no slot closer to now
 	// than the minimum notice, none further than the horizon. Unset means the
-	// defaults (12 h, 8 weeks).
+	// defaults (12 h, 8 weeks). The payment hold (issue 014, ADR-0018) is how
+	// long an unpaid booking keeps its slot; unset means 15 minutes.
 	BookingMinimumNoticeHours = "booking_minimum_notice_hours"
 	BookingHorizonWeeks       = "booking_horizon_weeks"
+	BookingPaymentHoldMinutes = "booking_payment_hold_minutes"
 )
 
 // NOTE: the key that I am going to keep

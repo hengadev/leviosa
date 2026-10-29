@@ -36,7 +36,8 @@ func (h *handler) MarkNoShow(w http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusNotFound
 		case errors.Is(err, errs.ErrInvalidInput),
 			errors.Is(err, domain.ErrCannotMarkCancelledAsNoShow),
-			errors.Is(err, domain.ErrCannotMarkCompletedAsNoShow):
+			errors.Is(err, domain.ErrCannotMarkCompletedAsNoShow),
+			errors.Is(err, domain.ErrBookingNotConfirmed):
 			statusCode = http.StatusBadRequest
 		default:
 			statusCode = http.StatusInternalServerError

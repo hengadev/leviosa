@@ -145,7 +145,7 @@
                 </ul>
             </aside>
             <div class="p-6 sm:p-8">
-                <Booking {locale} booking={data.booking} />
+                <Booking {locale} booking={data.booking} priceCents={data.product?.priceCents ?? null} />
             </div>
         </div>
     </section>

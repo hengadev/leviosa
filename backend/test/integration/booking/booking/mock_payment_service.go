@@ -3,6 +3,7 @@ package booking
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 
 // MockPaymentService is a simple mock implementation of PaymentService for testing
 type MockPaymentService struct {
+	mu             sync.Mutex // concurrent bookings create intents at once
 	paymentIntents map[string]*ports.PaymentIntentInfo
 }
 
@@ -22,6 +24,9 @@ func NewMockPaymentService() *MockPaymentService {
 
 // CreatePaymentIntent mocks creating a Stripe payment intent
 func (m *MockPaymentService) CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	paymentIntentID := "pi_test_" + uuid.New().String()[:8]
 	clientSecret := "pi_test_secret_" + uuid.New().String()[:8]
 
@@ -40,6 +45,9 @@ func (m *MockPaymentService) CreatePaymentIntent(ctx context.Context, amount int
 
 // ConfirmPaymentIntent mocks confirming a payment intent
 func (m *MockPaymentService) ConfirmPaymentIntent(ctx context.Context, paymentIntentID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	intent, exists := m.paymentIntents[paymentIntentID]
 	if !exists {
 		return fmt.Errorf("payment intent not found: %s", paymentIntentID)
@@ -51,6 +59,9 @@ func (m *MockPaymentService) ConfirmPaymentIntent(ctx context.Context, paymentIn
 
 // RetrievePaymentIntent mocks retrieving a payment intent
 func (m *MockPaymentService) RetrievePaymentIntent(ctx context.Context, paymentIntentID string) (*ports.PaymentIntentInfo, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	intent, exists := m.paymentIntents[paymentIntentID]
 	if !exists {
 		return nil, fmt.Errorf("payment intent not found: %s", paymentIntentID)
@@ -61,6 +72,9 @@ func (m *MockPaymentService) RetrievePaymentIntent(ctx context.Context, paymentI
 
 // RefundPayment mocks creating a refund
 func (m *MockPaymentService) RefundPayment(ctx context.Context, paymentIntentID string, amount int, reason string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	intent, exists := m.paymentIntents[paymentIntentID]
 	if !exists {
 		return "", fmt.Errorf("payment intent not found: %s", paymentIntentID)
@@ -76,6 +90,9 @@ func (m *MockPaymentService) RefundPayment(ctx context.Context, paymentIntentID 
 
 // CancelPaymentIntent mocks canceling a payment intent
 func (m *MockPaymentService) CancelPaymentIntent(ctx context.Context, paymentIntentID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	intent, exists := m.paymentIntents[paymentIntentID]
 	if !exists {
 		return fmt.Errorf("payment intent not found: %s", paymentIntentID)

@@ -49,6 +49,23 @@ func TestCreatePrice(t *testing.T) {
 		assert.Equal(t, req.Nickname, price.Nickname)
 	})
 
+	t.Run("successful one-time price creation", func(t *testing.T) {
+		// A booked session's price is one-time: Stripe refuses "one_time" as a
+		// recurring interval, so the request must not carry one.
+		req := domain.CreateStripePriceRequest{
+			ProductID: createMockProduct(),
+			Amount:    6000,
+			Currency:  "EUR",
+			Interval:  string(domain.OneTime),
+			Active:    true,
+		}
+
+		price, err := stripeService.CreatePrice(ctx, req)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, price.ID)
+	})
+
 	t.Run("create price with minimal fields", func(t *testing.T) {
 		productID := createMockProduct()
 

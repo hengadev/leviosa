@@ -40,6 +40,8 @@ export type PracticeSlot = {
  * it). null when the slots could not be loaded (setting unset, backend down).
  */
 export type PracticeBooking = {
+    /** The product booked (the practice page's product setting). */
+    productId: string;
     slots: PracticeSlot[];
     horizonEnd: string;
 };
@@ -121,6 +123,7 @@ async function loadBooking(fetchFn: typeof fetch, partnerId: string, productId: 
     const freeSlots = await getJson<FreeSlots>(fetchFn, `/slots?${query}`);
     if (!freeSlots) return null;
     return {
+        productId,
         horizonEnd: freeSlots.horizon_end,
         slots: (freeSlots.slots ?? []).map((slot) => ({
             availabilityId: slot.availability_id,
@@ -156,7 +159,7 @@ function mockPracticeData(): PracticePageData {
               }
             : null,
         // Mock mode has no slot engine: the calendar shows its empty state.
-        booking: { slots: [], horizonEnd: new Date(Date.now() + 8 * 7 * 24 * 60 * 60 * 1000).toISOString() },
+        booking: { productId: product?.id ?? "", slots: [], horizonEnd: new Date(Date.now() + 8 * 7 * 24 * 60 * 60 * 1000).toISOString() },
         address: "12 rue des Lilas, 75011 Paris",
         email: FALLBACK_COMPANY_EMAIL,
         videoUrl: null, // mock mode has no practice video: the placeholder frame shows
