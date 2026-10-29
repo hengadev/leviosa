@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
@@ -46,7 +47,7 @@ func NewService(apiKey, baseURL, webhookSecret string) *Service {
 func (s *Service) CreatePaymentIntent(ctx context.Context, amount int, currency, description, receiptEmail string, metadata map[string]string) (string, string, error) {
 	params := &stripe.PaymentIntentCreateParams{
 		Amount:      stripe.Int64(int64(amount)),
-		Currency:    stripe.String(currency),
+		Currency:    stripe.String(strings.ToLower(currency)),
 		Description: stripe.String(description),
 		Metadata:    metadata,
 		// Enable automatic payment methods
