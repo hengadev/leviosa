@@ -327,3 +327,24 @@ func TestOffersSlot(t *testing.T) {
 	query.MinimumNotice = 2 * time.Hour // now 08:00: nothing before 10:00
 	assert.False(t, OffersSlot(query, at(9, 0)), "inside the minimum notice")
 }
+
+func TestComputeSlotsOverlappingWindowsOfferEachStartOnce(t *testing.T) {
+	now, from, to := slotEngineFixture()
+	early := AvailabilityWindow{AvailabilityID: uuid.New(), Start: at(9, 0), End: at(12, 0)}
+	late := AvailabilityWindow{AvailabilityID: uuid.New(), Start: at(10, 0), End: at(13, 0)}
+
+	// Two overlapping availabilities of the partner: 10:00 and 11:00 come
+	// from both; each is offered once (from the earliest window), in order.
+	slots := ComputeSlots(SlotEngineQuery{
+		Availabilities:  []AvailabilityWindow{late, early},
+		ProductDuration: 60 * time.Minute,
+		BookingHorizon:  permissiveHorizon,
+		From:            from,
+		To:              to,
+		Now:             now,
+	})
+
+	assert.Equal(t, []time.Time{at(9, 0), at(10, 0), at(11, 0), at(12, 0)}, starts(slots))
+	assert.Equal(t, early.AvailabilityID, slots[1].AvailabilityID)
+	assert.Equal(t, late.AvailabilityID, slots[3].AvailabilityID)
+}

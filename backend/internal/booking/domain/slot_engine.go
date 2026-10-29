@@ -10,13 +10,15 @@
 //
 // Its input is occurrence-shaped on purpose: `AvailabilityWindow` is one
 // occurrence of an availability. Recurring availabilities (issue 011) are
-// expanded into occurrences by the caller before they reach the engine, and
+// expanded into occurrences by the caller (Availability.Occurrences,
+// recurrence.go) before they reach the engine, and
 // availability exceptions (issue 012) remove occurrences the same way — the
 // engine itself never needs to know about recurrence. Occupancies are plain
 // intervals so held bookings (issue 014) join without a signature change.
 package domain
 
 import (
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -106,6 +108,7 @@ type SlotEngineQuery struct {
 //     intersect [occupancy start, occupancy end).
 //   - A slot starting before now + minimum notice, or after now + horizon, is
 //     not offered.
+//   - Overlapping windows offer each start time once.
 func ComputeSlots(query SlotEngineQuery) []Slot {
 	step := query.ProductDuration + query.BufferTime
 	if step <= 0 || query.ProductDuration <= 0 {
@@ -147,7 +150,23 @@ func ComputeSlots(query SlotEngineQuery) []Slot {
 			slots = append(slots, Slot{AvailabilityID: window.AvailabilityID, Start: start, End: end})
 		}
 	}
-	return slots
+	return orderedUniqueSlots(slots)
+}
+
+// orderedUniqueSlots orders slots by start and keeps one slot per start time:
+// overlapping availabilities of the same partner (a one-off on top of a
+// recurring series) may both offer a start, and the client picks a time, not
+// an availability. The earliest-starting window's slot is kept.
+func orderedUniqueSlots(slots []Slot) []Slot {
+	sort.SliceStable(slots, func(i, j int) bool { return slots[i].Start.Before(slots[j].Start) })
+	unique := slots[:0]
+	for _, slot := range slots {
+		if len(unique) > 0 && unique[len(unique)-1].Start.Equal(slot.Start) {
+			continue
+		}
+		unique = append(unique, slot)
+	}
+	return unique
 }
 
 // overlapsOccupancy reports whether [slotStart, slotEnd) intersects any
@@ -161,14 +180,9 @@ func overlapsOccupancy(slotStart, slotEnd time.Time, occupancies []SlotOccupancy
 	return false
 }
 
-// sortAvailabilityWindows orders windows by start time (insertion sort: the
-// lists are small and the engine stays dependency-free).
+// sortAvailabilityWindows orders windows by start time.
 func sortAvailabilityWindows(windows []AvailabilityWindow) {
-	for i := 1; i < len(windows); i++ {
-		for j := i; j > 0 && windows[j].Start.Before(windows[j-1].Start); j-- {
-			windows[j], windows[j-1] = windows[j-1], windows[j]
-		}
-	}
+	sort.SliceStable(windows, func(i, j int) bool { return windows[i].Start.Before(windows[j].Start) })
 }
 
 // OffersSlot reports whether the engine offers a slot starting exactly at
