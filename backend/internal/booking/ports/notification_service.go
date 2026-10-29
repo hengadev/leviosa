@@ -31,6 +31,14 @@ type BookingNotificationService interface {
 	SendPaymentDisputeAlert(ctx context.Context, data BookingNotificationData) error
 }
 
+// LatePaymentNotificationService tells a client their payment, which arrived
+// after the payment hold elapsed, was refunded in full because the slot was
+// no longer available (ADR-0018). Implemented by the notification module next
+// to BookingNotificationService; data.RefundedAmountCents is set.
+type LatePaymentNotificationService interface {
+	SendLatePaymentRefund(ctx context.Context, data BookingNotificationData) error
+}
+
 // BookingNotificationData contains information needed to send booking notifications.
 // Required fields (IDs) are always populated by the booking service.
 // Optional fields may be populated if available, otherwise the notification
@@ -83,6 +91,10 @@ type BookingNotificationData struct {
 
 	// Booking token for public guest access (empty for bookings created before issue 002)
 	Token string
+
+	// RefundedAmountCents is what was refunded to the client (late-payment
+	// refund notifications).
+	RefundedAmountCents int
 
 	// Cancellation details (only for cancellation notifications)
 	CancellationReason string

@@ -41,6 +41,14 @@ type spyEmailService struct {
 	paymentNotifications []notificationDomain.PaymentNotificationRequest
 	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
 	partnerNotices       []notificationDomain.BookingPartnerNoticeRequest
+	latePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
+}
+
+func (s *spyEmailService) SendLatePaymentRefundEmail(ctx context.Context, req notificationDomain.LatePaymentRefundRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.latePaymentRefunds = append(s.latePaymentRefunds, req)
+	return nil
 }
 
 func (s *spyEmailService) SendOTPEmail(ctx context.Context, req notificationDomain.OTPEmailRequest) error {
@@ -733,4 +741,57 @@ func assertEqual(t *testing.T, field, want, got string) {
 	if got != want {
 		t.Errorf("%s: got %q, want %q", field, got, want)
 	}
+}
+
+func TestSendLatePaymentRefund_GuestInEnglish(t *testing.T) {
+	data := makeBookingData()
+	data.IsGuestBooking = true
+	data.ClientID = uuid.Nil
+	data.ClientEmail = "guest@example.com"
+	data.ClientFirstName = "Jane"
+	data.ClientLastName = "Doe"
+	data.Locale = "en"
+	data.RefundedAmountCents = 2000
+	data.ProductName = "Osteopathy"
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+
+	if err := adapter.sendLatePaymentRefundEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(spy.latePaymentRefunds) != 1 {
+		t.Fatalf("expected 1 refund email, got %d", len(spy.latePaymentRefunds))
+	}
+	got := spy.latePaymentRefunds[0]
+	assertEqual(t, "ToEmail", "guest@example.com", got.ToEmail)
+	assertEqual(t, "ToFirstName", "Jane", got.ToFirstName)
+	assertEqual(t, "Locale", string(notificationDomain.LocaleEN), string(got.Locale))
+	assertEqual(t, "BookAgainURL", "https://app.leviosa.com/en", got.BookAgainURL)
+	assertEqual(t, "Currency", "EUR", got.Currency)
+	if got.RefundedAmountCents != 2000 {
+		t.Errorf("RefundedAmountCents = %d, want 2000", got.RefundedAmountCents)
+	}
+	if len(spy.partnerNotices) != 0 || len(spy.bookingConfirmations) != 0 {
+		t.Error("a late-payment refund sends neither a confirmation nor a partner notice")
+	}
+}
+
+func TestSendLatePaymentRefund_FrenchByDefault(t *testing.T) {
+	data := makeBookingData()
+	data.IsGuestBooking = true
+	data.ClientEmail = "guest@example.com"
+	data.RefundedAmountCents = 2000
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	if err := adapter.sendLatePaymentRefundEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.latePaymentRefunds) != 1 {
+		t.Fatalf("expected 1 refund email, got %d", len(spy.latePaymentRefunds))
+	}
+	assertEqual(t, "Locale", string(notificationDomain.LocaleFR), string(spy.latePaymentRefunds[0].Locale))
+	assertEqual(t, "BookAgainURL", "https://app.leviosa.com/", spy.latePaymentRefunds[0].BookAgainURL)
 }
