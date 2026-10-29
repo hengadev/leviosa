@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/identity"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/httpx"
 	"github.com/google/uuid"
@@ -66,6 +68,8 @@ func mapCancelError(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, errs.ErrUnauthorized):
 		return http.StatusUnauthorized
+	case errors.Is(err, errs.ErrForbidden):
+		return http.StatusForbidden
 	default:
 		return http.StatusInternalServerError
 	}
@@ -150,4 +154,32 @@ func (h *handler) CancelBookingPublic(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.RespondWithJSON(w, booking, http.StatusOK)
+}
+
+// CancelBookingByPractitioner cancels a booking from the partner agenda as a
+// practitioner cancellation: the client is refunded everything they paid
+// online and emailed. No body: no reason is collected (ADR-0019). Only the
+// booking's partner, or an administrator, may cancel it (403 otherwise).
+func (h *handler) CancelBookingByPractitioner(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	bookingID, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		httpx.RespondWithError(w, errs.NewInvalidValueErr("invalid booking ID format"), http.StatusBadRequest)
+		return
+	}
+
+	sessionInfo, ok := session.SessionInfoFromContext(ctx)
+	if !ok || sessionInfo == nil {
+		httpx.RespondWithError(w, errs.ErrUnauthorized, http.StatusUnauthorized)
+		return
+	}
+
+	booking, err := h.svc.CancelBookingByPractitioner(ctx, bookingID, sessionInfo.UserID, sessionInfo.Role.IsAtLeast(identity.Administrator))
+	if err != nil {
+		httpx.RespondWithError(w, err, mapCancelError(err))
+		return
+	}
+
+	httpx.RespondWithJSON(w, cancelBookingResponse(booking), http.StatusOK)
 }

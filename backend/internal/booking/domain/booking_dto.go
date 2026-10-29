@@ -147,6 +147,10 @@ type PartnerBookingResponse struct {
 	TotalPriceCents int           `json:"total_price_cents"`
 	Currency        string        `json:"currency"`
 	CompletedAt     *time.Time    `json:"completed_at,omitempty"`
+	// PractitionerRefundCents is what cancelling this confirmed booking from
+	// the agenda would refund the client: everything they paid online
+	// (practitioner cancellation). Zero for any other booking.
+	PractitionerRefundCents int `json:"practitioner_refund_cents"`
 }
 
 // AdminBookingResponse is the enriched booking DTO returned by the admin list endpoint.

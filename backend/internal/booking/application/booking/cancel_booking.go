@@ -65,13 +65,43 @@ func errBookingNotCancellable(status domain.BookingStatus) error {
 	return errs.NewInvalidValueErr("booking cannot be cancelled: current status is " + string(status))
 }
 
-// cancelByClient is the client cancellation: the booking is claimed as
-// cancelled first (only one of two concurrent requests gets it), then the
-// refund the tiers give is made through the payment port (none when it is
-// zero). A failed refund releases the claim and fails the request, so the
-// client can try again and the booking never ends up cancelled without its
-// refund.
+// cancelByClient is the client cancellation: the refund the product's tiers
+// give on the notice (cancelAs).
 func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*domain.Booking, *catalogDomain.ProductRes, error) {
+	booking, product, err := s.loadCancellable(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.cancelAs(ctx, booking, product, domain.CancelledByClient)
+}
+
+// CancelBookingByPractitioner cancels a booking as a practitioner
+// cancellation (CONTEXT.md), from the partner agenda: whatever the product's
+// tiers, the client gets back everything they paid online, and is emailed.
+// Only the booking's partner may do it, or an administrator
+// (callerIsAdmin); anyone else gets ErrForbidden. Only a confirmed booking
+// can be cancelled, so a second request refunds nothing more.
+func (s *BookingService) CancelBookingByPractitioner(ctx context.Context, id uuid.UUID, callerID uuid.UUID, callerIsAdmin bool) (*domain.Booking, error) {
+	booking, err := s.loadBooking(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if booking.PartnerID != callerID && !callerIsAdmin {
+		return nil, errs.NewForbiddenErr("booking belongs to another partner")
+	}
+	if !booking.IsCancellable() {
+		return nil, errBookingNotCancellable(booking.Status)
+	}
+	product, err := s.bookingProduct(ctx, booking)
+	if err != nil {
+		return nil, err
+	}
+	booking, _, err = s.cancelAs(ctx, booking, product, domain.CancelledByPractitioner)
+	return booking, err
+}
+
+// loadCancellable reads a booking that can be cancelled, with its product.
+func (s *BookingService) loadCancellable(ctx context.Context, id uuid.UUID) (*domain.Booking, *catalogDomain.ProductRes, error) {
 	booking, err := s.loadBooking(ctx, id)
 	if err != nil {
 		return nil, nil, err
@@ -79,22 +109,32 @@ func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*dom
 	if !booking.IsCancellable() {
 		return nil, nil, errBookingNotCancellable(booking.Status)
 	}
-
 	product, err := s.bookingProduct(ctx, booking)
 	if err != nil {
 		return nil, nil, err
 	}
+	return booking, product, nil
+}
 
+// cancelAs cancels a confirmed booking on behalf of actor: the booking is
+// claimed as cancelled first (only one of two concurrent requests gets it),
+// then the refund the actor's rule gives (cancellationRefund: the tiers for
+// the client, everything for the practitioner) is made through the payment
+// port (none when it is zero). A failed refund releases the claim and fails
+// the request, so the cancellation can be tried again and the booking never
+// ends up cancelled without its refund. The slot is offered again and the
+// cancellation emails are sent.
+func (s *BookingService) cancelAs(ctx context.Context, booking *domain.Booking, product *catalogDomain.ProductRes, actor domain.CancellationActor) (*domain.Booking, *catalogDomain.ProductRes, error) {
 	now := s.now()
-	refund := s.cancellationRefund(booking, product, domain.CancelledByClient, now)
+	refund := s.cancellationRefund(booking, product, actor, now)
 
-	claimed, err := s.bookingRepo.ClaimCancellation(ctx, booking.ID, domain.CancelledByClient, now, refund.AmountCents)
+	claimed, err := s.bookingRepo.ClaimCancellation(ctx, booking.ID, actor, now, refund.AmountCents)
 	if err != nil {
 		return nil, nil, fmt.Errorf("claim booking cancellation: %w", err)
 	}
 	if !claimed {
 		// Cancelled (or otherwise moved) by a concurrent request.
-		current, err := s.loadBooking(ctx, id)
+		current, err := s.loadBooking(ctx, booking.ID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -103,7 +143,7 @@ func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*dom
 
 	var refundID string
 	if refund.AmountCents > 0 {
-		refundID, err = s.paymentService.RefundPayment(ctx, *booking.PaymentIntentID, refund.AmountCents, ports.RefundReasonRequestedByCustomer)
+		refundID, err = s.paymentService.RefundPayment(ctx, *booking.PaymentIntentID, refund.AmountCents, refundReason(actor))
 		if err != nil {
 			if releaseErr := s.bookingRepo.ReleaseCancellation(ctx, booking.ID); releaseErr != nil {
 				slog.ErrorContext(ctx, "failed to release the cancellation claim after a failed refund",
@@ -127,7 +167,7 @@ func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*dom
 
 	booking.Status = domain.BookingStatusCancelled
 	booking.CancelledAt = &now
-	booking.CancelledBy = domain.CancelledByClient
+	booking.CancelledBy = actor
 	refunded := refund.AmountCents
 	booking.RefundedAmountCents = &refunded
 
@@ -142,7 +182,7 @@ func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*dom
 		TargetType: "booking",
 		TargetID:   booking.ID.String(),
 		Payload: map[string]any{
-			"cancelled_by":      string(domain.CancelledByClient),
+			"cancelled_by":      string(actor),
 			"refund_id":         refundID,
 			"refund_cents":      refund.AmountCents,
 			"refund_percentage": refund.Percentage,
@@ -152,6 +192,16 @@ func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*dom
 	s.releaseAvailability(ctx, booking)
 	s.sendCancellationNotice(ctx, booking, product)
 	return booking, product, nil
+}
+
+// refundReason is the reason given to the payment provider for a
+// cancellation refund. Stripe has no reason for a merchant-side
+// cancellation; requested_by_customer is kept for the client's own.
+func refundReason(actor domain.CancellationActor) string {
+	if actor == domain.CancelledByClient {
+		return ports.RefundReasonRequestedByCustomer
+	}
+	return ""
 }
 
 // AdminOverrideCancelBooking lets an admin cancel a booking with a reason,

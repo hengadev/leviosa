@@ -35,6 +35,9 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("GET /bookings/{id}", RequireStandard(mw.EnableCORS(h.GetBooking)))
 	router.HandleFunc("GET /clients/{clientId}/bookings", RequireStandard(mw.EnableCORS(h.GetClientBookings)))
 	router.HandleFunc("GET /partners/bookings/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPartnerBookings)))
+	// Practitioner cancellation from the partner agenda (issue 018): full
+	// refund; the booking's partner or an admin only (checked by the service).
+	router.HandleFunc("POST /partners/bookings/{id}/cancel", RequirePartner(mw.EnableCORS(h.CancelBookingByPractitioner)))
 	router.HandleFunc("GET /partners/earnings/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPartnerEarnings)))
 	router.HandleFunc("GET /bookings", RequirePartner(mw.EnableCORS(h.GetUpcomingBookings)))
 	router.HandleFunc("POST /bookings/{id}/cancel", RequireStandard(mw.EnableCORS(h.CancelBooking)))
