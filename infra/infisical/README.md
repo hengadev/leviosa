@@ -160,7 +160,9 @@ atoms:
 `frontend.env` therefore prints only the `/app` keys the SvelteKit server
 reads, found by grepping `frontend/src` for `$env/dynamic/*`: `COMING_SOON`,
 `CLIENT_IP_HEADER`, `SESSION_COOKIE_NAME` (listed in `.env.example`, not read
-yet), and the optional `PUBLIC_PLAUSIBLE_DOMAIN` and `PUBLIC_PLAUSIBLE_SRC`.
+yet), the optional `PUBLIC_PLAUSIBLE_DOMAIN` and `PUBLIC_PLAUSIBLE_SRC`, and
+`PUBLIC_STRIPE_PUBLISHABLE_KEY` (the publishable key, public by design; the
+secret key stays in `/stripe`).
 Nothing from `/aws`, `/encx`, `/stripe`, `/twilio`, `/smtp`, `/db`, `/admin`,
 `/redis`, `/rabbitmq`, `/caddy`, `/backup` or `/host` reaches it. A new
 frontend key needs a template line and an entry in `envcheck.FrontendKeys`.
@@ -220,7 +222,7 @@ more keys: they reach their consumer with no template change.
 
 | Folder | Keys | Notes |
 | --- | --- | --- |
-| `/app` | `FRONTEND_ORIGIN`, `SESSION_SECRET`, `BOOKING_TOKEN_SECRET`, `SESSION_COOKIE_NAME`, `CLIENT_IP_HEADER`, `COMING_SOON`; optional `PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC`, other backend knobs | whole into backend.env, allowlist into frontend.env; `prod` starts with `COMING_SOON=true` |
+| `/app` | `FRONTEND_ORIGIN`, `SESSION_SECRET`, `BOOKING_TOKEN_SECRET`, `SESSION_COOKIE_NAME`, `CLIENT_IP_HEADER`, `COMING_SOON`; optional `PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC`, `PUBLIC_STRIPE_PUBLISHABLE_KEY`, other backend knobs | whole into backend.env, allowlist into frontend.env; `prod` starts with `COMING_SOON=true` |
 | `/admin` | `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRST_NAME`, `ADMIN_LAST_NAME`, `ADMIN_TELEPHONE`, `ADMIN_POSTAL_CODE`, `ADMIN_CITY`, `ADMIN_ADDRESS1`, `ADMIN_ADDRESS2` (may be empty) | admin.env only |
 | `/db` | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_HOST`, `POSTGRES_PORT` | password letters and digits |
 | `/redis` | `REDIS_PASSWORD`, `REDIS_HOST`, `REDIS_PORT` | staging's host is `staging_redis` |

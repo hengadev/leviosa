@@ -177,6 +177,8 @@ services:
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-client-ip}
       COMING_SOON: ${COMING_SOON:-false}
       USE_MOCK_DATA: ${USE_MOCK_DATA:-false}
+      # Public by design (the Payment Element); the secret key stays backend-only.
+      PUBLIC_STRIPE_PUBLISHABLE_KEY: ${PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
     ports:
       - "127.0.0.1:${PORT:-3000}:${PORT:-3000}"
     depends_on:
