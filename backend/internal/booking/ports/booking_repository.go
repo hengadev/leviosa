@@ -13,11 +13,13 @@ type BookingRepository interface {
 	// Create stores a new booking
 	Create(ctx context.Context, booking *domain.BookingEncx) error
 
-	// CreateGuarded stores a new booking under a lock on its availability.
-	// verify receives the availability's bookings as they stand once the
-	// lock is held and refuses the insert by returning an error (returned
-	// as is). Two clients booking the same availability at the same moment
-	// are serialised here, so the second one sees the first one's booking.
+	// CreateGuarded stores a new booking under a lock on its partner's
+	// agenda (and on its availability). verify receives the partner's
+	// bookings that may occupy time (every status but cancelled and expired,
+	// in any of the partner's availabilities) as they stand once the lock is
+	// held, and refuses the insert by returning an error (returned as is).
+	// Two clients booking the same partner at the same moment are serialised
+	// here, so the second one sees the first one's booking.
 	CreateGuarded(ctx context.Context, booking *domain.BookingEncx, verify func(existing []*domain.BookingEncx) error) error
 
 	// ConfirmAwaitingPayment moves a booking from awaiting_payment to

@@ -61,7 +61,7 @@ func TestGetClientBookings(t *testing.T) {
 		// Create multiple bookings for the same client
 		numBookings := 3
 		for i := 0; i < numBookings; i++ {
-			startTime := time.Now().Add(time.Duration(24+i) * time.Hour).Truncate(time.Hour)
+			startTime := time.Now().Add(time.Duration(24+3*i) * time.Hour).Truncate(time.Hour) // 3 h apart: one partner sees one client at a time
 			endTime := startTime.Add(2 * time.Hour)
 			availability := tavail.NewTestAvailability(t, partnerID, room.ID, startTime, endTime, 5000+i*1000)
 			availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)

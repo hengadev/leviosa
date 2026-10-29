@@ -61,7 +61,20 @@ func (r *Repository) List(ctx context.Context, filter ports.AvailabilityFilter) 
 	}
 
 	if filter.TimeRange != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("start_time < $%d AND end_time > $%d", argIndex+1, argIndex))
+		// A one-off availability overlaps the range by its own times. A
+		// recurring one is a series anchored on its first occurrence: it
+		// overlaps when it starts before the range ends and its end date
+		// (inclusive, a calendar day in Europe/Paris) is not before the range
+		// starts, whatever the anchor's date. The two-day margin covers the
+		// end date's time zone and occurrences spanning midnight; the exact
+		// occurrences are computed after decryption (Availability.Occurrences).
+		whereConditions = append(whereConditions, fmt.Sprintf(`start_time < $%[2]d AND (
+			((NOT is_recurring OR recurrence_pattern IS NULL) AND end_time > $%[1]d)
+			OR (is_recurring AND recurrence_pattern IS NOT NULL AND (
+				recurrence_pattern->>'until' IS NULL
+				OR (recurrence_pattern->>'until')::timestamptz >= $%[1]d::timestamptz - INTERVAL '2 days'
+			))
+		)`, argIndex, argIndex+1))
 		args = append(args, filter.TimeRange.Start, filter.TimeRange.End)
 		argIndex += 2
 	}
