@@ -8,16 +8,25 @@ import (
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
+	catalogDomain "github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/audit"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 
 	"github.com/google/uuid"
 )
 
-// CancelBookingByToken cancels a booking using a signed booking token instead of
-// a session cookie. It verifies the token, ensures it matches the requested booking
-// ID, and then delegates to the standard CancelBooking flow.
-func (s *BookingService) CancelBookingByToken(ctx context.Context, bookingID uuid.UUID, token string, reason string) (*domain.Booking, error) {
+// Client cancellation with a tiered refund (ADR-0014, issue 017). A client
+// can always cancel a confirmed booking; the product's cancellation tiers,
+// applied to the notice given, decide how much of the amount paid online is
+// refunded. The refund preview on the booking page and the cancellation use
+// the same rule (cancellationRefund) and the same clock (s.now).
+
+// CancelBookingByToken cancels a booking as the client, from the booking
+// link: it verifies the signed booking token, ensures it matches the
+// requested booking ID, and returns the cancelled booking as the booking page
+// shows it.
+func (s *BookingService) CancelBookingByToken(ctx context.Context, bookingID uuid.UUID, token string) (*domain.PublicBookingLookupResponse, error) {
 	if len(s.tokenSecret) == 0 {
 		return nil, fmt.Errorf("booking token feature is not configured")
 	}
@@ -35,24 +44,144 @@ func (s *BookingService) CancelBookingByToken(ctx context.Context, bookingID uui
 		return nil, errs.NewUnauthorizedErr("token does not match the requested booking")
 	}
 
-	return s.CancelBooking(ctx, bookingID, reason)
-}
-
-func (s *BookingService) CancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error) {
-	return s.cancelBooking(ctx, id, reason, false)
-}
-
-// AdminOverrideCancelBooking lets an admin force-cancel a booking, bypassing
-// the product's cancellation-window policy that would otherwise reject a
-// too-late cancellation. This is the "admin override" of a booking's normal
-// business rules — the route this is exposed on is admin-gated
-// (RequireAdmin), and every successful override writes an audit entry since
-// it's a deliberate departure from the standard policy on the customer's
-// behalf.
-func (s *BookingService) AdminOverrideCancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error) {
-	booking, err := s.cancelBooking(ctx, id, reason, true)
+	booking, product, err := s.cancelByClient(ctx, bookingID)
 	if err != nil {
 		return nil, err
+	}
+	return s.publicResponse(ctx, booking, product), nil
+}
+
+// CancelBooking cancels a booking as the client, from their account. Same
+// rule as the booking link.
+func (s *BookingService) CancelBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error) {
+	booking, _, err := s.cancelByClient(ctx, id)
+	return booking, err
+}
+
+// errBookingNotCancellable refuses cancelling a booking that is not
+// confirmed: awaiting payment, expired, completed, no-show, or already
+// cancelled (a second cancel request refunds nothing more).
+func errBookingNotCancellable(status domain.BookingStatus) error {
+	return errs.NewInvalidValueErr("booking cannot be cancelled: current status is " + string(status))
+}
+
+// cancelByClient is the client cancellation: the booking is claimed as
+// cancelled first (only one of two concurrent requests gets it), then the
+// refund the tiers give is made through the payment port (none when it is
+// zero). A failed refund releases the claim and fails the request, so the
+// client can try again and the booking never ends up cancelled without its
+// refund.
+func (s *BookingService) cancelByClient(ctx context.Context, id uuid.UUID) (*domain.Booking, *catalogDomain.ProductRes, error) {
+	booking, err := s.loadBooking(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !booking.IsCancellable() {
+		return nil, nil, errBookingNotCancellable(booking.Status)
+	}
+
+	product, err := s.bookingProduct(ctx, booking)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	now := s.now()
+	refund := s.cancellationRefund(booking, product, domain.CancelledByClient, now)
+
+	claimed, err := s.bookingRepo.ClaimCancellation(ctx, booking.ID, domain.CancelledByClient, now, refund.AmountCents)
+	if err != nil {
+		return nil, nil, fmt.Errorf("claim booking cancellation: %w", err)
+	}
+	if !claimed {
+		// Cancelled (or otherwise moved) by a concurrent request.
+		current, err := s.loadBooking(ctx, id)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, nil, errBookingNotCancellable(current.Status)
+	}
+
+	var refundID string
+	if refund.AmountCents > 0 {
+		refundID, err = s.paymentService.RefundPayment(ctx, *booking.PaymentIntentID, refund.AmountCents, ports.RefundReasonRequestedByCustomer)
+		if err != nil {
+			if releaseErr := s.bookingRepo.ReleaseCancellation(ctx, booking.ID); releaseErr != nil {
+				slog.ErrorContext(ctx, "failed to release the cancellation claim after a failed refund",
+					"booking_id", booking.ID, "error", releaseErr)
+			}
+			return nil, nil, fmt.Errorf("refund cancelled booking: %w", err)
+		}
+
+		paymentStatus := domain.PaymentStatusPartiallyRefunded
+		if refund.AmountCents >= amountPaidOnline(booking, product) {
+			paymentStatus = domain.PaymentStatusRefunded
+		}
+		if err := s.bookingRepo.MarkCancellationRefunded(ctx, booking.ID, paymentStatus); err != nil {
+			// The money is back and the refunded amount is recorded; only
+			// the payment status lags. Logged for follow-up.
+			slog.ErrorContext(ctx, "failed to record the payment status of a cancellation refund",
+				"booking_id", booking.ID, "refund_id", refundID, "error", err)
+		}
+		booking.PaymentStatus = paymentStatus
+	}
+
+	booking.Status = domain.BookingStatusCancelled
+	booking.CancelledAt = &now
+	booking.CancelledBy = domain.CancelledByClient
+	refunded := refund.AmountCents
+	booking.RefundedAmountCents = &refunded
+
+	actorID, actorRole := audit.ActorFromContext(ctx)
+	if actorID == uuid.Nil {
+		actorRole = "guest" // from the booking link, no session
+	}
+	audit.WriteOrLog(ctx, s.audit, audit.Entry{
+		ActorID:    actorID,
+		ActorRole:  actorRole,
+		Action:     "booking.cancelled",
+		TargetType: "booking",
+		TargetID:   booking.ID.String(),
+		Payload: map[string]any{
+			"cancelled_by":      string(domain.CancelledByClient),
+			"refund_id":         refundID,
+			"refund_cents":      refund.AmountCents,
+			"refund_percentage": refund.Percentage,
+		},
+	})
+
+	s.releaseAvailability(ctx, booking)
+	s.sendCancellationNotice(ctx, booking, product)
+	return booking, product, nil
+}
+
+// AdminOverrideCancelBooking lets an admin cancel a booking with a reason,
+// without any automatic refund (the admin refunds manually when needed,
+// RefundBooking). The route is admin-gated (RequireAdmin), and every
+// override writes an audit entry.
+func (s *BookingService) AdminOverrideCancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error) {
+	booking, err := s.loadBooking(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !booking.IsCancellable() {
+		return nil, errBookingNotCancellable(booking.Status)
+	}
+
+	product, err := s.bookingProduct(ctx, booking)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := booking.Cancel(reason); err != nil {
+		return nil, fmt.Errorf("cancel booking: %w", err)
+	}
+
+	bookingEncx, err := domain.ProcessBookingEncx(ctx, s.crypto, booking)
+	if err != nil {
+		return nil, fmt.Errorf("encrypt booking: %w", err)
+	}
+	if err := s.bookingRepo.Update(ctx, bookingEncx); err != nil {
+		return nil, fmt.Errorf("update cancelled booking: %w", err)
 	}
 
 	actorID, actorRole := audit.ActorFromContext(ctx)
@@ -68,94 +197,117 @@ func (s *BookingService) AdminOverrideCancelBooking(ctx context.Context, id uuid
 		},
 	})
 
+	s.releaseAvailability(ctx, booking)
+	s.sendCancellationNotice(ctx, booking, product)
 	return booking, nil
 }
 
-// cancelBooking holds the shared cancellation flow used by both the
-// standard customer-facing CancelBooking and the admin-only
-// AdminOverrideCancelBooking. When bypassCancellationPolicy is true, the
-// product's CancellationHours policy is not enforced.
-func (s *BookingService) cancelBooking(ctx context.Context, id uuid.UUID, reason string, bypassCancellationPolicy bool) (*domain.Booking, error) {
-	// Get existing booking
+// cancellationRefund is the refund a cancellation by actor at now gives on
+// the booking: the product's tiers applied to the amount paid online. Only a
+// paid booking with a PaymentIntent has anything to refund.
+func (s *BookingService) cancellationRefund(booking *domain.Booking, product *catalogDomain.ProductRes, actor domain.CancellationActor, now time.Time) domain.CancellationRefund {
+	paid := 0
+	if booking.PaymentStatus == domain.PaymentStatusPaid && booking.PaymentIntentID != nil {
+		paid = amountPaidOnline(booking, product)
+	}
+	var tiers []domain.RefundTier
+	if product != nil {
+		for _, tier := range product.CancellationTiers {
+			tiers = append(tiers, domain.RefundTier{MinHoursBefore: tier.MinHoursBefore, RefundPercentage: tier.RefundPercentage})
+		}
+	}
+	return domain.ComputeCancellationRefund(actor, tiers, paid, booking.SlotStartTime, now)
+}
+
+// amountPaidOnline is what the client paid online for the booking: as
+// recorded when it was confirmed, or, for bookings confirmed before that was
+// recorded, the product's current deposit applied to the booking's total
+// price (the full price without a deposit, or without the product). The
+// fallback reads no payment provider, so the preview stays cheap and equal
+// to the refund; it can differ from the charge only if the deposit changed
+// since the booking was made.
+func amountPaidOnline(booking *domain.Booking, product *catalogDomain.ProductRes) int {
+	if booking.AmountPaidOnlineCents != nil {
+		return *booking.AmountPaidOnlineCents
+	}
+	if product == nil {
+		return booking.TotalPriceCents
+	}
+	amount, err := catalogDomain.AmountDueOnline(product.Deposit, booking.TotalPriceCents)
+	if err != nil {
+		return booking.TotalPriceCents
+	}
+	return amount
+}
+
+// loadBooking reads and decrypts a booking.
+func (s *BookingService) loadBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error) {
 	bookingEncx, err := s.bookingRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, errs.ErrRepositoryNotFound) {
 			return nil, errs.ErrRepositoryNotFound
 		}
-		return nil, fmt.Errorf("get booking for cancellation: %w", err)
+		return nil, fmt.Errorf("get booking: %w", err)
 	}
-
-	// Decrypt booking
 	booking, err := domain.DecryptBookingEncx(ctx, s.crypto, bookingEncx)
 	if err != nil {
 		return nil, fmt.Errorf("decrypt booking: %w", err)
 	}
+	return booking, nil
+}
 
-	// Check if booking can be cancelled (status-based)
-	if !booking.IsCancellable() {
-		return nil, errs.NewInvalidValueErr("booking cannot be cancelled: current status is " + string(booking.Status))
+// bookingProduct reads the booking's product; nil when it no longer exists
+// (the cancellation then refunds by the default rule).
+func (s *BookingService) bookingProduct(ctx context.Context, booking *domain.Booking) (*catalogDomain.ProductRes, error) {
+	if s.productService == nil {
+		return nil, nil
 	}
-
-	// Enforce cancellation policy based on product's CancellationHours
 	product, err := s.productService.GetProductByID(ctx, booking.ProductID.String())
 	if err != nil {
-		// If product lookup fails, allow cancellation (fail open for customer benefit)
-		// but log the issue for investigation
-		if !errors.Is(err, errs.ErrRepositoryNotFound) {
-			return nil, fmt.Errorf("get product for cancellation policy: %w", err)
+		if errors.Is(err, errs.ErrRepositoryNotFound) {
+			return nil, nil
 		}
-		// Product not found - proceed without policy enforcement
-	} else if !bypassCancellationPolicy && product.CancellationHours > 0 {
-		// Calculate time remaining until appointment
-		now := time.Now()
-		timeUntilAppointment := booking.SlotStartTime.Sub(now)
-		hoursRemaining := int(timeUntilAppointment.Hours())
-
-		// Check if within cancellation window
-		if hoursRemaining < product.CancellationHours {
-			return nil, errs.NewCancellationWindowClosedErr(product.CancellationHours, hoursRemaining)
-		}
+		return nil, fmt.Errorf("get product of booking: %w", err)
 	}
+	return product, nil
+}
 
-	// Cancel booking
-	if err := booking.Cancel(reason); err != nil {
-		return nil, fmt.Errorf("cancel booking: %w", err)
-	}
-
-	// Mark associated availability as available again (best effort)
-	if availabilityEncx, err := s.availabilityRepo.GetByID(ctx, booking.AvailabilityID); err == nil {
-		if availability, err := domain.DecryptAvailabilityEncx(ctx, s.crypto, availabilityEncx); err == nil {
-			availability.MarkAsAvailable()
-			if updatedEncx, err := domain.ProcessAvailabilityEncx(ctx, s.crypto, availability); err == nil {
-				_ = s.availabilityRepo.Update(ctx, updatedEncx)
-			}
-		}
-	}
-
-	// Encrypt and persist changes
-	bookingEncx, err = domain.ProcessBookingEncx(ctx, s.crypto, booking)
+// releaseAvailability marks the booking's availability as available again
+// (best effort).
+func (s *BookingService) releaseAvailability(ctx context.Context, booking *domain.Booking) {
+	availabilityEncx, err := s.availabilityRepo.GetByID(ctx, booking.AvailabilityID)
 	if err != nil {
-		return nil, fmt.Errorf("encrypt booking: %w", err)
+		return
 	}
-
-	if err := s.bookingRepo.Update(ctx, bookingEncx); err != nil {
-		return nil, fmt.Errorf("update cancelled booking: %w", err)
+	availability, err := domain.DecryptAvailabilityEncx(ctx, s.crypto, availabilityEncx)
+	if err != nil {
+		return
 	}
-
-	// Send cancellation notification (best effort)
-	if s.notificationService != nil {
-		productName := ""
-		if product != nil {
-			productName = product.Name
-		}
-		notificationData := s.buildNotificationData(booking, productName)
-		if err := s.notificationService.SendBookingCancellation(ctx, notificationData); err != nil {
-			slog.WarnContext(ctx, "failed to send booking cancellation notification",
-				"booking_id", booking.ID,
-				"err", err,
-			)
-		}
+	availability.MarkAsAvailable()
+	if updatedEncx, err := domain.ProcessAvailabilityEncx(ctx, s.crypto, availability); err == nil {
+		_ = s.availabilityRepo.Update(ctx, updatedEncx)
 	}
+}
 
-	return booking, nil
+// sendCancellationNotice emails the client and the partner that the booking
+// was cancelled, with the refund (best effort).
+func (s *BookingService) sendCancellationNotice(ctx context.Context, booking *domain.Booking, product *catalogDomain.ProductRes) {
+	if s.notificationService == nil {
+		return
+	}
+	productName := ""
+	if product != nil {
+		productName = product.Name
+	}
+	data := s.buildNotificationData(booking, productName)
+	data.AmountPaidOnlineCents = amountPaidOnline(booking, product)
+	if booking.RefundedAmountCents != nil {
+		data.RefundedAmountCents = *booking.RefundedAmountCents
+	}
+	if err := s.notificationService.SendBookingCancellation(ctx, data); err != nil {
+		slog.WarnContext(ctx, "failed to send booking cancellation notification",
+			"booking_id", booking.ID,
+			"err", err,
+		)
+	}
 }

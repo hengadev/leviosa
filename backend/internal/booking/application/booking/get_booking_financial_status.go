@@ -33,15 +33,18 @@ func (s *BookingService) GetBookingFinancialStatus(ctx context.Context, booking 
 		}
 	}
 
-	// Refund amount/date: today's refund flow (RefundBooking) only ever
-	// issues a full refund, so the amount is inferred from total_price_cents
-	// once payment_status flips to refunded — the same inference the admin
-	// financial summary already relies on. RefundedAt falls back to the
-	// booking's UpdatedAt, which RefundBooking bumps at refund time. Both
-	// fields are written generically (see BookingFinancialStatus) so a future
-	// graduated refund policy (issue 017) can populate them from its own
-	// stored amount/timestamp without any change on the reading side.
-	if booking.PaymentStatus == domain.PaymentStatusRefunded {
+	// Refund amount/date: a cancellation records what it refunded (issue
+	// 017); a manual full refund (RefundBooking) or a lost dispute does not,
+	// so the amount is then inferred from total_price_cents once
+	// payment_status is refunded. RefundedAt falls back to the booking's
+	// UpdatedAt, bumped at refund time.
+	switch {
+	case booking.RefundedAmountCents != nil && *booking.RefundedAmountCents > 0:
+		amount := *booking.RefundedAmountCents
+		refundedAt := booking.UpdatedAt
+		status.RefundAmountCents = &amount
+		status.RefundedAt = &refundedAt
+	case booking.PaymentStatus == domain.PaymentStatusRefunded:
 		amount := booking.TotalPriceCents
 		refundedAt := booking.UpdatedAt
 		status.RefundAmountCents = &amount

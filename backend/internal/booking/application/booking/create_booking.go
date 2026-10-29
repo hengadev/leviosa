@@ -183,6 +183,9 @@ func (s *BookingService) CreateBooking(
 		booking.PaymentClientSecret = clientSecret
 	} else if err := booking.Confirm(); err != nil {
 		return nil, fmt.Errorf("confirm booking with nothing due online: %w", err)
+	} else {
+		nothingPaid := 0
+		booking.AmountPaidOnlineCents = &nothingPaid
 	}
 
 	// 8. Encrypt and persist under the partner's agenda lock, re-checking the

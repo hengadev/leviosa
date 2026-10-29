@@ -47,6 +47,12 @@ type BookingEncx struct {
 	HoldExpiresAt *time.Time `db:"holdexpiresat" json:"holdexpiresat"`
 
 	Locale *string `db:"locale" json:"locale"`
+
+	AmountPaidOnlineCents *int `db:"amountpaidonlinecents" json:"amountpaidonlinecents"`
+
+	CancelledBy *string `db:"cancelledby" json:"cancelledby"`
+
+	RefundedAmountCents *int `db:"refundedamountcents" json:"refundedamountcents"`
 	
 	Token *string `db:"token" json:"token"`
 	
@@ -130,6 +136,15 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 		locale := string(source.Locale)
 		result.Locale = &locale
 	}
+
+	result.AmountPaidOnlineCents = source.AmountPaidOnlineCents
+
+	if source.CancelledBy != "" {
+		cancelledBy := string(source.CancelledBy)
+		result.CancelledBy = &cancelledBy
+	}
+
+	result.RefundedAmountCents = source.RefundedAmountCents
 	
 	result.CancelledAt = source.CancelledAt
 	
@@ -347,6 +362,14 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	if source.Locale != nil {
 		result.Locale = BookingLocale(*source.Locale)
 	}
+
+	result.AmountPaidOnlineCents = source.AmountPaidOnlineCents
+
+	if source.CancelledBy != nil {
+		result.CancelledBy = CancellationActor(*source.CancelledBy)
+	}
+
+	result.RefundedAmountCents = source.RefundedAmountCents
 	
 	result.CancelledAt = source.CancelledAt
 	

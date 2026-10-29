@@ -28,14 +28,14 @@ func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domai
 			reminded_at,
 			created_at, updated_at,
 			dek_encrypted, key_version, metadata,
-			hold_expires_at, locale
+			hold_expires_at, locale, amount_paid_online_cents
 		) VALUES (
 			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
 			$19, $20, $21, $22,
 			$23,
 			$24,
 			$25, $26, $27, $28, $29,
-			$30, $31
+			$30, $31, $32
 		)
 	`, r.schema)
 
@@ -71,6 +71,7 @@ func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domai
 		bookingEncx.Metadata,
 		bookingEncx.HoldExpiresAt,
 		bookingEncx.Locale,
+		bookingEncx.AmountPaidOnlineCents,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("create booking", err)
