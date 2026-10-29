@@ -289,3 +289,13 @@ func NewInternalBulkSettingsRequest(t *testing.T, ctx context.Context, serverURL
 	require.NoError(t, err)
 	return req
 }
+
+func NewGetBookingPolicyRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.GetBookingPolicyEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetBookingPolicyRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetBookingPolicyRequest) *http.Request {
+	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.SetBookingPolicyEndpoint, request)
+}

@@ -23,9 +23,19 @@ import (
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
+	authuserPartnerService "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/partner"
 	authuserUserService "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
+	authuserPartnerPostgres "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/partner"
 	authuserUserPostgres "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
 	authuserClient "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
+	bookingSettings "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/settings"
+
+	settingsContracts "github.com/Leviosa-care/leviosa/backend/internal/common/contracts/settings"
+	settingsService "github.com/Leviosa-care/leviosa/backend/internal/settings/application"
+	settingsDomain "github.com/Leviosa-care/leviosa/backend/internal/settings/domain"
+	settingsNoop "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/noop"
+	settingsPostgres "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/postgres"
+	settingsPorts "github.com/Leviosa-care/leviosa/backend/internal/settings/ports"
 
 	priceService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/price"
 	productService "github.com/Leviosa-care/leviosa/backend/internal/catalog/application/product"
@@ -99,7 +109,16 @@ var (
 	notificationEmailSpy    *IntegrationEmailSpy
 
 	auditLogger *audit.PostgresLogger
+
+	// Real settings repository behind the booking policy: tests change the
+	// policy through it, as the admin settings endpoint does.
+	settingsRepo settingsPorts.SettingsRepository
 )
+
+// suiteMinimumNoticeHours is the minimum notice the suite runs with: most
+// tests book a few hours ahead, so the 12 h default would refuse them. The
+// slot tests set their own policy and restore this one.
+const suiteMinimumNoticeHours = 0
 
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -235,10 +254,25 @@ func TestMain(m *testing.M) {
 	authUserRepo := authuserUserPostgres.New(ctx, testPool)
 	realAuthUserService := authuserUserService.New(authUserRepo, crypto, nil, nil)
 
+	// Real partner service: the public slot endpoint resolves a partner ID
+	// (as the practice page settings hold it) to the partner's user ID.
+	realPartnerService, err := authuserPartnerService.New(ctx, authuserPartnerPostgres.New(ctx, testPool), authUserRepo, catalogProductService, nil, crypto, nil)
+	if err != nil {
+		log.Fatalf("Failed to create partner service: %v", err)
+	}
+
+	// Booking policy from the real settings service, as the app wires it.
+	settingsRepo = settingsPostgres.New(ctx, testPool)
+	realSettingsService := settingsService.New(settingsRepo, nil, crypto, settingsNoop.NewPublisher(), nil)
+	if err := settingsRepo.SetInt(ctx, &settingsDomain.Setting[int]{Key: settingsContracts.BookingMinimumNoticeHours, Value: suiteMinimumNoticeHours}); err != nil {
+		log.Fatalf("Failed to set the suite's booking policy: %v", err)
+	}
+
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
 		bookingService.WithTokenSecret(testTokenSecret),
 		bookingService.WithAuditLogger(auditLogger),
-		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(nil, realAuthUserService)))
+		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
+		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)))
 
 	// Wire a real BookingNotificationAdapter (real user/room/building/product
 	// fetchers against the test DB) backed by SMS/email spies, so tests can

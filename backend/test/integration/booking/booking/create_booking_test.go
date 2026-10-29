@@ -68,7 +68,7 @@ func TestCreateBooking(t *testing.T) {
 
 		// Prepare booking request with product ID and slot time using first test product (60-minute massage)
 		productID := products[0].ID
-		slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+		slotStartTime := startTime // the availability's first slot (slot engine grid)
 		requestBody := map[string]interface{}{
 			"availability_id": availability.ID.String(),
 			"client_id":       clientID,

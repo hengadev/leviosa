@@ -71,7 +71,7 @@ func TestGetClientBookings(t *testing.T) {
 
 			// Use different products for each booking to vary the tests
 			productID := products[i%len(products)].ID
-			slotStartTime := startTime.Add(30 * time.Minute).Truncate(10 * time.Minute)
+			slotStartTime := startTime // the availability's first slot (slot engine grid)
 			requestBody := map[string]interface{}{
 				"availability_id": availability.ID.String(),
 				"client_id":       clientID,

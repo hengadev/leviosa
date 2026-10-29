@@ -76,6 +76,7 @@ import (
 	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
 	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
 	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
+	bookingSettings "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/settings"
 	bookingStripe "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/stripe"
 
 	// Notification
@@ -517,6 +518,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithAuthUserClient(c.BookingAuthuserCLi),
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
 		bookingSvc.WithAuditLogger(c.AuditLogger),
+		bookingSvc.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(c.SettingsService)),
 	)
 
 	c.PaymentService = bookingStripe

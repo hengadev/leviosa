@@ -24,6 +24,12 @@ const (
 	PracticePagePartnerID = "practice_page_partner_id"
 	PracticePageProductID = "practice_page_product_id"
 	PracticePageVideoURL  = "practice_page_video_url"
+
+	// Booking policy (docs/issues/010-slot-engine.md): no slot closer to now
+	// than the minimum notice, none further than the horizon. Unset means the
+	// defaults (12 h, 8 weeks).
+	BookingMinimumNoticeHours = "booking_minimum_notice_hours"
+	BookingHorizonWeeks       = "booking_horizon_weeks"
 )
 
 // NOTE: the key that I am going to keep

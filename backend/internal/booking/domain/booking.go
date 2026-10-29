@@ -38,7 +38,7 @@ type Booking struct {
 
 	// Slot information (product and time boundaries)
 	ProductID     uuid.UUID `json:"product_id" encx:"encrypt"`      // Link to catalog product
-	SlotStartTime time.Time `json:"slot_start_time" encx:"encrypt"` // Actual slot start (10-min aligned)
+	SlotStartTime time.Time `json:"slot_start_time" encx:"encrypt"` // Actual slot start (a slot the slot engine offered)
 	SlotEndTime   time.Time `json:"slot_end_time" encx:"encrypt"`   // Calculated: SlotStartTime + Product.Duration
 
 	// Legacy notes columns (kept in the schema, never collected or shown:

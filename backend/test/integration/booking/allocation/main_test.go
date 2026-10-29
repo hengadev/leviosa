@@ -187,7 +187,7 @@ func TestMain(m *testing.M) {
 	log.Println("✓ Partner service initialized for verification checks")
 
 	// Create in-process authuser client
-	authUserClient = authuserClient.NewInProcessClient(partnerSvc, nil)
+	authUserClient = authuserClient.NewInProcessClient(partnerSvcFull, nil)
 	log.Println("✓ In-process AuthUserClient created")
 
 	service = allocationService.New(allocationRepo, roomRepo, authUserClient, crypto)

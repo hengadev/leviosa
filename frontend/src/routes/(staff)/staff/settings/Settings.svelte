@@ -117,6 +117,24 @@
         resetForm: false,
     });
 
+    // Booking Policy Form (délai minimum, horizon de réservation)
+    let bookingPolicyDialogOpen = $state(false);
+    const {
+        form: bookingPolicyForm,
+        errors: bookingPolicyErrors,
+        enhance: bookingPolicyEnhance,
+        delayed: bookingPolicyDelayed,
+    } = superForm(data.bookingPolicyForm, {
+        resetForm: false,
+        onUpdated: ({ form }) => {
+            if (form.valid) bookingPolicyDialogOpen = false;
+        },
+    });
+
+    function formatWeeks(weeks: number): string {
+        return weeks === 1 ? "1 semaine" : `${weeks} semaines`;
+    }
+
     // Dialog states
     let companyNameDialogOpen = $state(false);
     let companyEmailDialogOpen = $state(false);
@@ -359,6 +377,51 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Booking Policy Section -->
+        <div class="bg-white rounded-lg border border-border-card overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-card">
+                <h2 class="text-lg font-semibold">Réservation</h2>
+                <p class="text-sm text-foreground-alt mt-1">
+                    Les créneaux proposés sur la page publique et acceptés à la réservation — un changement prend effet immédiatement, sans déploiement
+                </p>
+            </div>
+            <div class="p-6 space-y-4">
+                {#if data.bookingPolicy}
+                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">Délai minimum avant une séance</div>
+                            <div class="text-sm text-foreground-alt mt-1">
+                                {data.bookingPolicy.minimumNoticeHours} h
+                            </div>
+                        </div>
+                        <Button.Root
+                            type="button"
+                            class="cursor-pointer"
+                            onclick={() => {
+                                $bookingPolicyForm.minimum_notice_hours = data.bookingPolicy?.minimumNoticeHours ?? 12;
+                                $bookingPolicyForm.horizon_weeks = data.bookingPolicy?.horizonWeeks ?? 8;
+                                bookingPolicyDialogOpen = true;
+                            }}
+                        >
+                            <div class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                                Modifier
+                            </div>
+                        </Button.Root>
+                    </div>
+                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">Horizon de réservation</div>
+                            <div class="text-sm text-foreground-alt mt-1">
+                                {formatWeeks(data.bookingPolicy.horizonWeeks)}
+                            </div>
+                        </div>
+                    </div>
+                {:else}
+                    <p class="text-sm text-foreground-alt">Impossible de charger la politique de réservation.</p>
+                {/if}
             </div>
         </div>
 
@@ -1021,6 +1084,79 @@
     </Dialog.Portal>
 </Dialog.Root>
 {/if}
+
+<!-- Booking Policy Dialog -->
+<Dialog.Root bind:open={bookingPolicyDialogOpen}>
+    <Dialog.Portal>
+        <Dialog.Overlay class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80" />
+        <Dialog.Content class="rounded-card-lg bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 outline-hidden fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border p-8 sm:max-w-[490px] md:w-full">
+            <Dialog.Title class="w-full text-xl font-semibold tracking-tight">
+                Modifier la politique de réservation
+            </Dialog.Title>
+            <Dialog.Description class="text-foreground-alt !mt-1 text-sm">
+                Aucun créneau n'est proposé avant le délai minimum, ni au-delà de l'horizon
+            </Dialog.Description>
+
+            <Separator.Root class="bg-muted mx-5 !mb-2 !mt-5 block h-px" />
+
+            <form method="POST" action="?/updateBookingPolicy" use:bookingPolicyEnhance class="grid gap-4">
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="booking-minimum-notice" class="text-sm font-medium">Délai minimum (heures)</Label.Root>
+                    <input
+                        id="booking-minimum-notice"
+                        name="minimum_notice_hours"
+                        type="number"
+                        min="0"
+                        max="168"
+                        step="1"
+                        bind:value={$bookingPolicyForm.minimum_notice_hours}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    />
+                    <p class="text-xs text-foreground-alt">De 0 à 168 h (une semaine). Par défaut : 12 h.</p>
+                </div>
+
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="booking-horizon" class="text-sm font-medium">Horizon (semaines)</Label.Root>
+                    <input
+                        id="booking-horizon"
+                        name="horizon_weeks"
+                        type="number"
+                        min="1"
+                        max="52"
+                        step="1"
+                        bind:value={$bookingPolicyForm.horizon_weeks}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    />
+                    <p class="text-xs text-foreground-alt">De 1 à 52 semaines. Par défaut : 8 semaines.</p>
+                </div>
+
+                {#if $bookingPolicyErrors._errors?.length}
+                    <p class="text-sm text-destructive" role="alert">{$bookingPolicyErrors._errors[0]}</p>
+                {/if}
+
+                <div class="flex w-full justify-end gap-3">
+                    <Button.Root type="button" class="cursor-pointer">
+                        <Dialog.Close class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-6 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            Annuler
+                        </Dialog.Close>
+                    </Button.Root>
+                    <Button.Root type="submit" class="cursor-pointer" disabled={$bookingPolicyDelayed}>
+                        <div class="h-input rounded-input bg-dark text-background shadow-mini hover:bg-dark/95 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-8 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            {$bookingPolicyDelayed ? "Enregistrement..." : "Enregistrer"}
+                        </div>
+                    </Button.Root>
+                </div>
+            </form>
+
+            <Button.Root type="button" class="cursor-pointer">
+                <Dialog.Close class="focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden absolute right-5 top-5 rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer">
+                    <X class="text-foreground size-5" />
+                    <span class="sr-only">Close</span>
+                </Dialog.Close>
+            </Button.Root>
+        </Dialog.Content>
+    </Dialog.Portal>
+</Dialog.Root>
 
 <!-- Practice Page Dialog -->
 {#if !data.settingsError}
