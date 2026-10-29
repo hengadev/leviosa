@@ -169,3 +169,52 @@ func TestParseBookingLocale(t *testing.T) {
 	_, err := ParseBookingLocale("de")
 	assert.ErrorIs(t, err, ErrInvalidBookingLocale)
 }
+
+func TestBooking_ConfirmLatePayment(t *testing.T) {
+	for _, status := range []BookingStatus{BookingStatusAwaitingPayment, BookingStatusExpired} {
+		t.Run("confirms a "+string(status)+" booking", func(t *testing.T) {
+			b := bookingIn(t, status)
+			require.NoError(t, b.ConfirmLatePayment())
+			assert.Equal(t, BookingStatusConfirmed, b.Status)
+			assert.True(t, b.IsAppointment())
+		})
+	}
+	for _, status := range []BookingStatus{BookingStatusConfirmed, BookingStatusCancelled, BookingStatusCompleted, BookingStatusNoShow} {
+		t.Run("rejects confirming a "+string(status)+" booking", func(t *testing.T) {
+			b := bookingIn(t, status)
+			assert.ErrorIs(t, b.ConfirmLatePayment(), ErrBookingNotAwaitingPayment)
+			assert.Equal(t, status, b.Status)
+		})
+	}
+}
+
+func TestBooking_HoldElapsed(t *testing.T) {
+	now := time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC)
+	held := func(status BookingStatus, expiresAt *time.Time) *Booking {
+		b := bookingIn(t, status)
+		b.HoldExpiresAt = expiresAt
+		return b
+	}
+	past, future := now.Add(-time.Minute), now.Add(time.Minute)
+
+	assert.True(t, held(BookingStatusAwaitingPayment, &past).HoldElapsed(now))
+	assert.True(t, held(BookingStatusAwaitingPayment, &now).HoldElapsed(now), "the hold ends at its expiry")
+	assert.False(t, held(BookingStatusAwaitingPayment, &future).HoldElapsed(now))
+	assert.False(t, held(BookingStatusAwaitingPayment, nil).HoldElapsed(now), "a hold without an expiry never elapses")
+	assert.False(t, held(BookingStatusConfirmed, &past).HoldElapsed(now))
+}
+
+func TestBooking_OverlapsAny(t *testing.T) {
+	start := time.Date(2026, 11, 3, 10, 0, 0, 0, time.UTC)
+	b := newAwaitingBooking(t)
+	b.SlotStartTime, b.SlotEndTime = start, start.Add(time.Hour)
+	buffer := 15 * time.Minute
+
+	assert.False(t, b.OverlapsAny(buffer, nil))
+	assert.True(t, b.OverlapsAny(buffer, []SlotOccupancy{{Start: start.Add(30 * time.Minute), End: start.Add(2 * time.Hour)}}))
+	assert.True(t, b.OverlapsAny(buffer, []SlotOccupancy{{Start: start.Add(70 * time.Minute), End: start.Add(2 * time.Hour)}}),
+		"the booking's own buffer counts")
+	assert.False(t, b.OverlapsAny(buffer, []SlotOccupancy{{Start: start.Add(75 * time.Minute), End: start.Add(2 * time.Hour)}}),
+		"touching intervals do not overlap")
+	assert.False(t, b.OverlapsAny(buffer, []SlotOccupancy{{Start: start.Add(-time.Hour), End: start}}))
+}

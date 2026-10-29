@@ -278,6 +278,7 @@ func TestMain(m *testing.M) {
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
 		bookingService.WithTokenSecret(testTokenSecret),
 		bookingService.WithAuditLogger(auditLogger),
+		bookingService.WithLatePaymentNotifier(notificationSpy),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
 		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)))
 

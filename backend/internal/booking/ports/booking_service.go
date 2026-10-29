@@ -74,6 +74,12 @@ type BookingService interface {
 	// HandlePaymentWebhook processes a Stripe payment webhook event and updates the booking status
 	HandlePaymentWebhook(ctx context.Context, event *WebhookEvent) error
 
+	// ExpireElapsedHolds moves the bookings still awaiting payment past their
+	// payment hold to expired and cancels their PaymentIntents (best effort),
+	// returning how many it expired. Idempotent; safe to run from several
+	// instances at once (ADR-0018).
+	ExpireElapsedHolds(ctx context.Context) (int, error)
+
 	// GetPartnerEarnings retrieves earnings summary and transactions for a partner
 	GetPartnerEarnings(ctx context.Context, partnerID uuid.UUID) (*EarningsSummary, error)
 

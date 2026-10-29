@@ -6,6 +6,7 @@ import (
 
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	notificationDomain "github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
+	"github.com/google/uuid"
 )
 
 // SpyNotificationService records all notification calls for test assertions.
@@ -18,6 +19,7 @@ type SpyNotificationService struct {
 	BookingCancellations []bookingPorts.BookingNotificationData
 	BookingReminders     []bookingPorts.BookingNotificationData
 	DisputeAlerts        []bookingPorts.BookingNotificationData
+	LatePaymentRefunds   []bookingPorts.BookingNotificationData
 
 	// forward, when set, also hands every booking confirmation to a real
 	// notification service (the BookingNotificationAdapter), so a test can
@@ -86,6 +88,33 @@ func (s *SpyNotificationService) SendPaymentDisputeAlert(ctx context.Context, da
 	defer s.mu.Unlock()
 	s.DisputeAlerts = append(s.DisputeAlerts, data)
 	return nil
+}
+
+// SendLatePaymentRefund records the late-payment refund notification (the
+// spy also stands for bookingPorts.LatePaymentNotificationService) and hands
+// it to the forward target when that one sends it too.
+func (s *SpyNotificationService) SendLatePaymentRefund(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	s.mu.Lock()
+	s.LatePaymentRefunds = append(s.LatePaymentRefunds, data)
+	next := s.forward
+	s.mu.Unlock()
+	if late, ok := next.(bookingPorts.LatePaymentNotificationService); ok {
+		return late.SendLatePaymentRefund(ctx, data)
+	}
+	return nil
+}
+
+// CountFor counts the notifications of a kind recorded for a booking.
+func (s *SpyNotificationService) CountFor(kind func(*SpyNotificationService) []bookingPorts.BookingNotificationData, bookingID uuid.UUID) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	count := 0
+	for _, data := range kind(s) {
+		if data.BookingID == bookingID {
+			count++
+		}
+	}
+	return count
 }
 
 // IntegrationSMSSpy records SMS send attempts made through the real

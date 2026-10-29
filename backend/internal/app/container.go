@@ -186,6 +186,7 @@ type Container struct {
 	MetricsService      bookingPorts.MetricsService
 	PaymentService      bookingPorts.PaymentService
 	ReminderScheduler   *bookingSvc.ReminderScheduler
+	HoldExpiryJob       *bookingSvc.HoldExpiryJob
 	ReviewService       bookingPorts.ReviewService
 	WaitlistService     bookingPorts.WaitlistService
 
@@ -519,9 +520,13 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
 		bookingSvc.WithAuditLogger(c.AuditLogger),
 		bookingSvc.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(c.SettingsService)),
+		bookingSvc.WithLatePaymentNotifier(notificationAdapter),
 	)
 
 	c.PaymentService = bookingStripe
+
+	// Payment hold expiry job (ADR-0018)
+	c.HoldExpiryJob = bookingSvc.NewHoldExpiryJob(c.BookingService, bookingSvc.DefaultHoldExpiryInterval)
 
 	// Review sub-module (issue 009) — depends on BookingService for the
 	// booking-relationship authorization check (booking must be `completed` and
