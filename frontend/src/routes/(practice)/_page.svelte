@@ -7,6 +7,7 @@
     import Timeline from "./_timeline.svelte";
     import Footer from "./_footer.svelte";
     import type { PracticePageData } from "./practice";
+    import { amountDueOnlineCents } from "$lib/deposit";
 
     // The practice page (issue 009), ported from the chosen prototype
     // (variant D): a black hero band, a booking card, the session explained
@@ -25,11 +26,25 @@
     );
     const price = $derived(data.product?.priceCents != null ? fmt.price(data.product.priceCents, locale) : "—");
 
+    // Price, deposit and balance (issue 013). With a deposit below the price,
+    // only the deposit is paid online and the balance at the practice; with
+    // none (or one covering the whole price) the full price is paid online.
+    const payment = $derived.by(() => {
+        const priceCents = data.product?.priceCents;
+        if (priceCents == null) return null;
+        const onlineCents = amountDueOnlineCents(data.product?.deposit, priceCents);
+        if (onlineCents >= priceCents) return { deposit: null, balance: null };
+        return {
+            deposit: fmt.price(onlineCents, locale),
+            balance: fmt.price(priceCents - onlineCents, locale),
+        };
+    });
+
     const facts = $derived([
         { term: t.duration, value: data.product ? t.minutes(data.product.durationMin) : "—" },
-        { term: t.price, value: price },
+        { term: t.price, value: payment?.deposit ? t.priceWithDeposit(price, payment.deposit) : price },
         { term: t.address, value: dash(data.address) },
-        { term: t.payment, value: t.paymentValue },
+        { term: t.payment, value: payment?.deposit ? t.paymentDeposit : t.paymentValue },
     ]);
 </script>
 
@@ -102,7 +117,7 @@
             <aside class="space-y-5 border-b border-neutral-200 p-6 sm:p-8 lg:border-r lg:border-b-0">
                 <h2 class="text-2xl font-bold tracking-tight">{t.bookSession}</h2>
                 <p class="text-pretty text-neutral-600">
-                    {t.intro(data.product?.freeCancellationHours ?? 24)}
+                    {t.intro(data.product?.freeCancellationHours ?? 24, payment?.deposit ?? null)}
                 </p>
                 <ul class="space-y-2.5 border-t border-neutral-200 pt-5 text-sm text-neutral-700">
                     <li class="flex items-center gap-2.5">
@@ -119,7 +134,13 @@
                     </li>
                     <li class="flex items-center gap-2.5">
                         <CreditCard class="size-4 shrink-0 text-neutral-500" aria-hidden="true" />
-                        {t.paymentValue}
+                        {#if payment?.deposit && payment.balance}
+                            {t.paymentSummaryDeposit(payment.deposit, payment.balance)}
+                        {:else if payment}
+                            {t.paymentSummaryFull(price)}
+                        {:else}
+                            {t.paymentValue}
+                        {/if}
                     </li>
                 </ul>
             </aside>
