@@ -36,7 +36,9 @@ type BookingRepository interface {
 	// refuses the confirmation by returning an error (returned as is). It
 	// reports false, without calling verify, when the booking is no longer
 	// awaiting payment or expired (a concurrent delivery confirmed it).
-	ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID, verify func(current *domain.BookingEncx, others []*domain.BookingEncx) error) (bool, error)
+	// amountPaidOnlineCents (what the PaymentIntent charged) is recorded on
+	// the confirmed booking, for refunds.
+	ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID, amountPaidOnlineCents int, verify func(current *domain.BookingEncx, others []*domain.BookingEncx) error) (bool, error)
 
 	// ExpireElapsedHolds moves every booking still awaiting payment whose
 	// hold expired at or before now to expired, in one conditional update
@@ -58,8 +60,24 @@ type BookingRepository interface {
 	// GetByID retrieves a booking by its ID
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.BookingEncx, error)
 
-	// Update modifies an existing booking
+	// Update modifies an existing booking. It leaves the amount paid online,
+	// who cancelled and the refunded amount alone: those are written only by
+	// ConfirmGuarded, Create and the cancellation methods below, so a booking
+	// read without them never erases them.
 	Update(ctx context.Context, booking *domain.BookingEncx) error
+
+	// ClaimCancellation cancels a confirmed booking (status cancelled,
+	// cancelled_at, who cancelled and the refund about to be made), only if
+	// it is still confirmed: of two cancel requests at once, only the one
+	// that gets true refunds. ReleaseCancellation undoes the claim (back to
+	// confirmed) when the refund could not be made.
+	ClaimCancellation(ctx context.Context, id uuid.UUID, cancelledBy domain.CancellationActor, cancelledAt time.Time, refundCents int) (bool, error)
+	ReleaseCancellation(ctx context.Context, id uuid.UUID) error
+
+	// MarkCancellationRefunded records the payment status after the refund
+	// of a claimed cancellation went through (refunded or partially
+	// refunded).
+	MarkCancellationRefunded(ctx context.Context, id uuid.UUID, paymentStatus domain.PaymentStatus) error
 
 	// Delete removes a booking (hard delete for GDPR compliance)
 	Delete(ctx context.Context, id uuid.UUID) error

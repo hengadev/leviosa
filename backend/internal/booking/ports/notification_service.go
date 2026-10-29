@@ -93,12 +93,14 @@ type BookingNotificationData struct {
 	Token string
 
 	// RefundedAmountCents is what was refunded to the client (late-payment
-	// refund notifications).
+	// refund and cancellation notifications).
 	RefundedAmountCents int
 
-	// Cancellation details (only for cancellation notifications)
+	// Cancellation details (only for cancellation notifications).
+	// CancelledBy is "client" or "practitioner"; empty when not recorded.
 	CancellationReason string
 	CancelledAt        *time.Time
+	CancelledBy        string
 
 	// Dispute details (only for dispute alert notifications)
 	DisputeReason string

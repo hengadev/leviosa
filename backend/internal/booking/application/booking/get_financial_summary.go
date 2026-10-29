@@ -26,6 +26,7 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		PaymentStatus: []domain.PaymentStatus{
 			domain.PaymentStatusPaid,
 			domain.PaymentStatusRefunded,
+			domain.PaymentStatusPartiallyRefunded,
 			domain.PaymentStatusDisputed,
 		},
 		// Appointments only: a payment on a booking awaiting confirmation or

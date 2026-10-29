@@ -36,7 +36,8 @@ func (s *spySMSService) SendSMS(ctx context.Context, req notificationDomain.Gene
 type spyEmailService struct {
 	mu                   sync.Mutex
 	bookingConfirmations []notificationDomain.BookingConfirmationRequest
-	bookingCancellations []notificationDomain.BookingCancellationRequest
+	clientCancellations  []notificationDomain.BookingClientCancellationRequest
+	partnerCancellations []notificationDomain.BookingPartnerCancellationRequest
 	bookingReminders     []notificationDomain.BookingReminderRequest
 	paymentNotifications []notificationDomain.PaymentNotificationRequest
 	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
@@ -84,10 +85,16 @@ func (s *spyEmailService) SendBookingPartnerNoticeEmail(ctx context.Context, req
 	s.partnerNotices = append(s.partnerNotices, req)
 	return nil
 }
-func (s *spyEmailService) SendBookingCancellationEmail(ctx context.Context, req notificationDomain.BookingCancellationRequest) error {
+func (s *spyEmailService) SendBookingClientCancellationEmail(ctx context.Context, req notificationDomain.BookingClientCancellationRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.bookingCancellations = append(s.bookingCancellations, req)
+	s.clientCancellations = append(s.clientCancellations, req)
+	return nil
+}
+func (s *spyEmailService) SendBookingPartnerCancellationEmail(ctx context.Context, req notificationDomain.BookingPartnerCancellationRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.partnerCancellations = append(s.partnerCancellations, req)
 	return nil
 }
 func (s *spyEmailService) SendBookingReminderEmail(ctx context.Context, req notificationDomain.BookingReminderRequest) error {
@@ -444,7 +451,10 @@ func TestFirstNameLastName(t *testing.T) {
 
 func TestSendBookingCancellation_SendsToClientAndPartner(t *testing.T) {
 	data := makeBookingData()
-	data.CancellationReason = "Client needs to reschedule"
+	data.Locale = "en"
+	data.CancelledBy = "client"
+	data.AmountPaidOnlineCents = 3000
+	data.RefundedAmountCents = 1500
 	cancelledAt := time.Date(2026, 6, 14, 9, 0, 0, 0, time.UTC)
 	data.CancelledAt = &cancelledAt
 
@@ -452,48 +462,51 @@ func TestSendBookingCancellation_SendsToClientAndPartner(t *testing.T) {
 		data.ClientID:  {Email: "client@example.com", FirstName: "Alice", LastName: "Smith"},
 		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
 	}
-	rooms := map[uuid.UUID]*RoomInfo{
-		data.RoomID: {Name: "Room A", BuildingID: uuid.New()},
-	}
-	buildingID := rooms[data.RoomID].BuildingID
-	buildings := map[uuid.UUID]*BuildingInfo{
-		buildingID: {Name: "Main Building", Address: "123 Rue de Paris"},
-	}
 	products := map[string]*catalogDomain.ProductRes{
 		data.ProductID.String(): {Name: "Massage Therapy"},
 	}
 
 	spy := &spyEmailService{}
 	smsSpy := &spySMSService{}
-	adapter := newTestAdapter(spy, smsSpy, users, rooms, buildings, products)
+	adapter := newTestAdapter(spy, smsSpy, users, nil, nil, products)
 
 	err := adapter.sendBookingCancellationEmail(context.Background(), data)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(spy.bookingCancellations) != 2 {
-		t.Fatalf("expected 2 cancellation emails (client + partner), got %d", len(spy.bookingCancellations))
+	if len(spy.clientCancellations) != 1 || len(spy.partnerCancellations) != 1 {
+		t.Fatalf("expected 1 client and 1 partner cancellation email, got %d and %d", len(spy.clientCancellations), len(spy.partnerCancellations))
 	}
 
-	clientEmail := spy.bookingCancellations[0]
+	clientEmail := spy.clientCancellations[0]
 	assertEqual(t, "client ToEmail", "client@example.com", clientEmail.ToEmail)
 	assertEqual(t, "client ToFirstName", "Alice", clientEmail.ToFirstName)
 	assertEqual(t, "client ToLastName", "Smith", clientEmail.ToLastName)
+	assertEqual(t, "client Locale", string(notificationDomain.LocaleEN), string(clientEmail.Locale))
 	assertEqual(t, "client BookingID", data.BookingID.String(), clientEmail.BookingID)
 	assertEqual(t, "client ProductName", "Massage Therapy", clientEmail.ProductName)
-	assertEqual(t, "client RoomName", "Room A", clientEmail.RoomName)
-	assertEqual(t, "client Date", "Monday, 15 June 2026", clientEmail.Date)
-	assertEqual(t, "client Time", "10:00 – 11:00", clientEmail.Time)
-	assertEqual(t, "client Reason", "Client needs to reschedule", clientEmail.Reason)
+	assertEqual(t, "client CancelledBy", "client", clientEmail.CancelledBy)
+	if clientEmail.AmountPaidOnlineCents != 3000 || clientEmail.RefundedAmountCents != 1500 {
+		t.Errorf("client amounts = paid %d, refunded %d; want 3000, 1500", clientEmail.AmountPaidOnlineCents, clientEmail.RefundedAmountCents)
+	}
+	if !clientEmail.StartTime.Equal(data.SlotStartTime) {
+		t.Errorf("client StartTime = %v, want %v", clientEmail.StartTime, data.SlotStartTime)
+	}
 
-	partnerEmail := spy.bookingCancellations[1]
+	partnerEmail := spy.partnerCancellations[0]
 	assertEqual(t, "partner ToEmail", "partner@example.com", partnerEmail.ToEmail)
 	assertEqual(t, "partner ToFirstName", "Bob", partnerEmail.ToFirstName)
-	assertEqual(t, "partner ToLastName", "Jones", partnerEmail.ToLastName)
 	assertEqual(t, "partner BookingID", data.BookingID.String(), partnerEmail.BookingID)
 	assertEqual(t, "partner ProductName", "Massage Therapy", partnerEmail.ProductName)
-	assertEqual(t, "partner Reason", "Client needs to reschedule", partnerEmail.Reason)
+	assertEqual(t, "partner ClientName", "Alice Smith", partnerEmail.ClientName)
+	if partnerEmail.RefundedAmountCents != 1500 {
+		t.Errorf("partner refunded = %d, want 1500", partnerEmail.RefundedAmountCents)
+	}
+
+	if len(smsSpy.messages) != 0 {
+		t.Errorf("expected no SMS for a booking cancellation, got %d", len(smsSpy.messages))
+	}
 }
 
 func TestSendBookingCancellation_GuestBooking(t *testing.T) {
@@ -502,8 +515,9 @@ func TestSendBookingCancellation_GuestBooking(t *testing.T) {
 	data.GuestEmail = "guest@example.com"
 	data.ClientEmail = "guest@example.com"
 	data.ClientName = "Jane Doe"
+	data.ClientFirstName = "Jane"
+	data.ClientLastName = "Doe"
 	data.ClientID = uuid.Nil
-	data.CancellationReason = "Schedule conflict"
 
 	users := map[uuid.UUID]*UserInfo{
 		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
@@ -518,18 +532,18 @@ func TestSendBookingCancellation_GuestBooking(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(spy.bookingCancellations) != 2 {
-		t.Fatalf("expected 2 cancellation emails (guest client + partner), got %d", len(spy.bookingCancellations))
+	if len(spy.clientCancellations) != 1 || len(spy.partnerCancellations) != 1 {
+		t.Fatalf("expected 1 client and 1 partner cancellation email, got %d and %d", len(spy.clientCancellations), len(spy.partnerCancellations))
 	}
 
-	assertEqual(t, "guest client ToEmail", "guest@example.com", spy.bookingCancellations[0].ToEmail)
-	assertEqual(t, "guest client ToFirstName", "Jane", spy.bookingCancellations[0].ToFirstName)
-	assertEqual(t, "partner ToEmail", "partner@example.com", spy.bookingCancellations[1].ToEmail)
+	assertEqual(t, "guest client ToEmail", "guest@example.com", spy.clientCancellations[0].ToEmail)
+	assertEqual(t, "guest client ToFirstName", "Jane", spy.clientCancellations[0].ToFirstName)
+	assertEqual(t, "guest client Locale", string(notificationDomain.LocaleFR), string(spy.clientCancellations[0].Locale))
+	assertEqual(t, "partner ToEmail", "partner@example.com", spy.partnerCancellations[0].ToEmail)
 }
 
 func TestSendBookingCancellation_MissingClientEmail_StillSendsToPartner(t *testing.T) {
 	data := makeBookingData()
-	data.CancellationReason = "No reason"
 
 	users := map[uuid.UUID]*UserInfo{
 		data.PartnerID: {Email: "partner@example.com", FirstName: "Bob", LastName: "Jones"},
@@ -545,15 +559,14 @@ func TestSendBookingCancellation_MissingClientEmail_StillSendsToPartner(t *testi
 	}
 
 	// Partner should still receive the cancellation email even if client email is missing
-	if len(spy.bookingCancellations) != 1 {
-		t.Fatalf("expected 1 cancellation email (partner only), got %d", len(spy.bookingCancellations))
+	if len(spy.clientCancellations) != 0 || len(spy.partnerCancellations) != 1 {
+		t.Fatalf("expected the partner email only, got %d client and %d partner", len(spy.clientCancellations), len(spy.partnerCancellations))
 	}
-	assertEqual(t, "partner ToEmail", "partner@example.com", spy.bookingCancellations[0].ToEmail)
+	assertEqual(t, "partner ToEmail", "partner@example.com", spy.partnerCancellations[0].ToEmail)
 }
 
 func TestSendBookingCancellation_MissingPartnerEmail_StillSendsToClient(t *testing.T) {
 	data := makeBookingData()
-	data.CancellationReason = "No reason"
 
 	users := map[uuid.UUID]*UserInfo{
 		data.ClientID: {Email: "client@example.com", FirstName: "Alice", LastName: "Smith"},
@@ -569,15 +582,14 @@ func TestSendBookingCancellation_MissingPartnerEmail_StillSendsToClient(t *testi
 	}
 
 	// Client should still receive the cancellation email even if partner email is missing
-	if len(spy.bookingCancellations) != 1 {
-		t.Fatalf("expected 1 cancellation email (client only), got %d", len(spy.bookingCancellations))
+	if len(spy.clientCancellations) != 1 || len(spy.partnerCancellations) != 0 {
+		t.Fatalf("expected the client email only, got %d client and %d partner", len(spy.clientCancellations), len(spy.partnerCancellations))
 	}
-	assertEqual(t, "client ToEmail", "client@example.com", spy.bookingCancellations[0].ToEmail)
+	assertEqual(t, "client ToEmail", "client@example.com", spy.clientCancellations[0].ToEmail)
 }
 
 func TestSendBookingCancellation_BothEmailsMissing_LogsAndReturnsNil(t *testing.T) {
 	data := makeBookingData()
-	data.CancellationReason = "No reason"
 
 	spy := &spyEmailService{}
 	smsSpy := &spySMSService{}
@@ -588,8 +600,8 @@ func TestSendBookingCancellation_BothEmailsMissing_LogsAndReturnsNil(t *testing.
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if len(spy.bookingCancellations) != 0 {
-		t.Fatalf("expected 0 cancellation emails, got %d", len(spy.bookingCancellations))
+	if len(spy.clientCancellations)+len(spy.partnerCancellations) != 0 {
+		t.Fatalf("expected 0 cancellation emails, got %d", len(spy.clientCancellations)+len(spy.partnerCancellations))
 	}
 }
 

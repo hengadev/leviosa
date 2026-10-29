@@ -21,9 +21,10 @@ type SpyNotificationService struct {
 	DisputeAlerts        []bookingPorts.BookingNotificationData
 	LatePaymentRefunds   []bookingPorts.BookingNotificationData
 
-	// forward, when set, also hands every booking confirmation to a real
-	// notification service (the BookingNotificationAdapter), so a test can
-	// follow a booking-confirmed event down to the emails it sends.
+	// forward, when set, also hands every booking confirmation (and
+	// cancellation) to a real notification service (the
+	// BookingNotificationAdapter), so a test can follow the event down to the
+	// emails it sends.
 	forward bookingPorts.BookingNotificationService
 }
 
@@ -71,8 +72,12 @@ func (s *SpyNotificationService) SendPaymentFailed(ctx context.Context, data boo
 
 func (s *SpyNotificationService) SendBookingCancellation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.BookingCancellations = append(s.BookingCancellations, data)
+	next := s.forward
+	s.mu.Unlock()
+	if next != nil {
+		return next.SendBookingCancellation(ctx, data)
+	}
 	return nil
 }
 
@@ -150,7 +155,8 @@ func (s *IntegrationSMSSpy) SendSMS(ctx context.Context, req notificationDomain.
 type IntegrationEmailSpy struct {
 	mu                   sync.Mutex
 	BookingConfirmations []notificationDomain.BookingConfirmationRequest
-	BookingCancellations []notificationDomain.BookingCancellationRequest
+	ClientCancellations  []notificationDomain.BookingClientCancellationRequest
+	PartnerCancellations []notificationDomain.BookingPartnerCancellationRequest
 	BookingReminders     []notificationDomain.BookingReminderRequest
 	PartnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	LatePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
@@ -190,7 +196,8 @@ func (s *IntegrationEmailSpy) Reminders() []notificationDomain.BookingReminderRe
 func (s *IntegrationEmailSpy) Reset() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.BookingConfirmations, s.BookingCancellations, s.BookingReminders, s.PartnerNotices = nil, nil, nil, nil
+	s.BookingConfirmations, s.BookingReminders, s.PartnerNotices = nil, nil, nil
+	s.ClientCancellations, s.PartnerCancellations = nil, nil
 	s.LatePaymentRefunds = nil
 }
 
@@ -224,11 +231,26 @@ func (s *IntegrationEmailSpy) SendBookingPartnerNoticeEmail(ctx context.Context,
 	s.PartnerNotices = append(s.PartnerNotices, req)
 	return nil
 }
-func (s *IntegrationEmailSpy) SendBookingCancellationEmail(ctx context.Context, req notificationDomain.BookingCancellationRequest) error {
+func (s *IntegrationEmailSpy) SendBookingClientCancellationEmail(ctx context.Context, req notificationDomain.BookingClientCancellationRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.BookingCancellations = append(s.BookingCancellations, req)
+	s.ClientCancellations = append(s.ClientCancellations, req)
 	return nil
+}
+func (s *IntegrationEmailSpy) SendBookingPartnerCancellationEmail(ctx context.Context, req notificationDomain.BookingPartnerCancellationRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.PartnerCancellations = append(s.PartnerCancellations, req)
+	return nil
+}
+
+// CancellationSnapshot returns copies of the cancellation emails recorded so
+// far: the clients' and the partners'.
+func (s *IntegrationEmailSpy) CancellationSnapshot() ([]notificationDomain.BookingClientCancellationRequest, []notificationDomain.BookingPartnerCancellationRequest) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]notificationDomain.BookingClientCancellationRequest(nil), s.ClientCancellations...),
+		append([]notificationDomain.BookingPartnerCancellationRequest(nil), s.PartnerCancellations...)
 }
 func (s *IntegrationEmailSpy) SendBookingReminderEmail(ctx context.Context, req notificationDomain.BookingReminderRequest) error {
 	s.mu.Lock()

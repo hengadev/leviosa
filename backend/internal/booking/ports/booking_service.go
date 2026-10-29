@@ -38,8 +38,10 @@ type BookingService interface {
 	// payment_status/timestamps. Used by the client booking detail endpoint.
 	GetBookingFinancialStatus(ctx context.Context, booking *domain.Booking) (*domain.BookingFinancialStatus, error)
 
-	// CancelBooking cancels a booking with reason
-	CancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error)
+	// CancelBooking cancels a confirmed booking as the client (from their
+	// account), refunding what the product's cancellation tiers give
+	// (ADR-0014). No reason is collected (ADR-0019).
+	CancelBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
 	// CompleteBooking marks a booking as completed
 	CompleteBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
@@ -53,9 +55,8 @@ type BookingService interface {
 	// RefundBooking processes a refund
 	RefundBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
-	// AdminOverrideCancelBooking lets an admin force-cancel a booking,
-	// bypassing the product's cancellation-window policy. Writes an audit
-	// entry on success.
+	// AdminOverrideCancelBooking lets an admin cancel a booking with a
+	// reason, without an automatic refund. Writes an audit entry on success.
 	AdminOverrideCancelBooking(ctx context.Context, id uuid.UUID, reason string) (*domain.Booking, error)
 
 	// GetClientBookings retrieves bookings for a client
@@ -104,11 +105,11 @@ type BookingService interface {
 	// LookupBookingByRefAndContact looks up a guest booking by reference + email/phone.
 	LookupBookingByRefAndContact(ctx context.Context, ref string, email, phone string) (*domain.PublicBookingLookupResponse, error)
 
-	// CancelBookingByToken cancels a booking using a signed booking token instead of
-	// a session cookie. The token must be valid, not expired, and must match the
-	// booking being cancelled. The product's cancellation window is enforced identically
-	// regardless of auth method.
-	CancelBookingByToken(ctx context.Context, bookingID uuid.UUID, token string, reason string) (*domain.Booking, error)
+	// CancelBookingByToken cancels a booking as the client using a signed
+	// booking token instead of a session cookie. The token must be valid, not
+	// expired, and must match the booking being cancelled. The refund is the
+	// one the lookup previewed (same rule, same clock).
+	CancelBookingByToken(ctx context.Context, bookingID uuid.UUID, token string) (*domain.PublicBookingLookupResponse, error)
 
 	// ClaimBookings links all guest bookings matching the given email to the
 	// specified client. Bookings that already have an owner are skipped.

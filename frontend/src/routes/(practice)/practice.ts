@@ -23,9 +23,29 @@ export type PracticeProduct = {
     priceCents: number | null;
     /** Optional deposit (acompte, issue 013); null: the full price is paid online. */
     deposit: Deposit | null;
-    /** Hours before the session until which cancellation is free (seed placeholder). */
-    freeCancellationHours: number;
+    /**
+     * Hours of notice from which a cancellation refunds the whole amount paid
+     * online, from the product's cancellation tiers (ADR-0014); null when no
+     * tier refunds in full with notice (the page then points to the terms of
+     * sale).
+     */
+    fullRefundHours: number | null;
 };
+
+/** One step of a product's cancellation fee schedule (ADR-0014). */
+type CancellationTier = { minHoursBefore: number; refundPercentage: number };
+
+/**
+ * The notice from which the tiers refund in full: the lowest threshold of a
+ * 100 % tier. null without tiers, without a 100 % tier, or when that tier
+ * starts at 0 h (always refunded: nothing to say about a deadline).
+ */
+export function fullRefundHours(tiers: CancellationTier[] | null | undefined): number | null {
+    const full = (tiers ?? []).filter((tier) => tier.refundPercentage >= 100).map((tier) => tier.minHoursBefore);
+    if (full.length === 0) return null;
+    const hours = Math.min(...full);
+    return hours > 0 ? hours : null;
+}
 
 /** One free slot from the slot engine (GET /slots); instants as ISO strings. */
 export type PracticeSlot = {
@@ -87,6 +107,7 @@ type PublicProduct = {
         name: string;
         duration: number;
         cancellationHours: number;
+        cancellationTiers?: CancellationTier[];
         deposit?: unknown;
     };
 };
@@ -155,7 +176,7 @@ function mockPracticeData(): PracticePageData {
                   durationMin: product.duration,
                   priceCents: price?.amount ?? null,
                   deposit: parseDeposit(product.deposit),
-                  freeCancellationHours: 24,
+                  fullRefundHours: null,
               }
             : null,
         // Mock mode has no slot engine: the calendar shows its empty state.
@@ -203,7 +224,7 @@ export async function loadPracticePage(fetchFn: typeof fetch): Promise<PracticeP
                 durationMin: publicProduct.product.duration,
                 priceCents: price?.amount ?? null,
                 deposit: parseDeposit(publicProduct.product.deposit),
-                freeCancellationHours: publicProduct.product.cancellationHours ?? 24,
+                fullRefundHours: fullRefundHours(publicProduct.product.cancellationTiers),
             };
         }
     }

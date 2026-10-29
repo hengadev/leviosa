@@ -20,27 +20,29 @@ func cancelBookingResponse(booking *domain.Booking) domain.BookingResponse {
 	}
 
 	return domain.BookingResponse{
-		ID:                 booking.ID,
-		AvailabilityID:     booking.AvailabilityID,
-		ClientID:           booking.ClientID,
-		PartnerID:          booking.PartnerID,
-		RoomID:             booking.RoomID,
-		ProductID:          booking.ProductID,
-		SlotStartTime:      booking.SlotStartTime,
-		SlotEndTime:        booking.SlotEndTime,
-		Status:             booking.Status,
-		TotalPriceCents:    booking.TotalPriceCents,
-		Currency:           booking.Currency,
-		PaymentStatus:      booking.PaymentStatus,
-		PaymentIntentID:    booking.PaymentIntentID,
-		CancellationReason: cancellationReason,
-		CancelledAt:        booking.CancelledAt,
-		CompletedAt:        booking.CompletedAt,
-		GuestFirstName:     booking.GuestFirstName,
-		GuestLastName:      booking.GuestLastName,
-		GuestEmail:         booking.GuestEmail,
-		GuestPhone:         booking.GuestPhone,
-		Token:              booking.Token,
+		ID:                  booking.ID,
+		AvailabilityID:      booking.AvailabilityID,
+		ClientID:            booking.ClientID,
+		PartnerID:           booking.PartnerID,
+		RoomID:              booking.RoomID,
+		ProductID:           booking.ProductID,
+		SlotStartTime:       booking.SlotStartTime,
+		SlotEndTime:         booking.SlotEndTime,
+		Status:              booking.Status,
+		TotalPriceCents:     booking.TotalPriceCents,
+		Currency:            booking.Currency,
+		PaymentStatus:       booking.PaymentStatus,
+		PaymentIntentID:     booking.PaymentIntentID,
+		CancellationReason:  cancellationReason,
+		CancelledAt:         booking.CancelledAt,
+		CompletedAt:         booking.CompletedAt,
+		GuestFirstName:      booking.GuestFirstName,
+		GuestLastName:       booking.GuestLastName,
+		GuestEmail:          booking.GuestEmail,
+		GuestPhone:          booking.GuestPhone,
+		Token:               booking.Token,
+		CancelledBy:         booking.CancelledBy,
+		RefundedAmountCents: booking.RefundedAmountCents,
 	}
 }
 
@@ -64,19 +66,14 @@ func mapCancelError(err error) int {
 		return http.StatusBadRequest
 	case errors.Is(err, errs.ErrUnauthorized):
 		return http.StatusUnauthorized
-	case errors.Is(err, errs.ErrCancellationWindowClosed):
-		return http.StatusUnprocessableEntity
 	default:
 		return http.StatusInternalServerError
 	}
 }
 
+// CancelBooking cancels a booking as the signed-in client. No body: the
+// client cancellation collects no reason (ADR-0019); any body is ignored.
 func (h *handler) CancelBooking(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "application/json" {
-		httpx.RespondWithError(w, errors.New("unsupported media type: please send 'application/json'"), http.StatusUnsupportedMediaType)
-		return
-	}
-
 	ctx := r.Context()
 
 	bookingID, err := uuid.Parse(r.PathValue("id"))
@@ -85,13 +82,7 @@ func (h *handler) CancelBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := decodeCancelRequest(r)
-	if err != nil {
-		httpx.RespondWithError(w, err, http.StatusBadRequest)
-		return
-	}
-
-	booking, err := h.svc.CancelBooking(ctx, bookingID, request.Reason)
+	booking, err := h.svc.CancelBooking(ctx, bookingID)
 	if err != nil {
 		httpx.RespondWithError(w, err, mapCancelError(err))
 		return
@@ -132,15 +123,12 @@ func (h *handler) AdminOverrideCancelBooking(w http.ResponseWriter, r *http.Requ
 	httpx.RespondWithJSON(w, cancelBookingResponse(booking), http.StatusOK)
 }
 
-// CancelBookingPublic handles token-based booking cancellation for unauthenticated
-// guests. The booking token is passed as a query parameter (?token=xxx).
-// The response uses the public DTO (no internal IDs or guest contact fields).
+// CancelBookingPublic cancels a booking as the client from the booking link,
+// for unauthenticated guests. The booking token is passed as a query
+// parameter (?token=xxx). No body: no reason is collected (ADR-0019); any
+// body is ignored. The response is the booking as the booking page shows it,
+// with what was refunded (no internal IDs or guest contact fields).
 func (h *handler) CancelBookingPublic(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "application/json" {
-		httpx.RespondWithError(w, errors.New("unsupported media type: please send 'application/json'"), http.StatusUnsupportedMediaType)
-		return
-	}
-
 	token := httpx.FormString(r, "token")
 	if token == "" {
 		httpx.RespondWithError(w, errs.NewInvalidValueErr("missing booking token"), http.StatusBadRequest)
@@ -155,30 +143,11 @@ func (h *handler) CancelBookingPublic(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request, err := decodeCancelRequest(r)
-	if err != nil {
-		httpx.RespondWithError(w, err, http.StatusBadRequest)
-		return
-	}
-
-	booking, err := h.svc.CancelBookingByToken(ctx, bookingID, token, request.Reason)
+	booking, err := h.svc.CancelBookingByToken(ctx, bookingID, token)
 	if err != nil {
 		httpx.RespondWithError(w, err, mapCancelError(err))
 		return
 	}
 
-	httpx.RespondWithJSON(w, publicCancelResponse(booking), http.StatusOK)
-}
-
-// publicCancelResponse converts a cancelled booking to a public response DTO.
-func publicCancelResponse(booking *domain.Booking) domain.PublicBookingLookupResponse {
-	return domain.PublicBookingLookupResponse{
-		ID:              booking.ID,
-		SlotStartTime:   booking.SlotStartTime,
-		SlotEndTime:     booking.SlotEndTime,
-		Status:          booking.Status,
-		TotalPriceCents: booking.TotalPriceCents,
-		Currency:        booking.Currency,
-		PaymentStatus:   booking.PaymentStatus,
-	}
+	httpx.RespondWithJSON(w, booking, http.StatusOK)
 }
