@@ -299,6 +299,18 @@ func (b *Booking) Expire() error {
 	return nil
 }
 
+// ConfirmLatePayment confirms a booking whose payment succeeded after its
+// hold elapsed (ADR-0018), awaiting payment or already expired, once the
+// caller made sure its slot is still free. Any other status is refused.
+func (b *Booking) ConfirmLatePayment() error {
+	if b.Status != BookingStatusAwaitingPayment && b.Status != BookingStatusExpired {
+		return ErrBookingNotAwaitingPayment
+	}
+	b.Status = BookingStatusConfirmed
+	b.UpdatedAt = time.Now()
+	return nil
+}
+
 // Cancel cancels the booking with a reason
 func (b *Booking) Cancel(reason string) error {
 	if !b.IsAppointment() {

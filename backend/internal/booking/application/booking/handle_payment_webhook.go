@@ -16,11 +16,17 @@ import (
 // HandlePaymentWebhook processes a Stripe payment webhook event and updates the booking status.
 //
 // This method handles the following webhook event types:
-//   - payment_intent.succeeded: Confirms a booking awaiting payment (ADR-0018)
-//     and emits the booking-confirmed event, exactly once even when Stripe
-//     delivers the event twice; on any other booking, marks the payment paid
-//   - payment_intent.payment_failed: Marks the booking payment as failed
-//   - payment_intent.canceled: Marks the booking payment as failed and cancels the booking
+//   - payment_intent.succeeded: Confirms a booking awaiting payment or
+//     expired (ADR-0018) if its slot is still its own, and emits the
+//     booking-confirmed event; otherwise (a late payment on a slot taken
+//     meanwhile) refunds it in full and emails the client. Exactly once even
+//     when Stripe delivers the event twice. On an appointment, marks the
+//     payment paid
+//   - payment_intent.payment_failed: Marks the booking payment as failed; on
+//     a booking not yet confirmed, only logs (the client retries on the page)
+//   - payment_intent.canceled: Marks the booking payment as failed and cancels
+//     the booking; on a booking not yet confirmed (the expiry job canceled the
+//     intent), only logs
 //   - charge.refunded: Marks the booking payment as refunded
 //   - charge.dispute.created: Marks the booking payment as disputed and alerts admin
 //   - charge.dispute.closed: Resolves the disputed booking back to paid/refunded
@@ -122,40 +128,13 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 	var sendPaymentConfirmation bool
 	var sendPaymentFailed bool
 	var sendDisputeAlert bool
-	var sendBookingConfirmed bool
 
 	switch event.Type {
 	case ports.WebhookEventPaymentIntentSucceeded:
-		if booking.Status == domain.BookingStatusAwaitingPayment {
-			// A conditional update, not a read-modify-write: of two deliveries
-			// of the same event, only the one that finds the booking still
-			// awaiting payment confirms it and emits the event.
-			confirmed, err := s.bookingRepo.ConfirmAwaitingPayment(ctx, booking.ID)
-			if err != nil {
-				return fmt.Errorf("confirm booking after payment: %w", err)
-			}
-			if confirmed {
-				_ = booking.Confirm()
-				_ = booking.MarkPaymentPaid()
-				// What the client paid online, for the confirmation email
-				// (the amount due online is not persisted).
-				booking.AmountDueOnlineCents = event.Amount
-				sendBookingConfirmed = true
-			}
-			break
-		}
-		if booking.Status == domain.BookingStatusExpired {
-			// A payment after the hold elapsed: confirming or refunding it is
-			// issue 015. Record the payment only; no confirmation goes out.
-			slog.WarnContext(ctx, "payment succeeded on an expired booking",
-				"booking_id", booking.ID,
-				"stripe_event_id", event.ID,
-			)
-			if booking.PaymentStatus != domain.PaymentStatusPaid {
-				booking.MarkPaymentPaid()
-				updated = true
-			}
-			break
+		if !booking.IsAppointment() {
+			// Awaiting payment or expired: confirm the booking if its slot
+			// is still its own, refund the payment otherwise (late payment).
+			return s.settleHeldPayment(ctx, booking, event)
 		}
 		if booking.PaymentStatus != domain.PaymentStatusPaid {
 			booking.MarkPaymentPaid()
@@ -164,6 +143,18 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 		}
 
 	case ports.WebhookEventPaymentIntentPaymentFailed:
+		if !booking.IsAppointment() {
+			// During the hold the client retries in the Payment Element;
+			// after it, the booking is (or will be) expired. Either way the
+			// client already sees the outcome on the page: no email.
+			slog.InfoContext(ctx, "payment attempt failed on a booking not yet confirmed",
+				"booking_id", booking.ID,
+				"booking_status", booking.Status,
+				"stripe_event_id", event.ID,
+				"failure_code", event.FailureCode,
+			)
+			return nil
+		}
 		if booking.PaymentStatus != domain.PaymentStatusFailed {
 			booking.MarkPaymentFailed()
 			updated = true
@@ -171,6 +162,16 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 		}
 
 	case ports.WebhookEventPaymentIntentCanceled:
+		if !booking.IsAppointment() {
+			// The expiry job cancels the PaymentIntent of a hold that
+			// elapsed unpaid: nothing to tell the client, nothing to retry.
+			slog.InfoContext(ctx, "payment intent canceled on a booking not yet confirmed",
+				"booking_id", booking.ID,
+				"booking_status", booking.Status,
+				"stripe_event_id", event.ID,
+			)
+			return nil
+		}
 		if booking.PaymentStatus != domain.PaymentStatusFailed {
 			booking.MarkPaymentFailed()
 			updated = true
@@ -242,14 +243,6 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 		if err := s.bookingRepo.Update(ctx, bookingEncx); err != nil {
 			return fmt.Errorf("update booking after webhook: %w", err)
 		}
-	}
-
-	if sendBookingConfirmed {
-		productName := ""
-		if s.productService != nil {
-			productName = s.resolveProductName(ctx, booking.ProductID)
-		}
-		s.sendBookingConfirmed(ctx, booking, productName)
 	}
 
 	// Send payment notifications (best effort)

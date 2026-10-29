@@ -21,6 +21,10 @@ type EmailService interface {
 	SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error
 	SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error
 
+	// SendLatePaymentRefundEmail tells a client their late payment was
+	// refunded because the slot was no longer available (ADR-0018).
+	SendLatePaymentRefundEmail(ctx context.Context, req domain.LatePaymentRefundRequest) error
+
 	// SendContactFormEmail notifies staff of a public contact-form submission.
 	SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error
 

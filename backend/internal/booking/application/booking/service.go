@@ -21,6 +21,7 @@ type BookingService struct {
 	audit               audit.Logger
 	policyProvider      ports.BookingPolicyProvider
 	exceptionRepo       ports.AvailabilityExceptionRepository
+	latePaymentNotifier ports.LatePaymentNotificationService
 }
 
 // New creates a new instance of the booking service
@@ -72,6 +73,13 @@ func WithTokenSecret(secret []byte) Option {
 // apply (12 h, 8 weeks).
 func WithBookingPolicyProvider(p ports.BookingPolicyProvider) Option {
 	return func(s *BookingService) { s.policyProvider = p }
+}
+
+// WithLatePaymentNotifier injects the notification sent to a client whose
+// late payment was refunded because the slot was no longer available. If not
+// provided, the refund is made without an email.
+func WithLatePaymentNotifier(n ports.LatePaymentNotificationService) Option {
+	return func(s *BookingService) { s.latePaymentNotifier = n }
 }
 
 // WithAuditLogger injects the audit-log port used to record sensitive

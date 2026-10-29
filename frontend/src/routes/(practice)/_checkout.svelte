@@ -13,6 +13,12 @@
     // PaymentIntent's client secret. Once Stripe accepts the payment, the
     // card polls the booking by its token until the webhook has confirmed
     // it. No free-text field: Leviosa stores no health data (ADR-0019).
+    //
+    // When the payment hold runs out (issue 015) — the client is still on
+    // the Payment Element, clicks pay too late, or Stripe refuses because the
+    // expiry job canceled the intent — the card says so in the page's
+    // language, never with Stripe's raw error, and sends the client back to
+    // the calendar, whose slots are refreshed.
     type Props = {
         locale: Locale;
         productId: string;
@@ -29,7 +35,7 @@
     const t = $derived(dictionary[locale]);
     const publishableKey = env.PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
-    type Phase = "details" | "payment" | "confirming" | "confirmed" | "delayed" | "lost";
+    type Phase = "details" | "payment" | "confirming" | "confirmed" | "delayed" | "lost" | "expired";
     let phase = $state<Phase>(resumeToken ? "confirming" : "details");
 
     let firstName = $state("");
@@ -44,12 +50,41 @@
     let token = $state(resumeToken ?? "");
     let amountDueCents = $state(0);
     let holdExpiresAt = $state<Date | null>(null);
+    /** Expired phase: the late payment was refunded (the slot was taken meanwhile). */
+    let refunded = $state(false);
 
     let heading = $state<HTMLElement | null>(null);
     let paymentMount = $state<HTMLElement | null>(null);
     let stripe: Stripe | null = null;
     let elements = $state.raw<StripeElements | null>(null);
     let pollTimer: ReturnType<typeof setTimeout> | null = null;
+    let holdTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const holdElapsed = () => holdExpiresAt != null && Date.now() >= holdExpiresAt.getTime();
+
+    async function showExpired(wasRefunded = false) {
+        if (holdTimer) clearTimeout(holdTimer);
+        refunded = wasRefunded;
+        formError = "";
+        phase = "expired";
+        await focusHeading();
+    }
+
+    /** Leaves the payment step once the hold runs out, unless a payment is under way. */
+    function watchHold() {
+        if (holdTimer) clearTimeout(holdTimer);
+        if (!holdExpiresAt) return;
+        // setTimeout caps at about 24 days; a hold is minutes long.
+        const delay = Math.max(0, Math.min(holdExpiresAt.getTime() - Date.now(), 2 ** 31 - 1));
+        holdTimer = setTimeout(() => {
+            if (phase !== "payment") return;
+            if (busy) {
+                watchHold(); // decide once Stripe answered
+                return;
+            }
+            void showExpired();
+        }, delay + 500);
+    }
 
     const errors = $derived({
         firstName: firstName.trim() ? "" : t.requiredField,
@@ -128,6 +163,7 @@
             }
 
             phase = "payment";
+            watchHold();
             await focusHeading();
             await mountPayment(created.clientSecret);
         } catch {
@@ -165,6 +201,11 @@
     async function pay(event: SubmitEvent) {
         event.preventDefault();
         if (!stripe || !elements || busy) return;
+        if (holdElapsed()) {
+            // The slot is no longer held: don't take a payment for it.
+            await showExpired();
+            return;
+        }
         busy = true;
         formError = "";
         try {
@@ -180,10 +221,22 @@
                 confirmParams: { return_url: returnUrl.toString() },
             });
             if (result.error) {
+                // The intent was canceled by the expiry job, or the hold ran
+                // out while the client was paying: the slot is gone, so say
+                // that rather than Stripe's message.
+                if (
+                    result.error.code === "payment_intent_unexpected_state" ||
+                    result.error.payment_intent?.status === "canceled" ||
+                    holdElapsed()
+                ) {
+                    await showExpired();
+                    return;
+                }
                 // Stripe's message is already in the page's language.
                 formError = result.error.message ?? t.bookingFailed;
                 return;
             }
+            if (holdTimer) clearTimeout(holdTimer);
             phase = "confirming";
             await focusHeading();
             poll(0);
@@ -202,13 +255,20 @@
             try {
                 const res = await fetch(`/api/bookings/lookup?token=${encodeURIComponent(token)}`);
                 if (res.ok) {
-                    const booking = (await res.json()) as { status: string };
+                    const booking = (await res.json()) as { status: string; paymentStatus?: string };
                     if (booking.status === "confirmed") {
                         phase = "confirmed";
                         await focusHeading();
                         return;
                     }
-                    if (booking.status === "expired" || booking.status === "cancelled") {
+                    // A payment that reached an expired booking is either
+                    // confirmed (the slot still free) or refunded: until the
+                    // webhook settled it, keep waiting.
+                    if (booking.status === "expired" && booking.paymentStatus === "refunded") {
+                        await showExpired(true);
+                        return;
+                    }
+                    if (booking.status === "cancelled") {
                         phase = "lost";
                         await focusHeading();
                         return;
@@ -232,6 +292,7 @@
 
     onDestroy(() => {
         if (pollTimer) clearTimeout(pollTimer);
+        if (holdTimer) clearTimeout(holdTimer);
     });
 
     const inputClass =
@@ -440,6 +501,20 @@
                     {t.viewBooking}
                 </a>
             {/if}
+        </div>
+    {:else if phase === "expired"}
+        <div role="alert">
+            <h3 bind:this={heading} tabindex="-1" class="text-lg font-semibold focus:outline-none">
+                {t.holdExpiredHeading}
+            </h3>
+            <p class="mt-2 text-pretty text-neutral-600">{refunded ? t.latePaymentRefunded : t.holdExpired}</p>
+            <button
+                type="button"
+                onclick={() => onBack()}
+                class="mt-6 inline-flex h-12 cursor-pointer items-center rounded-lg bg-neutral-950 px-5 font-semibold text-white transition-colors hover:bg-neutral-800 focus-visible:ring-3 focus-visible:ring-neutral-950/30 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+                {t.newBooking}
+            </button>
         </div>
     {:else}
         <div role="status">
