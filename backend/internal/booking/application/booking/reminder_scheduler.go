@@ -16,6 +16,7 @@ import (
 type reminderRepo interface {
 	FindBookingsDueForReminder(ctx context.Context) ([]*domain.BookingEncx, error)
 	MarkReminderSent(ctx context.Context, bookingID uuid.UUID) error
+	ClaimReminder(ctx context.Context, bookingID uuid.UUID) (bool, error)
 }
 
 // ReminderScheduler is an in-process background worker that periodically
@@ -152,7 +153,8 @@ func (s *ReminderScheduler) TickOnce(ctx context.Context) {
 	s.tick(ctx)
 }
 
-// tick runs one scheduler cycle: find eligible bookings, send reminders, mark sent.
+// tick runs one scheduler cycle: find eligible bookings, claim each reminder,
+// send the ones claimed.
 func (s *ReminderScheduler) tick(ctx context.Context) {
 	if s.repo == nil {
 		return
@@ -194,18 +196,27 @@ func (s *ReminderScheduler) tick(ctx context.Context) {
 			continue
 		}
 
+		// Claim the reminder before sending it: the conditional update only
+		// succeeds while the booking is still confirmed and not yet reminded,
+		// so a booking cancelled since the query, or already claimed by a
+		// concurrent tick or another instance, gets no reminder. The claim is
+		// kept even if sending fails, to prevent retry storms.
+		claimed, err := s.repo.ClaimReminder(ctx, booking.ID)
+		if err != nil {
+			slog.ErrorContext(ctx, "reminder scheduler: failed to claim reminder",
+				"booking_id", booking.ID,
+				"error", err,
+			)
+			continue
+		}
+		if !claimed {
+			continue
+		}
+
 		// Send reminder (fire-and-forget from the adapter's perspective).
 		data := s.buildNotificationData(booking)
 		if err := s.notification.SendBookingReminder(ctx, data); err != nil {
 			slog.ErrorContext(ctx, "reminder scheduler: failed to send reminder",
-				"booking_id", booking.ID,
-				"error", err,
-			)
-		}
-
-		// Mark as reminded regardless of notification outcome to prevent retry storms.
-		if err := s.repo.MarkReminderSent(ctx, booking.ID); err != nil {
-			slog.ErrorContext(ctx, "reminder scheduler: failed to mark reminder sent",
 				"booking_id", booking.ID,
 				"error", err,
 			)
@@ -230,6 +241,7 @@ func (s *ReminderScheduler) buildNotificationData(booking *domain.Booking) ports
 		SlotEndTime:     booking.SlotEndTime,
 		TotalPriceCents: booking.TotalPriceCents,
 		Currency:        booking.Currency,
+		Locale:          string(booking.Locale),
 	}
 
 	if booking.ClientID != nil {
@@ -241,6 +253,8 @@ func (s *ReminderScheduler) buildNotificationData(booking *domain.Booking) ports
 		data.GuestEmail = booking.GuestEmail
 		data.GuestPhone = booking.GuestPhone
 		data.ClientName = booking.GuestDisplayName()
+		data.ClientFirstName = booking.GuestFirstName
+		data.ClientLastName = booking.GuestLastName
 		data.ClientEmail = booking.GuestEmail
 		data.ClientPhone = booking.GuestPhone
 	}
