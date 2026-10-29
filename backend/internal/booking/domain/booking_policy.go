@@ -50,3 +50,18 @@ func (b *Booking) OccupiesTime(now time.Time) bool {
 func (b *Booking) Occupancy(bufferTime time.Duration) SlotOccupancy {
 	return SlotOccupancy{Start: b.SlotStartTime, End: b.SlotEndTime.Add(bufferTime)}
 }
+
+// HoldElapsed reports whether the booking awaits payment past its payment
+// hold at now: it no longer keeps its slot, even before the expiry job moves
+// it to expired. A hold without an expiry never elapses.
+func (b *Booking) HoldElapsed(now time.Time) bool {
+	return b.Status == BookingStatusAwaitingPayment && b.HoldExpiresAt != nil && !now.Before(*b.HoldExpiresAt)
+}
+
+// OverlapsAny reports whether the booking, extended by its product's buffer
+// time, intersects any of the occupancies: whether its slot is still free for
+// it, judged as the slot engine judges a candidate slot. Callers leave the
+// booking's own occupancy out.
+func (b *Booking) OverlapsAny(bufferTime time.Duration, occupancies []SlotOccupancy) bool {
+	return overlapsOccupancy(b.SlotStartTime, b.SlotEndTime.Add(bufferTime), occupancies)
+}

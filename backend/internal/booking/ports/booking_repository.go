@@ -28,6 +28,33 @@ type BookingRepository interface {
 	// delivered twice (even concurrently) confirms the booking once.
 	ConfirmAwaitingPayment(ctx context.Context, id uuid.UUID) (bool, error)
 
+	// ConfirmGuarded confirms a booking awaiting payment or expired (a
+	// payment that succeeded after its hold elapsed, ADR-0018) under the same
+	// lock on its partner's agenda as CreateGuarded, so no booking can take
+	// the slot while it is checked. verify receives the booking as it stands
+	// once locked and the partner's other bookings that may occupy time; it
+	// refuses the confirmation by returning an error (returned as is). It
+	// reports false, without calling verify, when the booking is no longer
+	// awaiting payment or expired (a concurrent delivery confirmed it).
+	ConfirmGuarded(ctx context.Context, id, partnerID uuid.UUID, verify func(current *domain.BookingEncx, others []*domain.BookingEncx) error) (bool, error)
+
+	// ExpireElapsedHolds moves every booking still awaiting payment whose
+	// hold expired at or before now to expired, in one conditional update
+	// (a booking confirmed meanwhile is left alone), and returns those it
+	// moved. Two callers at once never both move the same booking.
+	ExpireElapsedHolds(ctx context.Context, now time.Time) ([]ExpiredHold, error)
+
+	// ExpireHold moves one booking awaiting payment whose hold expired at or
+	// before now to expired, and reports whether this call moved it.
+	ExpireHold(ctx context.Context, id uuid.UUID, now time.Time) (bool, error)
+
+	// ClaimLatePaymentRefund marks the payment of an expired booking as
+	// refunded, only if it is not already: of two deliveries of the same late
+	// payment, only the one that gets true refunds it. ReleaseLatePaymentRefund
+	// undoes the claim (back to paid) when the refund could not be made.
+	ClaimLatePaymentRefund(ctx context.Context, id uuid.UUID) (bool, error)
+	ReleaseLatePaymentRefund(ctx context.Context, id uuid.UUID) error
+
 	// GetByID retrieves a booking by its ID
 	GetByID(ctx context.Context, id uuid.UUID) (*domain.BookingEncx, error)
 
@@ -77,6 +104,13 @@ type BookingRepository interface {
 
 	// MarkReminderSent sets reminded_at to now() for a given booking.
 	MarkReminderSent(ctx context.Context, bookingID uuid.UUID) error
+}
+
+// ExpiredHold is a booking the expiry job moved to expired, with the
+// PaymentIntent left to cancel.
+type ExpiredHold struct {
+	BookingID       uuid.UUID
+	PaymentIntentID *string
 }
 
 // BookingFilter defines filtering options for booking queries
