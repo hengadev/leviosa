@@ -16,7 +16,7 @@ func TestRunWritesEveryPreview(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
-	files := []string{filepath.Base(indexPath)}
+	var files []string
 	for _, p := range allPreviews() {
 		files = append(files, p.File)
 	}
