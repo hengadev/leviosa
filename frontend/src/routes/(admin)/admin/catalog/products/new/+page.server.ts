@@ -23,32 +23,31 @@ function mapBackendCategoryToFrontend(cat: BackendCategory): Category {
 	};
 }
 
+// Body of POST /admin/products (backend CreateProductWithPriceRequest): the
+// product and its first price are created together. The backend rejects
+// unknown fields, so the shape must match exactly.
 interface CreateProductRequest {
-	name: string;
-	description: string;
-	categoryId: string;
-	duration: number;
-	price: number;
-	status: 'published' | 'draft' | 'archived';
-	availability: 'online' | 'in-person' | 'hybrid';
-	bufferTime: number;
-	cancellationHours: number;
-	cancellationTiers?: CancellationTier[];
-	deposit?: Deposit;
-	stripeProductId?: string;
+	product: {
+		name: string;
+		description: string;
+		category: string;
+		duration: number;
+		availability: 'online' | 'in-person' | 'hybrid';
+		bufferTime: number;
+		cancellationHours: number;
+		cancellationTiers?: CancellationTier[];
+		deposit?: Deposit;
+	};
+	price: {
+		amount: number; // cents
+		currency: string;
+		interval: 'one_time';
+	};
 }
 
 interface CreateProductResponse {
-	id: string;
-	name: string;
-	description: string;
-	categoryId: string;
-	duration: number;
-	price: number;
-	status: string;
-	availability: string;
-	bufferTime: number;
-	cancellationHours: number;
+	product_id: string;
+	price_id: string;
 }
 
 export const load: PageServerLoad = async ({ fetch }) => {
@@ -90,33 +89,34 @@ export const actions: Actions = {
 		const bufferTime = formData.get('bufferTime') as string;
 		const cancellationHours = formData.get('cancellationHours') as string;
 		const cancellationTiersStr = formData.get('cancellationTiers') as string | null;
-		const stripeProductId = formData.get('stripeProductId') as string | null;
 
+		// A session is paid once: its price is a one-time price, in cents.
 		const requestBody: CreateProductRequest = {
-			name,
-			description,
-			categoryId,
-			duration: parseInt(duration, 10),
-			price: parseFloat(price),
-			status,
-			availability,
-			bufferTime: parseInt(bufferTime, 10),
-			cancellationHours: parseInt(cancellationHours, 10),
+			product: {
+				name,
+				description,
+				category: categoryId,
+				duration: parseInt(duration, 10),
+				availability,
+				bufferTime: parseInt(bufferTime, 10),
+				cancellationHours: parseInt(cancellationHours, 10),
+			},
+			price: {
+				amount: Math.round(parseFloat(price) * 100),
+				currency: 'eur',
+				interval: 'one_time',
+			},
 		};
-
-		if (stripeProductId) {
-			requestBody.stripeProductId = stripeProductId;
-		}
 
 		const deposit = depositFromForm(formData.get('depositType'), formData.get('depositValue'));
 		if (!deposit.ok) return fail(400, { error: deposit.error });
-		if (deposit.deposit) requestBody.deposit = deposit.deposit;
+		if (deposit.deposit) requestBody.product.deposit = deposit.deposit;
 
 		if (cancellationTiersStr) {
 			try {
 				const parsed: CancellationTier[] = JSON.parse(cancellationTiersStr);
 				if (parsed.length > 0) {
-					requestBody.cancellationTiers = parsed.map((t) => ({
+					requestBody.product.cancellationTiers = parsed.map((t) => ({
 						minHoursBefore: Number(t.minHoursBefore),
 						refundPercentage: Number(t.refundPercentage),
 					}));
@@ -144,20 +144,33 @@ export const actions: Actions = {
 				return fail(400, { error: `Erreur: ${errorData.msg || res.status}` });
 			}
 
-			const product: CreateProductResponse = await res.json();
+			const created: CreateProductResponse = await res.json();
 
 			const imageFile = formData.get('imageFile') as File | null;
 			if (imageFile && imageFile.size > 0) {
 				const imageFormData = new FormData();
 				imageFormData.append('image', imageFile);
 
-				const imageRes = await fetch(`${env.API_URL}/admin/products/${product.id}/images`, {
+				const imageRes = await fetch(`${env.API_URL}/admin/products/${created.product_id}/images`, {
 					method: 'POST',
 					body: imageFormData,
 				});
 
 				if (!imageRes.ok) {
 					console.error('Image upload failed after product creation:', imageRes.status);
+				}
+			}
+
+			// The backend creates every product as a draft; apply the chosen
+			// status afterwards (publishing needs the image uploaded above).
+			if (status && status !== 'draft') {
+				const statusRes = await fetch(`${env.API_URL}/admin/products/${created.product_id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ publishedStatus: status }),
+				});
+				if (!statusRes.ok) {
+					return fail(400, { error: 'Produit créé en brouillon : le statut choisi n\'a pas pu être appliqué.' });
 				}
 			}
 
