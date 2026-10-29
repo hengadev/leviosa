@@ -74,6 +74,7 @@ func TestCreateBooking(t *testing.T) {
 			"client_id":       clientID,
 			"product_id":      productID.String(),
 			"slot_start_time": slotStartTime.Format(time.RFC3339),
+			"locale":          "en",
 		}
 		bodyBytes, err := json.Marshal(requestBody)
 		require.NoError(t, err)
@@ -92,7 +93,7 @@ func TestCreateBooking(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
 		// Parse response
-		var booking domain.BookingResponse
+		var booking domain.CreateBookingResponse
 		err = json.NewDecoder(resp.Body).Decode(&booking)
 		require.NoError(t, err)
 
@@ -106,13 +107,25 @@ func TestCreateBooking(t *testing.T) {
 		assert.Equal(t, slotStartTime.Unix(), booking.SlotStartTime.Unix())
 		assert.Equal(t, products[0].PriceCents, booking.TotalPriceCents) // the product's active one-time price
 		assert.Equal(t, "EUR", booking.Currency)
-		assert.Equal(t, domain.BookingStatusConfirmed, booking.Status)
+		// A new booking awaits payment, held for the payment hold, and carries
+		// what the page needs to collect the payment (ADR-0018).
+		assert.Equal(t, domain.BookingStatusAwaitingPayment, booking.Status)
 		assert.Equal(t, domain.PaymentStatusPending, booking.PaymentStatus)
+		assert.NotEmpty(t, booking.ClientSecret, "the PaymentIntent's client secret")
+		assert.NotNil(t, booking.PaymentIntentID)
+		assert.Equal(t, products[0].PriceCents, booking.AmountDueOnlineCents, "no deposit: the full price is due online")
+		require.NotNil(t, booking.HoldExpiresAt)
+		assert.WithinDuration(t, time.Now().Add(15*time.Minute), *booking.HoldExpiresAt, time.Minute)
+		assert.Equal(t, "en", booking.Locale)
 
-		// Verify booking exists in database
+		// Verify booking exists in database, with its hold and locale
 		savedBooking, err := bookingRepo.GetByID(ctx, booking.ID)
 		require.NoError(t, err)
 		assert.Equal(t, booking.ID, savedBooking.ID)
+		assert.Equal(t, domain.BookingStatusAwaitingPayment, savedBooking.Status)
+		require.NotNil(t, savedBooking.HoldExpiresAt)
+		require.NotNil(t, savedBooking.Locale)
+		assert.Equal(t, "en", *savedBooking.Locale)
 	})
 
 	t.Run("should return 400 for invalid availability", func(t *testing.T) {
@@ -147,6 +160,32 @@ func TestCreateBooking(t *testing.T) {
 		defer resp.Body.Close()
 
 		// Assert 400 Bad Request
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("should return 400 for an unknown locale", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+
+		userToken := tu.SetupStandardUser(t, ctx, authCtx)
+		bodyBytes, err := json.Marshal(map[string]interface{}{
+			"availability_id":  uuid.New().String(),
+			"product_id":       uuid.New().String(),
+			"slot_start_time":  time.Now().Add(24 * time.Hour).Truncate(time.Hour).Format(time.RFC3339),
+			"guest_first_name": "Jean",
+			"guest_last_name":  "Dupont",
+			"guest_email":      "jean@example.com",
+			"locale":           "de",
+		})
+		require.NoError(t, err)
+
+		req, err := http.NewRequest("POST", testServerURL+"/bookings", bytes.NewReader(bodyBytes))
+		require.NoError(t, err)
+		req.Header.Set("Content-Type", "application/json")
+		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: userToken})
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
