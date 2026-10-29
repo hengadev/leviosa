@@ -10,6 +10,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// CancelAvailability is how a partner deletes an availability, one-off or
+// recurring (docs/issues/011-recurring-availabilities.md). The availability
+// is deactivated, not removed: it stops offering slots at once, and its row
+// stays so the bookings made against it keep their reference (the foreign
+// key is ON DELETE RESTRICT). It never cancels, moves or otherwise changes an
+// existing booking: those keep their time and status, and still occupy the
+// partner's time until the practitioner cancels them one by one.
 func (s *AvailabilityService) CancelAvailability(ctx context.Context, id uuid.UUID) error {
 	// Get existing availability
 	availabilityEncx, err := s.availabilityRepo.GetByID(ctx, id)

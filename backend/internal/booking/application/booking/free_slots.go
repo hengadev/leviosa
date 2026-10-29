@@ -19,13 +19,15 @@ import (
 // booking creation both build the slot engine's query here, so the practice
 // page and the server can never disagree on what is bookable.
 //
-// This slice covers one-off availabilities. Recurring availabilities (issue
-// 011) will be expanded into occurrences and availability exceptions (012)
-// subtracted before the windows reach the engine. Bookings awaiting payment
-// occupy time while their hold runs (Booking.OccupiesTime, ADR-0018).
+// Recurring availabilities are expanded into their occurrences over the
+// requested range (Availability.Occurrences, issue 011); availability
+// exceptions (issue 012) will be subtracted before the windows reach the
+// engine. Occupancy is partner-wide: every booking of the partner that
+// occupies time (Booking.OccupiesTime, ADR-0018) blocks the slots of all the
+// partner's availabilities, since one practitioner sees one client at a time.
 
-// GetFreeSlots returns the free slots of a partner's one-off availabilities
-// for a product, starting in [from, to).
+// GetFreeSlots returns the free slots of a partner's availabilities (one-off
+// and the occurrences of recurring ones) for a product, starting in [from, to).
 func (s *BookingService) GetFreeSlots(ctx context.Context, partnerID, productID uuid.UUID, from, to time.Time) (*domain.FreeSlots, error) {
 	if !from.Before(to) {
 		return nil, errs.NewInvalidValueErr("from must be before to")
@@ -79,19 +81,16 @@ func (s *BookingService) GetFreeSlots(ctx context.Context, partnerID, productID 
 		return nil, fmt.Errorf("list partner availabilities: %w", err)
 	}
 
-	availabilities := make([]*domain.Availability, 0, len(availabilitiesEncx))
+	var windows []domain.AvailabilityWindow
 	for _, availabilityEncx := range availabilitiesEncx {
-		if availabilityEncx.IsRecurring {
-			continue // recurring availabilities are expanded in issue 011
-		}
 		availability, err := domain.DecryptAvailabilityEncx(ctx, s.crypto, availabilityEncx)
 		if err != nil {
 			return nil, errs.NewNotDecryptedErr("availability", err)
 		}
-		availabilities = append(availabilities, availability)
+		windows = append(windows, availability.Occurrences(from, to)...)
 	}
 
-	query, err := s.slotQuery(ctx, availabilities, product, policy, now)
+	query, err := s.slotQuery(ctx, partnerUserID, windows, product, policy, now)
 	if err != nil {
 		return nil, err
 	}
@@ -102,17 +101,19 @@ func (s *BookingService) GetFreeSlots(ctx context.Context, partnerID, productID 
 	return result, nil
 }
 
-// slotQuery builds the engine's query over the given availabilities: their
-// windows, the bookings occupying them (each extended by its own product's
+// slotQuery builds the engine's query over the given occurrence windows: the
+// partner's bookings occupying time (each extended by its own product's
 // buffer time), the product and the policy. From/To are left to the caller.
 func (s *BookingService) slotQuery(
 	ctx context.Context,
-	availabilities []*domain.Availability,
+	partnerUserID uuid.UUID,
+	windows []domain.AvailabilityWindow,
 	product *catalogDomain.ProductRes,
 	policy domain.BookingPolicy,
 	now time.Time,
 ) (domain.SlotEngineQuery, error) {
 	query := domain.SlotEngineQuery{
+		Availabilities:  windows,
 		ProductDuration: time.Duration(product.Duration) * time.Minute,
 		BufferTime:      time.Duration(product.BufferTime) * time.Minute,
 		MinimumNotice:   policy.MinimumNotice,
@@ -120,24 +121,20 @@ func (s *BookingService) slotQuery(
 		Now:             now,
 	}
 
-	buffers := map[uuid.UUID]time.Duration{product.ID: query.BufferTime}
-	for _, availability := range availabilities {
-		query.Availabilities = append(query.Availabilities, domain.AvailabilityWindow{
-			AvailabilityID: availability.ID,
-			Start:          availability.StartTime,
-			End:            availability.EndTime,
-		})
-
-		bookingsEncx, err := s.bookingRepo.GetBookingsByAvailability(ctx, availability.ID)
-		if err != nil && !errors.Is(err, errs.ErrRepositoryNotFound) {
-			return domain.SlotEngineQuery{}, fmt.Errorf("list bookings of availability %s: %w", availability.ID, err)
-		}
-		occupancies, err := s.occupancies(ctx, bookingsEncx, buffers, query.BufferTime, now)
-		if err != nil {
-			return domain.SlotEngineQuery{}, err
-		}
-		query.Occupancies = append(query.Occupancies, occupancies...)
+	// Slot times are encrypted at rest: the partner's bookings are read by
+	// status only and filtered by time after decryption.
+	bookingsEncx, err := s.bookingRepo.GetByPartnerID(ctx, partnerUserID, ports.BookingFilter{
+		ExcludeStatus: []domain.BookingStatus{domain.BookingStatusCancelled, domain.BookingStatusExpired},
+	})
+	if err != nil && !errors.Is(err, errs.ErrRepositoryNotFound) {
+		return domain.SlotEngineQuery{}, fmt.Errorf("list bookings of partner %s: %w", partnerUserID, err)
 	}
+	buffers := map[uuid.UUID]time.Duration{product.ID: query.BufferTime}
+	occupancies, err := s.occupancies(ctx, bookingsEncx, buffers, query.BufferTime, now)
+	if err != nil {
+		return domain.SlotEngineQuery{}, err
+	}
+	query.Occupancies = occupancies
 	return query, nil
 }
 

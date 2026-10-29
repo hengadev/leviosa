@@ -57,7 +57,7 @@ type AvailabilityFilter struct {
 	// Time-based filters
 	StartTime     *time.Time // Availabilities starting after this time
 	EndTime       *time.Time // Availabilities ending before this time
-	TimeRange     *TimeRange // Availabilities overlapping with this range
+	TimeRange     *TimeRange // Availabilities overlapping with this range; a recurring one when its series does (it starts before the range ends and its end date, if any, is not before the range)
 	AvailableOnly bool       // Only available slots
 
 	// Service filters
