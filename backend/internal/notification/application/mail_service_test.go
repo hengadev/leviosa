@@ -250,3 +250,10 @@ func TestMailService_SendContactFormEmail_PropagatesEmailClientError(t *testing.
 		t.Fatal("expected an error when the email client fails")
 	}
 }
+
+func (s *stubSettingsService) GetBookingPolicy(ctx context.Context) (*settingsDomain.GetBookingPolicyResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetBookingPolicy(ctx context.Context, req *settingsDomain.SetBookingPolicyRequest) (*settingsDomain.SetBookingPolicyResponse, error) {
+	return nil, nil
+}

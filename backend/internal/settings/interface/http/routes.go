@@ -51,6 +51,10 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST "+SetPracticePageProductEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageProduct)))
 	router.HandleFunc("POST "+SetPracticePageVideoEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageVideo)))
 
+	// Booking policy: public read, admin-only write
+	router.HandleFunc("GET "+GetBookingPolicyEndpoint, mw.EnableCORS(h.GetBookingPolicy))
+	router.HandleFunc("POST "+SetBookingPolicyEndpoint, RequireAdministrator(mw.EnableCORS(h.SetBookingPolicy)))
+
 	// Admin-only OTP settings (all access)
 	router.HandleFunc("GET "+AdminGetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.GetOTPDuration)))
 	router.HandleFunc("POST "+AdminSetOTPDurationEndpoint, RequireAdministrator(mw.EnableCORS(h.SetOTPDuration)))
