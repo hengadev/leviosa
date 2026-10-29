@@ -168,6 +168,9 @@ func (f *fakeEmailClient) SendPaymentFailedEmail(ctx context.Context, req domain
 func (f *fakeEmailClient) SendBookingConfirmationEmail(ctx context.Context, req domain.BookingConfirmationRequest) error {
 	return nil
 }
+func (f *fakeEmailClient) SendBookingPartnerNoticeEmail(ctx context.Context, req domain.BookingPartnerNoticeRequest) error {
+	return nil
+}
 func (f *fakeEmailClient) SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error {
 	return nil
 }

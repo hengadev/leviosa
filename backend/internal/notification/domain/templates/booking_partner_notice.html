@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nouvelle réservation — Leviosa</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #eaeaea;">
+    <div style="max-width: 600px; margin: 0 auto;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #eaeaea; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table
+              width="100%"
+              cellpadding="0"
+              cellspacing="0"
+              style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);"
+            >
+              <!-- Header -->
+              <tr>
+                <td align="center" style="background-color: #1e1e1e; padding: 30px 20px;">
+                  <h1 style="color: #ffffff; font-size: 28px; font-weight: normal; margin: 0; letter-spacing: 4px;">LEVIOSA</h1>
+                </td>
+              </tr>
+
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <h1 style="color: #1e1e1e; font-size: 24px; font-weight: normal; margin: 0 0 20px; text-align: center;">
+                    Nouvelle réservation
+                  </h1>
+
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
+                    Bonjour{{ if .FirstName }} {{ .FirstName }}{{ end }},
+                  </p>
+
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
+                    Une nouvelle réservation vient d'être confirmée.
+                  </p>
+
+                  <div style="background-color: #f4f4f4; border-radius: 6px; padding: 20px; margin: 30px 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; width: 40%; vertical-align: top;">Prestation</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; vertical-align: top;">{{ .ProductName }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Date</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .Date }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Heure</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .TimeRange }}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Client</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .ClientName }}</td>
+                      </tr>
+                      {{ if .ClientEmail }}
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Email</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .ClientEmail }}</td>
+                      </tr>
+                      {{ end }}
+                      {{ if .ClientPhone }}
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Téléphone</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .ClientPhone }}</td>
+                      </tr>
+                      {{ end }}
+                      <tr>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Référence</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 12px; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .BookingID }}</td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0;">
+                    Le rendez-vous apparaît dans votre agenda Leviosa.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #666666; font-size: 14px;">
+                  <p style="margin: 0;">&copy; {{ .Year }} Leviosa. Tous droits réservés.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </body>
+</html>

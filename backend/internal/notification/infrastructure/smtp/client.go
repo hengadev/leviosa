@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,14 +26,19 @@ type SMTPConfig struct {
 
 type SMTPClient struct {
 	config SMTPConfig
+	// send delivers a built message; the SMTP dialer unless a test replaces
+	// it.
+	send func(*gomail.Message) error
 }
 
 var _ ports.EmailService = (*SMTPClient)(nil)
 
 func NewSMTPClient(config SMTPConfig) *SMTPClient {
-	return &SMTPClient{
-		config: config,
+	client := &SMTPClient{config: config}
+	client.send = func(m *gomail.Message) error {
+		return gomail.NewDialer(config.Host, config.Port, config.Username, config.Password).DialAndSend(m)
 	}
+	return client
 }
 
 // SendCheckEmail sends one short test email to `to` through the same message
@@ -220,45 +226,28 @@ func (c *SMTPClient) SendPaymentFailedEmail(ctx context.Context, req domain.Paym
 	return c.sendEmail(ctx, emailReq, req.FromEmail)
 }
 
+// SendBookingConfirmationEmail sends the client confirmation of a booking,
+// in the booking's locale, with the appointment as an .ics attachment.
 func (c *SMTPClient) SendBookingConfirmationEmail(ctx context.Context, req domain.BookingConfirmationRequest) error {
-	data := struct {
-		FirstName       string
-		LastName        string
-		BookingID       string
-		ProductName     string
-		RoomName        string
-		Building        string
-		Address         string
-		Date            string
-		Time            string
-		PartnerName     string
-		Amount          string
-		Year            int
-		BookingTokenURL string
-	}{
-		FirstName:       req.ToFirstName,
-		LastName:        req.ToLastName,
-		BookingID:       req.BookingID,
-		ProductName:     req.ProductName,
-		RoomName:        req.RoomName,
-		Building:        req.Building,
-		Address:         req.Address,
-		Date:            req.Date,
-		Time:            req.Time,
-		PartnerName:     req.PartnerName,
-		Amount:          req.Amount,
-		Year:            req.Year,
-		BookingTokenURL: req.BookingTokenURL,
-	}
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingConfirmation(req, time.Now()))
+}
 
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Confirmation de réservation",
-		Template: "booking_confirmation",
-		Data:     data,
-	}
+// SendBookingPartnerNoticeEmail tells the partner a new booking was
+// confirmed (French).
+func (c *SMTPClient) SendBookingPartnerNoticeEmail(ctx context.Context, req domain.BookingPartnerNoticeRequest) error {
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingPartnerNotice(req, time.Now()))
+}
 
-	return c.sendEmail(ctx, emailReq, "") // from email handled by SMTP config
+// sendComposed sends an email composed by the domain. The sender falls back
+// to the SMTP username, as for every booking email.
+func (c *SMTPClient) sendComposed(ctx context.Context, to string, email domain.ComposedEmail) error {
+	return c.sendEmail(ctx, &domain.EmailRequest{
+		To:          to,
+		Subject:     email.Subject,
+		Template:    email.Template,
+		Data:        email.Data,
+		Attachments: email.Attachments,
+	}, "")
 }
 
 func (c *SMTPClient) SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error {
@@ -445,9 +434,21 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 		m.SetBody("text/html", htmlBody)
 	}
 
-	d := gomail.NewDialer(c.config.Host, c.config.Port, c.config.Username, c.config.Password)
+	// Attachments make the message multipart/mixed.
+	for _, attachment := range request.Attachments {
+		attachment := attachment
+		m.Attach(attachment.Filename,
+			gomail.SetCopyFunc(func(w io.Writer) error {
+				_, err := w.Write(attachment.Data)
+				return err
+			}),
+			gomail.SetHeader(map[string][]string{
+				"Content-Type": {attachment.ContentType + `; name="` + attachment.Filename + `"`},
+			}),
+		)
+	}
 
-	if err := d.DialAndSend(m); err != nil {
+	if err := c.send(m); err != nil {
 		return fmt.Errorf("send email via SMTP: %w", err)
 	}
 
