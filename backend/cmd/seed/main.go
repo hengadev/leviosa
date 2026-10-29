@@ -65,10 +65,12 @@ type AccountSeed struct {
 	Address2   string `json:"address2"`
 }
 
-// SeedData is the seed data file: the admin accounts, plus the single
-// practice created when a "practice" section is present (see PracticeSeed).
+// SeedData is the seed data file: the admin accounts, test client accounts,
+// plus the single practice created when a "practice" section is present (see
+// PracticeSeed).
 type SeedData struct {
 	Admins   []AccountSeed `json:"admins"`
+	Clients  []AccountSeed `json:"clients"`
 	Practice *PracticeSeed `json:"practice,omitempty"`
 }
 
@@ -240,6 +242,12 @@ func main() {
 	for _, account := range admins.Admins {
 		if _, err := seedUser(ctx, db, crypto, cfg.DatabaseSchema, account); err != nil {
 			log.Fatalf("Failed to seed user %s: %v", account.Email, err)
+		}
+	}
+
+	for _, account := range admins.Clients {
+		if _, err := seedUser(ctx, db, crypto, cfg.DatabaseSchema, account); err != nil {
+			log.Fatalf("Failed to seed client %s: %v", account.Email, err)
 		}
 	}
 
