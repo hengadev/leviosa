@@ -72,9 +72,13 @@ func (c *identityCrypto) GetKMSKeyIDForVersion(_ context.Context, _ string, _ in
 // ---------------------------------------------------------------------------
 
 type mockSchedulerRepo struct {
-	mu       sync.Mutex
-	bookings []*domain.BookingEncx
+	mu         sync.Mutex
+	bookings   []*domain.BookingEncx
 	markCalled []uuid.UUID
+	// claimed holds the bookings already claimed; unclaimable those whose
+	// claim fails as in Postgres when the booking is no longer confirmed.
+	claimed     map[uuid.UUID]bool
+	unclaimable map[uuid.UUID]bool
 }
 
 func (m *mockSchedulerRepo) FindBookingsDueForReminder(_ context.Context) ([]*domain.BookingEncx, error) {
@@ -88,6 +92,22 @@ func (m *mockSchedulerRepo) MarkReminderSent(_ context.Context, id uuid.UUID) er
 	defer m.mu.Unlock()
 	m.markCalled = append(m.markCalled, id)
 	return nil
+}
+
+// ClaimReminder mimics the conditional update: a booking is claimed once,
+// never when unclaimable. Successful claims are recorded in markCalled.
+func (m *mockSchedulerRepo) ClaimReminder(_ context.Context, id uuid.UUID) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.claimed == nil {
+		m.claimed = map[uuid.UUID]bool{}
+	}
+	if m.claimed[id] || m.unclaimable[id] {
+		return false, nil
+	}
+	m.claimed[id] = true
+	m.markCalled = append(m.markCalled, id)
+	return true, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -337,6 +357,46 @@ func TestReminderSchedulerTick_PastBookingIsMarkedWithoutSending(t *testing.T) {
 	assert.Equal(t, encxPast.ID, marks[0])
 }
 
+func TestReminderSchedulerTick_RemindsOnceAcrossTicks(t *testing.T) {
+	ctx := context.Background()
+	crypto := &identityCrypto{pepper: make([]byte, 32)}
+
+	encxBooking := makeEncryptedBooking(t, crypto, time.Now().Add(23*time.Hour))
+	// The query keeps returning the booking (as with a second instance that
+	// read it before the first claimed it).
+	repo := &mockSchedulerRepo{bookings: []*domain.BookingEncx{encxBooking}}
+	notif := &mockReminderNotification{}
+
+	scheduler := NewReminderSchedulerForTest(repo, notif, crypto, WithReminderWindow(24*time.Hour))
+	scheduler.tick(ctx)
+	scheduler.tick(ctx)
+
+	notif.mu.Lock()
+	defer notif.mu.Unlock()
+	assert.Len(t, notif.calls, 1, "a booking is reminded once")
+}
+
+func TestReminderSchedulerTick_NoReminderWhenClaimFails(t *testing.T) {
+	ctx := context.Background()
+	crypto := &identityCrypto{pepper: make([]byte, 32)}
+
+	// Cancelled after the query picked it up: the claim finds it no longer
+	// confirmed.
+	encxBooking := makeEncryptedBooking(t, crypto, time.Now().Add(12*time.Hour))
+	repo := &mockSchedulerRepo{
+		bookings:    []*domain.BookingEncx{encxBooking},
+		unclaimable: map[uuid.UUID]bool{encxBooking.ID: true},
+	}
+	notif := &mockReminderNotification{}
+
+	scheduler := NewReminderSchedulerForTest(repo, notif, crypto, WithReminderWindow(24*time.Hour))
+	scheduler.tick(ctx)
+
+	notif.mu.Lock()
+	defer notif.mu.Unlock()
+	assert.Empty(t, notif.calls)
+}
+
 func TestReminderSchedulerBuildNotificationData(t *testing.T) {
 	clientID := uuid.New()
 	now := time.Now()
@@ -351,11 +411,15 @@ func TestReminderSchedulerBuildNotificationData(t *testing.T) {
 		SlotEndTime:     now.Add(13 * time.Hour),
 		TotalPriceCents: 5000,
 		Currency:        "EUR",
+		Locale:          domain.BookingLocaleEN,
+		Token:           "tok",
 	}
 
 	scheduler := &ReminderScheduler{}
 	data := scheduler.buildNotificationData(booking)
 
+	assert.Equal(t, "en", data.Locale)
+	assert.Equal(t, "tok", data.Token)
 	assert.Equal(t, booking.ID, data.BookingID)
 	assert.Equal(t, clientID, data.ClientID)
 	assert.Equal(t, booking.PartnerID, data.PartnerID)
@@ -388,6 +452,8 @@ func TestReminderSchedulerBuildNotificationData_Guest(t *testing.T) {
 	assert.Equal(t, "jean@example.com", data.ClientEmail)
 	assert.Equal(t, "+33612345678", data.ClientPhone)
 	assert.Equal(t, "Jean Dupont", data.ClientName)
+	assert.Equal(t, "Jean", data.ClientFirstName)
+	assert.Equal(t, "Dupont", data.ClientLastName)
 }
 
 func TestReminderSchedulerOptions(t *testing.T) {

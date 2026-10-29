@@ -283,41 +283,10 @@ func (c *SMTPClient) SendBookingCancellationEmail(ctx context.Context, req domai
 	return c.sendEmail(ctx, emailReq, "")
 }
 
+// SendBookingReminderEmail sends the client reminder of a confirmed booking,
+// in the booking's locale.
 func (c *SMTPClient) SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error {
-	data := struct {
-		FirstName   string
-		LastName    string
-		BookingID   string
-		ProductName string
-		RoomName    string
-		Building    string
-		Address     string
-		Date        string
-		Time        string
-		PartnerName string
-		Year        int
-	}{
-		FirstName:   req.ToFirstName,
-		LastName:    req.ToLastName,
-		BookingID:   req.BookingID,
-		ProductName: req.ProductName,
-		RoomName:    req.RoomName,
-		Building:    req.Building,
-		Address:     req.Address,
-		Date:        req.Date,
-		Time:        req.Time,
-		PartnerName: req.PartnerName,
-		Year:        req.Year,
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Rappel de réservation",
-		Template: "booking_reminder",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, "")
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingReminder(req, time.Now()))
 }
 
 func (c *SMTPClient) SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error {
