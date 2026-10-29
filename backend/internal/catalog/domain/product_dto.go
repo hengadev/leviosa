@@ -18,7 +18,10 @@ type CreateProductRequest struct {
 	BufferTime        int                `json:"bufferTime"`        // in minutes
 	CancellationHours int                `json:"cancellationHours"` // in hours
 	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
-	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	// Deposit is the optional part of the price paid online when booking
+	// (issue 013). Nil means the full price is paid online.
+	Deposit  *Deposit       `json:"deposit,omitempty"`
+	Metadata map[string]any `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
 }
 
 type UpdateProductRequest struct {
@@ -31,7 +34,11 @@ type UpdateProductRequest struct {
 	BufferTime        *int               `json:"bufferTime"`        // in minutes
 	CancellationHours *int               `json:"cancellationHours"` // in hours
 	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
-	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	// Deposit sets, replaces or removes the product's deposit: an object
+	// configures it, JSON null removes it, an absent field leaves it
+	// unchanged (issue 013).
+	Deposit  DepositPatch   `json:"deposit,omitzero"`
+	Metadata map[string]any `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
 }
 
 func (u UpdateProductRequest) Valid(ctx context.Context) error {
@@ -74,6 +81,11 @@ func (u UpdateProductRequest) Valid(ctx context.Context) error {
 			errs.Set("cancellationTiers", err.Error())
 		}
 	}
+	if u.Deposit.Present {
+		if err := u.Deposit.Value.Validate(); err != nil {
+			errs.Set("deposit", err.Error())
+		}
+	}
 
 	return errs.AsError()
 }
@@ -91,6 +103,9 @@ type ProductRes struct {
 	BufferTime        int                `json:"bufferTime"`        // in minutes
 	CancellationHours int                `json:"cancellationHours"` // in hours
 	CancellationTiers []CancellationTier `json:"cancellationTiers,omitempty"`
-	Metadata          map[string]any     `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
-	StripeProductID   string             `json:"stripeProductId,omitempty"`
+	// Deposit is the optional part of the price paid online when booking
+	// (issue 013). Nil means the full price is paid online.
+	Deposit         *Deposit       `json:"deposit,omitempty"`
+	Metadata        map[string]any `json:"metadata,omitempty"` // Flexible storage for type-specific attributes
+	StripeProductID string         `json:"stripeProductId,omitempty"`
 }

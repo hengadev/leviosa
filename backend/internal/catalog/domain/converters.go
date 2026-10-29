@@ -6,7 +6,7 @@ package domain
 func ToProductRes(p *Product, c *Category) *ProductRes {
 	// You might also need to fetch image keys and populate them here
 
-	return &ProductRes{
+	res := &ProductRes{
 		ID:                p.ID,
 		Name:              p.Name,
 		Description:       p.Description,
@@ -21,4 +21,9 @@ func ToProductRes(p *Product, c *Category) *ProductRes {
 		CancellationTiers: p.CancellationTiers,
 		Metadata:          p.Metadata,
 	}
+	if p.Deposit != nil {
+		deposit := *p.Deposit
+		res.Deposit = &deposit
+	}
+	return res
 }

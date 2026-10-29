@@ -35,6 +35,17 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 		return "", errs.NewInvalidValueErr(fmt.Errorf("price validation failed: %w", err).Error())
 	}
 
+	// A new price must still cover the product's fixed deposit (issue 013).
+	// Stripe price amounts are immutable, so this is the only way a price
+	// changes under an existing deposit.
+	product, err := s.sharedRepo.GetProductByID(ctx, productID)
+	if err != nil {
+		return "", fmt.Errorf("get product: %w", err)
+	}
+	if err := product.Deposit.ValidateAgainstPrice(request.Amount); err != nil {
+		return "", errs.NewInvalidValueErr(fmt.Sprintf("price does not cover the product's deposit: %s", err.Error()))
+	}
+
 	// 3. Get Stripe Product ID for the given internal product ID.
 	stripeProductID, _, err := s.sharedRepo.GetStripeProductAndPriceIDs(ctx, productID)
 	if err != nil {
