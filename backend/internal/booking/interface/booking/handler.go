@@ -22,6 +22,7 @@ type Handler interface {
 	CancelBooking(w http.ResponseWriter, r *http.Request)
 	AdminOverrideCancelBooking(w http.ResponseWriter, r *http.Request)
 	CancelBookingPublic(w http.ResponseWriter, r *http.Request)
+	CancelBookingByPractitioner(w http.ResponseWriter, r *http.Request)
 	CompleteBooking(w http.ResponseWriter, r *http.Request)
 	MarkNoShow(w http.ResponseWriter, r *http.Request)
 	ProcessPayment(w http.ResponseWriter, r *http.Request)

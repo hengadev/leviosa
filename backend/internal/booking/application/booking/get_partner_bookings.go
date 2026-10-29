@@ -6,6 +6,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
+	catalogDomain "github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/google/uuid"
 )
 
@@ -15,6 +16,7 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 		return nil, err
 	}
 
+	now := s.now()
 	responses := make([]domain.PartnerBookingResponse, 0, len(bookings))
 	for _, b := range bookings {
 		resp := domain.PartnerBookingResponse{
@@ -48,8 +50,15 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 				resp.ClientPhone = phone
 			}
 		}
+		var product *catalogDomain.ProductRes
 		if s.productService != nil {
-			resp.ProductName = s.resolveProductName(ctx, b.ProductID)
+			product, _ = s.bookingProduct(ctx, b)
+			if product != nil {
+				resp.ProductName = product.Name
+			}
+		}
+		if b.IsCancellable() {
+			resp.PractitionerRefundCents = s.cancellationRefund(b, product, domain.CancelledByPractitioner, now).AmountCents
 		}
 		if s.roomService != nil {
 			resp.RoomName = s.resolveRoomName(ctx, b.RoomID)
