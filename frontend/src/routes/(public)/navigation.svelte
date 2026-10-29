@@ -41,10 +41,6 @@
     }
 
     const items: NavItem[] = [
-        { link: "/services", title: "Services" },
-        { link: "/team", title: "L’équipe" },
-        { link: "/about", title: "À propos" },
-        { link: "/contact", title: "Contact" },
         { link: "/bookings", title: "Mes réservations" },
     ];
 
@@ -121,7 +117,7 @@
 
     <!-- Desktop Actions (hidden below 1280px) -->
     <div class="hidden xl:flex xl:gap-4 xl:items-center xl:justify-end">
-        <a href="/book">
+        <a href="/#reserver">
             <Button class="rounded-xl py-3 transition-colors duration-300 {showScrolledState
                 ? 'bg-foreground text-white hover:bg-foreground-alt'
                 : 'bg-white text-foreground hover:bg-white/90'}">
@@ -178,7 +174,7 @@
 
         <!-- Action buttons (full width, stacked) -->
         <div class="flex flex-col gap-3">
-            <a href="/book"><Button
+            <a href="/#reserver"><Button
                 class="w-full inline-flex justify-center items-center px-8 py-3.5 bg-foreground hover:bg-foreground-alt text-background text-sm sm:text-base font-medium transition-all duration-200 shadow-mini hover:shadow-card ring-offset-2 focus:ring-2 focus:ring-foreground"
                 >Réserver maintenant</Button></a>
             <Button

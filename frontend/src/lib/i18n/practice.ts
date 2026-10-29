@@ -116,7 +116,7 @@ export const infoBlocks = {
             },
             {
                 title: "Remboursement",
-                body: "L'ostéopathie n'est pas remboursée par la Sécurité sociale, mais beaucoup de mutuelles prennent en charge une partie des séances. Une facture vous est envoyée par e-mail après le rendez-vous.",
+                body: "L'ostéopathie n'est pas remboursée par la Sécurité sociale, mais beaucoup de mutuelles prennent en charge une partie des séances. Votre ostéopathe vous remet la facture pour votre mutuelle au cabinet.",
             },
             {
                 title: "Annulation et retard",
@@ -141,7 +141,7 @@ export const infoBlocks = {
             },
             {
                 title: "Reimbursement",
-                body: "Osteopathy isn't covered by French national health insurance, but many top-up insurers cover part of each session. An invoice is emailed to you after the appointment.",
+                body: "Osteopathy isn't covered by French national health insurance, but many top-up insurers cover part of each session. Your osteopath gives you the invoice for your insurer at the practice.",
             },
             {
                 title: "Cancellation and lateness",
