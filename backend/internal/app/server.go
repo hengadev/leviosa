@@ -18,6 +18,7 @@ import (
 	availabilityHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/availability"
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
 	buildingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/building"
+	exceptionHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/exception"
 	metricsHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/metrics"
 	reviewHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/review"
 	roomHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/room"
@@ -253,6 +254,13 @@ func (s *Server) setupBookingRoutes(router *http.ServeMux) {
 		s.container.AuthMw,
 	)
 	availabilityH.RegisterRoutes(router)
+
+	// Availability exception handler (issue 012)
+	exceptionH := exceptionHandler.New(
+		s.container.ExceptionService,
+		s.container.AuthMw,
+	)
+	exceptionH.RegisterRoutes(router)
 
 	// Booking handler
 	bookingH := bookingHandler.New(

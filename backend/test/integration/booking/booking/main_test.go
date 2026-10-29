@@ -16,14 +16,17 @@ import (
 	availabilityAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/availability"
 	bookingService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
+	exceptionAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/exception"
 	roomAppService "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
 	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
 	allocationPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/allocation"
 	availabilityPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
 	buildingPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/building"
+	exceptionPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/exception"
 	roomPostgres "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
 	bookingHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/booking"
+	exceptionHandler "github.com/Leviosa-care/leviosa/backend/internal/booking/interface/exception"
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
 	authuserPartnerService "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/partner"
@@ -120,6 +123,11 @@ var (
 	// Real availability service: the partner area creates, edits and deletes
 	// availabilities through it (recurring availability tests).
 	availabilitySvc ports.AvailabilityService
+
+	// Real availability exception service, also served over HTTP: the
+	// partner area closes dates through it (issue 012).
+	exceptionRepo ports.AvailabilityExceptionRepository
+	exceptionSvc  ports.AvailabilityExceptionService
 )
 
 // suiteMinimumNoticeHours is the minimum notice the suite runs with: most
@@ -229,6 +237,8 @@ func TestMain(m *testing.M) {
 	// Initialize application layers
 	bookingRepo = bookingPostgres.New(ctx, testPool)
 	availabilityRepo = availabilityPostgres.New(ctx, testPool)
+	exceptionRepo = exceptionPostgres.New(ctx, testPool)
+	exceptionSvc = exceptionAppService.New(exceptionRepo, availabilityRepo, bookingRepo, crypto)
 
 	// Initialize mock payment service (Stripe integration not needed for booking tests)
 	paymentService = NewMockPaymentService()
@@ -279,7 +289,8 @@ func TestMain(m *testing.M) {
 		bookingService.WithTokenSecret(testTokenSecret),
 		bookingService.WithAuditLogger(auditLogger),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
-		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)))
+		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)),
+		bookingService.WithAvailabilityExceptionRepository(exceptionRepo))
 
 	allocationRepo, err := allocationPostgres.New(ctx, testPool)
 	if err != nil {
@@ -335,6 +346,7 @@ func TestMain(m *testing.M) {
 	// HTTP server setup with logger middleware
 	router := http.NewServeMux()
 	handler.RegisterRoutes(router)
+	exceptionHandler.New(exceptionSvc, authmw).RegisterRoutes(router)
 
 	loggerMiddleware := middleware.AttachLogger(envmode.Dev, testLogger)
 
