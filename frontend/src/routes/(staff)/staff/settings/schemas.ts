@@ -44,12 +44,20 @@ export const refreshTokenDurationSchema = type({
     duration: "number"
 })
 
+// Practice Page Settings Schema (page publique du cabinet)
+export const practicePageSchema = type({
+    partner_id: "string.uuid",
+    product_id: "string.uuid",
+    video_url: "string",
+})
+
 // Types
 export type CompanyName = Infer<typeof companyNameSchema>
 export type CompanyEmail = Infer<typeof companyEmailSchema>
 export type CompanyPhone = Infer<typeof companyPhoneSchema>
 export type CompanyAddress = Infer<typeof companyAddressSchema>
 export type CompanyInstagram = Infer<typeof companyInstagramSchema>
+export type PracticePage = Infer<typeof practicePageSchema>
 export type OtpDuration = Infer<typeof otpDurationSchema>
 export type OtpLength = Infer<typeof otpLengthSchema>
 export type OtpMaxAttempts = Infer<typeof otpMaxAttemptsSchema>
@@ -75,6 +83,12 @@ export const companyAddressDefaults: CompanyAddress = {
 
 export const companyInstagramDefaults: CompanyInstagram = {
     instagram: "",
+}
+
+export const practicePageDefaults: PracticePage = {
+    partner_id: "",
+    product_id: "",
+    video_url: "",
 }
 
 export const otpDurationDefaults: OtpDuration = {
