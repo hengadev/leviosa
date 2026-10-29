@@ -331,66 +331,64 @@ func clientNames(data bookingPorts.BookingNotificationData) (string, string) {
 	return firstName(data.ClientName), lastName(data.ClientName)
 }
 
+// sendBookingCancellationEmail sends the cancellation emails: the client's
+// in the booking's locale, with the refund, and the partner's notice in
+// French. No SMS (see smsService).
 func (a *BookingNotificationAdapter) sendBookingCancellationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
 
-	formattedDate := data.SlotStartTime.Format("Monday, 02 January 2006")
-	formattedTime := fmt.Sprintf("%s – %s",
-		data.SlotStartTime.Format("15:04"),
-		data.SlotEndTime.Format("15:04"),
-	)
-
-	// Send cancellation email to the client
 	if data.ClientEmail == "" {
 		slog.WarnContext(ctx, "no client email available for booking cancellation",
 			"booking_id", data.BookingID,
 			"client_id", data.ClientID,
 		)
 	} else {
-		clientReq := notificationDomain.BookingCancellationRequest{
-			ToEmail:     data.ClientEmail,
-			ToFirstName: firstName(data.ClientName),
-			ToLastName:  lastName(data.ClientName),
-			BookingID:   data.BookingID.String(),
-			ProductName: data.ProductName,
-			RoomName:    data.RoomName,
-			Date:        formattedDate,
-			Time:        formattedTime,
-			Reason:      data.CancellationReason,
-			Year:        time.Now().Year(),
+		locale := notificationDomain.ParseLocale(data.Locale)
+		clientFirst, clientLast := clientNames(data)
+		clientReq := notificationDomain.BookingClientCancellationRequest{
+			ToEmail:               data.ClientEmail,
+			ToFirstName:           clientFirst,
+			ToLastName:            clientLast,
+			Locale:                locale,
+			BookingID:             data.BookingID.String(),
+			ProductName:           data.ProductName,
+			StartTime:             data.SlotStartTime,
+			EndTime:               data.SlotEndTime,
+			CancelledBy:           data.CancelledBy,
+			AmountPaidOnlineCents: data.AmountPaidOnlineCents,
+			RefundedAmountCents:   data.RefundedAmountCents,
+			Currency:              data.Currency,
+			BookAgainURL:          a.practicePageURL(locale),
 		}
-		if err := a.emailService.SendBookingCancellationEmail(ctx, clientReq); err != nil {
+		if err := a.emailService.SendBookingClientCancellationEmail(ctx, clientReq); err != nil {
 			slog.ErrorContext(ctx, "failed to send cancellation email to client",
 				"booking_id", data.BookingID,
-				"client_email", data.ClientEmail,
 				"error", err,
 			)
 		}
 	}
 
-	// Send cancellation email to the partner
 	if data.PartnerEmail == "" {
 		slog.WarnContext(ctx, "no partner email available for booking cancellation",
 			"booking_id", data.BookingID,
 			"partner_id", data.PartnerID,
 		)
 	} else {
-		partnerReq := notificationDomain.BookingCancellationRequest{
-			ToEmail:     data.PartnerEmail,
-			ToFirstName: firstName(data.PartnerName),
-			ToLastName:  lastName(data.PartnerName),
-			BookingID:   data.BookingID.String(),
-			ProductName: data.ProductName,
-			RoomName:    data.RoomName,
-			Date:        formattedDate,
-			Time:        formattedTime,
-			Reason:      data.CancellationReason,
-			Year:        time.Now().Year(),
+		partnerReq := notificationDomain.BookingPartnerCancellationRequest{
+			ToEmail:             data.PartnerEmail,
+			ToFirstName:         firstName(data.PartnerName),
+			BookingID:           data.BookingID.String(),
+			ProductName:         data.ProductName,
+			ClientName:          data.ClientName,
+			StartTime:           data.SlotStartTime,
+			EndTime:             data.SlotEndTime,
+			CancelledBy:         data.CancelledBy,
+			RefundedAmountCents: data.RefundedAmountCents,
+			Currency:            data.Currency,
 		}
-		if err := a.emailService.SendBookingCancellationEmail(ctx, partnerReq); err != nil {
+		if err := a.emailService.SendBookingPartnerCancellationEmail(ctx, partnerReq); err != nil {
 			slog.ErrorContext(ctx, "failed to send cancellation email to partner",
 				"booking_id", data.BookingID,
-				"partner_email", data.PartnerEmail,
 				"error", err,
 			)
 		}

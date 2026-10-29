@@ -257,37 +257,16 @@ func (c *SMTPClient) sendComposed(ctx context.Context, to string, email domain.C
 	}, "")
 }
 
-func (c *SMTPClient) SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error {
-	data := struct {
-		FirstName   string
-		LastName    string
-		BookingID   string
-		ProductName string
-		RoomName    string
-		Date        string
-		Time        string
-		Reason      string
-		Year        int
-	}{
-		FirstName:   req.ToFirstName,
-		LastName:    req.ToLastName,
-		BookingID:   req.BookingID,
-		ProductName: req.ProductName,
-		RoomName:    req.RoomName,
-		Date:        req.Date,
-		Time:        req.Time,
-		Reason:      req.Reason,
-		Year:        req.Year,
-	}
+// SendBookingClientCancellationEmail tells a client, in the booking's
+// locale, that their booking is cancelled and what was refunded.
+func (c *SMTPClient) SendBookingClientCancellationEmail(ctx context.Context, req domain.BookingClientCancellationRequest) error {
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingClientCancellation(req, time.Now()))
+}
 
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Annulation de réservation",
-		Template: "booking_cancellation",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, "")
+// SendBookingPartnerCancellationEmail tells the partner, in French, that a
+// booking was cancelled.
+func (c *SMTPClient) SendBookingPartnerCancellationEmail(ctx context.Context, req domain.BookingPartnerCancellationRequest) error {
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingPartnerCancellation(req, time.Now()))
 }
 
 // SendBookingReminderEmail sends the client reminder of a confirmed booking,

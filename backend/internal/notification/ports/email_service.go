@@ -18,7 +18,11 @@ type EmailService interface {
 	// Booking-related email notifications
 	SendBookingConfirmationEmail(ctx context.Context, req domain.BookingConfirmationRequest) error
 	SendBookingPartnerNoticeEmail(ctx context.Context, req domain.BookingPartnerNoticeRequest) error
-	SendBookingCancellationEmail(ctx context.Context, req domain.BookingCancellationRequest) error
+	// SendBookingClientCancellationEmail tells a client, in the booking's
+	// locale, that their booking is cancelled and what was refunded;
+	// SendBookingPartnerCancellationEmail tells the partner, in French.
+	SendBookingClientCancellationEmail(ctx context.Context, req domain.BookingClientCancellationRequest) error
+	SendBookingPartnerCancellationEmail(ctx context.Context, req domain.BookingPartnerCancellationRequest) error
 	SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error
 
 	// SendLatePaymentRefundEmail tells a client their late payment was
