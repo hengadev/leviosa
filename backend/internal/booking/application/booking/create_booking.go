@@ -8,12 +8,15 @@ import (
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	catalogDomain "github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 
 	"github.com/google/uuid"
 )
 
-// CreateBooking creates a new booking for a specific product slot within an availability.
+// CreateBooking creates a new booking for a specific product slot within an
+// availability. The booking starts awaiting payment and holds its slot for
+// the payment hold (ADR-0018); the payment-succeeded webhook confirms it.
 //
 // Flow:
 //  1. Validate and fetch availability
@@ -21,21 +24,18 @@ import (
 //  3. Calculate slot end time based on product duration
 //  4. Validate the start with the slot engine (grid, fit, overlap, notice,
 //     horizon), exactly as the public slot endpoint computes slots
-//  5. Get product price from Stripe
-//  6. Create payment intent if price > 0
-//  7. Create and persist booking entity
+//  5. Get product price; the amount due online is the product's deposit when
+//     one is set, otherwise the full price
+//  6. Create the booking, awaiting payment, held until now + payment hold
+//  7. Create the PaymentIntent for the amount due online; its client secret
+//     is returned on the booking (never persisted). With nothing due online
+//     the booking is confirmed at once
+//  8. Persist under a lock on the availability, re-checking the slot, so two
+//     clients submitting the same slot cannot both get it
 //
-// Parameters:
-//   - availabilityID: The availability block to book within
-//   - clientID: The user making the booking
-//   - productID: The product/service being booked
-//   - slotStartTime: Desired start time (must be a slot the engine offers)
-//
+// No notification is sent while the booking awaits payment: the
+// booking-confirmed event is emitted when the payment webhook confirms it.
 // No client notes are accepted: Leviosa stores no health data (ADR-0019).
-//
-// Returns:
-//   - Created booking with encrypted fields
-//   - Error if validation fails or slot is unavailable
 func (s *BookingService) CreateBooking(
 	ctx context.Context,
 	availabilityID uuid.UUID,
@@ -43,7 +43,15 @@ func (s *BookingService) CreateBooking(
 	productID uuid.UUID,
 	slotStartTime time.Time,
 	guestFirstName, guestLastName, guestEmail, guestPhone string,
+	locale domain.BookingLocale,
 ) (*domain.Booking, error) {
+	if locale == "" {
+		locale = domain.BookingLocaleFR
+	}
+	if _, err := domain.ParseBookingLocale(string(locale)); err != nil {
+		return nil, errs.NewInvalidValueErr(err.Error())
+	}
+
 	// 1. Fetch and decrypt availability
 	availabilityEncx, err := s.availabilityRepo.GetByID(ctx, availabilityID)
 	if err != nil {
@@ -79,11 +87,12 @@ func (s *BookingService) CreateBooking(
 	// computes it: a start the practice page would not offer is refused. The
 	// engine runs twice so a start that is on the grid but already taken
 	// answers a conflict rather than an invalid value.
+	now := time.Now()
 	policy, err := s.bookingPolicy(ctx)
 	if err != nil {
 		return nil, err
 	}
-	query, err := s.slotQuery(ctx, []*domain.Availability{availability}, product, policy, time.Now())
+	query, err := s.slotQuery(ctx, []*domain.Availability{availability}, product, policy, now)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +103,7 @@ func (s *BookingService) CreateBooking(
 	}
 	query.Occupancies = occupancies
 	if !domain.OffersSlot(query, slotStartTime) {
-		return nil, errs.NewConflictErr(fmt.Errorf("time slot is already booked"))
+		return nil, errs.NewConflictErr(errSlotTaken)
 	}
 
 	// 5. Get product price from pricing service
@@ -110,8 +119,12 @@ func (s *BookingService) CreateBooking(
 	}
 
 	totalPriceCents := price.Amount
+	amountDueOnline, err := catalogDomain.AmountDueOnline(product.Deposit, totalPriceCents)
+	if err != nil {
+		return nil, fmt.Errorf("amount due online: %w", err)
+	}
 
-	// 6. Create booking entity with slot information
+	// 6. Create booking entity with slot information, awaiting payment
 	booking, err := domain.NewBooking(
 		availabilityID,
 		clientID,
@@ -128,10 +141,19 @@ func (s *BookingService) CreateBooking(
 		return nil, fmt.Errorf("create booking entity: %w", err)
 	}
 
-	// Set slot information (new fields)
 	booking.ProductID = productID
 	booking.SlotStartTime = slotStartTime
 	booking.SlotEndTime = slotEndTime
+	booking.Locale = locale
+	booking.AmountDueOnlineCents = amountDueOnline
+
+	hold := policy.PaymentHold
+	if hold <= 0 {
+		hold = domain.DefaultPaymentHold
+	}
+	if err := booking.HoldUntil(now.Add(hold)); err != nil {
+		return nil, fmt.Errorf("start payment hold: %w", err)
+	}
 
 	// Generate signed booking token for public guest access
 	if len(s.tokenSecret) > 0 {
@@ -139,79 +161,128 @@ func (s *BookingService) CreateBooking(
 		booking.SetToken(token)
 	}
 
-	// 7. Create payment intent if booking has a price
-	if totalPriceCents > 0 {
-		description := fmt.Sprintf("Booking for %s - %s to %s",
-			product.Name,
-			slotStartTime.Format("Jan 02, 15:04"),
-			slotEndTime.Format("15:04"))
-
-		metadata := map[string]string{
-			"booking_id":      booking.ID.String(),
-			"availability_id": availabilityID.String(),
-			"partner_id":      availability.UserID.String(),
-			"product_id":      productID.String(),
-			"slot_start":      slotStartTime.Format(time.RFC3339),
-			"slot_end":        slotEndTime.Format(time.RFC3339),
-		}
-		if clientID != nil {
-			metadata["client_id"] = clientID.String()
-		}
-		if booking.IsGuestBooking() {
-			metadata["guest_name"] = booking.GuestDisplayName()
-			metadata["guest_email"] = guestEmail
-			metadata["guest_phone"] = guestPhone
-		}
-
-		// Resolve the email Stripe should send the hosted receipt to: the guest's
-		// email for guest bookings, or the authenticated client's email otherwise.
-		// Best-effort — a lookup failure should not block booking creation.
-		receiptEmail := guestEmail
-		if receiptEmail == "" && clientID != nil && s.authUserClient != nil {
-			email, err := s.authUserClient.GetUserEmail(ctx, *clientID)
-			if err != nil {
-				slog.WarnContext(ctx, "failed to resolve client email for payment receipt",
-					"client_id", *clientID, "err", err)
-			} else {
-				receiptEmail = email
-			}
-		}
-
-		paymentIntentID, _, err := s.paymentService.CreatePaymentIntent(
-			ctx,
-			totalPriceCents,
-			booking.Currency,
-			description,
-			receiptEmail,
-			metadata,
-		)
+	// 7. Create the PaymentIntent for the amount due online. With nothing due
+	// online there is no payment to wait for: the booking is confirmed now.
+	if amountDueOnline > 0 {
+		paymentIntentID, clientSecret, err := s.createBookingPaymentIntent(ctx, booking, product.Name, amountDueOnline)
 		if err != nil {
-			return nil, fmt.Errorf("create payment intent: %w", err)
+			return nil, err
 		}
-
 		booking.SetPaymentIntentID(paymentIntentID)
+		booking.PaymentClientSecret = clientSecret
+	} else if err := booking.Confirm(); err != nil {
+		return nil, fmt.Errorf("confirm booking with nothing due online: %w", err)
 	}
 
-	// 8. Encrypt and persist booking to repository
+	// 8. Encrypt and persist under the availability lock, re-checking the
+	// slot against the bookings committed meanwhile.
 	bookingEncx, err := domain.ProcessBookingEncx(ctx, s.crypto, booking)
 	if err != nil {
 		return nil, fmt.Errorf("encrypt booking: %w", err)
 	}
 
-	if err := s.bookingRepo.Create(ctx, bookingEncx); err != nil {
+	err = s.bookingRepo.CreateGuarded(ctx, bookingEncx, func(existing []*domain.BookingEncx) error {
+		buffers := map[uuid.UUID]time.Duration{product.ID: query.BufferTime}
+		occupancies, err := s.occupancies(ctx, existing, buffers, query.BufferTime, now)
+		if err != nil {
+			return err
+		}
+		query.Occupancies = occupancies
+		if !domain.OffersSlot(query, slotStartTime) {
+			return errs.NewConflictErr(errSlotTaken)
+		}
+		return nil
+	})
+	if err != nil {
+		if booking.PaymentIntentID != nil {
+			// Nobody will pay this intent: cancel it (best effort).
+			if cancelErr := s.paymentService.CancelPaymentIntent(ctx, *booking.PaymentIntentID); cancelErr != nil {
+				slog.WarnContext(ctx, "failed to cancel the payment intent of a booking that was not created",
+					"booking_id", booking.ID, "err", cancelErr)
+			}
+		}
+		if errors.Is(err, errs.ErrConflict) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("create booking: %w", err)
 	}
 
-	// 9. Send booking confirmation notification (best effort - don't fail booking on notification error)
-	if s.notificationService != nil {
-		notificationData := s.buildNotificationData(booking, product.Name)
-		if err := s.notificationService.SendBookingConfirmation(ctx, notificationData); err != nil {
-			slog.WarnContext(ctx, "failed to send booking confirmation notification",
-				"booking_id", booking.ID,
-				"is_guest", booking.IsGuestBooking(),
-				"err", err)
-		}
+	// Nothing was due online: the booking is confirmed now, so the
+	// booking-confirmed event goes out now.
+	if booking.Status == domain.BookingStatusConfirmed {
+		s.sendBookingConfirmed(ctx, booking, product.Name)
 	}
 
 	return booking, nil
+}
+
+// errSlotTaken is the conflict a booking gets when another one holds its slot.
+var errSlotTaken = errors.New("time slot is already booked")
+
+// createBookingPaymentIntent creates the PaymentIntent for the amount due
+// online, with the booking in its metadata so the webhook finds it.
+func (s *BookingService) createBookingPaymentIntent(ctx context.Context, booking *domain.Booking, productName string, amount int) (string, string, error) {
+	description := fmt.Sprintf("Booking for %s - %s to %s",
+		productName,
+		booking.SlotStartTime.Format("Jan 02, 15:04"),
+		booking.SlotEndTime.Format("15:04"))
+
+	metadata := map[string]string{
+		"booking_id":      booking.ID.String(),
+		"availability_id": booking.AvailabilityID.String(),
+		"partner_id":      booking.PartnerID.String(),
+		"product_id":      booking.ProductID.String(),
+		"slot_start":      booking.SlotStartTime.Format(time.RFC3339),
+		"slot_end":        booking.SlotEndTime.Format(time.RFC3339),
+	}
+	if booking.ClientID != nil {
+		metadata["client_id"] = booking.ClientID.String()
+	}
+	if booking.IsGuestBooking() {
+		metadata["guest_name"] = booking.GuestDisplayName()
+		metadata["guest_email"] = booking.GuestEmail
+		metadata["guest_phone"] = booking.GuestPhone
+	}
+
+	// Resolve the email Stripe should send the hosted receipt to: the guest's
+	// email for guest bookings, or the authenticated client's email otherwise.
+	// Best-effort — a lookup failure should not block booking creation.
+	receiptEmail := booking.GuestEmail
+	if receiptEmail == "" && booking.ClientID != nil && s.authUserClient != nil {
+		email, err := s.authUserClient.GetUserEmail(ctx, *booking.ClientID)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to resolve client email for payment receipt",
+				"client_id", *booking.ClientID, "err", err)
+		} else {
+			receiptEmail = email
+		}
+	}
+
+	paymentIntentID, clientSecret, err := s.paymentService.CreatePaymentIntent(
+		ctx,
+		amount,
+		booking.Currency,
+		description,
+		receiptEmail,
+		metadata,
+	)
+	if err != nil {
+		return "", "", fmt.Errorf("create payment intent: %w", err)
+	}
+	return paymentIntentID, clientSecret, nil
+}
+
+// sendBookingConfirmed emits the booking-confirmed event (best effort: a
+// notification failure never undoes the confirmation).
+func (s *BookingService) sendBookingConfirmed(ctx context.Context, booking *domain.Booking, productName string) {
+	if s.notificationService == nil {
+		return
+	}
+	notificationData := s.buildNotificationData(booking, productName)
+	if err := s.notificationService.SendBookingConfirmation(ctx, notificationData); err != nil {
+		slog.WarnContext(ctx, "failed to send booking confirmation notification",
+			"booking_id", booking.ID,
+			"is_guest", booking.IsGuestBooking(),
+			"err", err)
+	}
 }

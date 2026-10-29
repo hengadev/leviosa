@@ -12,6 +12,12 @@ import (
 // Used for slot overlap detection in the slot-based booking system.
 // Returns bookings sorted by slot_start_time ASC.
 func (r *Repository) GetBookingsByAvailability(ctx context.Context, availabilityID uuid.UUID) ([]*domain.BookingEncx, error) {
+	return r.bookingsByAvailability(ctx, r.pool, availabilityID)
+}
+
+// bookingsByAvailability reads an availability's bookings through q: the
+// pool, or the transaction CreateGuarded holds.
+func (r *Repository) bookingsByAvailability(ctx context.Context, q querier, availabilityID uuid.UUID) ([]*domain.BookingEncx, error) {
 	query := `
 		SELECT
 			id,
@@ -41,6 +47,8 @@ func (r *Repository) GetBookingsByAvailability(ctx context.Context, availability
 			guest_phone_encrypted,
 			token,
 			reminded_at,
+			hold_expires_at,
+			locale,
 			-- Encryption metadata
 			dek_encrypted,
 			key_version,
@@ -50,7 +58,7 @@ func (r *Repository) GetBookingsByAvailability(ctx context.Context, availability
 		ORDER BY slot_start_time_encrypted ASC
 	`
 
-	rows, err := r.pool.Query(ctx, query, availabilityID)
+	rows, err := q.Query(ctx, query, availabilityID)
 	if err != nil {
 		return nil, errs.ClassifyPgError("get bookings by availability", err)
 	}
@@ -88,6 +96,8 @@ func (r *Repository) GetBookingsByAvailability(ctx context.Context, availability
 			&bookingEncx.GuestPhoneEncrypted,
 			&bookingEncx.Token,
 			&bookingEncx.RemindedAt,
+			&bookingEncx.HoldExpiresAt,
+			&bookingEncx.Locale,
 			// Encryption metadata
 			&bookingEncx.DEKEncrypted,
 			&bookingEncx.KeyVersion,

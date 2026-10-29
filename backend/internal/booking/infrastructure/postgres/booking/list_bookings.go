@@ -22,6 +22,8 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			b.guest_email_encrypted, b.guest_phone_encrypted,
 			b.token,
 			b.reminded_at,
+			b.hold_expires_at,
+			b.locale,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
@@ -64,6 +66,16 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			argIndex++
 		}
 		whereConditions = append(whereConditions, fmt.Sprintf("b.status IN (%s)", strings.Join(placeholders, ",")))
+	}
+
+	if len(filter.ExcludeStatus) > 0 {
+		placeholders := make([]string, len(filter.ExcludeStatus))
+		for i, status := range filter.ExcludeStatus {
+			placeholders[i] = fmt.Sprintf("$%d", argIndex)
+			args = append(args, status)
+			argIndex++
+		}
+		whereConditions = append(whereConditions, fmt.Sprintf("b.status NOT IN (%s)", strings.Join(placeholders, ",")))
 	}
 
 	if len(filter.PaymentStatus) > 0 {
@@ -155,6 +167,8 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			&bookingEncx.GuestPhoneEncrypted,
 			&bookingEncx.Token,
 			&bookingEncx.RemindedAt,
+			&bookingEncx.HoldExpiresAt,
+			&bookingEncx.Locale,
 			&bookingEncx.CreatedAt,
 			&bookingEncx.UpdatedAt,
 			&bookingEncx.DEKEncrypted,

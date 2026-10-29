@@ -61,7 +61,10 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 	return responses, nil
 }
 
+// GetPartnerBookings returns the partner's appointments: bookings awaiting
+// payment or expired are never shown to the partner (ADR-0018).
 func (s *BookingService) GetPartnerBookings(ctx context.Context, partnerID uuid.UUID, filter ports.BookingFilter) ([]*domain.Booking, error) {
+	filter.ExcludeStatus = domain.NonAppointmentStatuses()
 	bookingsEncx, err := s.bookingRepo.GetByPartnerID(ctx, partnerID, filter)
 	if err != nil {
 		return nil, fmt.Errorf("get partner bookings: %w", err)

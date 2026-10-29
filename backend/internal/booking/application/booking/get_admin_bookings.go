@@ -34,6 +34,10 @@ func (s *BookingService) GetAdminBookings(ctx context.Context, filter ports.Admi
 
 	if filter.Status != nil {
 		repoFilter.Status = []domain.BookingStatus{*filter.Status}
+	} else {
+		// Without an explicit status, the list shows appointments only:
+		// bookings awaiting payment or expired are not (ADR-0018).
+		repoFilter.ExcludeStatus = domain.NonAppointmentStatuses()
 	}
 	if filter.PartnerID != nil {
 		repoFilter.PartnerID = filter.PartnerID

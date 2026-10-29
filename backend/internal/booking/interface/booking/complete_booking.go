@@ -36,7 +36,8 @@ func (h *handler) CompleteBooking(w http.ResponseWriter, r *http.Request) {
 			statusCode = http.StatusNotFound
 		case errors.Is(err, errs.ErrInvalidInput),
 			errors.Is(err, domain.ErrCannotCompleteBooking),
-			errors.Is(err, domain.ErrBookingAlreadyCompleted):
+			errors.Is(err, domain.ErrBookingAlreadyCompleted),
+			errors.Is(err, domain.ErrBookingNotConfirmed):
 			statusCode = http.StatusBadRequest
 		default:
 			statusCode = http.StatusInternalServerError

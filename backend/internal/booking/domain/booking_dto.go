@@ -82,6 +82,22 @@ type CreateBookingRequest struct {
 	GuestLastName  string `json:"guest_last_name,omitempty"`
 	GuestEmail     string `json:"guest_email,omitempty"`
 	GuestPhone     string `json:"guest_phone,omitempty"`
+
+	// Locale is the language the client books in, "fr" (default) or "en":
+	// notifications about the booking are sent in it.
+	Locale string `json:"locale,omitempty"`
+}
+
+// CreateBookingResponse is the booking just created, plus what the page
+// needs to collect the payment (ADR-0018): the PaymentIntent's client secret
+// for the Stripe Payment Element, the amount it charges and the end of the
+// payment hold.
+type CreateBookingResponse struct {
+	BookingResponse
+	ClientSecret         string     `json:"client_secret,omitempty"`
+	AmountDueOnlineCents int        `json:"amount_due_online_cents"`
+	HoldExpiresAt        *time.Time `json:"hold_expires_at,omitempty"`
+	Locale               string     `json:"locale,omitempty"`
 }
 
 type CancelBookingRequest struct {

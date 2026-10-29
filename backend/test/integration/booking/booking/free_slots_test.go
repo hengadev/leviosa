@@ -174,7 +174,7 @@ func TestFreeSlots(t *testing.T) {
 
 		// A booking at 10:15 takes that slot; its buffer ends at 11:30, so
 		// 11:30 stays free.
-		_, err := service.CreateBooking(ctx, f.availabilityID, &f.clientID, f.productID, f.at(10, 15), "", "", "", "")
+		_, err := service.CreateBooking(ctx, f.availabilityID, &f.clientID, f.productID, f.at(10, 15), "", "", "", "", "")
 		require.NoError(t, err)
 
 		status, body = getFreeSlots(t, client, f.partnerID, f.productID, day, day)
