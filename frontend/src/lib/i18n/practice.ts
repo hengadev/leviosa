@@ -13,6 +13,11 @@ export const locales: Locale[] = ["fr", "en"];
 /** Locale for Intl formatting: FR conventions for fr, GB for en (€ still EUR). */
 const tag = (locale: Locale) => (locale === "fr" ? "fr-FR" : "en-GB");
 
+/** Slots are computed and shown in the practice's time zone, wherever the visitor is. */
+export const PRACTICE_TIME_ZONE = "Europe/Paris";
+
+const timeZone = PRACTICE_TIME_ZONE;
+
 export const fmt = {
     price: (cents: number, locale: Locale) =>
         new Intl.NumberFormat(tag(locale), {
@@ -21,15 +26,15 @@ export const fmt = {
             maximumFractionDigits: cents % 100 === 0 ? 0 : 2,
         }).format(cents / 100),
     time: (date: Date, locale: Locale) =>
-        new Intl.DateTimeFormat(tag(locale), { hour: "2-digit", minute: "2-digit" }).format(date),
+        new Intl.DateTimeFormat(tag(locale), { hour: "2-digit", minute: "2-digit", timeZone }).format(date),
     weekdayShort: (date: Date, locale: Locale) =>
-        new Intl.DateTimeFormat(tag(locale), { weekday: "short" }).format(date),
+        new Intl.DateTimeFormat(tag(locale), { weekday: "short", timeZone }).format(date),
     dayMonth: (date: Date, locale: Locale) =>
-        new Intl.DateTimeFormat(tag(locale), { day: "numeric", month: "short" }).format(date),
+        new Intl.DateTimeFormat(tag(locale), { day: "numeric", month: "short", timeZone }).format(date),
     long: (date: Date, locale: Locale) =>
-        new Intl.DateTimeFormat(tag(locale), { weekday: "long", day: "numeric", month: "long" }).format(date),
+        new Intl.DateTimeFormat(tag(locale), { weekday: "long", day: "numeric", month: "long", timeZone }).format(date),
     month: (date: Date, locale: Locale) =>
-        new Intl.DateTimeFormat(tag(locale), { month: "long", year: "numeric" }).format(date),
+        new Intl.DateTimeFormat(tag(locale), { month: "long", year: "numeric", timeZone }).format(date),
 };
 
 /** French weekdays and months are lowercase; a label starting a line wants a capital. */
@@ -58,6 +63,13 @@ export const strings = {
         prevMonth: "Mois précédent",
         nextMonth: "Mois suivant",
         timeLegend: "Heure",
+        timeZoneNote: "Heures de Paris",
+        noSlotsYet: "Aucun créneau n'est ouvert à la réservation pour le moment.",
+        slotsUnavailable: "Les créneaux ne peuvent pas être affichés pour le moment. Réessayez un peu plus tard.",
+        // details step (stub until the booking form, issue 014)
+        detailsHeading: "Vos coordonnées",
+        changeSlot: "Changer de créneau",
+        detailsSoon: "La saisie de vos coordonnées et le paiement en ligne arrivent bientôt.",
         // footer
         legal: "Mentions légales",
         privacy: "Confidentialité",
@@ -84,6 +96,12 @@ export const strings = {
         prevMonth: "Previous month",
         nextMonth: "Next month",
         timeLegend: "Time",
+        timeZoneNote: "Paris time",
+        noSlotsYet: "No slots are open for booking right now.",
+        slotsUnavailable: "The slots can't be shown right now. Please try again a little later.",
+        detailsHeading: "Your details",
+        changeSlot: "Change slot",
+        detailsSoon: "Entering your details and paying online is coming soon.",
         legal: "Legal notice",
         privacy: "Privacy",
         terms: "Terms",

@@ -28,6 +28,8 @@ import {
     refreshTokenDurationDefaults,
     practicePageSchema,
     practicePageDefaults,
+    bookingPolicySchema,
+    bookingPolicyDefaults,
 } from "./schemas"
 // Enable mock mode for staging
 const MOCK_MODE = env.USE_MOCK_DATA === 'true'
@@ -58,6 +60,10 @@ type Settings = {
     }
 }
 
+// Booking policy applied by the slot engine to the public calendar and to
+// booking creation. The backend answers the defaults while it is unset.
+type BookingPolicySettings = { minimumNoticeHours: number; horizonWeeks: number }
+
 // Options for the practice page selectors: the partners and products the
 // administrator can put on the public page.
 type PracticeOption = { id: string; label: string }
@@ -82,6 +88,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     const accessTokenDurationForm = await superValidate(arktype(accessTokenDurationSchema, { defaults: accessTokenDurationDefaults }))
     const refreshTokenDurationForm = await superValidate(arktype(refreshTokenDurationSchema, { defaults: refreshTokenDurationDefaults }))
     const practicePageForm = await superValidate(arktype(practicePageSchema, { defaults: practicePageDefaults }))
+    const bookingPolicyForm = await superValidate(arktype(bookingPolicySchema, { defaults: bookingPolicyDefaults }))
 
     let settings: Settings | null = null
     let settingsError = false
@@ -183,6 +190,21 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         practicePage = null
     }
 
+    // Booking policy: public GET, defaults included. Best-effort.
+    let bookingPolicy: BookingPolicySettings | null = null
+    try {
+        const policyRes = await fetch(`${env.API_URL}/settings/booking-policy`)
+        if (policyRes.ok) {
+            const policy: { minimum_notice_hours: number; horizon_weeks: number } = await policyRes.json()
+            bookingPolicy = { minimumNoticeHours: policy.minimum_notice_hours, horizonWeeks: policy.horizon_weeks }
+        }
+    } catch {
+        bookingPolicy = null
+    }
+    if (MOCK_MODE && !bookingPolicy) {
+        bookingPolicy = { minimumNoticeHours: bookingPolicyDefaults.minimum_notice_hours, horizonWeeks: bookingPolicyDefaults.horizon_weeks }
+    }
+
     return {
         companyNameForm,
         companyEmailForm,
@@ -195,6 +217,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         accessTokenDurationForm,
         refreshTokenDurationForm,
         practicePageForm,
+        bookingPolicyForm,
+        bookingPolicy,
         settings,
         settingsError,
         practicePage,
@@ -241,6 +265,48 @@ export const actions = {
         }
 
         return { practicePageForm: form }
+    },
+
+    updateBookingPolicy: async ({ request, fetch, cookies }) => {
+        const form = await superValidate(request, arktype(bookingPolicySchema, { defaults: bookingPolicyDefaults }))
+
+        if (!form.valid) {
+            return fail(400, { bookingPolicyForm: form })
+        }
+
+        if (MOCK_MODE) {
+            console.log('[MOCK] Updating booking policy:', form.data.minimum_notice_hours, form.data.horizon_weeks)
+            return { bookingPolicyForm: form }
+        }
+
+        const sessionCookie = cookies.get('session');
+
+        const res = await fetch(`${env.API_URL}/admin/settings/booking-policy`, {
+            method: "POST",
+            headers: {
+                'Content-Type': "application/json",
+                'Authorization': `Bearer ${sessionCookie}`,
+            },
+            body: JSON.stringify({
+                minimum_notice_hours: form.data.minimum_notice_hours,
+                horizon_weeks: form.data.horizon_weeks,
+            }),
+        })
+
+        if (!res.ok) {
+            switch (res.status) {
+                case 400:
+                    return setError(form, "Valeurs invalides (délai : 0 à 168 h ; horizon : 1 à 52 semaines).")
+                case 401:
+                    return setError(form, "Non autorisé. Veuillez vous reconnecter.")
+                case 403:
+                    return setError(form, "Accès refusé. Vous devez être administrateur.")
+                default:
+                    return setError(form, "Erreur lors de l'enregistrement. Réessayez.")
+            }
+        }
+
+        return { bookingPolicyForm: form }
     },
 
     updateCompanyName: async ({ request, fetch, cookies }) => {
