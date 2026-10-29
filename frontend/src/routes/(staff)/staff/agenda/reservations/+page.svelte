@@ -2,7 +2,8 @@
 	import type { PageProps } from './$types';
 	import type { Booking } from './+page.server';
 	import { invalidateAll } from '$app/navigation';
-	import { Clock, MapPin, Mail, Phone, CheckCircle, XCircle, AlertCircle } from '@lucide/svelte';
+	import { Dialog } from 'bits-ui';
+	import { Clock, MapPin, Mail, Phone, CheckCircle, XCircle, AlertCircle, Ban } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
 
@@ -95,6 +96,46 @@
 	function isActionable(booking: Booking): boolean {
 		if (booking.status !== 'confirmed') return false;
 		return new Date(booking.endTime) < new Date();
+	}
+
+	/** A confirmed booking that has not started yet can be cancelled by the practitioner */
+	function isCancellable(booking: Booking): boolean {
+		return booking.status === 'confirmed' && new Date(booking.startTime) > new Date();
+	}
+
+	// Practitioner cancellation: the booking awaiting confirmation in the dialog
+	let cancelTarget = $state<Booking | null>(null);
+	let cancelDialogOpen = $state(false);
+	let cancelLoading = $state(false);
+	let cancelError = $state('');
+
+	function openCancelDialog(booking: Booking) {
+		cancelTarget = booking;
+		cancelError = '';
+		cancelDialogOpen = true;
+	}
+
+	async function cancelBooking() {
+		if (!cancelTarget) return;
+		cancelLoading = true;
+		cancelError = '';
+		try {
+			const res = await fetch(`/api/partners/bookings/${cancelTarget.id}/cancel`, { method: 'POST' });
+			if (res.ok) {
+				cancelDialogOpen = false;
+				await invalidateAll();
+			} else if (res.status === 403) {
+				cancelError = "Cette réservation n'est pas la vôtre.";
+			} else if (res.status === 400) {
+				cancelError = 'Cette réservation ne peut plus être annulée.';
+			} else {
+				cancelError = "Impossible d'annuler la réservation. Veuillez réessayer.";
+			}
+		} catch {
+			cancelError = 'Erreur réseau. Veuillez réessayer.';
+		} finally {
+			cancelLoading = false;
+		}
 	}
 
 	const filtered = $derived(
@@ -281,6 +322,15 @@
 					<!-- Amount + Actions -->
 					<div class="flex flex-col items-end gap-2 flex-shrink-0">
 						<p class="font-semibold text-foreground">{formatCents(booking.amountInCents)}</p>
+						{#if isCancellable(booking)}
+							<button
+								class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+								onclick={() => openCancelDialog(booking)}
+							>
+								<Ban size={13} />
+								Annuler la réservation
+							</button>
+						{/if}
 						{#if isActionable(booking)}
 							<div class="flex gap-2">
 								<button
@@ -313,3 +363,51 @@
 		{/each}
 	</div>
 </div>
+
+<Dialog.Root bind:open={cancelDialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay
+			class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80"
+		/>
+		<Dialog.Content
+			class="rounded-card-lg bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 outline-hidden fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border p-6 sm:p-8 sm:max-w-[440px]"
+		>
+			<Dialog.Title class="w-full text-xl font-semibold tracking-tight">Annuler la réservation</Dialog.Title>
+			{#if cancelTarget}
+				<Dialog.Description class="text-muted-foreground mt-2 text-sm">
+					{cancelTarget.clientName}, {cancelTarget.productName}, {formatDateTime(cancelTarget.startTime)}.
+				</Dialog.Description>
+				<p class="mt-4 text-sm text-foreground">
+					{#if cancelTarget.practitionerRefundCents > 0}
+						Le client sera intégralement remboursé ({formatCents(cancelTarget.practitionerRefundCents)})
+						et prévenu par email.
+					{:else}
+						Aucun paiement en ligne à rembourser. Le client sera prévenu par email.
+					{/if}
+					Le créneau sera de nouveau proposé à la réservation.
+				</p>
+			{/if}
+			{#if cancelError}
+				<p class="mt-4 text-sm text-destructive">{cancelError}</p>
+			{/if}
+			<div class="mt-8 flex w-full flex-col-reverse sm:flex-row sm:justify-end gap-3">
+				<button
+					type="button"
+					onclick={() => (cancelDialogOpen = false)}
+					disabled={cancelLoading}
+					class="h-input rounded-input border border-border-input hover:bg-dark-04 inline-flex items-center justify-center px-6 text-sm font-medium active:scale-[0.98] cursor-pointer transition-all disabled:opacity-50"
+				>
+					Garder la réservation
+				</button>
+				<button
+					type="button"
+					onclick={cancelBooking}
+					disabled={cancelLoading}
+					class="h-input rounded-input bg-destructive text-white shadow-mini hover:bg-destructive/90 inline-flex items-center justify-center px-6 text-sm font-semibold active:scale-[0.98] cursor-pointer transition-all disabled:opacity-50"
+				>
+					{cancelLoading ? 'Annulation…' : "Confirmer l'annulation"}
+				</button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
