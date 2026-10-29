@@ -99,7 +99,7 @@
 				</div>
 				<p class="text-muted-foreground mb-4">Aucune séance à venir</p>
 				<a
-					href="/book"
+					href="/#reserver"
 					class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-colors"
 				>
 					<PlusCircle size={16} />
@@ -112,7 +112,7 @@
 	<!-- CTA: Réserver -->
 	{#if data.nextBooking}
 		<a
-			href="/book"
+			href="/#reserver"
 			class="flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-lg bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors"
 		>
 			<PlusCircle size={18} />
