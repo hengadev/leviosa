@@ -118,8 +118,8 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 
 	// Reset spies. Use the real notification adapter (backed by SMS/email
 	// spies) rather than the port-level notificationSpy so we can assert
-	// that an SMS send is actually attempted, not just that the
-	// BookingNotificationService interface was invoked.
+	// what is actually sent, not just that the BookingNotificationService
+	// interface was invoked.
 	notificationEmailSpy.BookingReminders = nil
 	notificationSMSSpy.Messages = nil
 
@@ -144,12 +144,9 @@ func TestReminderScheduler_OnlyConfirmedUnremindedBookings(t *testing.T) {
 		assert.Equal(t, booking1.ID.String(), notificationEmailSpy.BookingReminders[0].BookingID)
 	}
 
-	// Assert: exactly one reminder SMS attempted (client has a phone on file)
-	assert.Len(t, notificationSMSSpy.Messages, 1, "expected exactly one reminder SMS attempt")
-	if len(notificationSMSSpy.Messages) == 1 {
-		assert.NotEmpty(t, notificationSMSSpy.Messages[0].PhoneNumber, "reminder SMS should have a phone number")
-		assert.Contains(t, notificationSMSSpy.Messages[0].Message, "Rappel", "reminder SMS should use the French reminder copy pattern")
-	}
+	// Assert: no SMS, although the client has a phone on file — SMS is
+	// disabled for booking notifications (reminders go by email only).
+	assert.Empty(t, notificationSMSSpy.Messages, "booking reminders send no SMS")
 
 	// Assert: booking 1 has reminded_at set
 	encx1, err := bookingRepo.GetByID(ctx, booking1.ID)

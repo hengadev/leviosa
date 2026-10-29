@@ -37,11 +37,11 @@ type BookingNotificationService interface {
 // service implementation is responsible for fetching additional details.
 type BookingNotificationData struct {
 	// Required: Booking identifiers
-	BookingID  uuid.UUID
-	ClientID   uuid.UUID
-	PartnerID  uuid.UUID
-	RoomID     uuid.UUID
-	ProductID  uuid.UUID
+	BookingID uuid.UUID
+	ClientID  uuid.UUID
+	PartnerID uuid.UUID
+	RoomID    uuid.UUID
+	ProductID uuid.UUID
 
 	// Guest booking flag
 	IsGuestBooking bool
@@ -56,17 +56,30 @@ type BookingNotificationData struct {
 	TotalPriceCents int
 	Currency        string
 
+	// AmountPaidOnlineCents is what the client paid online for the booking
+	// (the deposit, or the full price); set on booking-confirmed events. The
+	// balance due at the practice is TotalPriceCents minus this amount.
+	AmountPaidOnlineCents int
+
+	// Locale the client booked in ("fr" or "en"); empty on older bookings,
+	// read as French. Client emails are written in it.
+	Locale string
+
 	// Optional: Pre-populated details (if available)
 	// The notification service implementation may fetch these if not provided
-	ClientEmail  string
-	ClientName   string
-	ClientPhone  string
-	PartnerEmail string
-	PartnerName  string
-	ProductName  string
-	RoomName     string
-	BuildingName string
-	Address      string
+	ClientEmail string
+	ClientName  string
+	// ClientFirstName / ClientLastName, when known (guest bookings), avoid
+	// splitting ClientName.
+	ClientFirstName string
+	ClientLastName  string
+	ClientPhone     string
+	PartnerEmail    string
+	PartnerName     string
+	ProductName     string
+	RoomName        string
+	BuildingName    string
+	Address         string
 
 	// Booking token for public guest access (empty for bookings created before issue 002)
 	Token string

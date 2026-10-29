@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"strings"
 	"time"
 
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
@@ -29,7 +31,12 @@ func detach(ctx context.Context) context.Context {
 // propagated to the caller, ensuring booking transactions are never rolled
 // back due to a notification failure.
 type BookingNotificationAdapter struct {
-	emailService     notificationPorts.EmailService
+	emailService notificationPorts.EmailService
+	// smsService is never called: SMS is disabled for every booking
+	// notification (confirmation, cancellation, reminder, payment) in v1 (PRD
+	// single-practitioner booking MVP), whatever the settings say and even
+	// when the client has a phone number. Booking notifications go by email
+	// only; tests inject an SMS spy to hold the adapter to it.
 	smsService       notificationPorts.SMSService
 	frontendOrigin   string
 	userFetcher      UserFetcher
@@ -220,36 +227,39 @@ func (a *BookingNotificationAdapter) enrichData(ctx context.Context, data *booki
 	}
 }
 
+// sendBookingConfirmationEmail sends the booking-confirmed emails: the client
+// confirmation in the booking's locale (with the .ics attachment) and the
+// partner's new-booking notice in French. No SMS (see smsService).
 func (a *BookingNotificationAdapter) sendBookingConfirmationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
+	address := a.practiceAddress(ctx, data)
 
-	// Send email confirmation if address is available.
 	if data.ClientEmail == "" {
 		slog.WarnContext(ctx, "no client email available for booking confirmation",
 			"booking_id", data.BookingID,
 		)
 	} else {
-		formattedDate := data.SlotStartTime.Format("Monday, 02 January 2006")
-		formattedTime := fmt.Sprintf("%s – %s",
-			data.SlotStartTime.Format("15:04"),
-			data.SlotEndTime.Format("15:04"),
-		)
+		balance := data.TotalPriceCents - data.AmountPaidOnlineCents
+		if balance < 0 {
+			balance = 0
+		}
+		clientFirst, clientLast := clientNames(data)
 
 		req := notificationDomain.BookingConfirmationRequest{
-			ToEmail:         data.ClientEmail,
-			ToFirstName:     firstName(data.ClientName),
-			ToLastName:      lastName(data.ClientName),
-			BookingID:       data.BookingID.String(),
-			ProductName:     data.ProductName,
-			RoomName:        data.RoomName,
-			Building:        data.BuildingName,
-			Address:         data.Address,
-			Date:            formattedDate,
-			Time:            formattedTime,
-			PartnerName:     data.PartnerName,
-			Amount:          formatAmount(data.TotalPriceCents, data.Currency),
-			Year:            time.Now().Year(),
-			BookingTokenURL: a.buildTokenURL(data.Token),
+			ToEmail:               data.ClientEmail,
+			ToFirstName:           clientFirst,
+			ToLastName:            clientLast,
+			Locale:                notificationDomain.ParseLocale(data.Locale),
+			BookingID:             data.BookingID.String(),
+			ProductName:           data.ProductName,
+			PartnerName:           data.PartnerName,
+			Address:               address,
+			StartTime:             data.SlotStartTime,
+			EndTime:               data.SlotEndTime,
+			AmountPaidOnlineCents: data.AmountPaidOnlineCents,
+			BalanceDueCents:       balance,
+			Currency:              data.Currency,
+			ManageURL:             a.buildTokenURL(data.Token),
 		}
 
 		if err := a.emailService.SendBookingConfirmationEmail(ctx, req); err != nil {
@@ -260,52 +270,58 @@ func (a *BookingNotificationAdapter) sendBookingConfirmationEmail(ctx context.Co
 		}
 	}
 
-	// Send confirmation SMS if phone is available.
-	a.sendBookingConfirmationSMS(ctx, data)
+	if data.PartnerEmail == "" {
+		slog.WarnContext(ctx, "no partner email available for booking notice",
+			"booking_id", data.BookingID,
+			"partner_id", data.PartnerID,
+		)
+	} else {
+		req := notificationDomain.BookingPartnerNoticeRequest{
+			ToEmail:     data.PartnerEmail,
+			ToFirstName: firstName(data.PartnerName),
+			BookingID:   data.BookingID.String(),
+			ProductName: data.ProductName,
+			ClientName:  data.ClientName,
+			ClientEmail: data.ClientEmail,
+			ClientPhone: data.ClientPhone,
+			StartTime:   data.SlotStartTime,
+			EndTime:     data.SlotEndTime,
+		}
+		if err := a.emailService.SendBookingPartnerNoticeEmail(ctx, req); err != nil {
+			slog.ErrorContext(ctx, "failed to send booking notice to partner",
+				"booking_id", data.BookingID,
+				"error", err,
+			)
+		}
+	}
 
 	return nil
 }
 
-// sendBookingConfirmationSMS sends a booking confirmation SMS with a token URL.
-// Bookings with a null token (created before issue 002) send the SMS without
-// a token URL rather than failing.
-func (a *BookingNotificationAdapter) sendBookingConfirmationSMS(ctx context.Context, data bookingPorts.BookingNotificationData) {
-	phone := data.ClientPhone
-	if phone == "" {
-		return
+// practiceAddress is the practice address from the company settings, or the
+// booking's building address when the setting is empty.
+func (a *BookingNotificationAdapter) practiceAddress(ctx context.Context, data bookingPorts.BookingNotificationData) string {
+	if a.settingsProvider != nil {
+		address, err := a.settingsProvider.GetCompanyLegalAddress(ctx)
+		if err != nil {
+			slog.WarnContext(ctx, "failed to fetch practice address for notification",
+				"booking_id", data.BookingID,
+				"error", err,
+			)
+		} else if strings.TrimSpace(address) != "" {
+			return address
+		}
 	}
+	return data.Address
+}
 
-	formattedDate := data.SlotStartTime.Format("02/01/2006")
-	formattedTime := fmt.Sprintf("%s-%s",
-		data.SlotStartTime.Format("15:04"),
-		data.SlotEndTime.Format("15:04"),
-	)
-
-	message := fmt.Sprintf("Confirmation: %s le %s de %s. ",
-		data.ProductName,
-		formattedDate,
-		formattedTime,
-	)
-
-	// Append token URL if available (legacy bookings may have an empty token)
-	if data.Token != "" {
-		message += fmt.Sprintf("Voir votre réservation: %s/bookings?token=%s",
-			a.frontendOrigin, data.Token)
+// clientNames returns the client's first and last names, from the booking
+// when known (guest bookings) or split from the full name.
+func clientNames(data bookingPorts.BookingNotificationData) (string, string) {
+	if data.ClientFirstName != "" || data.ClientLastName != "" {
+		return data.ClientFirstName, data.ClientLastName
 	}
-
-	if a.smsService == nil {
-		return
-	}
-
-	if err := a.smsService.SendSMS(ctx, notificationDomain.GenericSMSRequest{
-		PhoneNumber: phone,
-		Message:     message,
-	}); err != nil {
-		slog.ErrorContext(ctx, "failed to send booking confirmation SMS",
-			"booking_id", data.BookingID,
-			"error", err,
-		)
-	}
+	return firstName(data.ClientName), lastName(data.ClientName)
 }
 
 func (a *BookingNotificationAdapter) sendBookingCancellationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
@@ -376,10 +392,8 @@ func (a *BookingNotificationAdapter) sendBookingCancellationEmail(ctx context.Co
 	return nil
 }
 
-// sendBookingReminderEmail sends the booking reminder email and SMS. The two
-// channels are independent: email is sent if an address is on file, SMS is
-// sent if a phone number is on file, regardless of whether the other channel
-// fires. A missing phone number is not an error — it just skips SMS.
+// sendBookingReminderEmail sends the booking reminder email. No SMS (see
+// smsService).
 func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
 
@@ -417,52 +431,7 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 		}
 	}
 
-	// Send reminder SMS if phone is available.
-	a.sendBookingReminderSMS(ctx, data)
-
 	return nil
-}
-
-// sendBookingReminderSMS sends a booking reminder SMS, mirroring the booking
-// confirmation SMS copy pattern. Missing phone number is not an error — it
-// simply means the SMS channel is skipped for this booking.
-func (a *BookingNotificationAdapter) sendBookingReminderSMS(ctx context.Context, data bookingPorts.BookingNotificationData) {
-	phone := data.ClientPhone
-	if phone == "" {
-		return
-	}
-
-	formattedDate := data.SlotStartTime.Format("02/01/2006")
-	formattedTime := fmt.Sprintf("%s-%s",
-		data.SlotStartTime.Format("15:04"),
-		data.SlotEndTime.Format("15:04"),
-	)
-
-	message := fmt.Sprintf("Rappel: %s le %s de %s. ",
-		data.ProductName,
-		formattedDate,
-		formattedTime,
-	)
-
-	// Append token URL if available (legacy bookings may have an empty token)
-	if data.Token != "" {
-		message += fmt.Sprintf("Voir votre réservation: %s/bookings?token=%s",
-			a.frontendOrigin, data.Token)
-	}
-
-	if a.smsService == nil {
-		return
-	}
-
-	if err := a.smsService.SendSMS(ctx, notificationDomain.GenericSMSRequest{
-		PhoneNumber: phone,
-		Message:     message,
-	}); err != nil {
-		slog.ErrorContext(ctx, "failed to send booking reminder SMS",
-			"booking_id", data.BookingID,
-			"error", err,
-		)
-	}
 }
 
 func (a *BookingNotificationAdapter) sendPaymentConfirmationEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
@@ -538,13 +507,14 @@ func (a *BookingNotificationAdapter) sendPaymentDisputeAlertEmail(ctx context.Co
 	return a.emailService.SendPaymentDisputeAlertEmail(ctx, req)
 }
 
-// buildTokenURL constructs the guest booking URL from a token.
-// Returns an empty string for registered-user bookings (no token).
+// buildTokenURL is the manage link of a booking: the booking token page on
+// the public site, opened with the booking token. Empty when the booking has
+// no token (bookings made before tokens existed).
 func (a *BookingNotificationAdapter) buildTokenURL(token string) string {
 	if token == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s/bookings?token=%s", a.frontendOrigin, token)
+	return strings.TrimRight(a.frontendOrigin, "/") + "/bookings?token=" + url.QueryEscape(token)
 }
 
 // formatAmount converts cents to a human-readable currency string.
