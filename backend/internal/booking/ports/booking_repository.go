@@ -77,6 +77,12 @@ type BookingRepository interface {
 
 	// MarkReminderSent sets reminded_at to now() for a given booking.
 	MarkReminderSent(ctx context.Context, bookingID uuid.UUID) error
+
+	// ClaimReminder sets reminded_at to now() only when the booking is still
+	// confirmed and not yet reminded, and reports whether this call did it.
+	// The reminder is sent only after a successful claim, so each booking is
+	// reminded once even with several scheduler ticks or instances.
+	ClaimReminder(ctx context.Context, bookingID uuid.UUID) (bool, error)
 }
 
 // BookingFilter defines filtering options for booking queries
