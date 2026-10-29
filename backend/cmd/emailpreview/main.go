@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"html"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -38,12 +39,11 @@ const (
 // A fixed moment, so the preview is reproducible between runs.
 var sampleNow = time.Date(2026, time.March, 5, 10, 0, 0, 0, time.UTC)
 
-// preview is one email to write: a file name, the composed email and the
-// names of its attachments (listed in the index, not rendered).
+// preview is one email to write: a file name and the composed email (its
+// attachments are listed in the index, not rendered).
 type preview struct {
-	File         string
-	Email        domain.ComposedEmail
-	AttachmentOn bool
+	File  string
+	Email domain.ComposedEmail
 }
 
 // Run writes every booking email variant to outDir and returns the path of
@@ -81,7 +81,7 @@ func allPreviews() []preview {
 	bookingID := "b7k3xq"
 	var previews []preview
 	add := func(file string, email domain.ComposedEmail) {
-		previews = append(previews, preview{File: file, Email: email, AttachmentOn: len(email.Attachments) > 0})
+		previews = append(previews, preview{File: file, Email: email})
 	}
 
 	for _, locale := range []domain.Locale{domain.LocaleFR, domain.LocaleEN} {
@@ -114,7 +114,7 @@ func allPreviews() []preview {
 			add(file, domain.ComposeBookingClientCancellation(domain.BookingClientCancellationRequest{
 				ToEmail: sampleClientEmail, ToFirstName: "Jean", ToLastName: "Dupont", Locale: locale,
 				BookingID: bookingID, ProductName: sampleProduct, StartTime: start, EndTime: end,
-				CancelledBy: cancelledBy,
+				CancelledBy:           cancelledBy,
 				AmountPaidOnlineCents: samplePriceCents, RefundedAmountCents: refunded, Currency: sampleCurrency,
 				BookAgainURL: bookAgainURL(locale),
 			}, sampleNow))
@@ -174,15 +174,16 @@ func render(email domain.ComposedEmail) (string, error) {
 
 func indexRow(p preview) string {
 	attachments := ""
-	if p.AttachmentOn {
+	if len(p.Email.Attachments) > 0 {
 		names := make([]string, 0, len(p.Email.Attachments))
 		for _, a := range p.Email.Attachments {
-			names = append(names, a.Filename)
+			names = append(names, html.EscapeString(a.Filename))
 		}
 		attachments = fmt.Sprintf(`<div style="color:#666;">Joint&nbsp;: %s</div>`, strings.Join(names, ", "))
 	}
-	return fmt.Sprintf(`<li style="margin-bottom:14px;"><a href="%s">%s</a> — %s\n%s</li>`,
-		p.File, p.File, p.Email.Subject, attachments)
+	file := html.EscapeString(p.File)
+	return fmt.Sprintf(`<li style="margin-bottom:14px;"><a href="%s">%s</a> — %s%s</li>`,
+		file, file, html.EscapeString(p.Email.Subject), attachments)
 }
 
 func indexHTML(rows []string) string {
