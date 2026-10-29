@@ -256,3 +256,110 @@ func ComposeBookingPartnerNotice(req BookingPartnerNoticeRequest, now time.Time)
 		Data:     view,
 	}
 }
+
+// BookingReminderTemplate is the template of the client reminder
+// (templates/booking_reminder.html).
+const BookingReminderTemplate = "booking_reminder"
+
+// clientReminderStrings is the copy of the client reminder email.
+type clientReminderStrings struct {
+	Subject           string // fmt: date, time
+	Title             string
+	Greeting          string
+	Intro             string
+	DetailsHeading    string
+	ServiceLabel      string
+	DateLabel         string
+	TimeLabel         string
+	PractitionerLabel string
+	AddressLabel      string
+	ReferenceLabel    string
+	ManageText        string
+	ManageButton      string
+	SignOff           string
+	Team              string
+	Rights            string
+}
+
+var clientReminderCopy = map[Locale]clientReminderStrings{
+	LocaleFR: {
+		Subject:           "Rappel : votre rendez-vous du %s à %s",
+		Title:             "Votre rendez-vous approche",
+		Greeting:          "Bonjour",
+		Intro:             "Petit rappel de votre rendez-vous à venir. Nous avons hâte de vous accueillir.",
+		DetailsHeading:    "Votre rendez-vous",
+		ServiceLabel:      "Prestation",
+		DateLabel:         "Date",
+		TimeLabel:         "Heure",
+		PractitionerLabel: "Avec",
+		AddressLabel:      "Adresse",
+		ReferenceLabel:    "Référence",
+		ManageText:        "Un empêchement ? Vous pouvez consulter ou annuler votre réservation depuis ce lien :",
+		ManageButton:      "Gérer ma réservation",
+		SignOff:           "À très bientôt,",
+		Team:              "L'équipe Leviosa",
+		Rights:            "Tous droits réservés.",
+	},
+	LocaleEN: {
+		Subject:           "Reminder: your appointment on %s at %s",
+		Title:             "Your appointment is coming up",
+		Greeting:          "Hello",
+		Intro:             "A quick reminder of your upcoming appointment. We look forward to seeing you.",
+		DetailsHeading:    "Your appointment",
+		ServiceLabel:      "Treatment",
+		DateLabel:         "Date",
+		TimeLabel:         "Time",
+		PractitionerLabel: "With",
+		AddressLabel:      "Address",
+		ReferenceLabel:    "Reference",
+		ManageText:        "Can't make it? You can view or cancel your booking from this link:",
+		ManageButton:      "Manage my booking",
+		SignOff:           "See you soon,",
+		Team:              "The Leviosa team",
+		Rights:            "All rights reserved.",
+	},
+}
+
+// BookingReminderView is the data of the booking_reminder template.
+type BookingReminderView struct {
+	Lang        string
+	T           clientReminderStrings
+	FirstName   string
+	ProductName string
+	PartnerName string
+	Address     string
+	Date        string
+	TimeRange   string
+	ManageURL   string
+	BookingID   string
+	Year        int
+}
+
+// ComposeBookingReminder builds the client reminder email in the request's
+// locale, dates and times in the practice's time zone. now stamps the footer
+// year.
+func ComposeBookingReminder(req BookingReminderRequest, now time.Time) ComposedEmail {
+	locale := ParseLocale(string(req.Locale))
+	strs := clientReminderCopy[locale]
+	date := FormatDate(req.StartTime, locale)
+
+	view := BookingReminderView{
+		Lang:        string(locale),
+		T:           strs,
+		FirstName:   req.ToFirstName,
+		ProductName: req.ProductName,
+		PartnerName: req.PartnerName,
+		Address:     req.Address,
+		Date:        date,
+		TimeRange:   FormatTimeRange(req.StartTime, req.EndTime, locale),
+		ManageURL:   req.ManageURL,
+		BookingID:   req.BookingID,
+		Year:        now.In(practiceLocation).Year(),
+	}
+
+	return ComposedEmail{
+		Subject:  fmt.Sprintf(strs.Subject, date, FormatTime(req.StartTime, locale)),
+		Template: BookingReminderTemplate,
+		Data:     view,
+	}
+}

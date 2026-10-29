@@ -392,8 +392,8 @@ func (a *BookingNotificationAdapter) sendBookingCancellationEmail(ctx context.Co
 	return nil
 }
 
-// sendBookingReminderEmail sends the booking reminder email. No SMS (see
-// smsService).
+// sendBookingReminderEmail sends the client reminder in the booking's locale,
+// with the practice address and the manage link. No SMS (see smsService).
 func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	a.enrichData(ctx, &data)
 
@@ -401,34 +401,29 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 		slog.WarnContext(ctx, "no client email available for booking reminder",
 			"booking_id", data.BookingID,
 		)
-	} else {
-		formattedDate := data.SlotStartTime.Format("Monday, 02 January 2006")
-		formattedTime := fmt.Sprintf("%s – %s",
-			data.SlotStartTime.Format("15:04"),
-			data.SlotEndTime.Format("15:04"),
+		return nil
+	}
+
+	clientFirst, clientLast := clientNames(data)
+	req := notificationDomain.BookingReminderRequest{
+		ToEmail:     data.ClientEmail,
+		ToFirstName: clientFirst,
+		ToLastName:  clientLast,
+		Locale:      notificationDomain.ParseLocale(data.Locale),
+		BookingID:   data.BookingID.String(),
+		ProductName: data.ProductName,
+		PartnerName: data.PartnerName,
+		Address:     a.practiceAddress(ctx, data),
+		StartTime:   data.SlotStartTime,
+		EndTime:     data.SlotEndTime,
+		ManageURL:   a.buildTokenURL(data.Token),
+	}
+
+	if err := a.emailService.SendBookingReminderEmail(ctx, req); err != nil {
+		slog.ErrorContext(ctx, "failed to send booking reminder email",
+			"booking_id", data.BookingID,
+			"error", err,
 		)
-
-		req := notificationDomain.BookingReminderRequest{
-			ToEmail:     data.ClientEmail,
-			ToFirstName: firstName(data.ClientName),
-			ToLastName:  lastName(data.ClientName),
-			BookingID:   data.BookingID.String(),
-			ProductName: data.ProductName,
-			RoomName:    data.RoomName,
-			Building:    data.BuildingName,
-			Address:     data.Address,
-			Date:        formattedDate,
-			Time:        formattedTime,
-			PartnerName: data.PartnerName,
-			Year:        time.Now().Year(),
-		}
-
-		if err := a.emailService.SendBookingReminderEmail(ctx, req); err != nil {
-			slog.ErrorContext(ctx, "failed to send booking reminder email",
-				"booking_id", data.BookingID,
-				"error", err,
-			)
-		}
 	}
 
 	return nil

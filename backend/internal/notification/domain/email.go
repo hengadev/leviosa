@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // OTP Email
 type OTPEmailRequest struct {
 	ToEmail   string `json:"to_email"`
@@ -68,20 +70,28 @@ type BookingCancellationRequest struct {
 	Year        int    `json:"year"`
 }
 
-// Booking Reminder Email
+// BookingReminderRequest is the client reminder sent 24 hours before a
+// confirmed booking, written in the locale the client booked in (composed by
+// ComposeBookingReminder). Like every booking email it carries no health
+// data (ADR-0019).
 type BookingReminderRequest struct {
-	ToEmail     string `json:"to_email"`
-	ToFirstName string `json:"to_first_name"`
-	ToLastName  string `json:"to_last_name"`
-	BookingID   string `json:"booking_id"`
-	ProductName string `json:"product_name"`
-	RoomName    string `json:"room_name"`
-	Building    string `json:"building"`
-	Address     string `json:"address"`
-	Date        string `json:"date"`
-	Time        string `json:"time"`
-	PartnerName string `json:"partner_name"`
-	Year        int    `json:"year"`
+	ToEmail     string
+	ToFirstName string
+	ToLastName  string
+	Locale      Locale
+
+	BookingID   string
+	ProductName string
+	PartnerName string
+	// Address is the practice address.
+	Address string
+
+	StartTime time.Time
+	EndTime   time.Time
+
+	// ManageURL opens the booking token page. Empty when the booking has no
+	// token.
+	ManageURL string
 }
 
 // Contact Form Notification — sent to staff/company inbox when a visitor
