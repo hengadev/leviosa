@@ -1,26 +1,67 @@
-[
-  {
-    "email": "admin@example.com",
-    "password": "ChangeMe123!",
-    "first_name": "Admin",
-    "last_name": "User",
-    "role": "admin",
-    "telephone": "+33600000000",
-    "postal_code": "75001",
-    "city": "Paris",
-    "address1": "1 Rue Example",
-    "address2": ""
-  },
-  {
-    "email": "superadmin@example.com",
-    "password": "ChangeMe456!",
-    "first_name": "Super",
-    "last_name": "Admin",
-    "role": "superadmin",
-    "telephone": "+33600000001",
-    "postal_code": "69001",
-    "city": "Lyon",
-    "address1": "1 Avenue Example",
-    "address2": ""
+{
+  "_readme": "Every practice value below (name, bio, title, address, price, product copy) is a PLACEHOLDER invented for local development. The practitioner's real content replaces it before launch (issue 021). The practice page video setting is intentionally not seeded: the page shows its placeholder frame until a real video is configured in settings.",
+  "admins": [
+    {
+      "email": "admin@example.com",
+      "password": "ChangeMe123!",
+      "first_name": "Admin",
+      "last_name": "User",
+      "role": "administrator",
+      "telephone": "+33600000000",
+      "postal_code": "75001",
+      "city": "Paris",
+      "address1": "1 Rue Example",
+      "address2": ""
+    },
+    {
+      "email": "superadmin@example.com",
+      "password": "ChangeMe456!",
+      "first_name": "Super",
+      "last_name": "Admin",
+      "role": "administrator",
+      "telephone": "+33600000001",
+      "postal_code": "69001",
+      "city": "Lyon",
+      "address1": "1 Avenue Example",
+      "address2": ""
+    }
+  ],
+  "practice": {
+    "partner": {
+      "email": "camille.martin@example.com",
+      "password": "ChangeMe789!",
+      "first_name": "Camille",
+      "last_name": "Martin",
+      "telephone": "+33600000002",
+      "postal_code": "75011",
+      "city": "Paris",
+      "address1": "12 rue des Lilas",
+      "address2": "",
+      "occupation": "Ostéopathe D.O.",
+      "bio": "PLACEHOLDER BIO — Ostéopathe D.O., je reçois au cabinet pour des séances d'une heure : douleurs de dos, tensions liées au sport ou au travail, récupération. Chaque séance commence par un échange, puis un traitement adapté."
+    },
+    "category": {
+      "name": "Ostéopathie",
+      "description": "PLACEHOLDER — Séances d'ostéopathie au cabinet."
+    },
+    "product": {
+      "name": "Séance d'ostéopathie",
+      "description": "PLACEHOLDER — Une séance d'ostéopathie d'une heure au cabinet.",
+      "duration_minutes": 60,
+      "buffer_minutes": 0,
+      "cancellation_hours": 24,
+      "price_cents": 7000,
+      "currency": "EUR"
+    },
+    "building": {
+      "name": "Cabinet Leviosa",
+      "address": "12 rue des Lilas",
+      "city": "Paris",
+      "postal_code": "75011",
+      "country": "France"
+    },
+    "room": {
+      "name": "Salle de consultation"
+    }
   }
-]
+}

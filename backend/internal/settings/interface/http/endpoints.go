@@ -104,6 +104,28 @@ const (
 	InternalGetAccessTokenDurationEndpoint  = InternalSettingsBasePath + TokensBasePath + AccessTokenPath
 	InternalGetRefreshTokenDurationEndpoint = InternalSettingsBasePath + TokensBasePath + RefreshTokenPath
 
+	// === Practice Page Settings Resource Paths ===
+	// Which partner and product the public practice page shows
+	// (docs/issues/009-practice-page.md).
+
+	// Practice page resource identifiers (relative paths)
+	PracticePageBasePath  = "/practice-page"
+	PracticePagePartnerPath = "/partner"
+	PracticePageProductPath = "/product"
+	PracticePageVideoPath   = "/video"
+
+	// Public practice page endpoints (GET only, no authentication — the page
+	// itself is public and resolves the IDs through the public partner and
+	// product endpoints)
+	GetPracticePagePartnerEndpoint = SettingsBasePath + PracticePageBasePath + PracticePagePartnerPath
+	GetPracticePageProductEndpoint = SettingsBasePath + PracticePageBasePath + PracticePageProductPath
+	GetPracticePageVideoEndpoint   = SettingsBasePath + PracticePageBasePath + PracticePageVideoPath
+
+	// Admin practice page endpoints (Administrator role required)
+	SetPracticePagePartnerEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePagePartnerPath
+	SetPracticePageProductEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePageProductPath
+	SetPracticePageVideoEndpoint   = AdminSettingsBasePath + PracticePageBasePath + PracticePageVideoPath
+
 	// === Bulk Settings Endpoints ===
 
 	BulkPath = "/bulk"

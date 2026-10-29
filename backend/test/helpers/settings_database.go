@@ -38,8 +38,8 @@ func InsertSettingString(t *testing.T, ctx context.Context, setting *domain.Sett
 	`
 	err := pool.QueryRow(ctx, query, setting.Key, setting.Value).Scan(
 		&setting.ID,
-		setting.CreatedAt,
-		setting.UpdatedAt,
+		&setting.CreatedAt,
+		&setting.UpdatedAt,
 	)
 	require.NoError(t, err)
 }

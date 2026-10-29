@@ -108,6 +108,15 @@
         resetForm: false,
     });
 
+    // Practice Page Form (page publique du cabinet)
+    const {
+        form: practicePageForm,
+        enhance: practicePageEnhance,
+        delayed: practicePageDelayed,
+    } = superForm(data.practicePageForm, {
+        resetForm: false,
+    });
+
     // Dialog states
     let companyNameDialogOpen = $state(false);
     let companyEmailDialogOpen = $state(false);
@@ -119,6 +128,15 @@
     let otpMaxAttemptsDialogOpen = $state(false);
     let accessTokenDurationDialogOpen = $state(false);
     let refreshTokenDurationDialogOpen = $state(false);
+    let practicePageDialogOpen = $state(false);
+
+    // Labels of the partner and product currently on the public practice page.
+    const practicePartnerLabel = $derived(
+        data.partnerOptions.find((option) => option.id === data.practicePage?.partnerId)?.label ?? "Non défini",
+    );
+    const practiceProductLabel = $derived(
+        data.productOptions.find((option) => option.id === data.practicePage?.productId)?.label ?? "Non défini",
+    );
 
     // Helper function to format duration in seconds to human-readable
     function formatSeconds(seconds: number): string {
@@ -285,6 +303,61 @@
                             Modifier
                         </div>
                     </Button.Root>
+                </div>
+            </div>
+        </div>
+
+        <!-- Practice Page Section -->
+        <div class="bg-white rounded-lg border border-border-card overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-card">
+                <h2 class="text-lg font-semibold">Page publique</h2>
+                <p class="text-sm text-foreground-alt mt-1">
+                    Le partenaire et le produit présentés sur la page du cabinet — un changement prend effet immédiatement, sans déploiement
+                </p>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Partner shown -->
+                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">Partenaire mis en avant</div>
+                        <div class="text-sm text-foreground-alt mt-1">
+                            {practicePartnerLabel}
+                        </div>
+                    </div>
+                    <Button.Root
+                        type="button"
+                        class="cursor-pointer"
+                        onclick={() => {
+                            $practicePageForm.partner_id = data.practicePage?.partnerId || "";
+                            $practicePageForm.product_id = data.practicePage?.productId || "";
+                            $practicePageForm.video_url = data.practicePage?.videoUrl || "";
+                            practicePageDialogOpen = true;
+                        }}
+                    >
+                        <div class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            Modifier
+                        </div>
+                    </Button.Root>
+                </div>
+
+                <!-- Product shown -->
+                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">Produit proposé</div>
+                        <div class="text-sm text-foreground-alt mt-1">
+                            {practiceProductLabel}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video -->
+                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">Vidéo de la page</div>
+                        <div class="text-sm text-foreground-alt mt-1">
+                            {data.practicePage?.videoUrl || "Non définie (image d'attente affichée)"}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -933,6 +1006,96 @@
                     <Button.Root type="submit" class="cursor-pointer" disabled={$refreshTokenDurationDelayed}>
                         <div class="h-input rounded-input bg-dark text-background shadow-mini hover:bg-dark/95 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-8 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
                             {$refreshTokenDurationDelayed ? "Enregistrement..." : "Enregistrer"}
+                        </div>
+                    </Button.Root>
+                </div>
+            </form>
+
+            <Button.Root type="button" class="cursor-pointer">
+                <Dialog.Close class="focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden absolute right-5 top-5 rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer">
+                    <X class="text-foreground size-5" />
+                    <span class="sr-only">Close</span>
+                </Dialog.Close>
+            </Button.Root>
+        </Dialog.Content>
+    </Dialog.Portal>
+</Dialog.Root>
+{/if}
+
+<!-- Practice Page Dialog -->
+{#if !data.settingsError}
+<Dialog.Root bind:open={practicePageDialogOpen}>
+    <Dialog.Portal>
+        <Dialog.Overlay class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80" />
+        <Dialog.Content class="rounded-card-lg bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 outline-hidden fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border p-8 sm:max-w-[540px] md:w-full">
+            <Dialog.Title class="w-full text-xl font-semibold tracking-tight">
+                Modifier la page publique
+            </Dialog.Title>
+            <Dialog.Description class="text-foreground-alt !mt-1 text-sm">
+                Choisissez le partenaire et le produit présentés sur la page du cabinet, et la vidéo affichée
+            </Dialog.Description>
+
+            <Separator.Root class="bg-muted mx-5 !mb-2 !mt-5 block h-px" />
+
+            <form method="POST" action="?/updatePracticePage" use:practicePageEnhance class="grid gap-4">
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="practice-partner" class="text-sm font-medium">Partenaire</Label.Root>
+                    <select
+                        id="practice-partner"
+                        name="partner_id"
+                        bind:value={$practicePageForm.partner_id}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    >
+                        {#if !$practicePageForm.partner_id}
+                            <option value="" disabled>Sélectionner un partenaire</option>
+                        {/if}
+                        {#each data.partnerOptions as option (option.id)}
+                            <option value={option.id}>{option.label}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="practice-product" class="text-sm font-medium">Produit</Label.Root>
+                    <select
+                        id="practice-product"
+                        name="product_id"
+                        bind:value={$practicePageForm.product_id}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    >
+                        {#if !$practicePageForm.product_id}
+                            <option value="" disabled>Sélectionner un produit</option>
+                        {/if}
+                        {#each data.productOptions as option (option.id)}
+                            <option value={option.id}>{option.label}</option>
+                        {/each}
+                    </select>
+                </div>
+
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="practice-video" class="text-sm font-medium">Vidéo (URL)</Label.Root>
+                    <input
+                        id="practice-video"
+                        name="video_url"
+                        type="url"
+                        bind:value={$practicePageForm.video_url}
+                        placeholder="https://… (vide = image d'attente)"
+                        class="h-input rounded-card-sm border-border-input bg-background placeholder:text-foreground-alt/50 hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    />
+                    <p class="text-xs text-foreground-alt">
+                        Vidéo du cabinet uniquement — laissez vide pour afficher l'image d'attente.
+                    </p>
+                </div>
+
+                <div class="flex w-full justify-end gap-3">
+                    <Button.Root type="button" class="cursor-pointer">
+                        <Dialog.Close class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-6 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            Annuler
+                        </Dialog.Close>
+                    </Button.Root>
+                    <Button.Root type="submit" class="cursor-pointer" disabled={$practicePageDelayed}>
+                        <div class="h-input rounded-input bg-dark text-background shadow-mini hover:bg-dark/95 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-8 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            {$practicePageDelayed ? "Enregistrement..." : "Enregistrer"}
                         </div>
                     </Button.Root>
                 </div>

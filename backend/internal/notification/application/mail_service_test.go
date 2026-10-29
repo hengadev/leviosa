@@ -62,6 +62,15 @@ func (s *stubSettingsService) GetCompanyVatNumber(ctx context.Context) (*setting
 func (s *stubSettingsService) GetCompanyHostingProvider(ctx context.Context) (*settingsDomain.GetCompanyHostingProviderResponse, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetPracticePagePartner(ctx context.Context) (*settingsDomain.GetPracticePagePartnerResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetPracticePageProduct(ctx context.Context) (*settingsDomain.GetPracticePageProductResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetPracticePageVideo(ctx context.Context) (*settingsDomain.GetPracticePageVideoResponse, error) {
+	return nil, nil
+}
 func (s *stubSettingsService) GetOTPDuration(ctx context.Context) (*settingsDomain.GetOTPDurationResponse, error) {
 	return nil, nil
 }
@@ -117,6 +126,15 @@ func (s *stubSettingsService) SetCompanyVatNumber(ctx context.Context, req *sett
 	return nil, nil
 }
 func (s *stubSettingsService) SetCompanyHostingProvider(ctx context.Context, req *settingsDomain.SetCompanyHostingProviderRequest) (*settingsDomain.SetCompanyHostingProviderResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetPracticePagePartner(ctx context.Context, req *settingsDomain.SetPracticePagePartnerRequest) (*settingsDomain.SetPracticePagePartnerResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetPracticePageProduct(ctx context.Context, req *settingsDomain.SetPracticePageProductRequest) (*settingsDomain.SetPracticePageProductResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetPracticePageVideo(ctx context.Context, req *settingsDomain.SetPracticePageVideoRequest) (*settingsDomain.SetPracticePageVideoResponse, error) {
 	return nil, nil
 }
 

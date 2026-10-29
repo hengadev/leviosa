@@ -17,6 +17,13 @@ const (
 	CompanyRegistrationNumber = "company_registration_number" // SIRET/SIREN
 	CompanyVatNumber          = "company_vat_number"           // may be blank (franchise en base de TVA)
 	CompanyHostingProvider    = "hosting_provider"              // hosting provider name + address
+
+	// Practice page: the partner and product the public practice page shows
+	// (see docs/issues/009-practice-page.md). The video URL is optional — unset
+	// means the page shows its placeholder frame.
+	PracticePagePartnerID = "practice_page_partner_id"
+	PracticePageProductID = "practice_page_product_id"
+	PracticePageVideoURL  = "practice_page_video_url"
 )
 
 // NOTE: the key that I am going to keep

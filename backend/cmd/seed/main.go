@@ -50,7 +50,9 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-type AdminUser struct {
+// AccountSeed is one user account to upsert (an administrator, or the
+// practice's partner when the practice seed references one).
+type AccountSeed struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
 	FirstName  string `json:"first_name"`
@@ -63,41 +65,49 @@ type AdminUser struct {
 	Address2   string `json:"address2"`
 }
 
-func loadAdmins(path string) ([]AdminUser, error) {
+// SeedData is the seed data file: the admin accounts, plus the single
+// practice created when a "practice" section is present (see PracticeSeed).
+type SeedData struct {
+	Admins   []AccountSeed `json:"admins"`
+	Practice *PracticeSeed `json:"practice,omitempty"`
+}
+
+func loadSeedData(path string) (*SeedData, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read seed data file %q: %w", path, err)
 	}
-	var admins []AdminUser
-	if err := json.Unmarshal(data, &admins); err != nil {
+	var seedData SeedData
+	if err := json.Unmarshal(data, &seedData); err != nil {
 		return nil, fmt.Errorf("parse seed data file: %w", err)
 	}
-	return admins, nil
+	return &seedData, nil
 }
 
-func seedAdminUser(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, schema string, admin AdminUser) error {
+// seedUser upserts a user (by email) and returns the account's stable ID.
+func seedUser(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, schema string, account AccountSeed) (uuid.UUID, error) {
 	now := time.Now()
 
 	user := &domain.User{
 		ID:         uuid.New(),
 		State:      domain.Active,
-		Email:      admin.Email,
-		Password:   admin.Password,
-		FirstName:  admin.FirstName,
-		LastName:   admin.LastName,
-		Role:       admin.Role,
-		Telephone:  admin.Telephone,
-		PostalCode: admin.PostalCode,
-		City:       admin.City,
-		Address1:   admin.Address1,
-		Address2:   admin.Address2,
+		Email:      account.Email,
+		Password:   account.Password,
+		FirstName:  account.FirstName,
+		LastName:   account.LastName,
+		Role:       account.Role,
+		Telephone:  account.Telephone,
+		PostalCode: account.PostalCode,
+		City:       account.City,
+		Address1:   account.Address1,
+		Address2:   account.Address2,
 		CreatedAt:  now,
 		LoggedInAt: now,
 	}
 
 	userEncx, err := domain.ProcessUserEncx(ctx, crypto, user)
 	if err != nil {
-		return fmt.Errorf("encrypt user data: %w", err)
+		return uuid.Nil, fmt.Errorf("encrypt user data: %w", err)
 	}
 
 	query := fmt.Sprintf(`
@@ -185,11 +195,19 @@ func seedAdminUser(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServ
 		userEncx.DEKEncrypted, userEncx.KeyVersion,
 	)
 	if err != nil {
-		return fmt.Errorf("insert user into database: %w", err)
+		return uuid.Nil, fmt.Errorf("insert user into database: %w", err)
 	}
 
-	log.Printf("Seeded admin user: %s (%s %s)", admin.Email, admin.FirstName, admin.LastName)
-	return nil
+	// The upsert keeps a pre-existing account's ID stable; read back the row
+	// that won so callers (e.g. the practice seed) can reference it.
+	var id uuid.UUID
+	err = db.QueryRow(ctx, fmt.Sprintf(`SELECT id FROM %s.users WHERE email_hash = $1`, schema), userEncx.EmailHash).Scan(&id)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("look up seeded user: %w", err)
+	}
+
+	log.Printf("Seeded user: %s (%s %s, role %s)", account.Email, account.FirstName, account.LastName, account.Role)
+	return id, nil
 }
 
 func main() {
@@ -211,17 +229,23 @@ func main() {
 	}
 	defer db.Close()
 
-	admins, err := loadAdmins(cfg.SeedDataPath)
+	admins, err := loadSeedData(cfg.SeedDataPath)
 	if err != nil {
-		log.Fatalf("Failed to load admin users: %v", err)
+		log.Fatalf("Failed to load seed data: %v", err)
 	}
 
 	log.Println("Starting database seeding...")
 	log.Println("====================================")
 
-	for _, admin := range admins {
-		if err := seedAdminUser(ctx, db, crypto, cfg.DatabaseSchema, admin); err != nil {
-			log.Fatalf("Failed to seed admin user %s: %v", admin.Email, err)
+	for _, account := range admins.Admins {
+		if _, err := seedUser(ctx, db, crypto, cfg.DatabaseSchema, account); err != nil {
+			log.Fatalf("Failed to seed user %s: %v", account.Email, err)
+		}
+	}
+
+	if admins.Practice != nil {
+		if err := seedPractice(ctx, db, crypto, cfg.DatabaseSchema, admins.Practice); err != nil {
+			log.Fatalf("Failed to seed the practice: %v", err)
 		}
 	}
 

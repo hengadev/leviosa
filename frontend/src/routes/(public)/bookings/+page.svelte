@@ -215,8 +215,8 @@
 			{/if}
 
 			<div class="mt-8 text-center">
-				<a href="/services" class="text-foreground-alt hover:text-foreground underline">
-					Retour aux services
+				<a href="/" class="text-foreground-alt hover:text-foreground underline">
+					Retour au cabinet
 				</a>
 			</div>
 

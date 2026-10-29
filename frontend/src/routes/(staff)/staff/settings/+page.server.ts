@@ -26,6 +26,8 @@ import {
     accessTokenDurationDefaults,
     refreshTokenDurationSchema,
     refreshTokenDurationDefaults,
+    practicePageSchema,
+    practicePageDefaults,
 } from "./schemas"
 // Enable mock mode for staging
 const MOCK_MODE = env.USE_MOCK_DATA === 'true'
@@ -49,7 +51,16 @@ type Settings = {
         access_duration: number
         refresh_duration: number
     }
+    practicePage: {
+        partnerId: string
+        productId: string
+        videoUrl: string
+    }
 }
+
+// Options for the practice page selectors: the partners and products the
+// administrator can put on the public page.
+type PracticeOption = { id: string; label: string }
 
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     // ⬅️ pulls data from (ops)/+layout.server.ts
@@ -70,6 +81,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     const otpMaxAttemptsForm = await superValidate(arktype(otpMaxAttemptsSchema, { defaults: otpMaxAttemptsDefaults }))
     const accessTokenDurationForm = await superValidate(arktype(accessTokenDurationSchema, { defaults: accessTokenDurationDefaults }))
     const refreshTokenDurationForm = await superValidate(arktype(refreshTokenDurationSchema, { defaults: refreshTokenDurationDefaults }))
+    const practicePageForm = await superValidate(arktype(practicePageSchema, { defaults: practicePageDefaults }))
 
     let settings: Settings | null = null
     let settingsError = false
@@ -118,13 +130,57 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
                 tokens: {
                     access_duration: parseInt(find('access_token_duration') || '15'),
                     refresh_duration: parseInt(find('refresh_token_duration') || '168'),
-                }
+                },
+                practicePage: {
+                    partnerId: '',
+                    productId: '',
+                    videoUrl: '',
+                },
             }
         } else {
             settingsError = true
         }
     } catch {
         settingsError = true
+    }
+
+    // Practice page: current settings (public GETs; 404 = unset) plus the
+    // partner and product lists for the selectors. Best-effort, like the
+    // settings fetch above.
+    let practicePage: Settings['practicePage'] | null = null
+    let partnerOptions: PracticeOption[] = []
+    let productOptions: PracticeOption[] = []
+    try {
+        const authHeaders = { 'Authorization': `Bearer ${sessionCookie}` }
+        const [partnerSetting, productSetting, videoSetting, partnersRes, productsRes] = await Promise.all([
+            fetch(`${env.API_URL}/settings/practice-page/partner`, { headers: authHeaders }),
+            fetch(`${env.API_URL}/settings/practice-page/product`, { headers: authHeaders }),
+            fetch(`${env.API_URL}/settings/practice-page/video`, { headers: authHeaders }),
+            fetch(`${env.API_URL}/partners`, { headers: authHeaders }),
+            fetch(`${env.API_URL}/products`, { headers: authHeaders }),
+        ])
+
+        const partnerId = partnerSetting.ok ? (await partnerSetting.json()).partner_id || '' : ''
+        const productId = productSetting.ok ? (await productSetting.json()).product_id || '' : ''
+        const videoUrl = videoSetting.ok ? (await videoSetting.json()).video_url || '' : ''
+        practicePage = { partnerId, productId, videoUrl }
+
+        if (partnersRes.ok) {
+            const partners: { id: string; first_name?: string; last_name?: string }[] = await partnersRes.json()
+            partnerOptions = partners.map((partner) => ({
+                id: partner.id,
+                label: `${partner.first_name ?? ''} ${partner.last_name ?? ''}`.trim() || partner.id,
+            }))
+        }
+        if (productsRes.ok) {
+            const products: { product?: { id: string; name: string }; id?: string; name?: string }[] = await productsRes.json()
+            productOptions = products.map((entry) => ({
+                id: entry.product?.id ?? entry.id ?? '',
+                label: entry.product?.name ?? entry.name ?? '',
+            }))
+        }
+    } catch {
+        practicePage = null
     }
 
     return {
@@ -138,12 +194,55 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         otpMaxAttemptsForm,
         accessTokenDurationForm,
         refreshTokenDurationForm,
+        practicePageForm,
         settings,
         settingsError,
+        practicePage,
+        partnerOptions,
+        productOptions,
     }
 }
 
 export const actions = {
+    updatePracticePage: async ({ request, fetch, cookies }) => {
+        const form = await superValidate(request, arktype(practicePageSchema, { defaults: practicePageDefaults }))
+
+        if (!form.valid) {
+            return fail(400, { practicePageForm: form })
+        }
+
+        if (MOCK_MODE) {
+            console.log('[MOCK] Updating practice page settings:', form.data.partner_id, form.data.product_id)
+            return { practicePageForm: form }
+        }
+
+        const sessionCookie = cookies.get('session');
+
+        const post = (path: string, body: unknown) =>
+            fetch(`${env.API_URL}/admin/settings/practice-page/${path}`, {
+                method: "POST",
+                headers: {
+                    'Content-Type': "application/json",
+                    'Authorization': `Bearer ${sessionCookie}`,
+                },
+                body: JSON.stringify(body),
+            })
+
+        // An empty video URL is meaningful (it clears the video back to the
+        // placeholder frame); partner and product are required UUIDs.
+        const [partnerRes, productRes, videoRes] = await Promise.all([
+            post("partner", { partner_id: form.data.partner_id }),
+            post("product", { product_id: form.data.product_id }),
+            post("video", { video_url: form.data.video_url }),
+        ])
+
+        if (!partnerRes.ok || !productRes.ok || !videoRes.ok) {
+            return setError(form, "Partenaire, produit ou vidéo invalide.")
+        }
+
+        return { practicePageForm: form }
+    },
+
     updateCompanyName: async ({ request, fetch, cookies }) => {
         const form = await superValidate(request, arktype(companyNameSchema, { defaults: companyNameDefaults }))
 
