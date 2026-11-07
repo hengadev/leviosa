@@ -38,6 +38,10 @@ func (s *UserService) ApproveUser(ctx context.Context, request *domain.ApproveUs
 		return errs.NewNotEncryptedErr("approved user", err)
 	}
 
+	// The password is hashed, so decryption cannot give it back: keep the
+	// stored hash, or ProcessUserEncx would replace it with a hash of "".
+	updatedUserEncx.PasswordHashSecure = userEncx.PasswordHashSecure
+
 	if err := s.repo.UpdateUser(ctx, updatedUserEncx); err != nil {
 		return fmt.Errorf("failed to update user for approval: %w", err)
 	}

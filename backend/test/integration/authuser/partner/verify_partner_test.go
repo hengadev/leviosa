@@ -69,6 +69,7 @@ func TestVerifyPartner(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, domain.Active, user.State, "User state should be active")
 		assert.Equal(t, identity.PartnerStr, user.Role, "User role should be partner")
+		assert.Equal(t, testUserEncx.PasswordHashSecure, userEncx.PasswordHashSecure, "Password should be unchanged")
 	})
 
 	t.Run("should return error when partner not found", func(t *testing.T) {
