@@ -142,7 +142,7 @@ type Props = {
 }
 
 export const load: PageServerLoad = async ({ fetch }): Promise<Props> => {
-	const deleteProductForm = await superValidate({ id: "e3eb8aaa-a255-4059-8013-6fbfb97442c0" }, arktype(deleteProductSchema, { defaults: deleteProductDefaults }))
+	const deleteProductForm = await superValidate(arktype(deleteProductSchema, { defaults: deleteProductDefaults }))
 	const updateProductForm = await superValidate(arktype(productSchema, { defaults: productDefaults }))
 	const createCategoryForm = await superValidate(arktype(categorySchema, { defaults: categoryDefaults }))
 
