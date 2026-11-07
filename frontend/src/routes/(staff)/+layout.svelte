@@ -30,18 +30,12 @@
 	});
 </script>
 
-<!-- Mobile Layout -->
-<div class="lg:hidden flex flex-col min-h-screen bg-muted/25">
-	<main class="flex-1">
-		<StaffSidebar user={data.user} permissions={data.permissions} unreadCount={data.unreadCount} />
-		{@render children()}
-	</main>
-</div>
-
-<!-- Desktop Layout -->
-<div class="hidden lg:flex min-h-screen bg-muted/25">
+<!-- One tree for every width: the page renders once. The sidebar shows
+     from lg up, the bottom bar below it. -->
+<div class="flex min-h-screen bg-muted/25">
 	<StaffSidebar user={data.user} permissions={data.permissions} unreadCount={data.unreadCount} />
-	<main class="flex-1 bg-background overflow-x-hidden">
+	<!-- Room under the content for the fixed bottom bar and the home indicator -->
+	<main class="flex-1 min-w-0 bg-background overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
 		{@render children()}
 	</main>
 </div>

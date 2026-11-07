@@ -30,17 +30,12 @@
 	});
 </script>
 
-<!-- Mobile Layout -->
-<div class="lg:hidden flex flex-col min-h-screen bg-muted/25">
-	<main class="flex-1">
-		{@render children()}
-	</main>
-</div>
-
-<!-- Desktop Layout -->
-<div class="hidden lg:flex min-h-screen bg-muted/25">
+<!-- One tree for every width: the page renders once. The sidebar shows
+     from lg up, the bottom bar below it. -->
+<div class="flex min-h-screen bg-muted/25">
 	<AdminSidebar user={data.user} permissions={data.permissions} unreadCount={data.unreadCount} selfPractitioner={data.selfPractitioner} />
-	<main class="flex-1 bg-background">
+	<!-- Room under the content for the fixed bottom bar and the home indicator -->
+	<main class="flex-1 min-w-0 bg-background pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
 		{@render children()}
 	</main>
 </div>
