@@ -340,20 +340,24 @@ func seedBuildingAndRoom(ctx context.Context, db *pgxpool.Pool, crypto encx.Cryp
 				id, name_encrypted, name_hash, address_encrypted, address_hash,
 				city_encrypted, city_hash, postal_code_encrypted,
 				country_encrypted, country_hash, dek_encrypted, key_version,
-				is_active, created_at, updated_at
+				is_active, created_at, updated_at, metadata
 			) VALUES (
-				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, TRUE, $13, $14
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, TRUE, $13, $14, $15
 			)
 		`, buildingEncx.ID, buildingEncx.NameEncrypted, buildingEncx.NameHash,
 			buildingEncx.AddressEncrypted, buildingEncx.AddressHash,
 			buildingEncx.CityEncrypted, buildingEncx.CityHash, buildingEncx.PostalCodeEncrypted,
 			buildingEncx.CountryEncrypted, buildingEncx.CountryHash,
 			buildingEncx.DEKEncrypted, buildingEncx.KeyVersion,
-			buildingEncx.CreatedAt, buildingEncx.UpdatedAt,
+			buildingEncx.CreatedAt, buildingEncx.UpdatedAt, buildingEncx.Metadata,
 		); err != nil {
 			return uuid.Nil, err
 		}
 		buildingID = buildingEncx.ID
+	} else if _, err := db.Exec(ctx, `UPDATE booking.buildings SET metadata = $1 WHERE id = $2 AND metadata IS NULL`,
+		buildingEncx.Metadata, buildingID); err != nil {
+		// Buildings seeded before the metadata column was written cannot be read back.
+		return uuid.Nil, fmt.Errorf("backfill building metadata: %w", err)
 	}
 
 	room := &bookingDomain.Room{
