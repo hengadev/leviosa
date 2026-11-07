@@ -27,7 +27,7 @@ rollback rolls them back too, and CI uploads nothing.
 │   ├── postgres.env              POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
 │   ├── rabbitmq.env              RABBITMQ_DEFAULT_USER / _PASS / _VHOST
 │   ├── redis.env                 REDIS_PASSWORD
-│   └── caddy.env                 CLOUDFLARE_API_TOKEN, STAGING_BASIC_AUTH_USER / _HASH
+│   └── caddy.env                 CLOUDFLARE_API_TOKEN
 ├── data/postgres/                Postgres data dir      (survives `down`)
 ├── data/rabbitmq/                RabbitMQ node data     (survives `down`)
 ├── data/redis/                   Redis AOF + RDB        (survives `down`)
@@ -72,11 +72,7 @@ What each env file holds:
   by hand (`ALTER ROLE`); the RabbitMQ users' and staging's Postgres password
   are re-applied from Infisical by the next `make setup`
   (`setup-shared-services.sh`).
-- **`caddy.env`**: `CLOUDFLARE_API_TOKEN` (`prod/caddy`), and
-  `STAGING_BASIC_AUTH_USER` and `STAGING_BASIC_AUTH_HASH` (`staging/caddy`, a
-  `caddy hash-password` bcrypt hash). The hash must be single-quoted
-  (`STAGING_BASIC_AUTH_HASH='$2a$14$…'`): Compose expands `$` in unquoted
-  env-file values, which mangles it.
+- **`caddy.env`**: `CLOUDFLARE_API_TOKEN` (`prod/caddy`).
 
 `test/fixtures/prod/env/` has one fake example of each.
 
@@ -138,7 +134,7 @@ Redis; it uses production's Postgres and RabbitMQ with credentials of its own.
 
 No staging service publishes a host port; Caddy (production's stack) proxies
 staging's `/webhooks/*` to `staging_backend` and everything else to
-`staging_frontend`, behind basic auth (see [Caddy](#caddy)).
+`staging_frontend`, open like production (see [Caddy](#caddy)).
 
 What staging's `backend.env` points at — same keys as production's, other
 values (and never a production credential):
@@ -185,9 +181,8 @@ templating, run by production's `caddy` service (the only one publishing host
 ports). Ansible's caddy role installs it into `/opt/leviosa/caddy/etc/`, which
 the compose file mounts read-only at `/etc/caddy`; `deploy` never touches it.
 Values that differ per environment come from `env/caddy.env` through Caddy's
-placeholders: `{env.CLOUDFLARE_API_TOKEN}` at runtime, and
-`{$STAGING_BASIC_AUTH_USER}` / `{$STAGING_BASIC_AUTH_HASH}` when the file loads
-(the Agent recreates Caddy when `caddy.env` changes).
+placeholder `{env.CLOUDFLARE_API_TOKEN}`, read at runtime (the Agent recreates
+Caddy when `caddy.env` changes).
 
 | Hosts | Upstreams |
 | --- | --- |
@@ -198,13 +193,10 @@ placeholders: `{env.CLOUDFLARE_API_TOKEN}` at runtime, and
   (`/webhooks/stripe/connect`) webhooks reach the stack's backend, which checks
   their signature. No other backend path is reachable from outside: the
   frontend calls its backend over the shared network.
-- **Staging is closed.** Basic auth on every path except `/healthz` (Promote
-  reads staging's release from it) and `/webhooks/*` (Stripe cannot
-  authenticate), and `X-Robots-Tag: noindex` on every staging response, 401s
-  included. Staging runs real Twilio, so an open OTP endpoint would be an
-  SMS-pumping target. With neither staging value in `caddy.env`, staging
-  answers 401 to everything and production keeps serving; with only one of
-  them, Caddy refuses to load the file (both stacks down).
+- **Staging is open**, like production: it runs Stripe in test mode, so
+  nothing done there is real. `X-Robots-Tag: noindex` on every staging
+  response keeps it out of search results. Its OTP requests are
+  rate-limited by the backend, as in production.
 - **Retry window.** Every `reverse_proxy` has `lb_try_duration 30s`
   (`lb_try_interval 250ms`): while a container is recreated (a deploy, the
   Agent), requests wait for it instead of failing with a 502.
@@ -223,12 +215,11 @@ Check a change before it ships (offline, in the image the stack runs):
 
 ```sh
 docker run --rm --network none -v "$PWD/infra/compose/caddy:/etc/caddy:ro" \
-  -e CLOUDFLARE_API_TOKEN=harness-fixture-not-a-real-cloudflare-tk -e STAGING_BASIC_AUTH_USER=harness \
-  -e STAGING_BASIC_AUTH_HASH='$2a$14$1R6.dGApFitAZrS3yIE2N.gDkck7p.MJR7ia4r0uvWzAZ3I5AAdh.' \
+  -e CLOUDFLARE_API_TOKEN=harness-fixture-not-a-real-cloudflare-tk \
   serfriz/caddy-cloudflare:2.11 caddy validate --config /etc/caddy/Caddyfile
 ```
 
-(the fixture `caddy.env`'s values; add `-e LEVIOSA_CADDY_TLS=internal` for the
+(the fixture `caddy.env`'s value; add `-e LEVIOSA_CADDY_TLS=internal` for the
 harness variant).
 
 The harness runs that validation too, and the file itself behind the checks

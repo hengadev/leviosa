@@ -16,7 +16,7 @@ Leviosa runs on **its own** Hetzner server (`cpx22`, `nbg1`; not shared with ano
 - **Production** owns the shared services: Postgres (one database and role per environment), RabbitMQ (one vhost and user per environment) and Caddy. It also runs its own backend, frontend and Redis.
 - **Staging** runs only its backend, frontend and its own Redis — Redis has no per-database access control, so sharing it would let staging read production sessions.
 
-Frontend and backend are always released together as one commit SHA. Caddy routes everything to the frontend except `/webhooks/*`, which goes to the backend; staging is behind basic auth on every path except `/healthz` and `/webhooks/*`.
+Frontend and backend are always released together as one commit SHA. Caddy routes everything to the frontend except `/webhooks/*`, which goes to the backend; staging is open like production (amended 2026-11-07: its basic auth was removed; staging runs Stripe in test mode, so nothing there is real) and answers `X-Robots-Tag: noindex`.
 
 ## Considered Options
 

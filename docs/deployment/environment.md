@@ -156,7 +156,6 @@ Terraform. A copy here would appear twice in `backend.env`.
 | Key | prod | staging | dev | Rendered into → read by | Written by |
 | --- | :-: | :-: | :-: | --- | --- |
 | `CLOUDFLARE_API_TOKEN` | ✓ | | | `caddy.env` → Caddy (TLS through the DNS challenge). Its own token, DNS edit on `leviosa.care`, separate from Terraform's `TF_VAR_cloudflare_token`: each can be revoked without breaking the other, and the server holds only this one | operator |
-| `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_HASH` (a `caddy hash-password` bcrypt hash) | | ✓ | | `caddy.env` → Caddy (staging's basic auth) | operator. **Set both together**: with only one, Caddy refuses its config and both stacks go down |
 
 ### `/backup` (`backup.env`, prod only)
 
@@ -215,9 +214,6 @@ would appear twice (`make env-check-<env>` reports duplicates).
   Stripe test mode.
 - **`dev` must never hold anything that spends money or reaches real data.**
   On the free Infisical plan `leviosa-vps` can read `dev` too.
-- **`staging/caddy` changes are not picked up on their own** (only the last
-  secret call of a template is change-detected, and `caddy.env` reads staging
-  first): restart the Agent and recreate Caddy after changing the basic auth.
 
 ## Local development
 

@@ -156,10 +156,6 @@
       "TWILIO_REGION": "ie1",
       "TWILIO_EDGE": "dublin",
       "TWILIO_SENDER": "Leviosa"
-    },
-    "/caddy": {
-      "STAGING_BASIC_AUTH_USER": "leviosa",
-      "STAGING_BASIC_AUTH_HASH": "$2a$14$FixtureSaltNotReal./xyFixtureHashNotRealForTests01234"
     }
   },
   "dev": {

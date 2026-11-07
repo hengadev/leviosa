@@ -28,7 +28,7 @@ only source of configuration).
    │  caddy ── TLS via Cloudflare DNS-01, lb_try_duration 30 s               │
    │   ├─ leviosa.care, www., admin., staff.                                 │
    │   │     /webhooks/* ─► backend:3500     else ─► frontend:3000           │  /opt/leviosa
-   │   └─ staging., admin-staging., staff-staging.   (basic auth, noindex)   │  (prod stack)
+   │   └─ staging., admin-staging., staff-staging.   (open, noindex)         │  (prod stack)
    │         /webhooks/* ─► staging_backend  else ─► staging_frontend        │  /opt/leviosa-staging
    │                                                                         │  (staging stack)
    │  shared, owned by prod:  postgres (a role + db per env)                 │
@@ -92,7 +92,7 @@ One binary (`backend/cmd/app`, `./leviosa <mode>` in the image):
 | Step | What happens |
 | --- | --- |
 | Push to `main` | `.github/workflows/ci.yaml` runs every check, builds and pushes both images for the commit, then runs `deploy staging <sha>` ([ci.md](ci.md)). A red check stops the release. |
-| Check staging | `https://staging.leviosa.care` (basic auth). `/healthz` reports both SHAs. |
+| Check staging | `https://staging.leviosa.care` (open, Stripe in test mode, `noindex`). `/healthz` reports both SHAs. |
 | **Promote** | Actions → *Promote to production* → Run workflow, **`sha` empty**: ships the exact release staging serves, after checking both apps report the same SHA, it is on `main` and both images exist ([promote.md](promote.md)). |
 
 Both go through one server-side command, `deploy <stack> <sha>`
@@ -218,7 +218,6 @@ no command to run.
 | Twilio API key (`/twilio`) | Infisical | new API key **in the IE1 region** → update `/twilio` → `check-sms` → delete the old key in Twilio | automatic: the backend is recreated |
 | SMTP app password (`/smtp`, Zoho) | Infisical | new app password in Zoho → update `/smtp` → `check-email` → revoke the old one | automatic: the backend is recreated |
 | Cloudflare DNS token for Caddy (`prod/caddy`; separate from Terraform's) | Infisical | new token (DNS edit on the zone) → update `prod/caddy` → revoke the old one | automatic: Caddy is recreated |
-| Staging basic auth (`staging/caddy`) | Infisical; the password itself in the password manager | `caddy hash-password` → update `STAGING_BASIC_AUTH_USER` and `STAGING_BASIC_AUTH_HASH` **together** | **manual**: the Agent does not detect a change in `staging/caddy` on its own; restart the Agent and recreate Caddy ([procedure](../../infra/infisical/README.md#caddyenv-reads-two-environments)) |
 | Postgres: production's role (`prod/db`) | Infisical | `ALTER ROLE … PASSWORD …` in the database **first**, then update `prod/db` (`POSTGRES_PASSWORD` applies only at first initialisation) | the backend gets the new `DATABASE_URL` automatically; the ALTER is manual |
 | Postgres: staging's role (`staging/db`) | Infisical | update `staging/db`, then `make setup` at once | the staging backend gets the new URL automatically; the role's password is re-applied by the next `make setup` (`setup-shared-services.sh`) |
 | RabbitMQ users (`prod/rabbitmq`, `staging/rabbitmq`) | Infisical | update the folder, then `make setup` at once | the backend gets the new URL automatically; the user's password is re-applied by the next `make setup` |

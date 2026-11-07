@@ -33,7 +33,7 @@ infra/infisical/
 | `redis.env` | `/redis` (`REDIS_PASSWORD`) | Redis | prod, staging | recreate that stack's Redis |
 | `postgres.env` | `/db` (user, password, database) | Postgres | prod | rewrite only |
 | `rabbitmq.env` | `/rabbitmq` → `RABBITMQ_DEFAULT_*` | RabbitMQ | prod | rewrite only |
-| `caddy.env` | `staging` `/caddy`, then `prod` `/caddy` | Caddy (serves both stacks) | prod | recreate Caddy |
+| `caddy.env` | `prod` `/caddy` (`CLOUDFLARE_API_TOKEN`) | Caddy (serves both stacks) | prod | recreate Caddy |
 | `backup.env` | one recursive call on `/`: `/backup` whole + `POSTGRES_USER`, `POSTGRES_DB` | backup job (issue 028) | prod | rewrite only |
 
 Server paths: `/opt/leviosa/env/<file>` (prod) and
@@ -176,43 +176,6 @@ several hostnames, so `ORIGIN` is never set), and `USE_MOCK_DATA=false`. Mock
 mode takes the user's role from a client cookie, so no rendered file ever
 enables it.
 
-## caddy.env reads two environments
-
-Caddy belongs to production's stack but needs staging's basic auth too:
-`CLOUDFLARE_API_TOKEN` from `prod` `/caddy`, and `STAGING_BASIC_AUTH_USER` and
-`STAGING_BASIC_AUTH_HASH` (bcrypt) from `staging` `/caddy`, rendered whole
-under their own names.
-
-A `listSecrets` call reads one environment, but a template may make several
-calls with different slugs. So one template can read both environments, and
-the identity (Viewer on the whole project) can read both. The cost is change
-detection: only the last call's ETag counts. The calls run **staging first,
-prod last**:
-
-- **Detected**: a change in `prod` `/caddy` (the Cloudflare token). It
-  re-renders the whole file, both folders fresh, and recreates Caddy within one
-  poll. A forgotten token update would only show at the next certificate
-  renewal, so this one must be automatic.
-- **Not detected on its own**: a change in `staging` `/caddy` (the basic-auth
-  user or hash). It is picked up at the next prod `/caddy` change or Agent
-  restart. A missed update shows at once: the new password is refused. After
-  changing it, force the re-render on the server:
-
-  ```sh
-  systemctl restart infisical-agent   # unit name from issue 027; rewrites every file, runs no command
-  docker compose --project-directory /opt/leviosa up -d --no-deps --force-recreate caddy
-  ```
-
-Two alternatives give full detection, if staging's basic auth changes often:
-
-- Two Caddy env files (`caddy.env` from prod, `caddy-staging.env` from
-  staging), one call each, both listed in the `caddy` service's `env_file`.
-  This needs a change to `docker-compose.prod.yml`.
-- An Infisical secret import of `staging:/caddy` into `prod:/caddy`. One call
-  reads both, since imported values are in the response body and so in the
-  ETag. But the import is structure that only exists in Infisical, and it puts
-  staging values into prod's folder and its backup snapshot.
-
 ## Folders and keys
 
 The layout the templates expect, and the checklist for filling Infisical
@@ -232,7 +195,7 @@ more keys: they reach their consumer with no template change.
 | `/stripe` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET` | |
 | `/smtp` | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, the sender address | the sender has no consumer yet |
 | `/twilio` | `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_REGION`, `TWILIO_EDGE`, `TWILIO_SENDER` | |
-| `/caddy` | prod: `CLOUDFLARE_API_TOKEN`; staging: `STAGING_BASIC_AUTH_USER`, `STAGING_BASIC_AUTH_HASH` | |
+| `/caddy` | prod only: `CLOUDFLARE_API_TOKEN` | |
 | `/backup` | `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY`, `BACKUP_S3_BUCKET`, `BACKUP_AWS_REGION` | Terraform, prod only |
 | `/host` | the notification email | Ansible only; no template reads it |
 

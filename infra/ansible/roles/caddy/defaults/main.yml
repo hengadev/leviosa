@@ -3,7 +3,7 @@
 #
 # The Caddyfile is the repository's plain file, installed as is: no template,
 # no variable (infra/compose/caddy/Caddyfile, issue 020). It reads its
-# per-environment values (Cloudflare token, staging basic auth) from the
+# per-environment value (the Cloudflare token) from the
 # container's env/caddy.env, rendered by the Infisical Agent, and needs no
 # ACME email.
 caddy_caddyfile_src: "{{ playbook_dir }}/../../compose/caddy/Caddyfile"

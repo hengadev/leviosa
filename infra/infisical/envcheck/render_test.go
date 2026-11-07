@@ -69,7 +69,7 @@ var wantKeys = map[string]map[string][]string{
 		"redis.env":    {"REDIS_PASSWORD"},
 		"postgres.env": keys([]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"}),
 		"rabbitmq.env": keys([]string{"RABBITMQ_DEFAULT_USER", "RABBITMQ_DEFAULT_PASS", "RABBITMQ_DEFAULT_VHOST"}),
-		"caddy.env":    keys([]string{"CLOUDFLARE_API_TOKEN", "STAGING_BASIC_AUTH_USER", "STAGING_BASIC_AUTH_HASH"}),
+		"caddy.env":    keys([]string{"CLOUDFLARE_API_TOKEN"}),
 		"backup.env":   keys([]string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"}),
 	},
 	"staging": {
@@ -163,14 +163,12 @@ func TestWholeFoldersKeepEveryValueVerbatim(t *testing.T) {
 		}
 	}
 
-	// caddy.env: staging's /caddy and prod's /caddy, whole.
+	// caddy.env: prod's /caddy, whole.
 	content, _ := (&fakeInfisical{data: data}).render(t, "caddy.env", "prod")
 	got := values(t, content)
-	for _, env := range []string{"staging", "prod"} {
-		for k, want := range data[env]["/caddy"] {
-			if got[k] != want {
-				t.Errorf("caddy.env: %s from %s/caddy was not kept verbatim", k, env)
-			}
+	for k, want := range data["prod"]["/caddy"] {
+		if got[k] != want {
+			t.Errorf("caddy.env: %s from prod/caddy was not kept verbatim", k)
 		}
 	}
 }
@@ -297,8 +295,8 @@ func TestFrontendEnvHoldsNothingFromBackendFolders(t *testing.T) {
 
 // The Agent re-renders a template (and runs its command) only when the ETag
 // of its LAST secret call changes. One call per template, so every change in
-// a folder it reads is detected; caddy.env is the one documented exception
-// (two environments, staging first, prod last: see ../README.md).
+// a folder it reads is detected. caddy.env names its environment (always
+// prod) instead of the slug.
 func TestSecretCallsPerTemplate(t *testing.T) {
 	data := loadFixtures(t)
 	type call = secretCall
@@ -310,10 +308,7 @@ func TestSecretCallsPerTemplate(t *testing.T) {
 		"postgres.env": {{Fn: "listSecrets", Path: "/db"}},
 		"rabbitmq.env": {{Fn: "listSecrets", Path: "/rabbitmq"}},
 		"backup.env":   {{Fn: "listSecrets", Path: "/", Recursive: true}},
-		"caddy.env": {
-			{Fn: "listSecrets", Env: "staging", Path: "/caddy"},
-			{Fn: "listSecrets", Env: "prod", Path: "/caddy"},
-		},
+		"caddy.env":    {{Fn: "listSecrets", Env: "prod", Path: "/caddy"}},
 	}
 	seen := map[string]bool{}
 	for _, env := range Environments {

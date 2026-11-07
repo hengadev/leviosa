@@ -138,7 +138,6 @@ func TestCheckFileFormatNeverLeaksValues(t *testing.T) {
 	expectProblem(t, "prod", "admin.env", base+"OTHER='x'\n", "admin.env holds the /admin folder only")
 
 	caddy := fixtureFile(t, "prod", "caddy.env")
-	expectProblem(t, "prod", "caddy.env", replaceLine(caddy, "STAGING_BASIC_AUTH_HASH", "STAGING_BASIC_AUTH_HASH='plaintext-password'"), "not a bcrypt hash", "plaintext-password")
 	expectProblem(t, "prod", "caddy.env", replaceLine(caddy, "CLOUDFLARE_API_TOKEN", ""), "CLOUDFLARE_API_TOKEN is missing")
 
 	expectProblem(t, "prod", "postgres.env", replaceLine(fixtureFile(t, "prod", "postgres.env"), "POSTGRES_PASSWORD", "POSTGRES_PASSWORD='with space1'"), "letters and digits only", "with space1")

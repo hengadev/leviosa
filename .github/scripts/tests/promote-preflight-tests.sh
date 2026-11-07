@@ -303,7 +303,7 @@ no_image_check "an unhealthy staging stops before the image check"
 
 serve 401 'Unauthorized'
 run
-refused "staging /healthz behind basic auth (401)" "401"
+refused "staging /healthz refused (401)" "401"
 
 serve 200 '<html>not json</html>'
 run
