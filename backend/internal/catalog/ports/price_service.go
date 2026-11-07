@@ -27,4 +27,7 @@ type PrivatePriceService interface {
 	CreatePrice(ctx context.Context, productID string, request *domain.CreatePriceRequest) (string, error)
 	UpdatePrice(ctx context.Context, priceID string, input domain.UpdatePriceRequest) (*domain.Price, error)
 	DeactivatePrice(ctx context.Context, priceID string) error
+	// ReplaceOneTimePrice changes a product's one-time price: a new price,
+	// the previous active ones in that currency deactivated.
+	ReplaceOneTimePrice(ctx context.Context, productID string, request *domain.CreatePriceRequest) (string, error)
 }

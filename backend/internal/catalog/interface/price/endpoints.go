@@ -29,4 +29,7 @@ const (
 
 	// Update price (admin only)
 	UpdatePriceEndpoint = AdminPricesBasePath + IDPath
+
+	// Replace a product's one-time price (admin only)
+	ReplaceOneTimePriceEndpoint = AdminProductsBasePath + IDPath + "/price"
 )

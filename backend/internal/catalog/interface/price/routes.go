@@ -28,4 +28,7 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 
 	// Update a specific price (e.g., set inactive, update metadata) (admin only)
 	router.HandleFunc("PATCH "+UpdatePriceEndpoint, RequireAdmin(mw.EnableCORS(h.UpdatePrice)))
+
+	// Change a product's one-time price: a new price replaces the active one (admin only)
+	router.HandleFunc("PUT "+ReplaceOneTimePriceEndpoint, RequireAdmin(mw.EnableCORS(h.ReplaceOneTimePrice)))
 }
