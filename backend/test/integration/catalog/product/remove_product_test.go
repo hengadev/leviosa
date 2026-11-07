@@ -257,9 +257,9 @@ func TestRemoveProduct(t *testing.T) {
 		product.StripeProductID = "prod_test123"
 		th.InsertProduct(t, ctx, testPool, product)
 
-		// Try using GET instead of DELETE - must manually construct to test wrong method
+		// Try using PUT instead of DELETE (GET reads the product) - must manually construct to test wrong method
 		url := testServerURL + productHandler.AdminProductsBasePath + "/" + product.ID.String()
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("PUT", url, nil)
 		require.NoError(t, err)
 		req.Header.Set("Authorization", "Bearer "+accessToken)
 

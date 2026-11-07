@@ -386,8 +386,8 @@ func TestModifyProduct(t *testing.T) {
 		product := th.NewValidProduct("Test Product", category.ID)
 		th.InsertProduct(t, ctx, testPool, product)
 
-		// Try using GET instead of PATCH - must manually construct to test wrong method
-		req, err := http.NewRequest("GET", testServerURL+productHandler.AdminProductsBasePath+"/"+product.ID.String(), nil)
+		// Try using PUT instead of PATCH (GET reads the product) - must manually construct to test wrong method
+		req, err := http.NewRequest("PUT", testServerURL+productHandler.AdminProductsBasePath+"/"+product.ID.String(), nil)
 		require.NoError(t, err)
 
 		cookie := &http.Cookie{
