@@ -1,6 +1,4 @@
-import { getContext } from 'svelte';
-
-const TOAST_KEY = Symbol('toast');
+import { toastStore } from './store.svelte';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -20,6 +18,7 @@ export type ToastContext = {
 	warning: (title: string, message?: string, duration?: number) => void;
 };
 
+/** The app's toasts: success, error, info and warning messages. */
 export function getToastContext(): ToastContext {
-	return getContext(TOAST_KEY);
+	return toastStore;
 }

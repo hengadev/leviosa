@@ -31,6 +31,7 @@
 <div
 	class="pointer-events-auto flex items-center gap-3 p-4 rounded-lg border shadow-popover {colorClass}"
 	transition:fly|fade={{ y: -20, duration: 300 }}
+	role={toast.type === 'error' ? 'alert' : 'status'}
 >
 	<IconComponent size={20} class="flex-shrink-0" />
 	<div class="flex-1">
@@ -42,6 +43,7 @@
 	<button
 		type="button"
 		onclick={() => onClose(toast.id)}
+		aria-label="Fermer"
 		class="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
 	>
 		<X size={16} />
