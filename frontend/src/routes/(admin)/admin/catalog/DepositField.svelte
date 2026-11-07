@@ -5,12 +5,20 @@
 	// form action turns them into the API payload (lib/deposit.ts).
 	import { amountDueOnlineCents, type Deposit, type DepositType } from "$lib/deposit";
 
-	let { deposit = null, priceEuros = "" }: { deposit?: Deposit | null; priceEuros?: string } = $props();
+	type Props = {
+		deposit?: Deposit | null;
+		priceEuros?: string;
+		/** Bindable, for a form that keeps what is typed (the creation draft). */
+		depositType?: "none" | DepositType;
+		depositValue?: number | null;
+	};
 
-	let depositType = $state<"none" | DepositType>(deposit?.type ?? "none");
-	let depositValue = $state<number | null>(
-		deposit ? (deposit.type === "fixed" ? deposit.value / 100 : deposit.value) : null,
-	);
+	let {
+		deposit = null,
+		priceEuros = "",
+		depositType = $bindable(deposit?.type ?? "none"),
+		depositValue = $bindable(deposit ? (deposit.type === "fixed" ? deposit.value / 100 : deposit.value) : null),
+	}: Props = $props();
 
 	const priceCents = $derived(Math.round(Number(String(priceEuros).replace(",", ".")) * 100));
 

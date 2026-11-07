@@ -1,10 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
-import { arktype } from 'sveltekit-superforms/adapters';
-import { superValidate } from 'sveltekit-superforms';
 import { env } from '$env/dynamic/private';
-import { productSchema, productDefaults } from '../../schemas';
-import { depositFromForm, type Deposit } from "$lib/deposit";
+import { depositFromForm, parseDeposit, type Deposit } from "$lib/deposit";
 import { mockAdminCategories, type Category, type CancellationTier } from "$lib/data/mockData";
 
 interface BackendCategory {
@@ -55,10 +52,59 @@ interface CreateProductResponse {
 	price_id: string;
 }
 
-export const load: PageServerLoad = async ({ fetch }) => {
-	const createProductForm = await superValidate(arktype(productSchema, { defaults: productDefaults }));
+/** The form's values: a blank form, or a product being duplicated. */
+export type ProductFormValues = {
+	name: string;
+	description: string;
+	categoryId: string;
+	duration: number;
+	price: string;
+	availability: 'online' | 'in-person' | 'hybrid';
+	cancellationHours: number;
+	cancellationTiers: CancellationTier[];
+	depositType: 'none' | 'fixed' | 'percent';
+	depositValue: number | null;
+};
 
+// GET /admin/products/{id}: the product, its prices and its image.
+interface BackendProductAggregator {
+	product: {
+		name: string;
+		description: string;
+		category: { id: string };
+		duration: number;
+		availability: 'online' | 'in-person' | 'hybrid';
+		cancellationHours: number;
+		cancellationTiers?: CancellationTier[];
+		deposit?: unknown;
+	};
+	prices?: { amount: number; interval: string; isActive: boolean }[];
+}
+
+/** A product's values for a copy of it: everything but its image and status. */
+function duplicateValues(agg: BackendProductAggregator): ProductFormValues {
+	const p = agg.product;
+	const price = (agg.prices ?? []).find((pr) => pr.isActive && pr.interval === 'one_time');
+	const deposit = parseDeposit(p.deposit);
+	return {
+		name: `${p.name} (copie)`,
+		description: p.description,
+		categoryId: p.category?.id ?? '',
+		duration: p.duration,
+		price: price ? (price.amount / 100).toFixed(2) : '',
+		availability: p.availability,
+		cancellationHours: p.cancellationHours,
+		cancellationTiers: (p.cancellationTiers ?? []).map((t) => ({ ...t })),
+		depositType: deposit?.type ?? 'none',
+		depositValue: deposit ? (deposit.type === 'fixed' ? deposit.value / 100 : deposit.value) : null,
+	};
+}
+
+export const load: PageServerLoad = async ({ fetch, url }) => {
 	let categories: Category[];
+	// ?from=<id>: the « Dupliquer » action of a product card.
+	const from = url.searchParams.get('from');
+	let duplicate: ProductFormValues | null = null;
 
 	if (env.USE_MOCK_DATA === 'true') {
 		categories = mockAdminCategories;
@@ -72,11 +118,19 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			console.error('Error loading categories:', err);
 			categories = [];
 		}
+
+		if (from) {
+			const res = await fetch(`${env.API_URL}/admin/products/${encodeURIComponent(from)}`).catch(() => null);
+			if (res?.ok) duplicate = duplicateValues(await res.json());
+			else console.error('Error loading the product to duplicate:', res?.status);
+		}
 	}
 
 	return {
 		categories: [{ id: "default", name: "Toutes les catégories" }, ...categories],
-		createProductForm,
+		duplicate,
+		// The product the copy comes from: its draft is kept apart from a blank one.
+		from: duplicate ? from : null,
 	};
 };
 
