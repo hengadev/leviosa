@@ -56,6 +56,9 @@
                     <a href="/legal/terms" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
                         Conditions générales
                     </a>
+                    <a href="/legal/mentions-legales" class="text-white/60 hover:text-white text-sm transition-colors w-fit">
+                        Mentions légales
+                    </a>
                 </nav>
             </div>
         </div>

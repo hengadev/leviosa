@@ -4,4 +4,6 @@
     let { children }: LayoutProps = $props();
 </script>
 
-{@render children()}
+<div class="container mx-auto max-w-3xl px-4 py-16 md:py-24">
+    {@render children()}
+</div>
