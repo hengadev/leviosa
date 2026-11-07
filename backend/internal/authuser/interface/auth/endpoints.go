@@ -84,4 +84,8 @@ const (
 
 	// User management (admin only)
 	DeleteUserByAdminEndpoint = AdminAuthBasePath + AdminUsersPath + "/{id}"
+
+	// Practitioner creation (admin only): POST on the admin partners
+	// collection, whose GET lives in the partner handler
+	CreatePractitionerEndpoint = "/admin/partners"
 )
