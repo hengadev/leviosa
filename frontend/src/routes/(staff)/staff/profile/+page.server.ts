@@ -30,8 +30,9 @@ interface PartnerResponse {
 	quote: string;
 	tags: string[];
 	created_at: string;
-	category_ids: string[];
-	product_ids: string[];
+	// Left out by the backend when empty (omitempty).
+	category_ids?: string[];
+	product_ids?: string[];
 	stripe_account_status: string;
 	stripe_onboarding_complete: boolean;
 }
@@ -110,7 +111,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 
 	// Map category IDs to category objects with names
 	const partnerCategories = allCategories
-		.filter((cat) => partner.category_ids.includes(cat.id))
+		.filter((cat) => (partner.category_ids ?? []).includes(cat.id))
 		.map((cat) => ({
 			id: cat.id,
 			name: cat.name,
@@ -118,7 +119,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 
 	// Map product IDs to product objects with names
 	const partnerProducts = allProducts
-		.filter((prod) => partner.product_ids.includes(prod.id))
+		.filter((prod) => (partner.product_ids ?? []).includes(prod.id))
 		.map((prod) => ({
 			id: prod.id,
 			name: prod.name,
