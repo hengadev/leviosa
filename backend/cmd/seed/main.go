@@ -170,6 +170,13 @@ func seedUser(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, 
 			address2_encrypted = EXCLUDED.address2_encrypted,
 			created_at_encrypted = EXCLUDED.created_at_encrypted,
 			logged_in_at_encrypted = EXCLUDED.logged_in_at_encrypted,
+			-- Every encrypted column is replaced: they all go with the new DEK.
+			picture_encrypted = EXCLUDED.picture_encrypted,
+			birth_date_encrypted = EXCLUDED.birth_date_encrypted,
+			gender_encrypted = EXCLUDED.gender_encrypted,
+			google_id_encrypted = EXCLUDED.google_id_encrypted,
+			apple_id_encrypted = EXCLUDED.apple_id_encrypted,
+			stripe_customer_id_encrypted = EXCLUDED.stripe_customer_id_encrypted,
 			dek_encrypted = EXCLUDED.dek_encrypted,
 			key_version = EXCLUDED.key_version
 	`, schema)
