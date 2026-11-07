@@ -18,9 +18,11 @@
 		user: App.User;
 		permissions: Permissions;
 		unreadCount?: number;
+		/** The admin is also the practitioner: links to their practitioner area. */
+		selfPractitioner?: boolean;
 	}
 
-	let { user, permissions, unreadCount = 0 }: SidebarProps = $props();
+	let { user, permissions, unreadCount = 0, selfPractitioner = false }: SidebarProps = $props();
 
 	// Sidebar collapse state
 	let isCollapsed = $state(false);
@@ -80,13 +82,6 @@
 			label: "Catalogue",
 			icon: Package,
 		},
-		// The admin is also the practitioner: their agenda and the practice
-		// settings live in the staff area.
-		{
-			href: "/staff",
-			label: "Espace praticien",
-			icon: CalendarClock,
-		},
 		{
 			href: "/admin/compta",
 			label: "Comptabilité",
@@ -105,7 +100,7 @@
 	 * Mobile Navigation Structure
 	 * Limited to 5 items for bottom bar
 	 */
-	const mobileNavigation: NavItem[] = [
+	const mobileNavigation: NavItem[] = $derived([
 		{
 			href: "/admin",
 			label: "Accueil",
@@ -126,14 +121,18 @@
 			label: "Catalogue",
 			icon: Package,
 		},
-		// The admin is also the practitioner: their agenda and the practice
-		// settings live in the staff area.
-		{
-			href: "/staff",
-			label: "Espace praticien",
-			icon: CalendarClock,
-		},
-	];
+		// No user menu on mobile: the admin who is also the practitioner
+		// reaches their agenda from the bar.
+		...(selfPractitioner
+			? [
+					{
+						href: "/staff",
+						label: "Espace praticien",
+						icon: CalendarClock,
+					},
+				]
+			: []),
+	]);
 
 	/**
 	 * Check if a route is active
@@ -251,6 +250,17 @@
 						<div
 							class="absolute bottom-full left-0 right-0 mb-2 z-20 bg-background border border-border-card rounded-lg shadow-popover py-1 overflow-hidden"
 						>
+							{#if selfPractitioner}
+								<!-- The admin's agenda and availabilities, as the practitioner -->
+								<a
+									href="/staff"
+									onclick={closeUserMenu}
+									class="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
+								>
+									<CalendarClock size={15} />
+									<span>Espace praticien</span>
+								</a>
+							{/if}
 							<a
 								href="https://leviosa.care"
 								target="_blank"
@@ -332,6 +342,15 @@
 							{user.email?.[0]?.toUpperCase() ?? "A"}
 						</span>
 					</div>
+					{#if selfPractitioner}
+						<a
+							href="/staff"
+							class="flex items-center justify-center w-9 h-9 text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+							title="Espace praticien"
+						>
+							<CalendarClock size={14} />
+						</a>
+					{/if}
 					<a
 						href="https://leviosa.care"
 						target="_blank"

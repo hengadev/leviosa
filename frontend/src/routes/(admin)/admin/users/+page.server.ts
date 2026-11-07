@@ -97,17 +97,15 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			users: mockUsers.map(mapBackendUserToFrontend),
 			pendingUsers: mockUsers.filter((u) => u.state === "pending").map(mapBackendUserToFrontend),
 			partners: mockPartners.map(mapBackendPartnerToFrontend),
-			partnersError: false,
-			selfPractitioner: false
+			partnersError: false
 		};
 	}
 
 	try {
-		const [usersRes, pendingRes, partnersRes, ownProfileRes] = await Promise.all([
+		const [usersRes, pendingRes, partnersRes] = await Promise.all([
 			fetch(`${env.API_URL}/admin/users`),
 			fetch(`${env.API_URL}/admin/auth/users/pending`),
-			fetch(`${env.API_URL}/admin/partners`),
-			fetch(`${env.API_URL}/partners/me`)
+			fetch(`${env.API_URL}/admin/partners`)
 		]);
 
 		if (!usersRes.ok) {
@@ -135,19 +133,12 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			partnersError = true;
 		}
 
-		// Whether the logged-in admin is also the practitioner (a verified
-		// profile of their own), which hides the "Je suis aussi praticien" button.
-		let selfPractitioner = false;
-		if (ownProfileRes.ok) {
-			const ownProfile: BackendPartnerResponse = await ownProfileRes.json();
-			selfPractitioner =
-				ownProfile.stripe_account_status === "active" && ownProfile.stripe_onboarding_complete;
-		}
-
-		return { users, pendingUsers, partners, partnersError, selfPractitioner };
+		// `selfPractitioner`, which hides the "Je suis aussi praticien" button,
+		// comes from the admin layout.
+		return { users, pendingUsers, partners, partnersError };
 	} catch (error) {
 		console.error("Error loading admin users page:", error);
-		return { users: [], pendingUsers: [], partners: [], partnersError: false, selfPractitioner: false };
+		return { users: [], pendingUsers: [], partners: [], partnersError: false };
 	}
 };
 
