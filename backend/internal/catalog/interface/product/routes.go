@@ -22,6 +22,9 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	// Retrieves all products including unpublished/draft products (admin only)
 	router.HandleFunc("GET "+GetAdminAllProductsEndpoint, RequireAdmin(mw.EnableCORS(h.GetAdminAllProducts)))
 
+	// Retrieves a product by ID for the admin product pages (edit, duplicate)
+	router.HandleFunc("GET "+GetAdminProductByIDEndpoint, RequireAdmin(mw.EnableCORS(h.GetProductByID)))
+
 	// Creates a new product with price (admin only)
 	router.HandleFunc("POST "+CreateProductWithPriceEndpoint, RequireAdmin(mw.EnableCORS(h.CreateProductWithPrice)))
 

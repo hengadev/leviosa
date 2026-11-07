@@ -34,6 +34,19 @@ func NewGetProductByIDRequest(t *testing.T, ctx context.Context, serverURL strin
 // Admin-Only Product Endpoints (Auth Required)
 // ============================================================================
 
+// NewGetAdminProductByIDRequest creates a request to get one product, whatever its status (admin endpoint)
+// accessToken is optional - if empty, no auth cookie is added (for testing unauthorized access)
+func NewGetAdminProductByIDRequest(t *testing.T, ctx context.Context, serverURL string, productID string, accessToken string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+productHandler.AdminProductsBasePath+"/"+productID, nil)
+	require.NoError(t, err)
+
+	if accessToken != "" {
+		req.AddCookie(&http.Cookie{Name: ck.AccessTokenCookieName, Value: accessToken})
+	}
+
+	return req
+}
+
 // NewGetAdminAllProductsRequest creates a request to get all products including drafts (admin endpoint)
 // accessToken is optional - if empty, no auth cookie is added (for testing unauthorized access)
 func NewGetAdminAllProductsRequest(t *testing.T, ctx context.Context, serverURL string, accessToken string) *http.Request {

@@ -21,6 +21,9 @@ const (
 	// Get all products including drafts (admin only)
 	GetAdminAllProductsEndpoint = AdminProductsBasePath
 
+	// Retrieves a product by ID, whatever its status (admin only)
+	GetAdminProductByIDEndpoint = AdminProductsBasePath + IDPath
+
 	// Create product with price (admin only)
 	CreateProductWithPriceEndpoint = AdminProductsBasePath
 

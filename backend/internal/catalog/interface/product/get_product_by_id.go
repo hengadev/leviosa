@@ -3,7 +3,6 @@ package productHandler
 import (
 	"errors"
 	"net/http"
-	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/httpx"
@@ -23,12 +22,8 @@ func (h *handler) GetProductByID(w http.ResponseWriter, r *http.Request) {
 		"method", r.Method,
 		"path", r.URL.Path)
 
-	parts := strings.Split(r.URL.Path, "/")
-	if len(parts) != 3 || parts[0] != "" || parts[1] != "products" {
-		httpx.RespondWithError(w, errors.New("invalid URL path format. Expected /products/{id}"), http.StatusBadRequest)
-		return
-	}
-	productID := parts[2]
+	// Served on /products/{id} and /admin/products/{id}: the id comes from the route.
+	productID := r.PathValue("id")
 	if productID == "" {
 		httpx.RespondWithError(w, errors.New("product ID is missing from the URL"), http.StatusBadRequest)
 		return
