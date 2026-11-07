@@ -6,6 +6,7 @@
 		CalendarCheck,
 		Package,
 		HandCoins,
+		CalendarClock,
 		ExternalLink,
 	} from "@lucide/svelte";
 	import type { Component } from "svelte";
@@ -78,6 +79,13 @@
 			label: "Catalogue",
 			icon: Package,
 		},
+		// The admin is also the practitioner: their agenda and the practice
+		// settings live in the staff area.
+		{
+			href: "/staff",
+			label: "Espace praticien",
+			icon: CalendarClock,
+		},
 		{
 			href: "/admin/compta",
 			label: "Comptabilité",
@@ -109,6 +117,13 @@
 			href: "/admin/catalog",
 			label: "Catalogue",
 			icon: Package,
+		},
+		// The admin is also the practitioner: their agenda and the practice
+		// settings live in the staff area.
+		{
+			href: "/staff",
+			label: "Espace praticien",
+			icon: CalendarClock,
 		},
 	];
 
