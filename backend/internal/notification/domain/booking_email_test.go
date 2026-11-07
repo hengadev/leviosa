@@ -49,7 +49,7 @@ func TestComposeBookingConfirmation_French(t *testing.T) {
 	for _, want := range []string{
 		`lang="fr"`, "Rendez-vous confirmé", "Bonjour Alice,", "Massage", "mardi 3 novembre 2026",
 		"14h30 – 15h30", "12 rue de la Paix, 75002 Paris", "Bob Jones",
-		"Payé en ligne", "20,00 €", "Reste à régler sur place", "45,00 €",
+		"Payé en ligne", "20,00 €", "Reste à régler sur place, par carte", "45,00 €",
 		"Gérer ma réservation", "https://leviosa.test/bookings?token=abc",
 	} {
 		assertContains(t, body, want)
@@ -77,7 +77,7 @@ func TestComposeBookingConfirmation_English(t *testing.T) {
 	body := renderComposed(t, email)
 	for _, want := range []string{
 		`lang="en"`, "Appointment confirmed", "Hello Alice,", "Tuesday 3 November 2026", "14:30 – 15:30",
-		"Paid online", "€20.00", "Balance due at the practice", "€45.00", "Manage my booking",
+		"Paid online", "€20.00", "Balance due by card at the practice", "€45.00", "Manage my booking",
 	} {
 		assertContains(t, body, want)
 	}
@@ -101,7 +101,7 @@ func TestComposeBookingConfirmation_NoBalanceWhenPaidInFull(t *testing.T) {
 		req.AmountPaidOnlineCents = 6500
 		req.BalanceDueCents = 0
 		body := renderComposed(t, ComposeBookingConfirmation(req, composeNow))
-		for _, label := range []string{"Reste à régler sur place", "Balance due at the practice"} {
+		for _, label := range []string{"Reste à régler sur place, par carte", "Balance due by card at the practice"} {
 			if strings.Contains(body, label) {
 				t.Errorf("%s: balance row must be omitted when nothing is due, found %q", locale, label)
 			}
