@@ -3,7 +3,7 @@ import { env } from "$env/dynamic/private"
 
 import { handleLoginRedirect } from '$lib/utils/redirect';
 import { getMockUserByRole } from '$lib/data/user';
-import { isAdminDomain, isStaffDomain, getSessionCookieName, getCookieDomain } from '$lib/server/hostname';
+import { isAdminDomain, isStaffDomain, getSessionCookieName, getRefreshCookieName, getCookieDomain } from '$lib/server/hostname';
 import { forwardAuthCookies } from '$lib/utils/auth-helpers';
 
 // The single-practitioner practice page replaced the multi-practitioner
@@ -59,6 +59,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     }
 
     event.locals.sessionCookieName = sessionCookieName;
+    event.locals.refreshCookieName = getRefreshCookieName(hostname);
     event.locals.cookieDomain = cookieDomain ?? undefined;
 
     if (env.USE_MOCK_DATA === 'true') {
@@ -84,6 +85,14 @@ export const handle: Handle = async ({ event, resolve }) => {
         return fetch(input, init);
     };
 
+    // The access token lives 30 minutes, the refresh token days: once the
+    // access cookie has expired, a new pair is fetched before anything reads
+    // it, so the /api proxies a page calls after a pause keep working too.
+    if (!event.cookies.get(sessionCookieName) && event.cookies.get(event.locals.refreshCookieName)) {
+        // A refresh token the backend refuses is dropped, not retried on every request.
+        if (!(await refreshTokens(event))) clearTokens(event);
+    }
+
     // Routes that require authentication - all others are public
     const requiresAuth = (pathname: string) => {
         const protectedPrefixes = ['/staff', '/admin', '/client'];
@@ -96,10 +105,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     const sessionID = event.cookies.get(sessionCookieName);
     if (!sessionID) {
-        let path = handleLoginRedirect(event.url, "expiredSession");
-        const email = event.locals.user?.email;
-        if (email) path += `&email=${email}`;
-        throw redirect(302, path)
+        throw redirect(302, handleLoginRedirect(event.url, "expiredSession"))
     }
 
     try {
@@ -131,43 +137,23 @@ async function validateSession(event: RequestEvent, sessionID: string): Promise<
     });
 
     if (res.status === 401) {
-        // Try to refresh the token
-        const refreshCookie = event.cookies.get("leviosa_refresh_token");
-        if (refreshCookie) {
-            const refreshRes = await fetch(`${env.API_URL}/auth/refresh`, {
-                method: "POST",
-                headers: { Cookie: `leviosa_refresh_token=${refreshCookie}` },
+        // The backend no longer knows this access token: get a new pair.
+        const newToken = await refreshTokens(event);
+        if (newToken) {
+            const retryRes = await fetch(`${env.API_URL}/users/me`, {
+                headers: { Cookie: `leviosa_access_token=${newToken}` },
             });
-            if (refreshRes.ok) {
-                forwardAuthCookies(refreshRes, event.cookies, event.locals.sessionCookieName, event.locals.cookieDomain);
-                const newToken = event.cookies.get("leviosa_access_token") ?? "";
-                if (newToken) {
-                    const retryRes = await fetch(`${env.API_URL}/users/me`, {
-                        headers: { Cookie: `leviosa_access_token=${newToken}` },
-                    });
-                    if (retryRes.ok) return retryRes.json();
-                }
-            }
+            if (retryRes.ok) return retryRes.json();
         }
         // Refresh failed or no refresh token — wipe and redirect
-        event.cookies.delete(event.locals.sessionCookieName, {
-            path: '/',
-            domain: event.locals.cookieDomain
-        });
-        event.cookies.delete("leviosa_refresh_token", {
-            path: '/',
-            domain: event.locals.cookieDomain
-        });
-        throw redirect(302, handleLoginRedirect(event.url));
+        clearTokens(event);
+        throw redirect(302, handleLoginRedirect(event.url, "expiredSession"));
     }
 
     if (!res.ok) {
         if (res.status === 404) {
             // User not found — wipe and redirect
-            event.cookies.delete(event.locals.sessionCookieName, {
-                path: '/',
-                domain: event.locals.cookieDomain
-            });
+            clearTokens(event);
             throw redirect(302, handleLoginRedirect(event.url));
         }
         // Transient server error (5xx, etc.) — don't redirect to /auth, that
@@ -176,4 +162,35 @@ async function validateSession(event: RequestEvent, sessionID: string): Promise<
         throw error(503, "Le serveur est temporairement indisponible. Veuillez réessayer dans quelques instants.");
     }
     return res.json();
+}
+
+/**
+ * Trades the refresh token for a new token pair and stores it in the browser
+ * cookies. Returns the new access token, or null when the refresh token is
+ * missing or no longer valid.
+ */
+async function refreshTokens(event: RequestEvent): Promise<string | null> {
+    const refreshToken = event.cookies.get(event.locals.refreshCookieName);
+    if (!refreshToken) return null;
+    try {
+        const res = await fetch(`${env.API_URL}/auth/refresh`, {
+            method: "POST",
+            headers: {
+                Cookie: `leviosa_refresh_token=${refreshToken}`,
+                [env.CLIENT_IP_HEADER ?? 'x-client-ip']: getClientIP(event.request),
+            },
+        });
+        if (!res.ok) return null;
+        forwardAuthCookies(res, event.cookies, event.locals.sessionCookieName, event.locals.cookieDomain, event.locals.refreshCookieName);
+        return event.cookies.get(event.locals.sessionCookieName) ?? null;
+    } catch (err) {
+        console.error("Error refreshing session:", err);
+        return null;
+    }
+}
+
+function clearTokens(event: RequestEvent) {
+    for (const name of [event.locals.sessionCookieName, event.locals.refreshCookieName]) {
+        event.cookies.delete(name, { path: '/', domain: event.locals.cookieDomain });
+    }
 }

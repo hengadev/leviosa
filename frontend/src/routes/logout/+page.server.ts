@@ -26,7 +26,7 @@ export const actions = {
 				path: '/',
 				domain: locals.cookieDomain
 			});
-			cookies.delete('leviosa_refresh_token', {
+			cookies.delete(locals.refreshCookieName, {
 				path: '/',
 				domain: locals.cookieDomain
 			});

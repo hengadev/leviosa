@@ -12,12 +12,19 @@ import type { Cookies } from '@sveltejs/kit';
  * @param response - The fetch Response object from the backend API
  * @param cookies - SvelteKit's cookies object to set cookies on the client
  */
-// BACKEND_ACCESS_COOKIE is the cookie name the backend always sets and expects.
-// The browser may store it under a different name (sessionCookieName) so that
-// staging and production sessions don't collide on the shared .leviosa.care domain.
+// The cookie names the backend always sets and expects. The browser may store
+// them under other names (sessionCookieName, refreshCookieName) so that staging
+// and production sessions don't collide on the shared .leviosa.care domain.
 const BACKEND_ACCESS_COOKIE = 'leviosa_access_token';
+const BACKEND_REFRESH_COOKIE = 'leviosa_refresh_token';
 
-export function forwardAuthCookies(response: Response, cookies: Cookies, sessionCookieName = BACKEND_ACCESS_COOKIE, cookieDomain?: string): void {
+export function forwardAuthCookies(
+    response: Response,
+    cookies: Cookies,
+    sessionCookieName = BACKEND_ACCESS_COOKIE,
+    cookieDomain?: string,
+    refreshCookieName = BACKEND_REFRESH_COOKIE,
+): void {
     const cookieStrings: string[] = response.headers.getSetCookie();
 
     for (const cookieString of cookieStrings) {
@@ -27,8 +34,11 @@ export function forwardAuthCookies(response: Response, cookies: Cookies, session
         if (eqIdx === -1) continue;
         const backendName = nameValue.slice(0, eqIdx);
         const value = nameValue.slice(eqIdx + 1);
-        // Rename the access token to the environment-specific browser cookie name.
-        const name = backendName === BACKEND_ACCESS_COOKIE ? sessionCookieName : backendName;
+        // Rename the tokens to the environment-specific browser cookie names.
+        const name =
+            backendName === BACKEND_ACCESS_COOKIE ? sessionCookieName
+            : backendName === BACKEND_REFRESH_COOKIE ? refreshCookieName
+            : backendName;
 
         if (!name || !value) continue;
 
@@ -40,6 +50,7 @@ export function forwardAuthCookies(response: Response, cookies: Cookies, session
             httpOnly?: boolean;
             sameSite?: 'strict' | 'lax' | 'none';
             maxAge?: number;
+            expires?: Date;
         } = {};
 
         for (const attr of attributes) {
@@ -55,6 +66,12 @@ export function forwardAuthCookies(response: Response, cookies: Cookies, session
                 if (sameSiteValue === 'strict' || sameSiteValue === 'lax' || sameSiteValue === 'none') {
                     options.sameSite = sameSiteValue;
                 }
+            }
+            // The backend dates its tokens with Expires: without it they would
+            // become session cookies, and the refresh token would not outlive the tab.
+            else if (lowerKey === 'expires') {
+                const expires = new Date(val);
+                if (!isNaN(expires.getTime())) options.expires = expires;
             }
             else if (lowerKey === 'max-age') {
                 const maxAge = parseInt(val);

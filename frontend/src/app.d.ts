@@ -29,6 +29,7 @@ declare global {
             isAdminDomain: boolean
             isStaffDomain: boolean
             sessionCookieName: string
+            refreshCookieName: string
             cookieDomain: string | undefined
         }
         // interface PageData {}
