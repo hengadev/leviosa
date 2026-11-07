@@ -19,17 +19,6 @@ export const categoryDefaults: category = {
     status: "draft",
 }
 
-// NOTE: the delete thing is shared across ressources
-export const deleteSchema = type({
-    id: "string"
-})
-
-export type Delete = Infer<typeof deleteSchema>
-
-export const deleteDefaults: Delete = {
-    id: ""
-}
-
 // NOTE: product
 
 // delete

@@ -4,6 +4,9 @@
 	import type { category } from "./schemas";
 	import CategoryModal from "./CategoryModal.svelte";
 	import type { Category } from "$lib/data/mockData";
+	import { enhance } from "$app/forms";
+	import type { SubmitFunction } from "@sveltejs/kit";
+	import { getToastContext } from "$lib/components/toast";
 
 	type Props = {
 		createCategoryForm: SuperValidated<category>;
@@ -11,6 +14,8 @@
 	};
 
 	let { createCategoryForm, categories }: Props = $props();
+
+	const toast = getToastContext();
 
 	let searchQuery = $state("");
 	let statusFilter = $state("all");
@@ -68,22 +73,35 @@
 		selectedCategory = null;
 	}
 
-	function handleSave() {
-		// TODO: Connect to backend action
-		console.log("Saving category:", {
-			id: selectedCategory?.id,
-			name: editName,
-			description: editDescription,
-			status: editStatus
-		});
-		closeEditDialog();
+	let saving = $state(false);
+
+	// Both dialogs submit a form; the page's data reloads on success, so the
+	// list shows the change without a refresh. A refused deletion closes its
+	// dialog too: nothing in it can be corrected.
+	function categoryEnhance(done: string, close: () => void, closeOnFailure = false): SubmitFunction {
+		return () => {
+			saving = true;
+			return async ({ result, update }) => {
+				saving = false;
+				if (result.type === "success") {
+					close();
+					toast.success("Succès", done);
+					await update();
+				} else if (result.type === "failure") {
+					if (closeOnFailure) close();
+					toast.error("Erreur", (result.data as { categoryError?: string })?.categoryError ?? "Une erreur est survenue");
+				} else if (result.type === "error") {
+					toast.error("Erreur", "Une erreur est survenue. Veuillez réessayer.");
+				}
+			};
+		};
 	}
 
-	function handleDelete() {
-		// TODO: Connect to backend action
-		console.log("Deleting category:", selectedCategory?.id);
-		closeDeleteDialog();
-	}
+	const statusLabel: Record<string, string> = {
+		published: "Publiée",
+		draft: "Brouillon",
+		archived: "Archivée",
+	};
 </script>
 
 <div class="flex flex-col gap-6">
@@ -169,7 +187,7 @@
 										cat.status || "draft"
 									)}"
 								>
-									{cat.status || "draft"}
+									{statusLabel[cat.status || "draft"] ?? cat.status}
 								</span>
 							</div>
 						</div>
@@ -225,6 +243,12 @@
 					{selectedCategory.name}
 				</p>
 			</div>
+			<form
+				method="POST"
+				action="?/updateCategory"
+				use:enhance={categoryEnhance("Catégorie mise à jour", closeEditDialog)}
+			>
+			<input type="hidden" name="id" value={selectedCategory.id} />
 			<div class="p-6 grid gap-4">
 				<div>
 					<label
@@ -235,7 +259,9 @@
 					</label>
 					<input
 						id="edit-name"
+						name="name"
 						type="text"
+						required
 						bind:value={editName}
 						class="w-full px-4 py-2.5 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent text-sm"
 					/>
@@ -249,6 +275,7 @@
 					</label>
 					<textarea
 						id="edit-description"
+						name="description"
 						bind:value={editDescription}
 						rows="3"
 						class="w-full px-4 py-2.5 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent text-sm resize-none"
@@ -263,12 +290,13 @@
 					</label>
 					<select
 						id="edit-status"
+						name="status"
 						bind:value={editStatus}
 						class="w-full px-4 py-2.5 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent text-sm"
 					>
-						<option value="published">Publié</option>
+						<option value="published">Publiée</option>
 						<option value="draft">Brouillon</option>
-						<option value="archived">Archivé</option>
+						<option value="archived">Archivée</option>
 					</select>
 				</div>
 			</div>
@@ -281,13 +309,14 @@
 					Annuler
 				</button>
 				<button
-					type="button"
-					onclick={handleSave}
-					class="px-6 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-colors font-medium"
+					type="submit"
+					disabled={saving}
+					class="px-6 py-2.5 bg-foreground text-background rounded-lg hover:opacity-90 transition-colors font-medium disabled:opacity-60"
 				>
-					Enregistrer
+					{saving ? "Enregistrement…" : "Enregistrer"}
 				</button>
 			</div>
+			</form>
 		</div>
 	</div>
 {/if}
@@ -327,13 +356,20 @@
 					>
 						Annuler
 					</button>
-					<button
-						type="button"
-						onclick={handleDelete}
-						class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+					<form
+						method="POST"
+						action="?/deleteCategory"
+						use:enhance={categoryEnhance("Catégorie supprimée", closeDeleteDialog, true)}
 					>
-						Supprimer
-					</button>
+						<input type="hidden" name="id" value={selectedCategory.id} />
+						<button
+							type="submit"
+							disabled={saving}
+							class="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-60"
+						>
+							{saving ? "Suppression…" : "Supprimer"}
+						</button>
+					</form>
 				</div>
 			</div>
 		</div>

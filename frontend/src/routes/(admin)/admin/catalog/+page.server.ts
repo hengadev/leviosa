@@ -23,7 +23,7 @@ import {
 	defaultAvailability,
 } from "./default";
 
-import { updateProduct, deleteProduct, createCategory } from "./actions"
+import { updateProduct, deleteProduct, createCategory, updateCategory, deleteCategory } from "./actions"
 
 // Backend returns CategoryWithImage: { category: Category, image?: Image }
 interface BackendCategoryWithImage {
@@ -129,6 +129,8 @@ export const actions = {
 	deleteProduct,
 	updateProduct,
 	createCategory,
+	updateCategory,
+	deleteCategory,
 } satisfies Actions
 
 type Props = {
