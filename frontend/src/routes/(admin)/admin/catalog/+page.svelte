@@ -6,15 +6,15 @@
 	import Category from "./Category.svelte";
 
 	let { data }: PageProps = $props();
-	let {
-		cards,
-		statuses,
-		categories,
-		availabilities,
-		deleteProductForm,
-		updateProductForm,
-		createCategoryForm,
-	} = data;
+	// Derived, not destructured once: an action (a category created, a
+	// product deleted) reloads the data and the lists must follow.
+	const cards = $derived(data.cards);
+	const statuses = $derived(data.statuses);
+	const categories = $derived(data.categories);
+	const availabilities = $derived(data.availabilities);
+	const deleteProductForm = $derived(data.deleteProductForm);
+	const updateProductForm = $derived(data.updateProductForm);
+	const createCategoryForm = $derived(data.createCategoryForm);
 
 	let activeTab = $state("categories");
 </script>
