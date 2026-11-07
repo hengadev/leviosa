@@ -26,7 +26,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, request *domain.Crea
 	}
 
 	product := &domain.Product{
-		Name:              strings.ToLower(request.Name),
+		Name:              strings.TrimSpace(request.Name),
 		Description:       request.Description,
 		CategoryID:        categoryID,
 		Duration:          request.Duration,
