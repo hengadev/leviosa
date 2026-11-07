@@ -77,6 +77,10 @@ func (s *UserService) UpdateUser(ctx context.Context, userID uuid.UUID, request 
 		return nil, errs.NewNotEncryptedErr("user for update", err)
 	}
 
+	// The password is hashed, so decryption cannot give it back: keep the
+	// stored hash, or ProcessUserEncx would replace it with a hash of "".
+	updatedUserEncx.PasswordHashSecure = userEncx.PasswordHashSecure
+
 	// Save updated user to repository
 	if err := s.repo.UpdateUser(ctx, updatedUserEncx); err != nil {
 		return nil, fmt.Errorf("update user: %w", err)

@@ -36,6 +36,10 @@ func (s *UserService) UpdateUserRole(ctx context.Context, request *domain.Update
 		return errs.NewNotEncryptedErr("user for role update", err)
 	}
 
+	// The password is hashed, so decryption cannot give it back: keep the
+	// stored hash, or ProcessUserEncx would replace it with a hash of "".
+	updatedUserEncx.PasswordHashSecure = userEncx.PasswordHashSecure
+
 	if err := s.repo.UpdateUser(ctx, updatedUserEncx); err != nil {
 		return fmt.Errorf("update user role: %w", err)
 	}

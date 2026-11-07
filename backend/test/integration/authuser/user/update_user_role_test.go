@@ -63,6 +63,7 @@ func TestUpdateUserRole(t *testing.T) {
 		assert.Equal(t, identity.PremiumStr, updatedUser.Role)
 		assert.Equal(t, user.Email, updatedUser.Email) // Other fields unchanged
 		assert.Equal(t, user.FirstName, updatedUser.FirstName)
+		assert.Equal(t, userEncx.PasswordHashSecure, updatedUserEncx.PasswordHashSecure, "Password should be unchanged")
 	})
 
 	t.Run("should successfully update user role from premium to partner", func(t *testing.T) {

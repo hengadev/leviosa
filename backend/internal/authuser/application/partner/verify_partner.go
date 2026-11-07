@@ -63,6 +63,10 @@ func (s *PartnerService) VerifyPartner(ctx context.Context, partnerID uuid.UUID,
 		return nil, errs.NewNotEncryptedErr("user during role update", err)
 	}
 
+	// The password is hashed, so decryption cannot give it back: keep the
+	// stored hash, or ProcessUserEncx would replace it with a hash of "".
+	updatedUserEncx.PasswordHashSecure = userEncx.PasswordHashSecure
+
 	// Save updated user
 	if err := s.userRepo.UpdateUser(ctx, updatedUserEncx); err != nil {
 		return nil, fmt.Errorf("update user role and state: %w", err)
