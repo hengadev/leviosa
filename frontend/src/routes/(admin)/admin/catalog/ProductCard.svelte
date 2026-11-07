@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Clock, Calendar, MapPin, SquarePen, Trash2, Archive } from "@lucide/svelte";
+	import { Clock, Calendar, MapPin, SquarePen, Trash2, Archive, Copy } from "@lucide/svelte";
 	import { type SuperValidated } from "sveltekit-superforms";
 	import { superForm } from "sveltekit-superforms";
 	import AlertDialog from "./AlertDialog.svelte";
@@ -125,6 +125,15 @@
 			</a>
 
 			<div class="flex gap-1">
+				<!-- Opens the creation form filled from this product. -->
+				<a
+					href="/admin/catalog/products/new?from={card.id}"
+					class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+					aria-label="Dupliquer"
+					title="Dupliquer"
+				>
+					<Copy size={14} />
+				</a>
 				<button
 					type="button"
 					class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
