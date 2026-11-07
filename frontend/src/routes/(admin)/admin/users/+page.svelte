@@ -425,7 +425,7 @@
 				<button
 					type="button"
 					onclick={() => (createPartnerDialogOpen = true)}
-					class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+					class="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 				>
 					<UserPlus size={16} />
 					Ajouter un praticien
@@ -857,7 +857,7 @@
 			</button>
 			<button
 				type="submit"
-				class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+				class="px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 			>
 				Créer le praticien
 			</button>
@@ -931,7 +931,7 @@
 					</button>
 					<button
 						type="submit"
-						class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+						class="px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 					>
 						Vérifier
 					</button>
@@ -960,7 +960,7 @@
 					</button>
 					<button
 						type="submit"
-						class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+						class="px-6 py-2.5 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium"
 					>
 						Vérifier
 					</button>
@@ -1072,7 +1072,7 @@
 			</button>
 			<button
 				type="submit"
-				class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+				class="px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 			>
 				Devenir praticien
 			</button>
