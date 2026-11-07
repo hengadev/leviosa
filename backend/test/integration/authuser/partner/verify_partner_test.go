@@ -72,6 +72,40 @@ func TestVerifyPartner(t *testing.T) {
 		assert.Equal(t, testUserEncx.PasswordHashSecure, userEncx.PasswordHashSecure, "Password should be unchanged")
 	})
 
+	t.Run("should keep the administrator role of an admin who is also the practitioner", func(t *testing.T) {
+		td.ClearPartnersTable(t, ctx, testPool)
+		td.ClearSessionsRedis(t, ctx, redisClient)
+
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+
+		testUser := td.NewTestUser(t, "admin-practitioner@example.com", "Livio", "Admin")
+		testUser.Role = identity.AdministratorStr
+		testUserEncx, err := domain.ProcessUserEncx(ctx, crypto, testUser)
+		require.NoError(t, err)
+		require.NoError(t, td.InsertUserEncx(t, ctx, testUserEncx, testPool))
+
+		testPartner := &domain.Partner{
+			ID:          uuid.New(),
+			UserID:      testUser.ID,
+			CategoryIDs: []uuid.UUID{},
+			ProductIDs:  []uuid.UUID{},
+		}
+		partnerEncx, err := domain.ProcessPartnerEncx(ctx, crypto, testPartner)
+		require.NoError(t, err)
+		require.NoError(t, td.InsertPartnerEncx(t, ctx, partnerEncx, testPool))
+
+		resp, err := client.Do(td.NewVerifyPartnerRequest(t, ctx, testServerURL, testPartner.ID, accessToken))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		userEncx, err := td.GetUserEnxByID(t, ctx, testUser.ID, testPool)
+		require.NoError(t, err)
+		user, err := domain.DecryptUserEncx(ctx, crypto, userEncx)
+		require.NoError(t, err)
+		assert.Equal(t, identity.AdministratorStr, user.Role, "Verifying must not demote an administrator")
+	})
+
 	t.Run("should return error when partner not found", func(t *testing.T) {
 		// Clean state
 		td.ClearPartnersTable(t, ctx, testPool)
