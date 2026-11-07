@@ -3,7 +3,7 @@
 	import ProductCard from "./ProductCard.svelte";
 	import { type CardType, type Category } from "$lib/data/mockData";
 	import { type SuperValidated } from "sveltekit-superforms";
-	import type { DeleteProduct, product } from "./schemas";
+	import type { DeleteProduct } from "./schemas";
 	import {
 		defaultStatus,
 		defaultCategory,
@@ -16,7 +16,6 @@
 		categories: Category[];
 		availabilities: Set<string>;
 		deleteProductForm: SuperValidated<DeleteProduct>;
-		updateProductForm: SuperValidated<product>;
 	};
 
 	let {
@@ -25,7 +24,6 @@
 		categories,
 		availabilities,
 		deleteProductForm,
-		updateProductForm,
 	}: Props = $props();
 
 	// filters
@@ -148,7 +146,6 @@
 					{categories}
 					{availabilities}
 					{deleteProductForm}
-					{updateProductForm}
 				/>
 			{/each}
 		</div>

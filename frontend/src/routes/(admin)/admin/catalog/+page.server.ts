@@ -9,9 +9,6 @@ import {
 	deleteProductSchema,
 	deleteProductDefaults,
 	type DeleteProduct,
-	productSchema,
-	productDefaults,
-	type product,
 	categorySchema,
 	categoryDefaults,
 	type category,
@@ -23,7 +20,7 @@ import {
 	defaultAvailability,
 } from "./default";
 
-import { updateProduct, deleteProduct, setProductStatus, createCategory, updateCategory, deleteCategory } from "./actions"
+import { deleteProduct, setProductStatus, createCategory, updateCategory, deleteCategory } from "./actions"
 
 // Backend returns CategoryWithImage: { category: Category, image?: Image }
 interface BackendCategoryWithImage {
@@ -127,7 +124,6 @@ function computeProductCountsByCategory(
 
 export const actions = {
 	deleteProduct,
-	updateProduct,
 	setProductStatus,
 	createCategory,
 	updateCategory,
@@ -140,13 +136,11 @@ type Props = {
 	categories: Category[];
 	availabilities: Set<string>;
 	deleteProductForm: SuperValidated<DeleteProduct>;
-	updateProductForm: SuperValidated<product>;
 	createCategoryForm: SuperValidated<category>;
 }
 
 export const load: PageServerLoad = async ({ fetch }): Promise<Props> => {
 	const deleteProductForm = await superValidate(arktype(deleteProductSchema, { defaults: deleteProductDefaults }))
-	const updateProductForm = await superValidate(arktype(productSchema, { defaults: productDefaults }))
 	const createCategoryForm = await superValidate(arktype(categorySchema, { defaults: categoryDefaults }))
 
 	const availabilities: Set<string> = new Set([
@@ -205,7 +199,6 @@ export const load: PageServerLoad = async ({ fetch }): Promise<Props> => {
 		categories: allCategories,
 		availabilities,
 		deleteProductForm,
-		updateProductForm,
 		createCategoryForm,
 	}
 }
