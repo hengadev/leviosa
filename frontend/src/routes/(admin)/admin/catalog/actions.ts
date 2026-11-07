@@ -214,3 +214,25 @@ export async function deleteProduct({ request, fetch }: RequestEvent) {
 export async function updateProduct() {
     console.log("here is the udpate action")
 }
+
+// Archiving a product (and bringing it back as a draft): it is never
+// deleted, the bookings that refer to it keep it, but an archived product
+// is no longer offered.
+export async function setProductStatus({ request, fetch }: RequestEvent) {
+    const data = await request.formData()
+    const id = String(data.get("id") ?? "")
+    const status = String(data.get("status") ?? "")
+    if (!id) return fail(400, { productError: "Produit introuvable." })
+    if (!["draft", "published", "archived"].includes(status)) return fail(400, { productError: "Statut invalide." })
+
+    const res = await fetch(`${env.API_URL}/admin/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publishedStatus: status }),
+    })
+    if (!res.ok) {
+        console.error("Product status update failed:", res.status, await res.text())
+        return fail(res.status, { productError: "Le statut du produit n'a pas pu être modifié." })
+    }
+    return { productStatus: status }
+}

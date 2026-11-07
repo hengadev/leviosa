@@ -23,7 +23,7 @@ import {
 	defaultAvailability,
 } from "./default";
 
-import { updateProduct, deleteProduct, createCategory, updateCategory, deleteCategory } from "./actions"
+import { updateProduct, deleteProduct, setProductStatus, createCategory, updateCategory, deleteCategory } from "./actions"
 
 // Backend returns CategoryWithImage: { category: Category, image?: Image }
 interface BackendCategoryWithImage {
@@ -128,6 +128,7 @@ function computeProductCountsByCategory(
 export const actions = {
 	deleteProduct,
 	updateProduct,
+	setProductStatus,
 	createCategory,
 	updateCategory,
 	deleteCategory,
