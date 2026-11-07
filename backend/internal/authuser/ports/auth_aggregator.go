@@ -27,6 +27,7 @@ type AuthAggregatorService interface {
 	RefreshSession(ctx context.Context, sessionID uuid.UUID) (*domain.RefreshSessionResponse, error)
 	DeleteUserByAdmin(ctx context.Context, userID uuid.UUID) error
 	CreatePractitioner(ctx context.Context, adminID uuid.UUID, request *domain.CreatePractitionerRequest) (*domain.CreatePractitionerResponse, error)
+	BecomePractitioner(ctx context.Context, adminID uuid.UUID, request *domain.BecomePractitionerRequest) (uuid.UUID, error)
 	DeleteOwnAccount(ctx context.Context, sessionInfo *session.SessionInfo) error
 	SignIn(ctx context.Context, request *domain.SignInRequest) (*domain.CreateSessionResponse, error)
 	SignOut(ctx context.Context, sessionInfo *session.SessionInfo) error

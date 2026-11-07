@@ -88,4 +88,6 @@ const (
 	// Practitioner creation (admin only): POST on the admin partners
 	// collection, whose GET lives in the partner handler
 	CreatePractitionerEndpoint = "/admin/partners"
+	// The administrator's own account becoming the practitioner as well
+	BecomePractitionerEndpoint = "/admin/partners/me"
 )
