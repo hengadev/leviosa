@@ -141,6 +141,65 @@ export const load: PageServerLoad = async ({ fetch }) => {
 };
 
 export const actions: Actions = {
+	// Creates a practitioner in one step: the account (with a generated
+	// password, shown once), the verified profile and the practice room their
+	// availabilities need.
+	createPartner: async ({ request, fetch }) => {
+		const formData = await request.formData();
+		const field = (name: string) => ((formData.get(name) as string | null) ?? "").trim();
+		const practitioner = {
+			first_name: field("first_name"),
+			last_name: field("last_name"),
+			email: field("email"),
+			telephone: field("telephone").replace(/[\s.]/g, ""),
+			occupation: field("occupation"),
+			bio: field("bio")
+		};
+
+		if (!practitioner.first_name || !practitioner.last_name || !practitioner.email || !practitioner.telephone) {
+			return { error: "Prénom, nom, e-mail et téléphone sont obligatoires." };
+		}
+
+		if (env.USE_MOCK_DATA === "true") {
+			return {
+				success: `Praticien ${practitioner.first_name} ${practitioner.last_name} créé`,
+				createdPractitioner: { email: practitioner.email, password: "mock-password-1234" }
+			};
+		}
+
+		try {
+			const res = await fetch(`${env.API_URL}/admin/partners`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(practitioner)
+			});
+
+			if (res.status === 409) {
+				return { error: "Un compte existe déjà avec cet e-mail." };
+			}
+			if (res.status === 400) {
+				const detail = await res.text();
+				console.error("Create practitioner rejected:", detail);
+				return {
+					error: "Vérifiez les champs : e-mail valide et téléphone au format 0612345678."
+				};
+			}
+			if (!res.ok) {
+				const errorText = await res.text();
+				throw new Error(`Failed to create practitioner: ${res.statusText} - ${errorText}`);
+			}
+
+			const created: { email: string; password: string } = await res.json();
+			return {
+				success: `Praticien ${practitioner.first_name} ${practitioner.last_name} créé`,
+				createdPractitioner: { email: created.email, password: created.password }
+			};
+		} catch (error) {
+			console.error("Error creating practitioner:", error);
+			return { error: "Impossible de créer le praticien" };
+		}
+	},
+
 	deleteUser: async ({ request, fetch }) => {
 		const formData = await request.formData();
 		const id = formData.get("id") as string;
