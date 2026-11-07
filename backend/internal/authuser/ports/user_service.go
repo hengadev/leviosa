@@ -13,6 +13,7 @@ type UserService interface {
 	CreateGuestUser(ctx context.Context, req *domain.GuestClaimRequest) (uuid.UUID, error)
 	ValidateGuestClaimEmail(ctx context.Context, email string) error
 	CompleteUser(ctx context.Context, userID uuid.UUID, request *domain.CompleteUserRequest) error
+	CreatePractitionerUser(ctx context.Context, request *domain.CreatePractitionerRequest, password string) (uuid.UUID, error)
 	GetPendingUsers(ctx context.Context) ([]*domain.UserResponse, error)
 	GetAllUsers(ctx context.Context) ([]*domain.UserResponse, error)
 	GetUserByID(ctx context.Context, userID uuid.UUID) (*domain.UserResponse, error)

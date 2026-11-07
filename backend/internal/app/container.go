@@ -55,6 +55,7 @@ import (
 
 	// Booking
 	allocationSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/allocation"
+	practiceSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/practice"
 	availabilitySvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/availability"
 	bookingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
@@ -184,6 +185,7 @@ type Container struct {
 	BuildingService     bookingPorts.BuildingService
 	RoomService         bookingPorts.RoomService
 	AllocationService   bookingPorts.RoomAllocationService
+	PracticeRoomService bookingPorts.PracticeRoomService
 	AvailabilityService bookingPorts.AvailabilityService
 	ExceptionService    bookingPorts.AvailabilityExceptionService
 	BookingService      bookingPorts.BookingService
@@ -498,6 +500,8 @@ func (c *Container) setupServices(ctx context.Context) error {
 
 	c.AllocationService = allocationSvc.New(c.AllocationRepo, c.RoomRepo, c.BookingAuthuserCLi, c.Crypto)
 
+	c.PracticeRoomService = practiceSvc.New(c.BuildingService, c.RoomService, c.RoomScheduleRepo, c.AllocationService)
+
 	c.AvailabilityService = availabilitySvc.New(c.AvailabilityRepo, c.AllocationRepo, c.RoomRepo, c.RoomScheduleRepo, c.ProductService, c.Crypto)
 
 	notificationAdapter := bookingNotification.NewBookingNotificationAdapter(
@@ -551,7 +555,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 	)
 
 	// Wire BookingClient into AuthAggregator (now that BookingService is created)
-	c.BookingClient = bookingClientAdapter.NewInProcessClient(c.BookingService)
+	c.BookingClient = bookingClientAdapter.NewInProcessClient(c.BookingService, c.PracticeRoomService)
 	authAgg.SetBookingClient(c.BookingClient)
 
 	// Messaging services

@@ -10,17 +10,25 @@ import (
 )
 
 // InProcessClient is an in-process implementation of BookingClient that directly
-// delegates to the booking service's ClaimBookings method.
+// delegates to the booking services.
 //
 // This is used in the modular monolith architecture for efficient in-process
 // communication without HTTP overhead.
 type InProcessClient struct {
-	bookingService bookingPorts.BookingService
+	bookingService      bookingPorts.BookingService
+	practiceRoomService bookingPorts.PracticeRoomService
 }
 
 // NewInProcessClient creates a new in-process BookingClient.
-func NewInProcessClient(bookingService bookingPorts.BookingService) authuserPorts.BookingClient {
-	return &InProcessClient{bookingService: bookingService}
+func NewInProcessClient(bookingService bookingPorts.BookingService, practiceRoomService bookingPorts.PracticeRoomService) authuserPorts.BookingClient {
+	return &InProcessClient{bookingService: bookingService, practiceRoomService: practiceRoomService}
+}
+
+// EnsurePracticeRoom gives the practitioner the practice room. Unlike
+// ClaimBookings its error reaches the caller: a practitioner without a room
+// cannot publish availabilities.
+func (c *InProcessClient) EnsurePracticeRoom(ctx context.Context, userID uuid.UUID) error {
+	return c.practiceRoomService.EnsurePracticeRoom(ctx, userID)
 }
 
 // ClaimBookings links guest bookings to the newly created client account.
