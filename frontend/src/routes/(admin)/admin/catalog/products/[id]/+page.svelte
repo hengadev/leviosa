@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { goto } from "$app/navigation";
-	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, DollarSign, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
+	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, Euro, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
 	import type { PageData, ActionData } from "./$types";
 	import type { CancellationTier } from "$lib/data/mockData";
 	import DepositField from "../../DepositField.svelte";
@@ -19,7 +19,6 @@
 	let price = $state(data.product.price);
 	let status = $state<"published" | "draft" | "archived">(data.product.published);
 	let availability = $state<"online" | "in-person" | "hybrid">(data.product.availability);
-	let bufferTime = $state(data.product.bufferTime);
 	let cancellationHours = $state(data.product.cancellationHours);
 	let cancellationTiers = $state<CancellationTier[]>(
 		(data.product.cancellationTiers ?? []).map((t) => ({ ...t }))
@@ -289,7 +288,7 @@
 					Prix (€)
 				</label>
 				<div class="relative">
-					<DollarSign
+					<Euro
 						size={18}
 						class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
 					/>
@@ -332,32 +331,7 @@
 				</div>
 			</div>
 
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<!-- Buffer Time -->
-				<div>
-					<label for="bufferTime" class="block text-sm font-medium text-foreground-alt mb-2">
-						Tampon (minutes)
-					</label>
-					<div class="relative">
-						<Clock
-							size={18}
-							class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-						/>
-						<input
-							id="bufferTime"
-							name="bufferTime"
-							type="number"
-							bind:value={bufferTime}
-							min="0"
-							placeholder="15"
-							class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
-						/>
-					</div>
-					<p class="mt-1 text-xs text-muted-foreground">
-						Temps de pause entre les réservations
-					</p>
-				</div>
-
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<!-- Cancellation Hours -->
 				<div>
 					<label for="cancellationHours" class="block text-sm font-medium text-foreground-alt mb-2">
