@@ -16,7 +16,7 @@ import (
 // - Sets partner.IsVerified = true
 // - Sets partner.VerifiedAt = time.Now()
 // - Sets partner.VerifiedByUserID = verifiedByUserID
-// - Updates user.Role = "partner"
+// - Updates user.Role = "partner", unless the account already ranks higher
 // - Updates user.State = "active"
 func (s *PartnerService) VerifyPartner(ctx context.Context, partnerID uuid.UUID, verifiedByUserID uuid.UUID) (*domain.PartnerResponse, error) {
 	// Get partner to verify it exists
@@ -53,8 +53,11 @@ func (s *PartnerService) VerifyPartner(ctx context.Context, partnerID uuid.UUID,
 		return nil, errs.NewNotDecryptedErr("user during partner verification", err)
 	}
 
-	// Update user role and state
-	user.Role = identity.PartnerStr
+	// Update user role and state. An administrator who is also the
+	// practitioner keeps the administrator role: it includes the partner one.
+	if role, err := identity.ParseRole(user.Role); err != nil || !role.IsAtLeast(identity.Partner) {
+		user.Role = identity.PartnerStr
+	}
 	user.State = domain.Active
 
 	// Re-encrypt user with modifications
