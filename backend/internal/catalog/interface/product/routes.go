@@ -14,8 +14,8 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	// Retrieves all published products visible to the public
 	router.HandleFunc("GET "+GetAllPublishedProductsEndpoint, mw.EnableCORS(h.GetAllPublishedProducts))
 
-	// Retrieves a specific product by ID (public access)
-	router.HandleFunc("GET "+GetProductByIDEndpoint, mw.EnableCORS(h.GetProductByID))
+	// Retrieves a published product by ID (public access; drafts and archived products are 404)
+	router.HandleFunc("GET "+GetProductByIDEndpoint, mw.EnableCORS(h.GetPublishedProductByID))
 
 	// === Admin-Only Endpoints ===
 
