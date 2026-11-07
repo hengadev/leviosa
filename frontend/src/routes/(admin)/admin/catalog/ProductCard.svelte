@@ -27,10 +27,9 @@
 	let { id, name, price, category, description, duration, image, published } =
 		card;
 
-	const {
-		form: deleteForm,
-		enhance: deleteEnhance,
-	} = superForm(deleteProductForm, {
+	// One delete form per card, each with its own id.
+	const { enhance: deleteEnhance } = superForm(deleteProductForm, {
+		id: `delete-product-${id}`,
 		resetForm: true,
 	});
 
@@ -74,10 +73,6 @@
 				return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
 		}
 	};
-
-	$effect(() => {
-		$deleteForm.id = card.id;
-	});
 </script>
 
 <div
@@ -137,20 +132,21 @@
 				>
 					<Archive size={14} />
 				</button>
-				<AlertDialog>
-					<form
-						method="POST"
-						action="?/deleteProduct"
-						use:deleteEnhance
-						class="contents"
-					>
-						<input type="hidden" name="id" value={$deleteForm.id} />
+				<AlertDialog
+					label="Supprimer"
+					message={`Le produit « ${name} » et toutes ses données seront supprimés.`}
+					triggerClass="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer"
+				>
+					{#snippet trigger()}
+						<Trash2 size={14} />
+					{/snippet}
+					<form method="POST" action="?/deleteProduct" use:deleteEnhance>
+						<input type="hidden" name="id" value={id} />
 						<button
 							type="submit"
-							class="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-							aria-label="Supprimer"
+							class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors cursor-pointer"
 						>
-							<Trash2 size={14} />
+							Supprimer
 						</button>
 					</form>
 				</AlertDialog>
