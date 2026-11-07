@@ -12,7 +12,7 @@
 	} from "@lucide/svelte";
 	import type { Component } from "svelte";
 	import type { Permissions } from "$lib/security/permissions";
-	import ThemeToggle from "$lib/components/admin/ThemeToggle.svelte";
+	import BackOfficeSidebar, { type AccountLink, type NavGroup } from "./BackOfficeSidebar.svelte";
 
 	interface SidebarProps {
 		user: App.User;
@@ -24,77 +24,44 @@
 
 	let { user, permissions, unreadCount = 0, selfPractitioner = false }: SidebarProps = $props();
 
-	// Sidebar collapse state
-	let isCollapsed = $state(false);
-
-	// User menu state
-	let userMenuOpen = $state(false);
-
-	function toggleSidebar() {
-		isCollapsed = !isCollapsed;
-	}
-
-	function toggleUserMenu() {
-		userMenuOpen = !userMenuOpen;
-	}
-
-	function closeUserMenu() {
-		userMenuOpen = false;
-	}
-
-	/**
-	 * Navigation item definition
-	 * - href: Route path
-	 * - label: Display text
-	 * - icon: Lucide icon component
-	 */
 	interface NavItem {
 		href: string;
 		label: string;
 		icon: Component;
 	}
 
-	/**
-	 * Desktop Navigation Structure
-	 * Using the original links from the old NavigationBar
-	 */
 	// v1 (single-practitioner launch): planning, messages, buildings and rooms,
 	// analytics, reviews and waitlist are hidden from the admin navigation.
 	// The routes stay in code.
-	const desktopNavigation: NavItem[] = [
+	const navigation: NavGroup[] = [
 		{
-			href: "/admin",
-			label: "Accueil",
-			icon: Home,
+			label: "Au quotidien",
+			items: [
+				{ href: "/admin", label: "Tableau de bord", icon: Home },
+				{ href: "/admin/bookings/consultations", label: "Réservations", icon: CalendarCheck },
+				{ href: "/admin/users", label: "Utilisateurs", icon: Users },
+			],
 		},
 		{
-			href: "/admin/users",
-			label: "Utilisateurs",
-			icon: Users,
-		},
-		{
-			href: "/admin/bookings/consultations",
-			label: "Réservations",
-			icon: CalendarCheck,
-		},
-		{
-			href: "/admin/catalog",
-			label: "Catalogue",
-			icon: Package,
-		},
-		{
-			href: "/admin/compta",
-			label: "Comptabilité",
-			icon: HandCoins,
+			label: "Activité",
+			items: [
+				{ href: "/admin/catalog", label: "Catalogue", icon: Package },
+				{ href: "/admin/compta", label: "Comptabilité", icon: HandCoins },
+			],
 		},
 		// The practice settings: company details, public page, booking rules.
 		// Desktop only: the mobile bar is full and these are set up once.
 		{
-			href: "/admin/settings",
-			label: "Paramètres",
-			icon: Settings,
+			label: "Administration",
+			items: [{ href: "/admin/settings", label: "Paramètres", icon: Settings }],
 		},
 	];
+
+	const accountLinks: AccountLink[] = $derived([
+		// The admin's agenda and availabilities, as the practitioner
+		...(selfPractitioner ? [{ href: "/staff", label: "Espace praticien", icon: CalendarClock }] : []),
+		{ href: "https://leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
+	]);
 
 	/**
 	 * Mobile Navigation Structure
@@ -147,223 +114,7 @@
 </script>
 
 {#if permissions.canAccessOps}
-	<!-- Desktop Sidebar Navigation -->
-	<aside
-		class="hidden lg:flex lg:flex-col lg:border-r bg-background border-border-card sticky top-0 h-screen transition-all duration-300 {isCollapsed
-			? 'lg:w-20'
-			: 'lg:w-64'}"
-		aria-label="Sidebar navigation"
-	>
-		<!-- Collapse Toggle Button -->
-		<button
-			onclick={toggleSidebar}
-			class="absolute -right-4 bottom-24 z-10 w-8 h-8 rounded-full bg-background flex items-center justify-center text-foreground-alt hover:text-foreground hover:bg-muted transition-all duration-200 border border-border-card shadow-mini"
-			aria-label={isCollapsed ? "Agrandir la barre laterale" : "Reduire la barre laterale"}
-			title={isCollapsed ? "Agrandir la barre laterale" : "Reduire la barre laterale"}
-		>
-			{#if isCollapsed}
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<polyline points="9 18 15 12 9 6"></polyline>
-				</svg>
-			{:else}
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					width="16"
-					height="16"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				>
-					<polyline points="15 18 9 12 15 6"></polyline>
-				</svg>
-			{/if}
-		</button>
-
-		<!-- Sidebar Header -->
-		<div
-			class="flex items-center justify-between border-b border-border-card py-6 {isCollapsed
-				? 'px-3'
-				: 'px-6'}"
-		>
-			{#if !isCollapsed}
-				<div>
-					<h1 class="text-sm font-semibold tracking-tight text-foreground uppercase">Leviosa</h1>
-					<p class="text-xs text-muted-foreground">Panneau d'Administration</p>
-				</div>
-				<ThemeToggle />
-			{:else}
-				<div class="mx-auto flex flex-col items-center gap-2">
-					<span class="text-lg font-bold text-foreground">L</span>
-					<ThemeToggle />
-				</div>
-			{/if}
-		</div>
-
-		<!-- Navigation Items -->
-		<nav class="flex-1 py-6 overflow-y-auto {isCollapsed ? 'px-3' : 'px-4'}">
-			<ul class="space-y-1">
-				{#each desktopNavigation as item (item.href)}
-					{@const active = isActive(item.href)}
-					<li>
-						<a
-							href={item.href}
-							class="flex items-center text-sm font-medium transition-all duration-200 rounded-lg {isCollapsed
-								? 'justify-center px-3 py-3'
-								: 'gap-3 px-3 py-2.5'} {active
-								? 'text-foreground bg-muted'
-								: 'text-foreground-alt hover:text-foreground hover:bg-muted'}"
-							aria-current={active ? "page" : undefined}
-							title={isCollapsed ? item.label : undefined}
-						>
-							<item.icon strokeWidth={active ? 2 : 1.5} size={20} />
-							{#if !isCollapsed}
-								<span class="tracking-tight flex-1">{item.label}</span>
-							{/if}
-						</a>
-					</li>
-				{/each}
-			</ul>
-		</nav>
-
-		<!-- Sidebar Footer -->
-		<div class="py-5 border-t border-border-card {isCollapsed ? 'px-3' : 'px-6'}">
-			{#if !isCollapsed}
-				<!-- User row with kebab menu -->
-				<div class="relative">
-					{#if userMenuOpen}
-						<!-- Backdrop -->
-						<div class="fixed inset-0 z-10" onclick={closeUserMenu}></div>
-						<!-- Dropdown (opens upward) -->
-						<div
-							class="absolute bottom-full left-0 right-0 mb-2 z-20 bg-background border border-border-card rounded-lg shadow-popover py-1 overflow-hidden"
-						>
-							{#if selfPractitioner}
-								<!-- The admin's agenda and availabilities, as the practitioner -->
-								<a
-									href="/staff"
-									onclick={closeUserMenu}
-									class="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
-								>
-									<CalendarClock size={15} />
-									<span>Espace praticien</span>
-								</a>
-							{/if}
-							<a
-								href="https://leviosa.care"
-								target="_blank"
-								rel="noopener noreferrer"
-								onclick={closeUserMenu}
-								class="flex items-center gap-2.5 px-3 py-2 text-sm text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
-							>
-								<ExternalLink size={15} />
-								<span>Voir le site</span>
-							</a>
-							<div class="my-1 border-t border-border-card"></div>
-							<form method="POST" action="/logout" class="contents">
-								<button
-									type="submit"
-									class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										width="15"
-										height="15"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-										<polyline points="16 17 21 12 16 7"></polyline>
-										<line x1="21" x2="9" y1="12" y2="12"></line>
-									</svg>
-									<span>Déconnexion</span>
-								</button>
-							</form>
-						</div>
-					{/if}
-					<div class="flex items-center gap-3">
-						<div
-							class="w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center bg-muted border border-border-card"
-						>
-							<span class="text-xs font-semibold text-foreground-alt uppercase">
-								{user.email?.[0]?.toUpperCase() ?? "A"}
-							</span>
-						</div>
-						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-foreground truncate tracking-tight">
-								{user.email}
-							</p>
-							<p class="text-xs text-muted-foreground capitalize">{user.role}</p>
-						</div>
-						<button
-							onclick={toggleUserMenu}
-							class="flex-shrink-0 p-1.5 rounded-md text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
-							aria-label="Options utilisateur"
-							title="Options"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="currentColor"
-								stroke="none"
-							>
-								<circle cx="12" cy="5" r="1.5" />
-								<circle cx="12" cy="12" r="1.5" />
-								<circle cx="12" cy="19" r="1.5" />
-							</svg>
-						</button>
-					</div>
-				</div>
-			{:else}
-				<div class="flex flex-col items-center gap-2">
-					<div
-						class="w-9 h-9 rounded-full flex items-center justify-center bg-muted border border-border-card"
-						title={user.email}
-					>
-						<span class="text-xs font-semibold text-foreground-alt uppercase">
-							{user.email?.[0]?.toUpperCase() ?? "A"}
-						</span>
-					</div>
-					{#if selfPractitioner}
-						<a
-							href="/staff"
-							class="flex items-center justify-center w-9 h-9 text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-							title="Espace praticien"
-						>
-							<CalendarClock size={14} />
-						</a>
-					{/if}
-					<a
-						href="https://leviosa.care"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="flex items-center justify-center w-9 h-9 text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-						title="Voir le site public"
-					>
-						<ExternalLink size={14} />
-					</a>
-				</div>
-			{/if}
-		</div>
-	</aside>
+	<BackOfficeSidebar area="Administration" home="/admin" groups={navigation} {accountLinks} {user} />
 
 	<!-- Mobile Bottom Navigation -->
 	<nav
