@@ -103,6 +103,39 @@ func TestCreateProductWithPrice(t *testing.T) {
 		assert.Equal(t, int64(1200), priceAmount, "price amount in DB should match request")
 	})
 
+	// The admin product form sends a one-time price in "eur": the stored
+	// price must be the one booking looks up (one_time, EUR).
+	t.Run("should store a one-time euro price as booking looks it up", func(t *testing.T) {
+		clearTables(t, ctx)
+		defer tu.ClearAuthData(t, ctx, authCtx)
+
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+		parentCategory := td.NewValidCategory("Ostéopathie")
+		td.InsertCategory(t, ctx, parentCategory, testPool)
+
+		request := domain.CreateProductWithPriceRequest{
+			Product: validProductRequest,
+			Price:   domain.CreatePriceRequest{Amount: 7000, Currency: "eur", Interval: "one_time"},
+		}
+		request.Product.CategoryID = parentCategory.ID.String()
+
+		res, err := (&http.Client{}).Do(th.NewCreateProductWithPriceRequest(t, ctx, testServerURL, request, accessToken))
+		require.NoError(t, err)
+		defer res.Body.Close()
+		require.Equal(t, http.StatusCreated, res.StatusCode)
+
+		var body struct {
+			PriceID string `json:"price_id"`
+		}
+		require.NoError(t, json.NewDecoder(res.Body).Decode(&body))
+
+		var interval, currency string
+		err = testPool.QueryRow(ctx, "SELECT interval::text, currency FROM catalog.prices WHERE id = $1", body.PriceID).Scan(&interval, &currency)
+		require.NoError(t, err)
+		assert.Equal(t, "one_time", interval)
+		assert.Equal(t, "EUR", currency)
+	})
+
 	t.Run("should return 400 Bad Request for an invalid JSON body", func(t *testing.T) {
 		clearTables(t, ctx)
 
