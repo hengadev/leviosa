@@ -24,7 +24,11 @@
 </script>
 
 <Dialog.Root>
-	<Dialog.Trigger>
+	<!-- The trigger is the button: what the page passes is only its content,
+	     a button inside it would be invalid HTML and break hydration. -->
+	<Dialog.Trigger
+		class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-background bg-foreground rounded-lg hover:opacity-90 transition-colors"
+	>
 		{@render children()}
 	</Dialog.Trigger>
 	<Dialog.Portal>
