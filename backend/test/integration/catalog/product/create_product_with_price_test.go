@@ -94,7 +94,7 @@ func TestCreateProductWithPrice(t *testing.T) {
 		var productName string
 		err = testPool.QueryRow(ctx, "SELECT name FROM catalog.products WHERE id = $1", responseBody.ProductID).Scan(&productName)
 		assert.NoError(t, err, "failed to query product from database")
-		assert.Equal(t, strings.ToLower(productNameRequest), productName, "product name in DB should match request")
+		assert.Equal(t, productNameRequest, productName, "product name in DB should be kept as typed")
 
 		// Check if the price was created
 		var priceAmount int64
@@ -134,6 +134,27 @@ func TestCreateProductWithPrice(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "one_time", interval)
 		assert.Equal(t, "EUR", currency)
+	})
+
+	t.Run("should return 409 Conflict for a name that exists in another case", func(t *testing.T) {
+		clearTables(t, ctx)
+		defer tu.ClearAuthData(t, ctx, authCtx)
+
+		accessToken := tu.SetupAdminUser(t, ctx, authCtx)
+
+		parentCategory := td.NewValidCategory("Test Category")
+		td.InsertCategory(t, ctx, parentCategory, testPool)
+		td.InsertProduct(t, ctx, testPool, td.NewValidProduct(strings.ToLower(productNameRequest), parentCategory.ID))
+
+		request := validRequest
+		request.Product.CategoryID = parentCategory.ID.String()
+		req := th.NewCreateProductWithPriceRequest(t, ctx, testServerURL, request, accessToken)
+
+		res, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusConflict, res.StatusCode)
 	})
 
 	t.Run("should return 400 Bad Request for an invalid JSON body", func(t *testing.T) {

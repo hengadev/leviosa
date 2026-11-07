@@ -14,6 +14,8 @@ import (
 )
 
 func (s *CategoryService) CreateCategory(ctx context.Context, request *domain.CreateCategoryRequest) (string, error) {
+	// The name is kept as typed; uniqueness ignores case (catalog_categories_name_lower_key).
+	request.Name = strings.TrimSpace(request.Name)
 	if err := request.Valid(ctx); err != nil {
 		return "", errs.NewInvalidValueErr(err.Error())
 	}
@@ -22,7 +24,7 @@ func (s *CategoryService) CreateCategory(ctx context.Context, request *domain.Cr
 
 	category := &domain.Category{
 		ID:          uuid.New(),
-		Name:        strings.ToLower(request.Name),
+		Name:        request.Name,
 		Description: request.Description,
 		Status:      domain.Draft,
 		CreatedAt:   now,

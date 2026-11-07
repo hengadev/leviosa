@@ -62,7 +62,7 @@ func TestCreateCategory(t *testing.T) {
 		createdID, _ := uuid.Parse(respBody.ID)
 		cat, getErr := td.GetCategoryByID(t, ctx, createdID, testPool)
 		assert.NoError(t, getErr, "Failed to retrieve the newly created category from the database")
-		assert.Equal(t, strings.ToLower(requestBody.Name), cat.Name)
+		assert.Equal(t, requestBody.Name, cat.Name, "the name is kept as typed")
 		assert.Equal(t, requestBody.Description, cat.Description)
 		assert.Equal(t, domain.Draft, cat.Status)
 	})
@@ -77,7 +77,7 @@ func TestCreateCategory(t *testing.T) {
 		// Setup: Insert a category with a known name
 		knownName := "Existing Category Name"
 		existingCategory := td.NewValidCategory(knownName)
-		existingCategory.Name = strings.ToLower(existingCategory.Name) // that operation is done by the domain function, so I have to replicate it when directly inserting to the database
+		existingCategory.Name = strings.ToLower(existingCategory.Name) // the same name in another case: uniqueness ignores case
 		td.InsertCategory(t, ctx, existingCategory, testPool)
 
 		requestBody := domain.CreateCategoryRequest{
