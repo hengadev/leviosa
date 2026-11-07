@@ -94,7 +94,8 @@
 			? [
 					{
 						href: "/staff",
-						label: "Espace praticien",
+						// Five labels share a phone's width
+						label: "Praticien",
 						icon: CalendarClock,
 					},
 				]
@@ -118,7 +119,7 @@
 
 	<!-- Mobile Bottom Navigation -->
 	<nav
-		class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-surface backdrop-blur-sm border-t border-border-input-hover"
+		class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border-card pb-[env(safe-area-inset-bottom)]"
 		aria-label="Bottom navigation"
 	>
 		<ul class="flex items-center justify-around px-1 py-1">
