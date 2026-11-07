@@ -110,7 +110,7 @@ export const actions: Actions = {
 		// The backend already revokes every session server-side; clear the
 		// local cookies too so the browser is signed out immediately.
 		cookies.delete(locals.sessionCookieName, { path: '/', domain: locals.cookieDomain });
-		cookies.delete('leviosa_refresh_token', { path: '/', domain: locals.cookieDomain });
+		cookies.delete(locals.refreshCookieName, { path: '/', domain: locals.cookieDomain });
 
 		throw redirect(302, '/auth');
 	},

@@ -87,7 +87,7 @@ export const actions = {
 
         // Forward authentication cookies from backend response to client.
         // Store the access token under sessionCookieName (environment-aware).
-        forwardAuthCookies(res, cookies, locals.sessionCookieName, locals.cookieDomain);
+        forwardAuthCookies(res, cookies, locals.sessionCookieName, locals.cookieDomain, locals.refreshCookieName);
 
         // Success - redirect to general info page
         redirect(302, "/auth/general");

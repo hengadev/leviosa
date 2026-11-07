@@ -92,6 +92,14 @@ export function getSessionCookieName(hostname: string): string {
 }
 
 /**
+ * Return the refresh token cookie name for the given hostname (same scoping
+ * rationale: a production login must not replace the staging refresh token).
+ */
+export function getRefreshCookieName(hostname: string): string {
+	return isStagingHost(hostname) ? 'leviosa_refresh_token_staging' : 'leviosa_refresh_token';
+}
+
+/**
  * Return the CSRF cookie name for the given hostname (same scoping rationale).
  */
 export function getCsrfCookieName(hostname: string): string {
