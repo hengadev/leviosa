@@ -93,7 +93,7 @@ export const load = async ({ cookies }: RequestEvent) => {
 
 
 export const actions = {
-    default: async ({ request, fetch, cookies, url }: RequestEvent) => {
+    default: async ({ request, fetch, cookies, url, locals }: RequestEvent) => {
         const form = await superValidate(request, arktype(schema, { defaults }))
 
         // Validate form
@@ -127,7 +127,7 @@ export const actions = {
             method: "POST",
             headers: {
                 'Content-Type': "application/json",
-                'Cookie': `leviosa_access_token=${cookies.get("leviosa_access_token") ?? ""}`,
+                'Cookie': `leviosa_access_token=${cookies.get(locals.sessionCookieName) ?? ""}`,
             },
             body: JSON.stringify({
                 password: form.data.password,
