@@ -39,7 +39,7 @@ const (
 	// === Admin-Only Endpoints ===
 
 	// Get pending users (users awaiting approval)
-	GetPendingUsersEndpoint = AdminAuthBasePath + AdminUsersBasePath + PendingPath
+	GetPendingUsersEndpoint = AdminAuthBasePath + UsersBasePath + PendingPath
 
 	// Get all users
 	GetAllUsersEndpoint = AdminUsersBasePath
