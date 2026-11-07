@@ -82,6 +82,11 @@ func (s *BookingService) CreateBooking(
 		}
 		return nil, fmt.Errorf("get product: %w", err)
 	}
+	// Only a published product is offered: a draft is not ready yet, an
+	// archived one is kept for the bookings that refer to it.
+	if product.Status != catalogDomain.Published {
+		return nil, errs.NewConflictErr(errProductNotOffered)
+	}
 
 	// 3. Calculate slot end time based on product duration
 	slotEndTime := slotStartTime.Add(time.Duration(product.Duration) * time.Minute)
@@ -237,6 +242,9 @@ var errAvailabilityClosed = errors.New("availability is no longer available for 
 
 // errSlotTaken is the conflict a booking gets when another one holds its slot.
 var errSlotTaken = errors.New("time slot is already booked")
+
+// errProductNotOffered refuses a booking for a draft or archived product.
+var errProductNotOffered = errors.New("product is not offered for booking")
 
 // createBookingPaymentIntent creates the PaymentIntent for the amount due
 // online, with the booking in its metadata so the webhook finds it.
