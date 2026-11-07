@@ -208,22 +208,22 @@
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
                 <h2 class="text-lg font-semibold">Informations de l'entreprise</h2>
-                <p class="text-sm text-foreground-alt mt-1">
+                <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                     Gérez les informations de contact et les réseaux sociaux
                 </p>
             </div>
             <div class="p-6 space-y-4">
                 <!-- Company Name -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Nom de l'entreprise</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.company?.name || "Non défini"}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $companyNameForm.name = data.settings?.company?.name || "";
                             companyNameDialogOpen = true;
@@ -236,16 +236,16 @@
                 </div>
 
                 <!-- Company Email -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Email de contact</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.company?.email || "Non défini"}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $companyEmailForm.email = data.settings?.company?.email || "";
                             companyEmailDialogOpen = true;
@@ -258,16 +258,16 @@
                 </div>
 
                 <!-- Company Phone -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Téléphone</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.company?.telephone || "Non défini"}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $companyPhoneForm.telephone = data.settings?.company?.telephone || "";
                             companyPhoneDialogOpen = true;
@@ -280,16 +280,16 @@
                 </div>
 
                 <!-- Company Address -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Adresse</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.company?.address || "Non définie"}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $companyAddressForm.address = data.settings?.company?.address || "";
                             companyAddressDialogOpen = true;
@@ -302,16 +302,16 @@
                 </div>
 
                 <!-- Company Instagram -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Instagram</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.company?.instagram || "Non défini"}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $companyInstagramForm.instagram = data.settings?.company?.instagram || "";
                             companyInstagramDialogOpen = true;
@@ -329,22 +329,22 @@
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
                 <h2 class="text-lg font-semibold">Page publique</h2>
-                <p class="text-sm text-foreground-alt mt-1">
+                <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                     Le partenaire et le produit présentés sur la page du cabinet — un changement prend effet immédiatement, sans déploiement
                 </p>
             </div>
             <div class="p-6 space-y-4">
                 <!-- Partner shown -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Partenaire mis en avant</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {practicePartnerLabel}
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $practicePageForm.partner_id = data.practicePage?.partnerId || "";
                             $practicePageForm.product_id = data.practicePage?.productId || "";
@@ -359,20 +359,20 @@
                 </div>
 
                 <!-- Product shown -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Produit proposé</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {practiceProductLabel}
                         </div>
                     </div>
                 </div>
 
                 <!-- Video -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Vidéo de la page</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.practicePage?.videoUrl || "Non définie (image d'attente affichée)"}
                         </div>
                     </div>
@@ -384,22 +384,22 @@
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
                 <h2 class="text-lg font-semibold">Réservation</h2>
-                <p class="text-sm text-foreground-alt mt-1">
+                <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                     Les créneaux proposés sur la page publique et acceptés à la réservation — un changement prend effet immédiatement, sans déploiement
                 </p>
             </div>
             <div class="p-6 space-y-4">
                 {#if data.bookingPolicy}
-                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                        <div class="flex-1">
+                    <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1 min-w-0">
                             <div class="font-medium text-sm">Délai minimum avant une séance</div>
-                            <div class="text-sm text-foreground-alt mt-1">
+                            <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                                 {data.bookingPolicy.minimumNoticeHours} h
                             </div>
                         </div>
                         <Button.Root
                             type="button"
-                            class="cursor-pointer"
+                            class="cursor-pointer shrink-0"
                             onclick={() => {
                                 $bookingPolicyForm.minimum_notice_hours = data.bookingPolicy?.minimumNoticeHours ?? 12;
                                 $bookingPolicyForm.horizon_weeks = data.bookingPolicy?.horizonWeeks ?? 8;
@@ -412,18 +412,18 @@
                             </div>
                         </Button.Root>
                     </div>
-                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                        <div class="flex-1">
+                    <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1 min-w-0">
                             <div class="font-medium text-sm">Horizon de réservation</div>
-                            <div class="text-sm text-foreground-alt mt-1">
+                            <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                                 {formatWeeks(data.bookingPolicy.horizonWeeks)}
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                        <div class="flex-1">
+                    <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1 min-w-0">
                             <div class="font-medium text-sm">Maintien du créneau pendant le paiement</div>
-                            <div class="text-sm text-foreground-alt mt-1">
+                            <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                                 {data.bookingPolicy.paymentHoldMinutes} min
                             </div>
                         </div>
@@ -438,22 +438,22 @@
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
                 <h2 class="text-lg font-semibold">Configuration OTP</h2>
-                <p class="text-sm text-foreground-alt mt-1">
+                <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                     Paramètres de sécurité pour les codes de vérification
                 </p>
             </div>
             <div class="p-6 space-y-4">
                 <!-- OTP Duration -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Durée de validité OTP</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {formatSeconds(data.settings?.otp?.duration || 300)} (60-3600 secondes)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $otpDurationForm.duration = data.settings?.otp?.duration || 300;
                             otpDurationDialogOpen = true;
@@ -466,16 +466,16 @@
                 </div>
 
                 <!-- OTP Length -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Longueur du code OTP</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.otp?.length || 6} chiffres (4-10 chiffres)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $otpLengthForm.length = data.settings?.otp?.length || 6;
                             otpLengthDialogOpen = true;
@@ -488,16 +488,16 @@
                 </div>
 
                 <!-- OTP Max Attempts -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Tentatives maximales</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {data.settings?.otp?.max_attempts || 5} tentatives (1-10)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $otpMaxAttemptsForm.max_attempts = data.settings?.otp?.max_attempts || 5;
                             otpMaxAttemptsDialogOpen = true;
@@ -515,22 +515,22 @@
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
                 <h2 class="text-lg font-semibold">Configuration des tokens</h2>
-                <p class="text-sm text-foreground-alt mt-1">
+                <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                     Paramètres de durée de vie des tokens d'authentification
                 </p>
             </div>
             <div class="p-6 space-y-4">
                 <!-- Access Token Duration -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Durée du token d'accès</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {formatMinutes(data.settings?.tokens?.access_duration || 15)} (1-240 minutes)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $accessTokenDurationForm.duration = data.settings?.tokens?.access_duration || 15;
                             accessTokenDurationDialogOpen = true;
@@ -543,16 +543,16 @@
                 </div>
 
                 <!-- Refresh Token Duration -->
-                <div class="flex items-center justify-between py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1">
+                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                    <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Durée du token de rafraîchissement</div>
-                        <div class="text-sm text-foreground-alt mt-1">
+                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                             {formatHours(data.settings?.tokens?.refresh_duration || 168)} (1-720 heures)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
-                        class="cursor-pointer"
+                        class="cursor-pointer shrink-0"
                         onclick={() => {
                             $refreshTokenDurationForm.duration = data.settings?.tokens?.refresh_duration || 168;
                             refreshTokenDurationDialogOpen = true;
