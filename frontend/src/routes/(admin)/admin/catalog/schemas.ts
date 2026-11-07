@@ -14,8 +14,8 @@ export type category = Infer<typeof categorySchema>
 
 export const categoryDefaults: category = {
     id: "",
-    name: "massage",
-    description: "Un petit massage pour tester l'application",
+    name: "",
+    description: "",
     status: "draft",
 }
 
@@ -27,8 +27,7 @@ export const deleteSchema = type({
 export type Delete = Infer<typeof deleteSchema>
 
 export const deleteDefaults: Delete = {
-    // NOTE: this is the one that is used to create the product so that I can try to destroy it
-    id: "0143ec0d-1715-41de-8774-63821bce8d27"
+    id: ""
 }
 
 // NOTE: product
@@ -41,8 +40,7 @@ export const deleteProductSchema = type({
 export type DeleteProduct = Infer<typeof deleteProductSchema>
 
 export const deleteProductDefaults: DeleteProduct = {
-    // NOTE: this is the one that is used to create the product so that I can try to destroy it
-    id: "0143ec0d-1715-41de-8774-63821bce8d27"
+    id: ""
 }
 
 // create & update
