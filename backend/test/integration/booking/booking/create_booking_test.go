@@ -128,6 +128,64 @@ func TestCreateBooking(t *testing.T) {
 		assert.Equal(t, "en", *savedBooking.Locale)
 	})
 
+	// Archiving a product keeps it for the bookings that refer to it but
+	// stops offering it; a draft is not offered yet.
+	for _, status := range []string{"archived", "draft"} {
+		t.Run("should return 409 for a "+status+" product", func(t *testing.T) {
+			tbooking.ClearBookingsTable(t, ctx, testPool)
+			tavail.ClearAvailabilityTable(t, ctx, testPool)
+			tr.ClearRoomsTable(t, ctx, testPool)
+			tb.ClearBuildingsTable(t, ctx, testPool)
+			tcatalog.ClearProductsTable(t, ctx, testPool)
+			defer tu.ClearAuthData(t, ctx, authCtx)
+
+			categoryID := tcatalog.CreateTestCategory(t, ctx, testPool)
+			products := tcatalog.CreateDefaultTestProducts(t, ctx, testPool, categoryID)
+			productID := products[0].ID
+			_, err := testPool.Exec(ctx, `UPDATE catalog.products SET status = $2 WHERE id = $1`, productID, status)
+			require.NoError(t, err)
+
+			building := tb.NewTestBuilding(t)
+			buildingEncx, err := domain.ProcessBuildingEncx(ctx, crypto, building)
+			require.NoError(t, err)
+			require.NoError(t, tb.InsertBuildingEncx(t, ctx, testPool, buildingEncx))
+			room := tr.NewTestRoomWithBuilding(t, building.ID)
+			roomEncx, err := domain.ProcessRoomEncx(ctx, crypto, room)
+			require.NoError(t, err)
+			require.NoError(t, tr.InsertRoomEncx(t, ctx, testPool, roomEncx))
+
+			_, partnerID := tsetup.SetupAuthenticatedPartnerWithAllocation(t, ctx, "partner@example.com", room.ID, testPool, authCtx.Redis, crypto)
+			clientToken, clientID := tsetup.SetupStandardUser(t, ctx, "client@example.com", room.ID, testPool, authCtx.Redis, crypto)
+
+			startTime := time.Now().Add(24 * time.Hour).Truncate(time.Hour)
+			availability := tavail.NewTestAvailability(t, partnerID, room.ID, startTime, startTime.Add(2*time.Hour), 0)
+			availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
+			require.NoError(t, err)
+			tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
+
+			bodyBytes, err := json.Marshal(map[string]interface{}{
+				"availability_id": availability.ID.String(),
+				"client_id":       clientID,
+				"product_id":      productID.String(),
+				"slot_start_time": startTime.Format(time.RFC3339),
+			})
+			require.NoError(t, err)
+			req, err := http.NewRequest("POST", testServerURL+"/bookings", bytes.NewReader(bodyBytes))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
+
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			assert.Equal(t, http.StatusConflict, resp.StatusCode)
+
+			var count int
+			require.NoError(t, testPool.QueryRow(ctx, `SELECT count(*) FROM booking.bookings`).Scan(&count))
+			assert.Zero(t, count, "no booking is created")
+		})
+	}
+
 	t.Run("should return 400 for invalid availability", func(t *testing.T) {
 		// Clean state
 		tbooking.ClearBookingsTable(t, ctx, testPool)
