@@ -95,37 +95,49 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 
     const sessionCookie = cookies.get('session')
 
+    // The backend's key names (internal/common/contracts/settings/key.go). The
+    // token durations are not in the bulk endpoint: they have their own GETs.
     const bulkKeys = [
         'company_name',
-        'company_email',
-        'company_phone',
-        'company_address',
-        'company_instagram',
+        'support_email',
+        'telephone',
+        'headquarters',
+        'instagram_path',
         'otp_duration',
         'otp_length',
         'otp_max_attempts',
-        'access_token_duration',
-        'refresh_token_duration'
     ].join(',')
 
     try {
-        const settingsRes = await fetch(`${env.API_URL}/admin/settings/bulk?keys=${bulkKeys}`, {
-            headers: {
-                'Authorization': `Bearer ${sessionCookie}`,
-            }
-        })
+        const headers = { 'Authorization': `Bearer ${sessionCookie}` }
+        const [settingsRes, accessRes, refreshRes] = await Promise.all([
+            fetch(`${env.API_URL}/admin/settings/bulk?keys=${bulkKeys}`, { headers }),
+            fetch(`${env.API_URL}/admin/settings/tokens/access-duration`, { headers }),
+            fetch(`${env.API_URL}/admin/settings/tokens/refresh-duration`, { headers }),
+        ])
+        const duration = async (res: Response) => (res.ok ? String((await res.json()).duration ?? '') : '')
+        const [accessDuration, refreshDuration] = await Promise.all([duration(accessRes), duration(refreshRes)])
 
         if (settingsRes.ok) {
-            const bulkData: { key: string; value: string }[] = await settingsRes.json()
-            const find = (key: string) => bulkData.find((s) => s.key === key)?.value ?? ''
+            // 200 is the list; 207 (some keys never set yet) wraps it as
+            // { data, errors }, and an unset key just shows empty.
+            type BulkSetting = { key: string; value: string }
+            const body: BulkSetting[] | { data: BulkSetting[] } = await settingsRes.json()
+            const bulkData = Array.isArray(body) ? body : body.data ?? []
+            const values: Record<string, string> = {
+                ...Object.fromEntries(bulkData.map((s) => [s.key, s.value])),
+                access_token_duration: accessDuration,
+                refresh_token_duration: refreshDuration,
+            }
+            const find = (key: string) => values[key] ?? ''
 
             settings = {
                 company: {
                     name: find('company_name'),
-                    email: find('company_email'),
-                    telephone: find('company_phone'),
-                    address: find('company_address'),
-                    instagram: find('company_instagram'),
+                    email: find('support_email'),
+                    telephone: find('telephone'),
+                    address: find('headquarters'),
+                    instagram: find('instagram_path'),
                     logo_url: '',
                     logo_content_type: '',
                 },
