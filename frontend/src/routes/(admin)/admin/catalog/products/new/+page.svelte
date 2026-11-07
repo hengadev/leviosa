@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { goto } from "$app/navigation";
-	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, DollarSign, Upload, X, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
+	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, Euro, X, ImageIcon, Plus, Trash2, LoaderCircle } from "@lucide/svelte";
 	import type { PageData, ActionData } from "./$types";
 	import type { CancellationTier } from "$lib/data/mockData";
 	import DepositField from "../../DepositField.svelte";
@@ -18,11 +18,9 @@
 	let duration = $state(60);
 	let price = $state("");
 	let status = $state<"published" | "draft" | "archived">("draft");
-	let availability = $state<"online" | "in-person" | "hybrid">("hybrid");
-	let bufferTime = $state(15);
+	let availability = $state<"online" | "in-person" | "hybrid">("in-person");
 	let cancellationHours = $state(24);
 	let cancellationTiers = $state<CancellationTier[]>([]);
-	let stripeProductId = $state("");
 
 	function addCancellationTier() {
 		cancellationTiers = [...cancellationTiers, { minHoursBefore: 0, refundPercentage: 0 }];
@@ -35,15 +33,23 @@
 
 	// Image upload state
 	let imagePreview = $state<string | null>(null);
-	let isUploading = $state(false);
+
+	let submitting = $state(false);
 
 	function createProductEnhance() {
+		submitting = true;
 		return async ({ result }: { result: import('@sveltejs/kit').ActionResult }) => {
+			submitting = false;
 			if (result.type === 'success') {
 				toast.success('Succès', 'Produit créé avec succès');
 				goto('/admin/catalog');
 			} else if (result.type === 'failure') {
-				toast.error('Erreur', (result.data as { error?: string })?.error ?? 'Une erreur est survenue');
+				const data = result.data as { error?: string; created?: boolean } | undefined;
+				toast.error('Erreur', data?.error ?? 'Une erreur est survenue');
+				// The product exists (as a draft): the catalog shows it.
+				if (data?.created) goto('/admin/catalog');
+			} else if (result.type === 'error') {
+				toast.error('Erreur', 'Une erreur est survenue. Veuillez réessayer.');
 			}
 		};
 	}
@@ -101,7 +107,7 @@
 	</div>
 
 	<div class="bg-background rounded-lg border border-border-card p-6 lg:p-8">
-		<form method="POST" use:enhance={createProductEnhance} class="space-y-6">
+		<form method="POST" enctype="multipart/form-data" use:enhance={createProductEnhance} class="space-y-6">
 			<!-- Image Upload -->
 			<div>
 				<label class="block text-sm font-medium text-foreground-alt mb-2">
@@ -267,7 +273,7 @@
 						Prix (€) <span class="text-red-500">*</span>
 					</label>
 					<div class="relative">
-						<DollarSign
+						<Euro
 							size={18}
 							class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
 						/>
@@ -284,82 +290,32 @@
 						/>
 					</div>
 				</div>
-
-				<!-- Stripe Product ID -->
+				<!-- Availability -->
 				<div>
-					<label for="stripeProductId" class="block text-sm font-medium text-foreground-alt mb-2">
-						Stripe Product ID (Optionnel)
+					<label for="availability" class="block text-sm font-medium text-foreground-alt mb-2">
+						Disponibilité <span class="text-red-500">*</span>
 					</label>
 					<div class="relative">
-						<DollarSign
+						<MapPin
 							size={18}
 							class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
 						/>
-						<input
-							id="stripeProductId"
-							name="stripeProductId"
-							type="text"
-							bind:value={stripeProductId}
-							placeholder="prod_xxxxxxxxx"
-							class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
-						/>
+						<select
+							id="availability"
+							name="availability"
+							bind:value={availability}
+							required
+							class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent appearance-none bg-background"
+						>
+							<option value="online">En ligne</option>
+							<option value="in-person">En présentiel</option>
+							<option value="hybrid">Hybride</option>
+						</select>
 					</div>
-					<p class="mt-1 text-xs text-muted-foreground">
-						ID du produit Stripe pour les paiements
-					</p>
 				</div>
 			</div>
 
-			<!-- Availability -->
-			<div>
-				<label for="availability" class="block text-sm font-medium text-foreground-alt mb-2">
-					Disponibilité <span class="text-red-500">*</span>
-				</label>
-				<div class="relative">
-					<MapPin
-						size={18}
-						class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-					/>
-					<select
-						id="availability"
-						name="availability"
-						bind:value={availability}
-						required
-						class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent appearance-none bg-background"
-					>
-						<option value="online">En ligne</option>
-						<option value="in-person">En présentiel</option>
-						<option value="hybrid">Hybride</option>
-					</select>
-				</div>
-			</div>
-
-			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-				<!-- Buffer Time -->
-				<div>
-					<label for="bufferTime" class="block text-sm font-medium text-foreground-alt mb-2">
-						Tampon (minutes)
-					</label>
-					<div class="relative">
-						<Clock
-							size={18}
-							class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-						/>
-						<input
-							id="bufferTime"
-							name="bufferTime"
-							type="number"
-							bind:value={bufferTime}
-							min="0"
-							placeholder="15"
-							class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
-						/>
-					</div>
-					<p class="mt-1 text-xs text-muted-foreground">
-						Temps de pause entre les réservations
-					</p>
-				</div>
-
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 				<!-- Cancellation Hours -->
 				<div>
 					<label for="cancellationHours" class="block text-sm font-medium text-foreground-alt mb-2">
@@ -482,9 +438,15 @@
 			<div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-border-card">
 				<button
 					type="submit"
-					class="flex-1 px-6 py-3 bg-foreground text-background rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 transition-colors font-medium"
+					disabled={submitting}
+					class="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-foreground text-background rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-foreground focus:ring-offset-2 transition-colors font-medium disabled:opacity-60"
 				>
-					Créer le Produit
+					{#if submitting}
+						<LoaderCircle size={18} class="animate-spin" />
+						Création…
+					{:else}
+						Créer le Produit
+					{/if}
 				</button>
 				<a
 					href="/admin/catalog"

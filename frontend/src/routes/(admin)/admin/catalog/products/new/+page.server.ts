@@ -14,6 +14,11 @@ interface BackendCategory {
 	status: string;
 }
 
+// GET /admin/categories returns CategoryWithImage: { category, image? }
+interface BackendCategoryWithImage {
+	category: BackendCategory;
+}
+
 function mapBackendCategoryToFrontend(cat: BackendCategory): Category {
 	return {
 		id: cat.id,
@@ -61,8 +66,8 @@ export const load: PageServerLoad = async ({ fetch }) => {
 		try {
 			const res = await fetch(`${env.API_URL}/admin/categories`);
 			if (!res.ok) throw new Error(`Failed to fetch categories: ${res.status} ${res.statusText}`);
-			const backendCategories: BackendCategory[] = await res.json();
-			categories = backendCategories.map(mapBackendCategoryToFrontend);
+			const backendCategories: BackendCategoryWithImage[] = await res.json();
+			categories = backendCategories.map((item) => mapBackendCategoryToFrontend(item.category));
 		} catch (err) {
 			console.error('Error loading categories:', err);
 			categories = [];
@@ -86,7 +91,6 @@ export const actions: Actions = {
 		const price = formData.get('price') as string;
 		const status = formData.get('status') as 'published' | 'draft' | 'archived';
 		const availability = formData.get('availability') as 'online' | 'in-person' | 'hybrid';
-		const bufferTime = formData.get('bufferTime') as string;
 		const cancellationHours = formData.get('cancellationHours') as string;
 		const cancellationTiersStr = formData.get('cancellationTiers') as string | null;
 
@@ -98,7 +102,8 @@ export const actions: Actions = {
 				category: categoryId,
 				duration: parseInt(duration, 10),
 				availability,
-				bufferTime: parseInt(bufferTime, 10),
+				// No buffer: the session's duration includes the practitioner's own break.
+				bufferTime: 0,
 				cancellationHours: parseInt(cancellationHours, 10),
 			},
 			price: {
@@ -127,6 +132,14 @@ export const actions: Actions = {
 			}
 		}
 
+		// Publishing needs an image (the backend refuses it otherwise): say
+		// so before creating anything.
+		const imageFile = formData.get('imageFile');
+		const hasImage = imageFile instanceof File && imageFile.size > 0;
+		if (status === 'published' && !hasImage) {
+			return fail(400, { error: 'Ajoutez une image pour publier le produit, ou créez-le en brouillon.' });
+		}
+
 		try {
 			const res = await fetch(`${env.API_URL}/admin/products`, {
 				method: 'POST',
@@ -137,27 +150,33 @@ export const actions: Actions = {
 			if (!res.ok) {
 				if (res.status === 401) return fail(401, { error: 'Session expirée. Veuillez vous reconnecter.' });
 				if (res.status === 403) return fail(403, { error: "Vous n'avez pas les droits pour effectuer cette action." });
-				if (res.status === 404) return fail(404, { error: "La ressource demandée est introuvable." });
-				if (res.status === 409) return fail(409, { error: "Cette ressource est déjà utilisée." });
-				if (res.status === 500) return fail(500, { error: "Une erreur serveur est survenue. Veuillez réessayer." });
-				const errorData = await res.json().catch(() => ({ msg: 'Erreur inconnue' }));
-				return fail(400, { error: `Erreur: ${errorData.msg || res.status}` });
+				if (res.status === 409) return fail(409, { error: 'Cette ressource est déjà utilisée.' });
+				if (res.status >= 500) return fail(500, { error: 'Une erreur serveur est survenue. Veuillez réessayer.' });
+				const errorData = await res.json().catch(() => null);
+				console.error('Product creation refused:', res.status, errorData);
+				return fail(400, { error: 'Le produit a été refusé : vérifiez les champs saisis.' });
 			}
 
 			const created: CreateProductResponse = await res.json();
 
-			const imageFile = formData.get('imageFile') as File | null;
-			if (imageFile && imageFile.size > 0) {
+			if (hasImage) {
 				const imageFormData = new FormData();
 				imageFormData.append('image', imageFile);
+				imageFormData.append('parent_id', created.product_id);
+				imageFormData.append('parent_type', 'product');
+				imageFormData.append('title', name);
+				imageFormData.append('is_active', 'true');
 
-				const imageRes = await fetch(`${env.API_URL}/admin/products/${created.product_id}/images`, {
+				const imageRes = await fetch(`${env.API_URL}/admin/images`, {
 					method: 'POST',
 					body: imageFormData,
 				});
-
 				if (!imageRes.ok) {
-					console.error('Image upload failed after product creation:', imageRes.status);
+					console.error('Image upload failed after product creation:', imageRes.status, await imageRes.text());
+					return fail(400, {
+						created: true,
+						error: "Produit créé en brouillon, mais l'image n'a pas pu être envoyée. Ajoutez-la depuis la fiche du produit.",
+					});
 				}
 			}
 
@@ -170,7 +189,8 @@ export const actions: Actions = {
 					body: JSON.stringify({ publishedStatus: status }),
 				});
 				if (!statusRes.ok) {
-					return fail(400, { error: 'Produit créé en brouillon : le statut choisi n\'a pas pu être appliqué.' });
+					console.error('Product status update failed:', statusRes.status, await statusRes.text());
+					return fail(400, { created: true, error: "Produit créé en brouillon : le statut choisi n'a pas pu être appliqué." });
 				}
 			}
 
