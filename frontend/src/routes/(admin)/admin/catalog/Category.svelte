@@ -99,13 +99,8 @@
 		</div>
 
 		<CategoryModal modalForm={createCategoryForm}>
-			<button
-				type="button"
-				class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-background bg-foreground rounded-lg hover:opacity-90 transition-colors"
-			>
-				<Plus size={16} />
-				<span>Nouvelle catégorie</span>
-			</button>
+			<Plus size={16} />
+			<span>Nouvelle catégorie</span>
 		</CategoryModal>
 	</div>
 
