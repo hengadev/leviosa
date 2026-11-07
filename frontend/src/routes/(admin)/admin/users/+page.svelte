@@ -23,7 +23,9 @@
 		BadgeCheck,
 		Building2,
 		FileText,
-		CreditCard
+		CreditCard,
+		UserPlus,
+		Copy
 	} from "@lucide/svelte";
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -44,6 +46,17 @@
 	let approveDialogOpen = $state(false);
 	let verifyPartnerDialogOpen = $state(false);
 	let deletePartnerDialogOpen = $state(false);
+	let createPartnerDialogOpen = $state(false);
+	let passwordCopied = $state(false);
+
+	async function copyPassword(password: string) {
+		try {
+			await navigator.clipboard.writeText(password);
+			passwordCopied = true;
+		} catch {
+			passwordCopied = false;
+		}
+	}
 	let selectedUser = $state<typeof data.users[0] | null>(null);
 	let selectedPartner = $state<typeof data.partners[0] | null>(null);
 	let selectedRole = $state<string>("");
@@ -160,6 +173,8 @@
 			approveDialogOpen = false;
 			verifyPartnerDialogOpen = false;
 			deletePartnerDialogOpen = false;
+			createPartnerDialogOpen = false;
+			passwordCopied = false;
 		}
 	});
 </script>
@@ -185,6 +200,29 @@
 		<div class="mb-6 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-lg">
 			<CheckCircle size={20} />
 			<p class="text-sm font-medium">{form.success}</p>
+		</div>
+	{/if}
+
+	{#if form && "createdPractitioner" in form && form.createdPractitioner}
+		<!-- Shown once: the password is not stored anywhere it could be shown again. -->
+		<div class="mb-6 px-4 py-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg">
+			<p class="text-sm font-semibold mb-2">Identifiants du praticien — notez le mot de passe, il ne sera plus affiché.</p>
+			<dl class="grid gap-1 text-sm">
+				<div class="flex flex-wrap gap-2"><dt class="font-medium">E-mail :</dt><dd>{form.createdPractitioner.email}</dd></div>
+				<div class="flex flex-wrap items-center gap-2">
+					<dt class="font-medium">Mot de passe :</dt>
+					<dd class="font-mono break-all">{form.createdPractitioner.password}</dd>
+					<button
+						type="button"
+						onclick={() => copyPassword(form.createdPractitioner.password)}
+						class="inline-flex items-center gap-1 px-2 py-1 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors text-xs font-medium"
+					>
+						<Copy size={14} />
+						{passwordCopied ? "Copié" : "Copier"}
+					</button>
+				</div>
+			</dl>
+			<p class="text-xs mt-2">Il peut le changer depuis son profil, ou via « mot de passe oublié » sur la page de connexion.</p>
 		</div>
 	{/if}
 
@@ -370,6 +408,16 @@
 
 		<!-- Partners Tab -->
 		<TabsContent value="partners" class="p-6">
+			<div class="mb-4 flex justify-end">
+				<button
+					type="button"
+					onclick={() => (createPartnerDialogOpen = true)}
+					class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+				>
+					<UserPlus size={16} />
+					Ajouter un praticien
+				</button>
+			</div>
 			{#if data.partnersError}
 				<div class="mb-4 flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 text-red-800 rounded-lg">
 					<AlertCircle size={20} />
@@ -750,6 +798,84 @@
 			</form>
 		</Modal>
 	{/if}
+{/if}
+
+<!-- Create Partner Dialog/Drawer -->
+{#snippet createPartnerForm()}
+	<form method="POST" action="?/createPartner" use:enhance={() => {
+		return async ({ update }) => {
+			await update({ reset: false });
+		};
+	}} class="mt-6 grid gap-4">
+		<div class="grid gap-4 sm:grid-cols-2">
+			<label class="grid gap-1 text-sm font-medium text-foreground">
+				Prénom
+				<input name="first_name" required autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+			</label>
+			<label class="grid gap-1 text-sm font-medium text-foreground">
+				Nom
+				<input name="last_name" required autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+			</label>
+		</div>
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			E-mail (identifiant de connexion)
+			<input name="email" type="email" required autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+		</label>
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			Téléphone
+			<input name="telephone" type="tel" required placeholder="0612345678" autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+		</label>
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			Titre (affiché sur la page du cabinet)
+			<input name="occupation" maxlength="200" placeholder="ex. Ostéopathe" autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+		</label>
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			Présentation (affichée sur la page du cabinet)
+			<textarea name="bio" rows="4" maxlength="1000" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal"></textarea>
+		</label>
+		<p class="text-xs text-muted-foreground">Un mot de passe est généré et affiché une seule fois. Le praticien peut ensuite se connecter et saisir ses disponibilités.</p>
+		<div class="flex w-full justify-end gap-3">
+			<button
+				type="button"
+				onclick={() => (createPartnerDialogOpen = false)}
+				class="px-4 py-2 border border-border-input text-foreground-alt rounded-lg hover:bg-muted transition-colors font-medium text-sm"
+			>
+				Annuler
+			</button>
+			<button
+				type="submit"
+				class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+			>
+				Créer le praticien
+			</button>
+		</div>
+	</form>
+{/snippet}
+
+{#if isMobile}
+	<Drawer bind:isOpen={createPartnerDialogOpen}>
+		<div class="sticky top-0 bg-background pb-4 border-b border-border-card -mx-4 px-4 -mt-4 pt-4 z-10">
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl font-semibold tracking-tight">Ajouter un praticien</h2>
+				<button
+					type="button"
+					onclick={() => (createPartnerDialogOpen = false)}
+					class="p-2 hover:bg-muted rounded-md transition-colors"
+				>
+					<X class="text-foreground size-5" />
+				</button>
+			</div>
+		</div>
+		{@render createPartnerForm()}
+	</Drawer>
+{:else}
+	<Modal
+		bind:isOpen={createPartnerDialogOpen}
+		title="Ajouter un praticien"
+		description="Crée son compte, son profil public et la salle de ses disponibilités."
+	>
+		{@render createPartnerForm()}
+	</Modal>
 {/if}
 
 <!-- Verify Partner Dialog/Drawer -->
