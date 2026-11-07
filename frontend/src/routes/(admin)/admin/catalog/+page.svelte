@@ -13,7 +13,6 @@
 	const categories = $derived(data.categories);
 	const availabilities = $derived(data.availabilities);
 	const deleteProductForm = $derived(data.deleteProductForm);
-	const updateProductForm = $derived(data.updateProductForm);
 	const createCategoryForm = $derived(data.createCategoryForm);
 
 	let activeTab = $state("categories");
@@ -73,7 +72,6 @@
 				{categories}
 				{availabilities}
 				{deleteProductForm}
-				{updateProductForm}
 			/>
 		</Tabs.Content>
 	</Tabs.Root>

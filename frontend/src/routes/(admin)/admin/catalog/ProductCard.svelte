@@ -8,7 +8,7 @@
 	import { superForm } from "sveltekit-superforms";
 	import AlertDialog from "./AlertDialog.svelte";
 	import { type CardType, type Category } from "$lib/data/mockData";
-	import type { DeleteProduct, product } from "./schemas";
+	import type { DeleteProduct } from "./schemas";
 
 	type Props = {
 		card: CardType;
@@ -16,7 +16,6 @@
 		categories: Category[];
 		availabilities: Set<string>;
 		deleteProductForm: SuperValidated<DeleteProduct>;
-		updateProductForm: SuperValidated<product>;
 	};
 
 	let {
@@ -25,7 +24,6 @@
 		categories,
 		availabilities,
 		deleteProductForm,
-		updateProductForm,
 	}: Props = $props();
 
 	// Derived: after an action the page reloads its data and the card follows.
