@@ -162,7 +162,7 @@
 	{/if}
 
 	<div class="bg-background rounded-lg border border-border-card p-6 lg:p-8">
-		<form method="POST" use:enhance={updateProductEnhance} class="space-y-6">
+		<form method="POST" action="?/update" use:enhance={updateProductEnhance} class="space-y-6">
 			<!-- Image Display (when uploaded) -->
 			{#if imagePreview}
 				<div>
@@ -285,7 +285,7 @@
 			<!-- Price -->
 			<div>
 				<label for="price" class="block text-sm font-medium text-foreground-alt mb-2">
-					Prix (€)
+					Prix (€) <span class="text-red-500">*</span>
 				</label>
 				<div class="relative">
 					<Euro
@@ -295,16 +295,18 @@
 					<input
 						id="price"
 						name="price"
-						type="text"
-						value={price}
-						readonly
-						tabindex="-1"
-						class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+						type="number"
+						bind:value={price}
+						required
+						min="0.01"
+						step="0.01"
+						class="w-full pl-10 pr-4 py-3 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent"
 					/>
-					<p class="mt-1 text-xs text-muted-foreground">
-						Prix en lecture seule — géré via Stripe
-					</p>
 				</div>
+				<input type="hidden" name="originalPrice" value={data.product.price} />
+				<p class="mt-1 text-xs text-muted-foreground">
+					Un nouveau prix s'applique aux prochaines réservations ; celles déjà faites gardent le leur.
+				</p>
 			</div>
 
 			<!-- Availability -->
@@ -383,7 +385,7 @@
 			</div>
 
 			<!-- Deposit (acompte) -->
-			<DepositField deposit={data.product.deposit ?? null} priceEuros={price} />
+			<DepositField deposit={data.product.deposit ?? null} priceEuros={price == null ? "" : String(price)} />
 
 			<!-- Cancellation Fee Tiers -->
 			<div class="pt-4 border-t border-border-card">
