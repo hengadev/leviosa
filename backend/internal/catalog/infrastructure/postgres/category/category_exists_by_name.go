@@ -12,7 +12,7 @@ func (r *CategoryRepository) CategoryExistsByName(ctx context.Context, name stri
 	query := `
 	SELECT 1
 	FROM catalog.categories
-	WHERE name = $1
+	WHERE lower(name) = lower($1)
 	LIMIT 1;
 	`
 

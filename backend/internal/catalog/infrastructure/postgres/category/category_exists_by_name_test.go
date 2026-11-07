@@ -38,13 +38,13 @@ func TestCategoryExistsByName(t *testing.T) {
 			expectedErr:    false,
 		},
 		{
-			name:         "Existing category with different casing should return true (if DB is case-insensitive, else false)",
-			categoryName: "testcategory2", // Assuming DB is case-sensitive, this should return false if "TestCategory2" exists
+			name:         "Existing category with different casing should return true",
+			categoryName: "testcategory2", // names are unique ignoring case
 			setup: func(t *testing.T) {
 				cat := td.NewValidCategory("TestCategory2") // Insert with exact casing
 				td.InsertCategory(t, ctx, cat, testPool)
 			},
-			expectedExists: false, // PostgreSQL `name = $1` is case-sensitive by default
+			expectedExists: true, // the lookup compares lower(name)
 			expectedErr:    false,
 		},
 		{
