@@ -32,6 +32,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Test Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		// Create an active image for the product
@@ -108,6 +109,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Service Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		// Create prices but no image
@@ -148,6 +150,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Book Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		// Create an inactive image
@@ -179,6 +182,26 @@ func TestGetProductByID(t *testing.T) {
 		// Verify other data is present
 		assert.Equal(t, product.ID, result.Product.ID)
 		assert.Len(t, result.Prices, 1)
+	})
+
+	t.Run("should return 404 for a draft or archived product", func(t *testing.T) {
+		clearTables(t, ctx)
+
+		category := th.NewValidCategory("Electronics")
+		th.InsertCategory(t, ctx, category, testPool)
+
+		for _, status := range []domain.PublishedStatus{domain.Draft, domain.Archived} {
+			product := th.NewValidProduct("Hidden Product "+string(status), category.ID)
+			product.Status = status
+			th.InsertProduct(t, ctx, testPool, product)
+
+			req := th.NewGetProductByIDRequest(t, ctx, testServerURL, product.ID.String())
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			resp.Body.Close()
+
+			assert.Equal(t, http.StatusNotFound, resp.StatusCode, "a %s product is not public", status)
+		}
 	})
 
 	t.Run("should return 404 for non-existent product", func(t *testing.T) {
@@ -245,6 +268,7 @@ func TestGetProductByID(t *testing.T) {
 		// Try to insert a product with a non-existent category ID
 		nonExistentCategoryID := uuid.New()
 		product := th.NewValidProduct("Invalid Product", nonExistentCategoryID)
+		product.Status = domain.Published
 
 		// This should fail due to foreign key constraint
 		query := `
@@ -277,6 +301,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Software Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		// Create multiple prices with different statuses
@@ -336,6 +361,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Free Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		req := th.NewGetProductByIDRequest(t, ctx, testServerURL, product.ID.String())
@@ -365,6 +391,7 @@ func TestGetProductByID(t *testing.T) {
 		th.InsertCategory(t, ctx, category, testPool)
 
 		product := th.NewValidProduct("Test Product", category.ID)
+		product.Status = domain.Published
 		th.InsertProduct(t, ctx, testPool, product)
 
 		// Test different HTTP methods - must manually construct to test wrong methods
@@ -415,6 +442,7 @@ func BenchmarkGetProductByID(b *testing.B) {
 	th.InsertCategory(setupHelper, ctx, category, testPool)
 
 	product := th.NewValidProduct("Benchmark Product", category.ID)
+	product.Status = domain.Published
 	th.InsertProduct(setupHelper, ctx, testPool, product)
 
 	image := th.NewValidImage(product.ID)

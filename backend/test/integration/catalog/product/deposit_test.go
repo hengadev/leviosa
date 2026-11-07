@@ -80,7 +80,8 @@ func TestProductDeposit(t *testing.T) {
 			res, productID := createProduct(t, newRequest(category.ID.String(), tc.deposit, 7000), accessToken)
 			require.Equal(t, http.StatusCreated, res.StatusCode)
 
-			getRes, err := client.Do(th.NewGetProductByIDRequest(t, ctx, testServerURL, productID))
+			// A new product is a draft: only the admin route returns it.
+			getRes, err := client.Do(th.NewGetAdminProductByIDRequest(t, ctx, testServerURL, productID, accessToken))
 			require.NoError(t, err)
 			defer getRes.Body.Close()
 			require.Equal(t, http.StatusOK, getRes.StatusCode)

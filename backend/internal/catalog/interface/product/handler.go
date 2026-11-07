@@ -13,6 +13,7 @@ type Handler interface {
 	GetAdminAllProducts(w http.ResponseWriter, r *http.Request)
 	GetAllPublishedProducts(w http.ResponseWriter, r *http.Request)
 	GetProductByID(w http.ResponseWriter, r *http.Request)
+	GetPublishedProductByID(w http.ResponseWriter, r *http.Request)
 	ModifyProduct(w http.ResponseWriter, r *http.Request)
 	RemoveProduct(w http.ResponseWriter, r *http.Request)
 }
