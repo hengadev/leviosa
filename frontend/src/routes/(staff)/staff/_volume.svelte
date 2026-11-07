@@ -21,7 +21,7 @@
 
 <div class="bg-background rounded-2xl border border-border overflow-hidden">
     <div class="px-5 py-4 flex items-center justify-between">
-        <h2 class="font-display text-sm font-semibold tracking-tight text-foreground">Volume hebdomadaire</h2>
+        <h2 class="text-base font-semibold text-foreground">Volume hebdomadaire</h2>
         <span class="text-[11px] text-muted-foreground">7 derniers jours</span>
     </div>
     <div class="px-5 pb-5">

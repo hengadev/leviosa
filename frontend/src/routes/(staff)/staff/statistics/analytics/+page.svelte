@@ -66,16 +66,14 @@
 	<title>Statistiques | Staff</title>
 </svelte:head>
 
-<div class="p-6 lg:p-10">
-	<div class="mb-10">
-		<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Statistiques</p>
-		<h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">
+<div class="container mx-auto px-4 py-8 lg:py-12">
+	<div class="mb-8">
+		<h1 class="text-3xl lg:text-4xl font-bold mb-2 text-foreground">
 			Analytics
 		</h1>
-		<p class="text-muted-foreground mt-3 text-sm">
+		<p class="text-muted-foreground">
 			Vos performances sur la période sélectionnée
 		</p>
-		<div class="mt-4 h-px w-16 bg-foreground/20"></div>
 	</div>
 
 	<!-- Date Range Selector -->

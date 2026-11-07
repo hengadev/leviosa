@@ -750,13 +750,11 @@
 	<title>Disponibilités | Staff</title>
 </svelte:head>
 
-<div class="p-6 lg:p-10">
-	<div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+<div class="container mx-auto px-4 py-8 lg:py-12">
+	<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
-			<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Agenda</p>
-			<h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">Disponibilités</h1>
-			<p class="text-muted-foreground mt-3 text-sm">Les jours et horaires où vos clients peuvent réserver</p>
-			<div class="mt-4 h-px w-16 bg-foreground/20"></div>
+			<h1 class="text-3xl lg:text-4xl font-bold mb-2 text-foreground">Disponibilités</h1>
+			<p class="text-muted-foreground">Les jours et horaires où vos clients peuvent réserver</p>
 		</div>
 		<button
 			onclick={() => openCreateModal()}
