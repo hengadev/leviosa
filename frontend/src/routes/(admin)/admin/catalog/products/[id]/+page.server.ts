@@ -187,7 +187,7 @@ export const actions: Actions = {
 		// Endpoint returns { "id": "..." } — reload page to pick up new active image
 		throw redirect(303, `/admin/catalog/products/${productId}`);
 	},
-	default: async ({ request, params, fetch }) => {
+	update: async ({ request, params, fetch }) => {
 		const productId = params.id;
 		const formData = await request.formData();
 
@@ -230,6 +230,41 @@ export const actions: Actions = {
 			}
 		}
 
+		// The price: a Stripe price cannot be edited, a new one replaces it
+		// (PUT /admin/products/{id}/price). Order matters for a fixed
+		// deposit, checked against the active price: a lower price goes after
+		// the product (its deposit may be lowered too), a higher one before.
+		const priceStr = (formData.get('price') as string | null)?.trim() ?? '';
+		const originalPriceStr = (formData.get('originalPrice') as string | null) ?? '';
+		const newPriceCents = Math.round(parseFloat(priceStr.replace(',', '.')) * 100);
+		const originalCents = Math.round(parseFloat(originalPriceStr) * 100);
+		if (!Number.isFinite(newPriceCents) || newPriceCents <= 0) {
+			return fail(400, { error: 'Le prix doit être un montant positif.' });
+		}
+		const priceChanged = newPriceCents !== originalCents;
+		const priceFirst = priceChanged && !(newPriceCents < originalCents);
+
+		const replacePrice = async () => {
+			const priceRes = await fetch(`${env.API_URL}/admin/products/${productId}/price`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ amount: newPriceCents, currency: 'EUR', interval: 'one_time' }),
+			});
+			if (priceRes.status === 401) throw redirect(303, '/auth');
+			if (!priceRes.ok) {
+				console.error('Price change failed:', priceRes.status, await priceRes.text());
+				return priceRes.status === 400
+					? "Le nouveau prix a été refusé : il doit couvrir l'acompte fixe."
+					: `Le prix n'a pas pu être modifié (${priceRes.status}).`;
+			}
+			return null;
+		};
+
+		if (priceFirst) {
+			const priceError = await replacePrice();
+			if (priceError) return fail(400, { error: priceError });
+		}
+
 		const res = await fetch(`${env.API_URL}/admin/products/${productId}`, {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
@@ -241,7 +276,13 @@ export const actions: Actions = {
 		if (!res.ok) {
 			const errorText = await res.text();
 			console.error('Product update failed:', res.status, errorText);
-			return fail(res.status, { error: `La mise à jour a échoué (${res.status})` });
+			const failed = `La mise à jour a échoué (${res.status})`;
+			return fail(res.status, { error: priceFirst ? `Prix modifié, mais ${failed.charAt(0).toLowerCase()}${failed.slice(1)}` : failed });
+		}
+
+		if (priceChanged && !priceFirst) {
+			const priceError = await replacePrice();
+			if (priceError) return fail(400, { error: `Produit enregistré, mais ${priceError.charAt(0).toLowerCase()}${priceError.slice(1)}` });
 		}
 
 		throw redirect(303, '/admin/catalog?success=true');
