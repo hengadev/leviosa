@@ -57,10 +57,10 @@ export const strings = {
         minutes: (n: number) => `${n} min`,
         // price and deposit (issue 013): the deposit is an *acompte*, never *arrhes*
         priceWithDeposit: (price: string, deposit: string) => `${price}, dont ${deposit} d'acompte en ligne`,
-        paymentDeposit: "Acompte en ligne, solde au cabinet",
+        paymentDeposit: "Acompte en ligne, solde au cabinet par carte",
         paymentSummaryFull: (price: string) => `${price} en ligne, par carte`,
         paymentSummaryDeposit: (deposit: string, balance: string) =>
-            `${deposit} d'acompte en ligne par carte, solde de ${balance} au cabinet`,
+            `${deposit} d'acompte en ligne par carte, solde de ${balance} au cabinet, par carte`,
         /** The pay button (issue 014): names the amount charged online. */
         payDeposit: (deposit: string) => `Payer l'acompte de ${deposit}`,
         payFull: (price: string) => `Payer ${price}`,
@@ -71,7 +71,7 @@ export const strings = {
          */
         intro: (fullRefundHours: number | null, deposit: string | null) =>
             (deposit
-                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde est à régler au cabinet.`
+                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde se règle au cabinet, par carte.`
                 : `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne.`) +
             (fullRefundHours === null
                 ? " Les conditions d'annulation figurent dans les conditions générales de vente."
@@ -199,15 +199,15 @@ export const strings = {
         paymentValue: "Online, by card",
         minutes: (n: number) => `${n} min`,
         priceWithDeposit: (price: string, deposit: string) => `${price}, including a ${deposit} deposit online`,
-        paymentDeposit: "Deposit online, balance at the practice",
+        paymentDeposit: "Deposit online, balance by card at the practice",
         paymentSummaryFull: (price: string) => `${price} online, by card`,
         paymentSummaryDeposit: (deposit: string, balance: string) =>
-            `${deposit} deposit online by card, ${balance} balance at the practice`,
+            `${deposit} deposit online by card, ${balance} balance by card at the practice`,
         payDeposit: (deposit: string) => `Pay the ${deposit} deposit`,
         payFull: (price: string) => `Pay ${price}`,
         intro: (fullRefundHours: number | null, deposit: string | null) =>
             (deposit
-                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid at the practice.`
+                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid by card at the practice.`
                 : `Pick one of the practice's open slots, then pay for the session online.`) +
             (fullRefundHours === null
                 ? " The cancellation terms are set out in the terms of sale."
