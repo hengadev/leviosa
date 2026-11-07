@@ -1,33 +1,31 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
-	import type { Availability, RoomAllocation } from './+page.server';
+	import type { Availability } from './+page.server';
 	import {
-		CalendarClock,
-		Clock,
-		MapPin,
 		Plus,
 		X,
-		ChevronLeft,
-		ChevronRight,
 		Pencil,
 		AlertTriangle,
-		Check,
 		Loader2,
 		Repeat,
-		Building2,
-		CalendarOff
+		CalendarOff,
+		CalendarPlus,
+		Clock
 	} from '@lucide/svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { parseDate, type CalendarDate } from '@internationalized/date';
 	import Modal from '$lib/ui/Modal.svelte';
-	import { FormInput } from '$lib/ui/bits-components';
-	import { FormSelect } from '$lib/ui/bits-components';
 	import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
 	import { practiceDate, practiceInstant, type AvailabilityException } from './occurrences';
+	import { dayOpenings, firstWeeklyClash, firstWeekday, overlapping, weekday, type Opening } from './calendar';
+	import AvailabilityCalendar, { type DayTone } from './AvailabilityCalendar.svelte';
 
 	let { data }: PageProps = $props();
 
-	// --- Filter state ---
-	let filterStatus = $state<'all' | 'available' | 'booked' | 'cancelled'>('all');
+	// --- Calendar state ---
+	const today: CalendarDate = practiceDate(new Date().toISOString());
+	let month = $state<CalendarDate>(today);
+	let selectedDay = $state<CalendarDate>(today);
 
 	// --- Modal states ---
 	let createModalOpen = $state(false);
@@ -36,17 +34,19 @@
 	let selectedSlot: Availability | null = $state(null);
 
 	// --- Create form state ---
-	let formDate = $state('');
+	// « Chaque semaine »: the weekdays, from a first day to an optional last
+	// one (a recurring availability). « Certains jours »: the dates picked,
+	// one availability each.
+	let formMode = $state<'weekly' | 'dates'>('weekly');
 	let formStartTime = $state('09:00');
-	let formEndTime = $state('10:00');
-	let formRoomId = $state('');
-	let formMaxCapacity = $state('1');
-	let formNotes = $state('');
-	let formIsRecurring = $state(false);
-	let formRecurrenceType = $state<'daily' | 'weekly' | 'monthly'>('weekly');
-	let formRecurrenceInterval = $state('1');
-	let formRecurrenceEndDate = $state('');
+	let formEndTime = $state('13:00');
 	let formDaysOfWeek = $state<number[]>([]);
+	let formFrom = $state('');
+	let formUntil = $state('');
+	// Which end of the period the next tap on the calendar sets.
+	let formPicking = $state<'from' | 'until'>('until');
+	let formDates = $state<string[]>([]);
+	let pickerMonth = $state<CalendarDate>(today);
 
 	// --- Edit form state ---
 	let editDate = $state('');
@@ -63,6 +63,12 @@
 	let exceptionNotice = $state<string | null>(null);
 	let deletingExceptionId = $state<string | null>(null);
 
+	// --- Day panel state ---
+	// The opening whose hours are being changed for the selected day only.
+	let dayEdit = $state<{ key: string; start: string; end: string } | null>(null);
+	let dayBusy = $state(false);
+	let dayError = $state<string | null>(null);
+
 	// --- Loading / error states ---
 	let submitting = $state(false);
 	let conflictWarning = $state<string | null>(null);
@@ -70,25 +76,10 @@
 	let formError = $state<string | null>(null);
 
 	// --- Derived data ---
-	const activeAllocations = $derived(
-		(data.allocations as RoomAllocation[])?.filter((a) => a.isActive) ?? []
-	);
-
-	const filteredDays = $derived(
-		data.availabilities
-			.map((day) => ({
-				...day,
-				slots: day.slots.filter((s) => filterStatus === 'all' || s.status === filterStatus)
-			}))
-			.filter((day) => day.slots.length > 0)
-	);
-
-	const totalAvailable = $derived(
-		data.availabilities.flatMap((d) => d.slots).filter((s) => s.status === 'available').length
-	);
-	const totalBooked = $derived(
-		data.availabilities.flatMap((d) => d.slots).filter((s) => s.status === 'booked').length
-	);
+	const series = $derived(data.series as Availability[]);
+	const oneOffs = $derived(data.oneOffs as Availability[]);
+	const selectedOpenings = $derived(dayOpenings(selectedDay, series, oneOffs));
+	const selectedIsPast = $derived(selectedDay.compare(today) < 0);
 
 	// --- Helpers ---
 	// Dates (YYYY-MM-DD) are calendar days; instants are shown in the practice time zone.
@@ -96,6 +87,15 @@
 		return new Date(`${dateStr.slice(0, 10)}T12:00:00Z`).toLocaleDateString('fr-FR', {
 			day: 'numeric',
 			month: 'short',
+			timeZone: 'UTC'
+		});
+	}
+
+	function formatLongDate(day: CalendarDate): string {
+		return new Date(Date.UTC(day.year, day.month - 1, day.day, 12)).toLocaleDateString('fr-FR', {
+			weekday: 'long',
+			day: 'numeric',
+			month: 'long',
 			timeZone: 'UTC'
 		});
 	}
@@ -118,33 +118,20 @@
 		});
 	}
 
-	function todayDate(): string {
-		return practiceDate(new Date().toISOString()).toString();
+	// 9:00 → « 9h », 9:30 → « 9h30 »: short enough for a calendar cell.
+	function shortClock(iso: string): string {
+		const [h, m] = practiceClock(iso).split(':');
+		return `${Number(h)}h${m === '00' ? '' : m}`;
 	}
 
-	function statusBadge(status: string): string {
-		switch (status) {
-			case 'available':
-				return 'bg-green-100 text-green-700';
-			case 'booked':
-				return 'bg-blue-100 text-blue-700';
-			case 'cancelled':
-				return 'bg-red-100 text-red-700';
-			case 'blocked':
-				return 'bg-gray-200 text-gray-600';
-			default:
-				return 'bg-gray-100 text-gray-700';
-		}
+	function todayDate(): string {
+		return today.toString();
 	}
 
 	function statusLabel(status: string): string {
 		switch (status) {
-			case 'available':
-				return 'Disponible';
 			case 'booked':
 				return 'Réservé';
-			case 'cancelled':
-				return 'Annulé';
 			case 'blocked':
 				return 'Bloqué';
 			default:
@@ -153,6 +140,24 @@
 	}
 
 	const weekdayNames = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+	// Monday first, as on the calendar.
+	const weekdayChips: [string, number][] = [
+		['Lun', 1],
+		['Mar', 2],
+		['Mer', 3],
+		['Jeu', 4],
+		['Ven', 5],
+		['Sam', 6],
+		['Dim', 0]
+	];
+
+	function joinFrench(items: string[]): string {
+		return items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}`;
+	}
+
+	function sortedWeekdays(days: number[]): number[] {
+		return [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+	}
 
 	function recurrenceLabel(slot: Availability): string {
 		if (!slot.recurrencePattern) return '';
@@ -162,11 +167,8 @@
 			case 'daily':
 				return n > 1 ? `Tous les ${n} jours` : 'Tous les jours';
 			case 'weekly': {
-				const days = [...(p.days_of_week ?? [])]
-					.sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
-					.map((d) => weekdayNames[d])
-					.join(', ');
-				return n > 1 ? `Toutes les ${n} semaines, le ${days}` : `Chaque semaine, le ${days}`;
+				const days = joinFrench(sortedWeekdays(p.days_of_week ?? []).map((d) => weekdayNames[d]));
+				return n > 1 ? `Toutes les ${n} semaines, le ${days}` : `Chaque ${days}`;
 			}
 			case 'monthly': {
 				const day = practiceDate(slot.startTime).day;
@@ -193,21 +195,76 @@
 		return opts;
 	})();
 
-	// --- Allocation dropdown options ---
-	const roomOptions = $derived(
-		activeAllocations.length > 0
-			? activeAllocations.map((a) => ({
-					value: a.roomId,
-					label: `Salle ${a.roomId.slice(0, 8)}… (${a.allocationType === 'dedicated' ? 'Dédiée' : 'Partagée'})`
-				}))
-			: [{ value: '', label: 'Aucune salle allouée' }]
+	// --- The page calendar ---
+	// A day is open when one of its openings is; closed when every opening
+	// is closed by an exception.
+	function dayInfo(day: CalendarDate): { tone: DayTone; hint?: string } {
+		const openings = dayOpenings(day, series, oneOffs);
+		if (openings.length === 0) return { tone: 'none' };
+		const open = openings.filter((o) => !o.closedBy);
+		if (open.length === 0) return { tone: 'closed', hint: 'Fermé' };
+		const hint =
+			open.length === 1
+				? `${shortClock(open[0].start)}–${shortClock(open[0].end)}`
+				: `${open.length} plages`;
+		return { tone: 'open', hint };
+	}
+
+	let dayPanel: HTMLElement | null = $state(null);
+
+	function selectDay(day: CalendarDate) {
+		selectedDay = day;
+		dayEdit = null;
+		dayError = null;
+		// Below the calendar on a phone: bring the day's details into view.
+		if (dayPanel && !window.matchMedia('(min-width: 1024px)').matches) {
+			dayPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		}
+	}
+
+	// --- The creation form's calendar ---
+	const formWeekdaysLabel = $derived(
+		joinFrench(sortedWeekdays(formDaysOfWeek).map((d) => weekdayNames[d]))
 	);
 
-	const recurrenceTypeOptions = [
-		{ value: 'daily', label: 'Quotidien' },
-		{ value: 'weekly', label: 'Hebdomadaire' },
-		{ value: 'monthly', label: 'Mensuel' }
-	];
+	// The days the new availability covers, and a dot on those already open.
+	function pickerInfo(day: CalendarDate): { tone: DayTone; marked: boolean } {
+		const date = day.toString();
+		const marked = dayInfo(day).tone === 'open';
+		if (formMode === 'dates') {
+			return { tone: formDates.includes(date) ? 'picked' : 'none', marked };
+		}
+		if (date === formFrom || date === formUntil) return { tone: 'picked', marked };
+		const inPeriod = formFrom && date >= formFrom && (!formUntil || date <= formUntil);
+		if (inPeriod && formDaysOfWeek.includes(weekday(day))) return { tone: 'covered', marked };
+		return { tone: 'none', marked };
+	}
+
+	function pickInForm(day: CalendarDate) {
+		const date = day.toString();
+		if (formMode === 'dates') {
+			formDates = formDates.includes(date)
+				? formDates.filter((d) => d !== date)
+				: [...formDates, date].sort();
+			return;
+		}
+		// Choosing a weekday here would be confusing: the calendar sets the
+		// period, the chips the weekdays. A first day after the last one
+		// drops the last one.
+		if (formPicking === 'from' || !formFrom || date < formFrom) {
+			formFrom = date;
+			if (formUntil && formUntil < date) formUntil = '';
+			formPicking = 'until';
+		} else {
+			formUntil = date;
+		}
+	}
+
+	function toggleWeekday(idx: number) {
+		formDaysOfWeek = formDaysOfWeek.includes(idx)
+			? formDaysOfWeek.filter((d) => d !== idx)
+			: [...formDaysOfWeek, idx];
+	}
 
 	// --- Conflict check ---
 	async function checkConflict(
@@ -230,19 +287,46 @@
 		}
 	}
 
+	// A one-off availability; null when created, otherwise why not. `replacing`:
+	// the series just closed on that day, still open in the page's data.
+	async function createOneOff(
+		date: string,
+		startTime: string,
+		endTime: string,
+		replacing?: string
+	): Promise<string | null> {
+		const startIso = toDatetime(date, startTime);
+		const endIso = toDatetime(date, endTime);
+		if (startIso <= new Date().toISOString()) return 'ce créneau est déjà commencé';
+		if (
+			overlapping(parseDate(date), startIso, endIso, series, oneOffs, replacing) ||
+			(await checkConflict(data.partnerId, startIso, endIso))
+		) {
+			return 'en conflit avec une disponibilité existante';
+		}
+		const res = await fetch('/api/availabilities', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ room_id: data.roomId, start_time: startIso, end_time: endIso, max_capacity: 1 })
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return err.message || 'erreur lors de la création';
+		}
+		return null;
+	}
+
 	// --- Reset form ---
 	function resetCreateForm() {
-		formDate = todayDate();
+		formMode = 'weekly';
 		formStartTime = '09:00';
-		formEndTime = '10:00';
-		formRoomId = activeAllocations[0]?.roomId ?? '';
-		formMaxCapacity = '1';
-		formNotes = '';
-		formIsRecurring = false;
-		formRecurrenceType = 'weekly';
-		formRecurrenceInterval = '1';
-		formRecurrenceEndDate = '';
-		formDaysOfWeek = [new Date(`${formDate}T12:00:00Z`).getUTCDay()];
+		formEndTime = '13:00';
+		formDaysOfWeek = [];
+		formFrom = todayDate();
+		formUntil = '';
+		formPicking = 'until';
+		formDates = [];
+		pickerMonth = today;
 		conflictWarning = null;
 		formError = null;
 	}
@@ -258,107 +342,127 @@
 
 	// --- Actions ---
 	async function handleCreate() {
-		submitting = true;
 		formError = null;
 		conflictWarning = null;
 
-		if (!formDate || !formStartTime || !formEndTime || !formRoomId) {
-			formError = 'Date, horaires et salle sont obligatoires.';
-			submitting = false;
+		if (!data.roomId) {
+			formError = 'Aucune salle ne vous est attribuée : demandez à l’administrateur de vous en attribuer une.';
 			return;
 		}
-
-		const startIso = toDatetime(formDate, formStartTime);
-		const endIso = toDatetime(formDate, formEndTime);
-
-		if (startIso >= endIso) {
+		if (formStartTime >= formEndTime) {
 			formError = "L'heure de début doit être antérieure à l'heure de fin.";
-			submitting = false;
 			return;
 		}
 
-		if (startIso <= new Date().toISOString()) {
-			formError = 'Le créneau doit commencer dans le futur.';
-			submitting = false;
-			return;
-		}
-
-		if (formIsRecurring && formRecurrenceEndDate && formRecurrenceEndDate < formDate) {
-			formError = 'La date de fin doit suivre le premier jour.';
-			submitting = false;
-			return;
-		}
-
-		if (formIsRecurring && formRecurrenceType === 'weekly' && formDaysOfWeek.length === 0) {
-			formError = 'Sélectionnez au moins un jour de répétition.';
-			submitting = false;
-			return;
-		}
-
-		// Check conflict
-		checkingConflict = true;
-		const hasConflict = await checkConflict(data.partnerId, startIso, endIso);
-		checkingConflict = false;
-
-		if (hasConflict) {
-			conflictWarning = 'Ce créneau est en conflit avec un créneau existant.';
-			submitting = false;
-			return;
-		}
-
+		submitting = true;
 		try {
-			const body: any = {
-				room_id: formRoomId,
-				start_time: startIso,
-				end_time: endIso,
-				max_capacity: parseInt(formMaxCapacity, 10),
-				notes: formNotes || undefined
-			};
-
-			if (formIsRecurring) {
-				body.pattern = {
-					type: formRecurrenceType,
-					interval: parseInt(formRecurrenceInterval, 10) || 1,
-					// The end date is inclusive: the series' last day.
-					until: formRecurrenceEndDate ? toDatetime(formRecurrenceEndDate, '23:59') : undefined,
-					days_of_week: formRecurrenceType === 'weekly' ? formDaysOfWeek : undefined
-				};
-
-				const res = await fetch('/api/availabilities/recurring', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(body)
-				});
-
-				if (!res.ok) {
-					const err = await res.json().catch(() => ({}));
-					formError = err.message || 'Erreur lors de la création de la disponibilité récurrente.';
-					submitting = false;
-					return;
-				}
+			if (formMode === 'weekly') {
+				await createWeekly();
 			} else {
-				const res = await fetch('/api/availabilities', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify(body)
-				});
-
-				if (!res.ok) {
-					const err = await res.json().catch(() => ({}));
-					formError = err.message || 'Erreur lors de la création de la disponibilité.';
-					submitting = false;
-					return;
-				}
+				await createDates();
 			}
-
-			createModalOpen = false;
-			resetCreateForm();
-			await refreshPage();
 		} catch (e: any) {
 			formError = e.message || 'Erreur réseau.';
 		} finally {
 			submitting = false;
 		}
+	}
+
+	async function createWeekly() {
+		if (formDaysOfWeek.length === 0) {
+			formError = 'Choisissez au moins un jour de la semaine.';
+			return;
+		}
+		if (!formFrom) {
+			formError = 'Choisissez le premier jour sur le calendrier.';
+			return;
+		}
+		const until = formUntil ? parseDate(formUntil) : undefined;
+		// The series starts on its first opening: the first chosen weekday
+		// from the first day, skipping today when its hours have begun.
+		let first = firstWeekday(parseDate(formFrom), formDaysOfWeek, until);
+		if (first && toDatetime(first.toString(), formStartTime) <= new Date().toISOString()) {
+			first = firstWeekday(first.add({ days: 1 }), formDaysOfWeek, until);
+		}
+		if (!first) {
+			formError = 'Aucun des jours choisis ne tombe dans cette période.';
+			return;
+		}
+
+		const startIso = toDatetime(first.toString(), formStartTime);
+		const endIso = toDatetime(first.toString(), formEndTime);
+
+		const clash = firstWeeklyClash(
+			first,
+			until,
+			formDaysOfWeek,
+			(d) => ({ start: toDatetime(d.toString(), formStartTime), end: toDatetime(d.toString(), formEndTime) }),
+			series,
+			oneOffs
+		);
+		if (clash) {
+			conflictWarning = `Le ${formatDate(clash.toString())}, ces horaires chevauchent une disponibilité existante.`;
+			return;
+		}
+		checkingConflict = true;
+		const hasConflict = await checkConflict(data.partnerId, startIso, endIso);
+		checkingConflict = false;
+		if (hasConflict) {
+			conflictWarning = `Le ${formatDate(first.toString())} est en conflit avec une disponibilité existante.`;
+			return;
+		}
+
+		const res = await fetch('/api/availabilities/recurring', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				room_id: data.roomId,
+				start_time: startIso,
+				end_time: endIso,
+				max_capacity: 1,
+				pattern: {
+					type: 'weekly',
+					interval: 1,
+					// The last day is inclusive.
+					until: formUntil ? toDatetime(formUntil, '23:59') : undefined,
+					days_of_week: formDaysOfWeek
+				}
+			})
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			formError = err.message || 'Erreur lors de la création de la disponibilité récurrente.';
+			return;
+		}
+
+		createModalOpen = false;
+		selectDay(first);
+		month = first;
+		await invalidateAll();
+	}
+
+	// One availability per date. The dates that fail stay picked, with why.
+	async function createDates() {
+		if (formDates.length === 0) {
+			formError = 'Choisissez au moins un jour sur le calendrier.';
+			return;
+		}
+		const failures: string[] = [];
+		const failed: string[] = [];
+		for (const date of formDates) {
+			const why = await createOneOff(date, formStartTime, formEndTime);
+			if (why) {
+				failures.push(`${formatDate(date)} : ${why}`);
+				failed.push(date);
+			}
+		}
+		await invalidateAll();
+		if (failures.length > 0) {
+			formDates = failed;
+			formError = `Non créé${failed.length > 1 ? 's' : ''} — ${failures.join(' · ')}`;
+			return;
+		}
+		createModalOpen = false;
 	}
 
 	async function handleEdit() {
@@ -423,7 +527,7 @@
 			editModalOpen = false;
 			selectedSlot = null;
 			resetEditForm();
-			await refreshPage();
+			await invalidateAll();
 		} catch (e: any) {
 			formError = e.message || 'Erreur réseau.';
 		} finally {
@@ -451,7 +555,7 @@
 
 			cancelConfirmOpen = false;
 			selectedSlot = null;
-			await refreshPage();
+			await invalidateAll();
 		} catch (e: any) {
 			formError = e.message || 'Erreur réseau.';
 		} finally {
@@ -460,8 +564,14 @@
 	}
 
 	// Open modals
-	function openCreateModal() {
+	function openCreateModal(date?: CalendarDate) {
 		resetCreateForm();
+		if (date) {
+			// From a day of the calendar: that day, with the hours to set.
+			formMode = 'dates';
+			formDates = [date.toString()];
+			pickerMonth = date;
+		}
 		createModalOpen = true;
 	}
 
@@ -469,28 +579,23 @@
 	// first occurrence moves there); by default the later of its current
 	// first day and tomorrow. Existing bookings never move.
 	function openEditModal(slot: Availability) {
-		const series = slot.isRecurring
-			? ((data.series as Availability[]).find((a) => a.id === slot.id) ?? slot)
-			: slot;
-		selectedSlot = series;
+		selectedSlot = slot;
 		resetEditForm();
-		if (series.isRecurring) {
-			const tomorrow = practiceDate(new Date(Date.now() + 24 * 3600 * 1000).toISOString()).toString();
-			const first = practiceDate(series.startTime).toString();
+		if (slot.isRecurring) {
+			const tomorrow = today.add({ days: 1 }).toString();
+			const first = practiceDate(slot.startTime).toString();
 			editDate = first > tomorrow ? first : tomorrow;
 		} else {
-			editDate = practiceDate(series.startTime).toString();
+			editDate = practiceDate(slot.startTime).toString();
 		}
-		editStartTime = practiceClock(series.startTime);
-		editEndTime = practiceClock(series.endTime);
-		editNotes = series.notes ?? '';
+		editStartTime = practiceClock(slot.startTime);
+		editEndTime = practiceClock(slot.endTime);
+		editNotes = slot.notes ?? '';
 		editModalOpen = true;
 	}
 
 	function openCancelConfirm(slot: Availability) {
-		selectedSlot = slot.isRecurring
-			? ((data.series as Availability[]).find((a) => a.id === slot.id) ?? slot)
-			: slot;
+		selectedSlot = slot;
 		formError = null;
 		cancelConfirmOpen = true;
 	}
@@ -518,6 +623,27 @@
 		exceptionModalOpen = true;
 	}
 
+	// Closes dates of a series: the exception created, or why not.
+	async function closeDates(
+		serie: Availability,
+		start: string,
+		end?: string
+	): Promise<{ exception?: AvailabilityException; error?: string }> {
+		const res = await fetch(`/api/availabilities/${serie.id}/exceptions`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ start_date: start, end_date: end || undefined })
+		});
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			return { error: err.message || 'Erreur lors de la fermeture des dates.' };
+		}
+		const created = await res.json();
+		exceptionNotice = affectedBookingsNotice(created.affected_bookings ?? 0);
+		const e = created.exception;
+		return { exception: { id: e.id, startDate: e.start_date, endDate: e.end_date } };
+	}
+
 	async function handleCreateException() {
 		if (!exceptionSeries) return;
 		exceptionError = null;
@@ -531,21 +657,8 @@
 		}
 		submitting = true;
 		try {
-			const res = await fetch(`/api/availabilities/${exceptionSeries.id}/exceptions`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					start_date: exceptionStart,
-					end_date: exceptionEnd || undefined
-				})
-			});
-			if (!res.ok) {
-				const err = await res.json().catch(() => ({}));
-				exceptionError = err.message || 'Erreur lors de la fermeture des dates.';
-				return;
-			}
-			const created = await res.json();
-			exceptionNotice = affectedBookingsNotice(created.affected_bookings ?? 0);
+			exceptionError = (await closeDates(exceptionSeries, exceptionStart, exceptionEnd)).error ?? null;
+			if (exceptionError) return;
 			exceptionModalOpen = false;
 			exceptionSeries = null;
 			await invalidateAll();
@@ -556,18 +669,23 @@
 		}
 	}
 
+	// Reopens the dates; the error message, or null.
+	async function reopenDates(serie: Availability, e: AvailabilityException): Promise<string | null> {
+		const res = await fetch(`/api/availabilities/${serie.id}/exceptions/${e.id}`, {
+			method: 'DELETE'
+		});
+		if (!res.ok && res.status !== 404) {
+			const err = await res.json().catch(() => ({}));
+			return err.message || 'Erreur lors de la réouverture des dates.';
+		}
+		return null;
+	}
+
 	async function handleDeleteException(serie: Availability, e: AvailabilityException) {
 		deletingExceptionId = e.id;
 		exceptionNotice = null;
 		try {
-			const res = await fetch(`/api/availabilities/${serie.id}/exceptions/${e.id}`, {
-				method: 'DELETE'
-			});
-			if (!res.ok && res.status !== 404) {
-				const err = await res.json().catch(() => ({}));
-				exceptionNotice = err.message || 'Erreur lors de la réouverture des dates.';
-				return;
-			}
+			exceptionNotice = await reopenDates(serie, e);
 			await invalidateAll();
 		} catch (err: any) {
 			exceptionNotice = err.message || 'Erreur réseau.';
@@ -576,9 +694,55 @@
 		}
 	}
 
-	async function refreshPage() {
-		// Full page reload to refetch from server
-		window.location.reload();
+	// --- Day panel actions ---
+	function openingKey(o: Opening): string {
+		return `${o.availability.id}-${o.start}`;
+	}
+
+	async function dayAction(run: () => Promise<string | null>) {
+		dayBusy = true;
+		dayError = null;
+		try {
+			dayError = await run();
+			if (!dayError) dayEdit = null;
+			await invalidateAll();
+		} catch (e: any) {
+			dayError = e.message || 'Erreur réseau.';
+		} finally {
+			dayBusy = false;
+		}
+	}
+
+	function closeDay(o: Opening) {
+		dayAction(async () => (await closeDates(o.availability, selectedDay.toString())).error ?? null);
+	}
+
+	function reopenDay(o: Opening) {
+		if (!o.closedBy) return;
+		const closedBy = o.closedBy;
+		dayAction(() => reopenDates(o.availability, closedBy));
+	}
+
+	// Other hours on this day only: the series closes that day and a one-off
+	// availability takes its place. If the one-off cannot be created, the day
+	// is reopened as it was.
+	function changeDayHours(o: Opening) {
+		if (!dayEdit) return;
+		const { start, end } = dayEdit;
+		if (start >= end) {
+			dayError = "L'heure de début doit être antérieure à l'heure de fin.";
+			return;
+		}
+		const date = selectedDay.toString();
+		dayAction(async () => {
+			const closed = await closeDates(o.availability, date);
+			if (!closed.exception) return closed.error ?? null;
+			const why = await createOneOff(date, start, end, o.availability.id);
+			if (!why) return null;
+			await reopenDates(o.availability, closed.exception);
+			exceptionNotice = null;
+			return `Horaires non modifiés : ${why}.`;
+		});
 	}
 </script>
 
@@ -587,15 +751,15 @@
 </svelte:head>
 
 <div class="p-6 lg:p-10">
-	<div class="mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+	<div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
 		<div>
 			<p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Agenda</p>
 			<h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">Disponibilités</h1>
-			<p class="text-muted-foreground mt-3 text-sm">Vos disponibilités ponctuelles et récurrentes, semaine par semaine</p>
+			<p class="text-muted-foreground mt-3 text-sm">Les jours et horaires où vos clients peuvent réserver</p>
 			<div class="mt-4 h-px w-16 bg-foreground/20"></div>
 		</div>
 		<button
-			onclick={openCreateModal}
+			onclick={() => openCreateModal()}
 			class="inline-flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
 		>
 			<Plus size={16} />
@@ -603,318 +767,317 @@
 		</button>
 	</div>
 
-	<!-- Recurring availabilities -->
-	{#if data.series.length > 0}
-		<div class="mb-8 bg-background rounded-xl border border-border overflow-hidden">
-			<div class="bg-muted/50 px-5 py-3 border-b border-border flex items-center gap-2">
-				<Repeat size={15} class="text-muted-foreground" />
-				<h2 class="font-semibold text-foreground">Disponibilités récurrentes</h2>
+	{#if !data.roomId}
+		<div class="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm flex items-start gap-2">
+			<AlertTriangle size={16} class="mt-0.5 shrink-0" />
+			<span>Aucune salle ne vous est attribuée : vous ne pouvez pas encore ajouter de disponibilités.</span>
+		</div>
+	{/if}
+
+	{#if exceptionNotice}
+		<div
+			class="mb-6 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm flex items-start gap-2"
+			role="status"
+		>
+			<AlertTriangle size={16} class="mt-0.5 shrink-0" />
+			<span class="flex-1">{exceptionNotice}</span>
+			<button
+				onclick={() => (exceptionNotice = null)}
+				class="p-0.5 rounded hover:bg-amber-100"
+				aria-label="Fermer le message"
+			>
+				<X size={14} />
+			</button>
+		</div>
+	{/if}
+
+	<!-- Calendar and the selected day -->
+	<div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem] mb-8">
+		<div class="bg-background rounded-xl border border-border p-4 sm:p-5">
+			<AvailabilityCalendar
+				bind:month
+				{today}
+				info={dayInfo}
+				onPick={selectDay}
+				selected={selectedDay.toString()}
+			/>
+			<div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+				<span class="inline-flex items-center gap-1.5">
+					<span class="h-3 w-3 rounded bg-emerald-100 dark:bg-emerald-950/60"></span>Ouvert
+				</span>
+				<span class="inline-flex items-center gap-1.5">
+					<span class="h-3 w-3 rounded bg-muted"></span>Fermé exceptionnellement
+				</span>
 			</div>
-			{#if exceptionNotice}
-				<div
-					class="px-5 py-3 border-b border-border bg-amber-50 text-amber-800 text-sm flex items-start gap-2"
-					role="status"
-				>
-					<AlertTriangle size={16} class="mt-0.5 shrink-0" />
-					<span class="flex-1">{exceptionNotice}</span>
-					<button
-						onclick={() => (exceptionNotice = null)}
-						class="p-0.5 rounded hover:bg-amber-100"
-						aria-label="Fermer le message"
-					>
-						<X size={14} />
-					</button>
-				</div>
-			{/if}
-			<div class="divide-y divide-border">
-				{#each data.series as serie (serie.id)}
-					<div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
-						<div class="flex-1">
-							<p class="text-sm font-medium text-foreground">
-								{recurrenceLabel(serie)} · {formatTime(serie.startTime)} – {formatTime(serie.endTime)}
-							</p>
-							<p class="text-xs text-muted-foreground mt-0.5">
-								Depuis le {formatDate(serie.date)}
-								{#if serie.recurrencePattern?.until}
-									· jusqu’au {formatDate(practiceDate(serie.recurrencePattern.until).toString())}
-								{:else}
-									· sans date de fin
+		</div>
+
+		<div bind:this={dayPanel} class="bg-background rounded-xl border border-border overflow-hidden self-start scroll-mt-4">
+			<div class="bg-muted/50 px-5 py-3 border-b border-border">
+				<h2 class="font-semibold text-foreground first-letter:uppercase">{formatLongDate(selectedDay)}</h2>
+			</div>
+			<div class="p-5 space-y-3">
+				{#if dayError}
+					<div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">{dayError}</div>
+				{/if}
+
+				{#each selectedOpenings as o (openingKey(o))}
+					{@const key = openingKey(o)}
+					<div class="rounded-lg border border-border p-3 {o.closedBy ? 'bg-muted/40' : ''}">
+						<div class="flex items-start justify-between gap-2">
+							<div>
+								<p class="text-sm font-medium tabular-nums {o.closedBy ? 'line-through text-muted-foreground' : 'text-foreground'}">
+									{formatTime(o.start)} – {formatTime(o.end)}
+								</p>
+								<p class="text-xs text-muted-foreground mt-0.5 inline-flex items-center gap-1">
+									{#if o.availability.isRecurring}
+										<Repeat size={11} />{recurrenceLabel(o.availability)}
+									{:else}
+										<Clock size={11} />Ce jour uniquement
+									{/if}
+								</p>
+								{#if o.closedBy}
+									<p class="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1">
+										<CalendarOff size={11} />{exceptionLabel(o.closedBy)}
+									</p>
 								{/if}
-							</p>
-							{#if serie.exceptions.length > 0}
-								<ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Dates fermées">
-									{#each serie.exceptions as exception (exception.id)}
-										<li
-											class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-muted text-xs text-foreground"
-										>
-											<CalendarOff size={12} class="text-muted-foreground" />
-											{exceptionLabel(exception)}
-											<button
-												onclick={() => handleDeleteException(serie, exception)}
-												disabled={deletingExceptionId === exception.id}
-												class="p-0.5 rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-												title="Rouvrir ces dates"
-												aria-label="Rouvrir : {exceptionLabel(exception)}"
-											>
-												{#if deletingExceptionId === exception.id}
-													<Loader2 size={12} class="animate-spin" />
-												{:else}
-													<X size={12} />
-												{/if}
-											</button>
-										</li>
-									{/each}
-								</ul>
+							</div>
+							{#if o.availability.status !== 'available'}
+								<span class="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-foreground">
+									{statusLabel(o.availability.status)}
+								</span>
 							{/if}
 						</div>
-						<div class="flex items-center gap-2">
-							<button
-								onclick={() => openExceptionModal(serie)}
-								class="p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
-								title="Fermer des dates"
-								aria-label="Fermer des dates"
-							>
-								<CalendarOff size={14} />
-							</button>
-							<button
-								onclick={() => openEditModal(serie)}
-								class="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
-								title="Modifier la série"
-								aria-label="Modifier la série"
-							>
-								<Pencil size={14} />
-							</button>
-							<button
-								onclick={() => openCancelConfirm(serie)}
-								class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
-								title="Supprimer la série"
-								aria-label="Supprimer la série"
-							>
-								<X size={14} />
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
 
-	<!-- Room Allocations Info -->
-	{#if activeAllocations.length > 0}
-		<div class="mb-6 bg-background rounded-xl border border-border p-4">
-			<div class="flex items-center gap-2 mb-2">
-				<Building2 size={16} class="text-muted-foreground" />
-				<h3 class="text-sm font-semibold text-foreground">Salles allouées</h3>
-			</div>
-			<div class="flex flex-wrap gap-2">
-				{#each activeAllocations as alloc}
-					<span
-						class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium {alloc.allocationType === 'dedicated'
-							? 'bg-purple-100 text-purple-700'
-							: 'bg-amber-100 text-amber-700'}"
-					>
-						<MapPin size={12} />
-						Salle {alloc.roomId.slice(0, 8)}…
-						({alloc.allocationType === 'dedicated' ? 'Dédiée' : 'Partagée'})
-						{#if alloc.startDate}
-							— du {formatDate(alloc.startDate)}
-							{#if alloc.endDate}au {formatDate(alloc.endDate)}{/if}
-						{/if}
-					</span>
-				{/each}
-			</div>
-		</div>
-	{/if}
-
-	<!-- Summary Cards -->
-	<div class="grid grid-cols-3 gap-4 mb-8">
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Libres</p>
-			<p class="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{totalAvailable}</p>
-		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Réservés</p>
-			<p class="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{totalBooked}</p>
-		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Occupation</p>
-			<p class="text-2xl font-bold text-foreground tabular-nums">
-				{totalBooked + totalAvailable > 0
-					? Math.round((totalBooked / (totalBooked + totalAvailable)) * 100)
-					: 0}%
-			</p>
-		</div>
-	</div>
-
-	<!-- Week Navigation -->
-	<div
-		class="flex items-center justify-between mb-6 bg-background rounded-xl border border-border p-4"
-	>
-		{#if data.weekOffset > 0}
-			<a
-				href="?semaine={data.weekOffset - 1}"
-				class="p-2 hover:bg-muted rounded-md transition-colors"
-				aria-label="Semaine précédente"
-			>
-				<ChevronLeft size={20} class="text-muted-foreground" />
-			</a>
-		{:else}
-			<span class="p-2 opacity-40" aria-hidden="true"><ChevronLeft size={20} class="text-muted-foreground" /></span>
-		{/if}
-		<div class="flex items-center gap-2">
-			<CalendarClock size={18} class="text-muted-foreground" />
-			<span class="font-semibold text-foreground">
-				{#if data.weekOffset === 0}
-					7 prochains jours
-				{:else if data.availabilities.length > 0}
-					À partir du {formatDate(data.availabilities[0].date)}
-				{/if}
-			</span>
-		</div>
-		<a
-			href="?semaine={data.weekOffset + 1}"
-			class="p-2 hover:bg-muted rounded-md transition-colors"
-			aria-label="Semaine suivante"
-		>
-			<ChevronRight size={20} class="text-muted-foreground" />
-		</a>
-	</div>
-
-	<!-- Status Filter -->
-	<div class="flex gap-2 mb-6 flex-wrap">
-		{#each [['all', 'Tous'], ['available', 'Libres'], ['booked', 'Réservés'], ['cancelled', 'Annulés']] as [val, label]}
-			<button
-				class="px-4 py-2 rounded-md text-sm font-medium transition-colors {filterStatus === val
-					? 'bg-foreground text-background'
-					: 'bg-card text-foreground border border-border hover:bg-muted'}"
-				onclick={() => (filterStatus = val as typeof filterStatus)}
-			>
-				{label}
-			</button>
-		{/each}
-	</div>
-
-	<!-- Days and Slots -->
-	<div class="space-y-6">
-		{#each filteredDays as day (day.date)}
-			<div class="bg-background rounded-xl border border-border overflow-hidden">
-				<div class="bg-muted/50 px-5 py-3 border-b border-border">
-					<h2 class="font-semibold text-foreground capitalize">
-						{day.dayName} {formatDate(day.date)}
-					</h2>
-				</div>
-				<div class="divide-y divide-border">
-					{#each day.slots as slot (slot.key)}
-						<div class="p-4 sm:p-5 hover:bg-muted/20 transition-colors">
-							<div class="flex flex-col sm:flex-row sm:items-center gap-3">
-								<div
-									class="flex items-center gap-2 text-muted-foreground min-w-fit"
-								>
-									<Clock size={15} />
-									<span class="font-medium text-sm">
-										{formatTime(slot.startTime)} – {formatTime(slot.endTime)}
-									</span>
-									{#if slot.isRecurring}
-										<span class="text-xs text-muted-foreground inline-flex items-center gap-1" title={recurrenceLabel(slot)}>
-											<Repeat size={12} class="inline" />
-											<span class="sr-only">Récurrente :</span>{recurrenceLabel(slot)}
-										</span>
-									{/if}
-								</div>
-								<div class="flex-1">
-									<div
-										class="flex items-center gap-1.5 text-sm text-muted-foreground mb-0.5"
-									>
-										<MapPin size={13} />
-										<span>Salle {slot.roomId.slice(0, 8)}…</span>
+						{#if !selectedIsPast}
+							{#if dayEdit?.key === key}
+								<div class="mt-3 space-y-3">
+									<div class="grid grid-cols-2 gap-2">
+										<select
+											bind:value={dayEdit.start}
+											aria-label="Début"
+											class="w-full rounded-input border border-input bg-background px-2 py-1.5 text-sm"
+										>
+											{#each timeOptions as opt}
+												<option value={opt}>{opt}</option>
+											{/each}
+										</select>
+										<select
+											bind:value={dayEdit.end}
+											aria-label="Fin"
+											class="w-full rounded-input border border-input bg-background px-2 py-1.5 text-sm"
+										>
+											{#each timeOptions as opt}
+												<option value={opt}>{opt}</option>
+											{/each}
+										</select>
 									</div>
-									{#if slot.serviceType}
-										<p class="text-sm text-foreground">{slot.serviceType}</p>
-									{/if}
-									{#if slot.notes}
-										<p class="text-xs text-muted-foreground mt-0.5">{slot.notes}</p>
+									<p class="text-xs text-muted-foreground">Ces horaires ne changent que pour ce jour.</p>
+									<div class="flex justify-end gap-2">
+										<button
+											onclick={() => (dayEdit = null)}
+											class="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+										>
+											Annuler
+										</button>
+										<button
+											onclick={() => changeDayHours(o)}
+											disabled={dayBusy}
+											class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-foreground text-background rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+										>
+											{#if dayBusy}<Loader2 size={13} class="animate-spin" />{/if}
+											Enregistrer
+										</button>
+									</div>
+								</div>
+							{:else}
+								<div class="mt-3 flex flex-wrap gap-2">
+									{#if o.availability.isRecurring}
+										{#if o.closedBy}
+											<button
+												onclick={() => reopenDay(o)}
+												disabled={dayBusy}
+												class="px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted disabled:opacity-50"
+											>
+												{o.closedBy.startDate === o.closedBy.endDate
+													? 'Rouvrir ce jour'
+													: `Rouvrir du ${formatDate(o.closedBy.startDate)} au ${formatDate(o.closedBy.endDate)}`}
+											</button>
+										{:else}
+											<button
+												onclick={() =>
+													(dayEdit = { key, start: practiceClock(o.start), end: practiceClock(o.end) })}
+												disabled={dayBusy}
+												class="px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted disabled:opacity-50"
+											>
+												Autres horaires ce jour
+											</button>
+											<button
+												onclick={() => closeDay(o)}
+												disabled={dayBusy}
+												class="px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted disabled:opacity-50"
+											>
+												Fermer ce jour
+											</button>
+										{/if}
+									{:else}
+										<button
+											onclick={() => openEditModal(o.availability)}
+											class="px-3 py-1.5 rounded-md border border-border text-xs font-medium hover:bg-muted"
+										>
+											Modifier
+										</button>
+										<button
+											onclick={() => openCancelConfirm(o.availability)}
+											class="px-3 py-1.5 rounded-md border border-border text-xs font-medium text-red-700 hover:bg-red-50"
+										>
+											Supprimer
+										</button>
 									{/if}
 								</div>
-								<div class="flex items-center gap-2">
-									<span
-										class="px-2.5 py-1 rounded-full text-xs font-medium {statusBadge(slot.status)}"
+							{/if}
+						{/if}
+					</div>
+				{:else}
+					<p class="text-sm text-muted-foreground">Aucune disponibilité ce jour.</p>
+				{/each}
+
+				{#if !selectedIsPast && data.roomId}
+					<button
+						onclick={() => openCreateModal(selectedDay)}
+						class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border text-sm font-medium text-foreground hover:bg-muted transition-colors"
+					>
+						<CalendarPlus size={15} />
+						Ajouter des horaires ce jour
+					</button>
+				{/if}
+			</div>
+		</div>
+	</div>
+
+	<!-- Recurring availabilities -->
+	<div class="bg-background rounded-xl border border-border overflow-hidden">
+		<div class="bg-muted/50 px-5 py-3 border-b border-border flex items-center gap-2">
+			<Repeat size={15} class="text-muted-foreground" />
+			<h2 class="font-semibold text-foreground">Horaires réguliers</h2>
+		</div>
+		<div class="divide-y divide-border">
+			{#each series as serie (serie.id)}
+				<div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+					<div class="flex-1">
+						<p class="text-sm font-medium text-foreground">
+							{recurrenceLabel(serie)} · {formatTime(serie.startTime)} – {formatTime(serie.endTime)}
+						</p>
+						<p class="text-xs text-muted-foreground mt-0.5">
+							Depuis le {formatDate(serie.date)}
+							{#if serie.recurrencePattern?.until}
+								· jusqu’au {formatDate(practiceDate(serie.recurrencePattern.until).toString())}
+							{:else}
+								· sans date de fin
+							{/if}
+						</p>
+						{#if serie.exceptions.length > 0}
+							<ul class="mt-2 flex flex-wrap gap-1.5" aria-label="Dates fermées">
+								{#each serie.exceptions as exception (exception.id)}
+									<li
+										class="inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full bg-muted text-xs text-foreground"
 									>
-										{statusLabel(slot.status)}
-									</span>
-									{#if slot.status === 'available' || slot.status === 'booked'}
+										<CalendarOff size={12} class="text-muted-foreground" />
+										{exceptionLabel(exception)}
 										<button
-											onclick={() => openEditModal(slot)}
-											class="p-1.5 rounded-md text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
-											title={slot.isRecurring ? 'Modifier la série' : 'Modifier ce créneau'}
+											onclick={() => handleDeleteException(serie, exception)}
+											disabled={deletingExceptionId === exception.id}
+											class="p-0.5 rounded-full text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+											title="Rouvrir ces dates"
+											aria-label="Rouvrir : {exceptionLabel(exception)}"
 										>
-											<Pencil size={14} />
+											{#if deletingExceptionId === exception.id}
+												<Loader2 size={12} class="animate-spin" />
+											{:else}
+												<X size={12} />
+											{/if}
 										</button>
-										<button
-											onclick={() => openCancelConfirm(slot)}
-											class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
-											title={slot.isRecurring ? 'Supprimer la série' : 'Supprimer ce créneau'}
-										>
-											<X size={14} />
-										</button>
-									{/if}
-								</div>
-							</div>
-						</div>
-					{/each}
+									</li>
+								{/each}
+							</ul>
+						{/if}
+					</div>
+					<div class="flex items-center gap-2">
+						<button
+							onclick={() => openExceptionModal(serie)}
+							class="p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
+							title="Fermer une période (congés…)"
+							aria-label="Fermer une période"
+						>
+							<CalendarOff size={14} />
+						</button>
+						<button
+							onclick={() => openEditModal(serie)}
+							class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+							title="Modifier les horaires"
+							aria-label="Modifier les horaires"
+						>
+							<Pencil size={14} />
+						</button>
+						<button
+							onclick={() => openCancelConfirm(serie)}
+							class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+							title="Supprimer ces horaires"
+							aria-label="Supprimer ces horaires"
+						>
+							<X size={14} />
+						</button>
+					</div>
 				</div>
-			</div>
-		{:else}
-			<div class="text-center py-12 text-muted-foreground">
-				Aucun créneau pour cette période
-			</div>
-		{/each}
+			{:else}
+				<p class="p-5 text-sm text-muted-foreground">
+					Pas encore d’horaires réguliers. « Nouvelle disponibilité » les ajoute, par exemple chaque mardi et jeudi de 9h à 13h.
+				</p>
+			{/each}
+		</div>
 	</div>
 </div>
 
 <!-- ========== CREATE MODAL ========== -->
-<Modal bind:isOpen={createModalOpen} title="Nouvelle disponibilité" description="Créez un créneau de disponibilité.">
-	<div class="space-y-4">
+<Modal
+	bind:isOpen={createModalOpen}
+	title="Nouvelle disponibilité"
+	description="Des horaires qui reviennent chaque semaine, ou seulement certains jours."
+>
+	<div class="space-y-5">
 		{#if formError}
 			<div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">{formError}</div>
 		{/if}
 		{#if conflictWarning}
-			<div
-				class="p-3 rounded-md bg-amber-50 text-amber-700 text-sm flex items-start gap-2"
-			>
+			<div class="p-3 rounded-md bg-amber-50 text-amber-700 text-sm flex items-start gap-2">
 				<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 				<span>{conflictWarning}</span>
 			</div>
 		{/if}
 
-		<!-- Room -->
-		<FormSelect
-			label="Salle"
-			bind:value={formRoomId}
-			options={roomOptions}
-			placeholder="Choisir une salle"
-			required
-		/>
-
-		<!-- Date (the first day of a recurring availability) -->
-		<div class="space-y-2">
-			<label class="text-sm font-medium text-foreground" for="create-date">
-				{formIsRecurring ? 'Premier jour' : 'Date'} <span class="text-destructive ml-1">*</span>
-			</label>
-			<input
-				id="create-date"
-				type="date"
-				bind:value={formDate}
-				required
-				class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:border-input-hover"
-			/>
+		<!-- Mode -->
+		<div class="grid grid-cols-2 p-1 rounded-lg bg-muted text-sm font-medium" role="tablist">
+			{#each [['weekly', 'Chaque semaine'], ['dates', 'Certains jours']] as [value, label]}
+				<button
+					type="button"
+					role="tab"
+					aria-selected={formMode === value}
+					onclick={() => {
+						formMode = value as typeof formMode;
+						formError = null;
+					}}
+					class="py-1.5 rounded-md transition-colors {formMode === value
+						? 'bg-background text-foreground shadow-mini'
+						: 'text-muted-foreground hover:text-foreground'}"
+				>
+					{label}
+				</button>
+			{/each}
 		</div>
 
-		<!-- Start / End time -->
+		<!-- Hours -->
 		<div class="grid grid-cols-2 gap-3">
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-foreground" for="create-start-time"
-					>Début</label
-				>
+				<label class="text-sm font-medium text-foreground" for="create-start-time">De</label>
 				<select
 					id="create-start-time"
 					bind:value={formStartTime}
@@ -926,9 +1089,7 @@
 				</select>
 			</div>
 			<div class="space-y-2">
-				<label class="text-sm font-medium text-foreground" for="create-end-time"
-					>Fin</label
-				>
+				<label class="text-sm font-medium text-foreground" for="create-end-time">À</label>
 				<select
 					id="create-end-time"
 					bind:value={formEndTime}
@@ -941,91 +1102,104 @@
 			</div>
 		</div>
 
-		<!-- Max capacity -->
-		<FormInput label="Capacité max" type="text" bind:value={formMaxCapacity} required />
-
-		<!-- Notes -->
-		<FormInput label="Notes" type="text" bind:value={formNotes} placeholder="Optionnel" />
-
-		<!-- Recurring toggle -->
-		<div class="flex items-center gap-3">
-			<button
-				type="button"
-				role="switch"
-				aria-label="Récurrent"
-				aria-checked={formIsRecurring}
-				onclick={() => (formIsRecurring = !formIsRecurring)}
-				class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out {formIsRecurring
-					? 'bg-foreground'
-					: 'bg-muted'}"
-			>
-				<span
-					class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {formIsRecurring
-						? 'translate-x-5'
-						: 'translate-x-0'}"
-				></span>
-			</button>
-			<span class="text-sm text-foreground">Récurrent</span>
-		</div>
-
-		{#if formIsRecurring}
-			<div class="space-y-4 border-t border-border pt-4">
-				<FormSelect
-					label="Fréquence"
-					bind:value={formRecurrenceType}
-					options={recurrenceTypeOptions}
-					required
-				/>
-				<FormInput
-					label="Intervalle (toutes les N)"
-					type="number"
-					bind:value={formRecurrenceInterval}
-				/>
-
-				{#if formRecurrenceType === 'weekly'}
-					<div class="space-y-2">
-						<p class="text-sm font-medium text-foreground">
-							Jours de répétition <span class="text-destructive ml-1">*</span>
-						</p>
-						<div class="flex flex-wrap gap-2">
-							{#each [['Dim', 0], ['Lun', 1], ['Mar', 2], ['Mer', 3], ['Jeu', 4], ['Ven', 5], ['Sam', 6]] as [label, idx]}
-								{@const checked = formDaysOfWeek.includes(idx as number)}
-								<button
-									type="button"
-									onclick={() => {
-										if (checked) {
-											formDaysOfWeek = formDaysOfWeek.filter((d) => d !== idx);
-										} else {
-											formDaysOfWeek = [...formDaysOfWeek, idx as number];
-										}
-									}}
-									class="px-3 py-1.5 rounded-md text-sm font-medium border transition-colors {checked
-										? 'bg-foreground text-background border-foreground'
-										: 'bg-background text-foreground border-border hover:bg-muted'}"
-								>
-									{label}
-								</button>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<div class="space-y-2">
-					<label class="text-sm font-medium text-foreground" for="create-recurrence-end">
-						Dernier jour (facultatif)
-					</label>
-					<input
-						id="create-recurrence-end"
-						type="date"
-						bind:value={formRecurrenceEndDate}
-						class="flex w-full rounded-input border border-input bg-background px-3 py-2 text-sm h-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 hover:border-input-hover"
-					/>
+		{#if formMode === 'weekly'}
+			<!-- Weekdays -->
+			<div class="space-y-2">
+				<p class="text-sm font-medium text-foreground">Les jours</p>
+				<div class="grid grid-cols-7 gap-1.5">
+					{#each weekdayChips as [label, idx]}
+						{@const checked = formDaysOfWeek.includes(idx)}
+						<button
+							type="button"
+							aria-pressed={checked}
+							onclick={() => toggleWeekday(idx)}
+							class="py-1.5 rounded-md text-sm font-medium border transition-colors {checked
+								? 'bg-foreground text-background border-foreground'
+								: 'bg-background text-foreground border-border hover:bg-muted'}"
+						>
+							{label}
+						</button>
+					{/each}
 				</div>
 			</div>
+
+			<!-- Period -->
+			<div class="space-y-2">
+				<p class="text-sm font-medium text-foreground">La période</p>
+				<div class="grid grid-cols-2 gap-2">
+					<button
+						type="button"
+						onclick={() => (formPicking = 'from')}
+						aria-pressed={formPicking === 'from'}
+						class="text-left px-3 py-2 rounded-lg border text-sm transition-colors {formPicking === 'from'
+							? 'border-foreground ring-1 ring-foreground'
+							: 'border-border hover:bg-muted'}"
+					>
+						<span class="block text-xs text-muted-foreground">À partir du</span>
+						{formFrom ? formatDate(formFrom) : '—'}
+					</button>
+					<div
+						class="relative px-3 py-2 rounded-lg border text-sm transition-colors {formPicking === 'until'
+							? 'border-foreground ring-1 ring-foreground'
+							: 'border-border hover:bg-muted'}"
+					>
+						<button type="button" onclick={() => (formPicking = 'until')} class="text-left w-full">
+							<span class="block text-xs text-muted-foreground">Jusqu’au</span>
+							{formUntil ? formatDate(formUntil) : 'Sans date de fin'}
+						</button>
+						{#if formUntil}
+							<button
+								type="button"
+								onclick={() => (formUntil = '')}
+								class="absolute top-1.5 right-1.5 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+								aria-label="Retirer la date de fin"
+							>
+								<X size={13} />
+							</button>
+						{/if}
+					</div>
+				</div>
+				<p class="text-xs text-muted-foreground">
+					Touchez sur le calendrier {formPicking === 'from' ? 'le premier jour' : 'le dernier jour, ou laissez sans date de fin'}. Un point marque les jours déjà ouverts.
+				</p>
+			</div>
+		{:else}
+			<p class="text-sm text-muted-foreground">
+				Touchez les jours voulus sur le calendrier ; touchez à nouveau pour en retirer un. Un point marque les jours déjà ouverts.
+			</p>
 		{/if}
 
+		<div class="rounded-lg border border-border p-3">
+			<AvailabilityCalendar
+				bind:month={pickerMonth}
+				{today}
+				min={today}
+				info={pickerInfo}
+				onPick={pickInForm}
+				compact
+			/>
+		</div>
+
+		<!-- Summary -->
+		<p class="text-sm text-foreground">
+			{#if formMode === 'weekly'}
+				{#if formDaysOfWeek.length === 0}
+					<span class="text-muted-foreground">Choisissez les jours de la semaine.</span>
+				{:else}
+					Chaque {formWeekdaysLabel}, de {formStartTime} à {formEndTime}, à partir du {formatDate(formFrom)}{formUntil
+						? ` jusqu’au ${formatDate(formUntil)}`
+						: ', sans date de fin'}
+				{/if}
+			{:else if formDates.length === 0}
+				<span class="text-muted-foreground">Aucun jour choisi.</span>
+			{:else}
+				{formDates.length} jour{formDates.length > 1 ? 's' : ''}, de {formStartTime} à {formEndTime} :
+				{formDates.map(formatDate).join(', ')}
+			{/if}
+		</p>
+
 		<!-- Actions -->
-		<div class="flex justify-end gap-3 pt-2">
+		<div class="flex justify-end gap-3 pt-1">
 			<button
 				onclick={() => (createModalOpen = false)}
 				class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -1049,7 +1223,7 @@
 <!-- ========== EDIT MODAL ========== -->
 <Modal
 	bind:isOpen={editModalOpen}
-	title={selectedSlot?.isRecurring ? 'Modifier la série' : 'Modifier le créneau'}
+	title={selectedSlot?.isRecurring ? 'Modifier les horaires réguliers' : 'Modifier ce jour'}
 	description={selectedSlot?.isRecurring
 		? 'Les nouveaux horaires s’appliquent à partir du jour choisi. Les réservations déjà prises ne bougent pas.'
 		: 'Modifiez les horaires de ce créneau. Les réservations déjà prises ne bougent pas.'}
@@ -1064,12 +1238,6 @@
 			>
 				<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 				<span>{conflictWarning}</span>
-			</div>
-		{/if}
-
-		{#if selectedSlot}
-			<div class="text-sm text-muted-foreground mb-2">
-				Salle {selectedSlot.roomId.slice(0, 8)}…
 			</div>
 		{/if}
 
@@ -1113,9 +1281,6 @@
 			</div>
 		</div>
 
-		<!-- Notes -->
-		<FormInput label="Notes" type="text" bind:value={editNotes} placeholder="Optionnel" />
-
 		<!-- Actions -->
 		<div class="flex justify-end gap-3 pt-2">
 			<button
@@ -1141,9 +1306,9 @@
 <!-- ========== CANCEL CONFIRM MODAL ========== -->
 <Modal
 	bind:isOpen={cancelConfirmOpen}
-	title={selectedSlot?.isRecurring ? 'Supprimer la série' : 'Supprimer le créneau'}
+	title={selectedSlot?.isRecurring ? 'Supprimer ces horaires réguliers' : 'Supprimer ce jour'}
 	description={selectedSlot?.isRecurring
-		? 'La série ne proposera plus aucun créneau. Les réservations déjà prises sont conservées : annulez-les une à une si besoin.'
+		? 'Ces horaires ne seront plus proposés, sur aucun jour. Les réservations déjà prises sont conservées : annulez-les une à une si besoin.'
 		: 'Ce créneau ne sera plus proposé. Les réservations déjà prises sont conservées : annulez-les une à une si besoin.'}
 >
 	<div class="space-y-4">
@@ -1156,9 +1321,6 @@
 				<p class="font-medium text-foreground">
 					{#if selectedSlot.isRecurring}{recurrenceLabel(selectedSlot)} ·{:else}{formatDate(selectedSlot.date)} ·{/if}
 					{formatTime(selectedSlot.startTime)} – {formatTime(selectedSlot.endTime)}
-				</p>
-				<p class="text-muted-foreground mt-1">
-					Salle {selectedSlot.roomId.slice(0, 8)}…
 				</p>
 			</div>
 		{/if}
@@ -1187,8 +1349,8 @@
 <!-- ========== CLOSE DATES (AVAILABILITY EXCEPTION) MODAL ========== -->
 <Modal
 	bind:isOpen={exceptionModalOpen}
-	title="Fermer des dates"
-	description="La série ne proposera aucun créneau ces jours-là. Les réservations déjà prises sont conservées."
+	title="Fermer une période"
+	description="Ces horaires ne seront pas proposés ces jours-là (congés…). Les réservations déjà prises sont conservées."
 >
 	<div class="space-y-4">
 		{#if exceptionError}

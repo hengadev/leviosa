@@ -1,9 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { redirect, isRedirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { today } from '@internationalized/date';
-import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
-import { occurrences, practiceDate, type AvailabilityException } from './occurrences';
+import { practiceDate, type AvailabilityException } from './occurrences';
 
 export interface Availability {
 	id: string;
@@ -14,7 +12,6 @@ export interface Availability {
 	endTime: string;
 	status: 'available' | 'booked' | 'cancelled' | 'blocked';
 	roomId: string;
-	roomName: string;
 	maxCapacity: number;
 	serviceType?: string;
 	priceCents?: number;
@@ -32,29 +29,12 @@ export interface Availability {
 	updatedAt: string;
 }
 
-export interface RoomAllocation {
-	id: string;
-	roomId: string;
-	allocationType: 'dedicated' | 'shared';
-	startDate?: string;
-	endDate?: string;
-	isActive: boolean;
-	roomName?: string;
-}
-
-export interface AvailabilityDay {
-	date: string;
-	dayName: string;
-	slots: Availability[];
-}
-
-export const load: PageServerLoad = async ({ locals, url, fetch }) => {
+export const load: PageServerLoad = async ({ locals, fetch }) => {
 	if (!locals.user?.id) {
 		throw redirect(302, '/auth');
 	}
 
 	const partnerId = locals.user.id;
-	const weekOffset = Math.max(0, Math.min(52, parseInt(url.searchParams.get('semaine') ?? '0', 10) || 0));
 
 	try {
 		// Fetch availabilities and allocations in parallel
@@ -67,59 +47,51 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 			})
 		]);
 
-		if (availRes.status === 401) {
+		if (availRes.status === 401 || allocRes.status === 401) {
 			throw redirect(302, '/auth');
 		}
 
-		// Process availabilities
-		let availabilities: AvailabilityDay[] = emptyWeek(weekOffset);
+		// The recurring series (with their closed dates) and the one-off
+		// availabilities; the calendar expands the series day by day.
 		let series: Availability[] = [];
+		let oneOffs: Availability[] = [];
 		if (availRes.ok) {
 			const data = await availRes.json();
 			if (Array.isArray(data)) {
-				const recurring = data.filter((a: any) => a.recurrence_pattern && a.status !== 'cancelled');
+				const live = data.filter((a: any) => a.status !== 'cancelled');
+				const recurring = live.filter((a: any) => a.recurrence_pattern);
 				const exceptions = await loadExceptions(
 					fetch,
 					recurring.map((a: any) => a.id)
 				);
-				availabilities = groupByDay(data, weekOffset, exceptions);
 				series = recurring.map((a: any) =>
 					toAvailability(a, a.start_time, a.end_time, a.id, exceptions.get(a.id))
 				);
+				oneOffs = live
+					.filter((a: any) => !a.recurrence_pattern)
+					.map((a: any) => toAvailability(a, a.start_time, a.end_time, a.id));
 			}
 		} else {
 			console.error(`Failed to fetch availabilities: ${availRes.status} ${availRes.statusText}`);
 		}
 
-		// Process allocations
-		let allocations: RoomAllocation[] = [];
-		if (allocRes.status === 401) {
-			throw redirect(302, '/auth');
-		}
+		// The practitioner's room: a practitioner holds one, given when the
+		// profile is created, so the form does not ask for it.
+		let roomId: string | null = null;
 		if (allocRes.ok) {
 			const allocData = await allocRes.json();
 			if (Array.isArray(allocData)) {
-				allocations = allocData
-					.filter((a: any) => a.is_active)
-					.map((a: any): RoomAllocation => ({
-						id: a.id,
-						roomId: a.room_id,
-						allocationType: a.allocation_type,
-						startDate: a.start_date ?? undefined,
-						endDate: a.end_date ?? undefined,
-						isActive: a.is_active,
-						roomName: a.room_name ?? undefined
-					}));
+				roomId = allocData.find((a: any) => a.is_active)?.room_id ?? null;
 			}
 		} else {
 			console.error(`Failed to fetch allocations: ${allocRes.status} ${allocRes.statusText}`);
 		}
 
-		return { availabilities, series, allocations, partnerId, weekOffset };
+		return { series, oneOffs, roomId, partnerId };
 	} catch (err) {
 		if (isRedirect(err)) throw err;
 		console.error('Error loading availabilities:', err);
-		return { availabilities: emptyWeek(weekOffset), series: [], allocations: [], partnerId, weekOffset };
+		return { series: [], oneOffs: [], roomId: null, partnerId };
 	}
 };
 
@@ -154,8 +126,6 @@ function toException(e: any): AvailabilityException {
 	return { id: e.id, startDate: e.start_date, endDate: e.end_date };
 }
 
-const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-
 function toAvailability(
 	slot: any,
 	startTime: string,
@@ -171,7 +141,6 @@ function toAvailability(
 		endTime,
 		status: slot.status || 'available',
 		roomId: slot.room_id,
-		roomName: slot.room_id || 'Salle inconnue',
 		maxCapacity: slot.max_capacity || 1,
 		serviceType: slot.service_type,
 		priceCents: slot.price_cents ?? undefined,
@@ -182,57 +151,4 @@ function toAvailability(
 		createdAt: slot.created_at,
 		updatedAt: slot.updated_at
 	};
-}
-
-// The week shown: seven days from today (practice time zone), weekOffset weeks ahead.
-function weekDays(weekOffset: number) {
-	const first = today(PRACTICE_TIME_ZONE).add({ weeks: weekOffset });
-	return Array.from({ length: 7 }, (_, i) => first.add({ days: i }));
-}
-
-function emptyWeek(weekOffset: number): AvailabilityDay[] {
-	return groupByDay([], weekOffset, new Map());
-}
-
-// One-off availabilities on their day, and every occurrence of the recurring
-// ones that fall in the week (a deleted series shows no occurrence, and a
-// closed date none of its series' occurrences).
-function groupByDay(
-	slots: any[],
-	weekOffset: number,
-	exceptions: Map<string, AvailabilityException[]>
-): AvailabilityDay[] {
-	const days = weekDays(weekOffset);
-	const first = days[0];
-	const last = days[days.length - 1];
-	const slotsByDate = new Map<string, Availability[]>();
-	const add = (availability: Availability) => {
-		if (!slotsByDate.has(availability.date)) slotsByDate.set(availability.date, []);
-		slotsByDate.get(availability.date)!.push(availability);
-	};
-
-	for (const slot of slots) {
-		if (slot.recurrence_pattern) {
-			if (slot.status === 'cancelled') continue;
-			const closed = exceptions.get(slot.id) ?? [];
-			for (const o of occurrences(slot.start_time, slot.end_time, slot.recurrence_pattern, first, last, closed)) {
-				add(toAvailability(slot, o.start, o.end, `${slot.id}-${o.start}`));
-			}
-		} else {
-			add(toAvailability(slot, slot.start_time, slot.end_time, slot.id));
-		}
-	}
-
-	const availabilities: AvailabilityDay[] = [];
-	for (const d of days) {
-		const dateKey = d.toString();
-		const daySlots = (slotsByDate.get(dateKey) || []).sort((a, b) =>
-			a.startTime.localeCompare(b.startTime)
-		);
-		const weekdayIndex = new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay();
-		if (daySlots.length > 0 || weekdayIndex !== 0) {
-			availabilities.push({ date: dateKey, dayName: dayNames[weekdayIndex], slots: daySlots });
-		}
-	}
-	return availabilities;
 }
