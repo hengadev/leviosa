@@ -102,14 +102,10 @@ func TestModifyProduct(t *testing.T) {
 		category := th.NewValidCategory("Books")
 		th.InsertCategory(t, ctx, category, testPool)
 
+		// No image: the public page does not show one, publishing does not need it.
 		product := th.NewValidProduct("Test Product", category.ID)
 		product.Status = domain.Draft
 		th.InsertProduct(t, ctx, testPool, product)
-
-		// Publishing requires at least one image
-		image := th.NewValidImage(product.ID)
-		image.ParentType = domain.ProductType
-		th.InsertImage(t, ctx, image, testPool)
 
 		// Prepare update request
 		newStatus := domain.Published
@@ -181,7 +177,6 @@ func TestModifyProduct(t *testing.T) {
 		product.Status = domain.Draft
 		th.InsertProduct(t, ctx, testPool, product)
 
-		// Publishing requires at least one image
 		image := th.NewValidImage(product.ID)
 		image.ParentType = domain.ProductType
 		th.InsertImage(t, ctx, image, testPool)

@@ -33,16 +33,6 @@ func (s *ProductService) UpdateProduct(ctx context.Context, productIDStr string,
 		}
 	}
 
-	if product.Status != nil && *product.Status == "published" {
-		images, err := s.imageRepo.GetImagesByParentID(ctx, productID, domain.ProductType)
-		if err != nil {
-			return fmt.Errorf("check product images before publish: %w", err)
-		}
-		if len(images) == 0 {
-			return errs.NewUnprocessableEntityErr("Un produit doit avoir au moins une image avant d'être publié.")
-		}
-	}
-
 	stripeUpdateNeeded := product.Name != nil || product.Description != nil
 	if stripeUpdateNeeded {
 		stripeReq := &domain.UpdateStripeProductRequest{
