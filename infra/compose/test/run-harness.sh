@@ -37,9 +37,9 @@
 #   of the Cloudflare DNS challenge (LEVIOSA_CADDY_TLS=internal); requests go
 #   to its random loopback ports with each real host name as SNI and Host
 #   C1. POST /webhooks/stripe and /webhooks/stripe/connect on each stack reach
-#       that stack's backend (its signature error), staging's without auth
-#   C2. any staging page without credentials is a 401; with them, the page
-#   C3. staging /healthz is a 200 without credentials
+#       that stack's backend (its signature error)
+#   C2. staging is open: every staging host serves its frontend's pages
+#   C3. staging /healthz is a 200 with staging's release
 #   C4. staging responses carry X-Robots-Tag: noindex, production's don't
 #   C5. requests sent while the backend (or the frontend) is being recreated
 #       get no 502
@@ -97,8 +97,6 @@ PROD_HOSTS="leviosa.care www.leviosa.care admin.leviosa.care staff.leviosa.care"
 STAGING_HOSTS="staging.leviosa.care admin-staging.leviosa.care staff-staging.leviosa.care"
 DROPPED_HOSTS="analytics.leviosa.care www.staging.leviosa.care"
 STAGING_HOST=staging.leviosa.care
-# The plaintext of fixtures/prod/env/caddy.env's STAGING_BASIC_AUTH_HASH.
-STAGING_AUTH_PASSWORD=harness-staging-password
 # Stripe's webhook routes. The fixtures' webhook secrets are empty, so no
 # signature ever verifies: the backend answers each POST with this error.
 WEBHOOK_PATHS="/webhooks/stripe /webhooks/stripe/connect"
@@ -415,8 +413,6 @@ via_caddy() { # $1 host, $2 path, curl options...
 }
 response_header() { tr -d '\r' <"$TMP/caddy-response.headers" | sed -n "s/^$1: *//Ip" | paste -sd ',' -; }
 response_body() { cat "$TMP/caddy-response.body"; }
-# Staging's basic auth user (caddy.env) and the fixture password, for curl -u.
-staging_credentials() { echo "$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_USER):$STAGING_AUTH_PASSWORD"; }
 # A Stripe-shaped webhook POST whose signature cannot verify.
 post_webhook() { # $1 host, $2 path, $3 User-Agent
 	via_caddy "$1" "$2" -X POST -A "$3" -H 'Content-Type: application/json' \
@@ -427,19 +423,15 @@ post_webhook() { # $1 host, $2 path, $3 User-Agent
 backend_saw() { docker logs "$1" 2>&1 | grep -qF "\"user_agent\":\"$2\""; } # $1 container, $2 User-Agent
 # `caddy <command>` (validate, adapt) on the Caddyfile, in the compose file's
 # Caddy image and without a network: nothing is contacted. The environment
-# holds the fixture caddy.env's values, unquoted as Compose reads them (never
-# on a command line), and no LEVIOSA_CADDY_TLS unless given: by default this
-# is production's variant, with the Cloudflare DNS challenge.
+# holds the fixture caddy.env's value (never on a command line), and no
+# LEVIOSA_CADDY_TLS unless given: by default this is production's variant,
+# with the Cloudflare DNS challenge.
 caddy_offline() { # $1 caddy command, docker run options...
-	local command=$1 hash
+	local command=$1
 	shift
-	hash=$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_HASH)
-	hash=${hash#\'}
 	env CLOUDFLARE_API_TOKEN="$(env_value "$TMP/prod/env/caddy.env" CLOUDFLARE_API_TOKEN)" \
-		STAGING_BASIC_AUTH_USER="$(env_value "$TMP/prod/env/caddy.env" STAGING_BASIC_AUTH_USER)" \
-		STAGING_BASIC_AUTH_HASH="${hash%\'}" \
 		docker run --rm --label "$LABEL" --network none -v "$CADDYFILE:/etc/caddy/Caddyfile:ro" \
-		-e CLOUDFLARE_API_TOKEN -e STAGING_BASIC_AUTH_USER -e STAGING_BASIC_AUTH_HASH "$@" \
+		-e CLOUDFLARE_API_TOKEN "$@" \
 		"$CADDY_IMAGE" caddy "$command" --config /etc/caddy/Caddyfile
 }
 caddy_validates() { caddy_offline validate "${@:2}" >"$TMP/logs/$1.log" 2>&1; } # $1 log name, docker run options...
@@ -1308,83 +1300,62 @@ backend_route_checks() { # $1 stack, $2 host, curl options...
 }
 
 case_caddy_webhooks() {
-	section "caddy criterion 1: Stripe's webhooks reach each stack's own backend, staging's without basic auth"
+	section "caddy criterion 1: Stripe's webhooks reach each stack's own backend"
 	local prod_backend staging_backend
 	prod_backend=$(cid backend)
 	staging_backend=$(scid staging_backend)
 	webhook_checks production "$PROD_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
 	webhook_checks staging "$STAGING_HOSTS" "$staging_backend" staging_backend "$prod_backend" "production's backend"
 	backend_route_checks production leviosa.care
-	backend_route_checks staging "$STAGING_HOST" -u "$(staging_credentials)"
+	backend_route_checks staging "$STAGING_HOST"
 }
 
-case_caddy_staging_auth() {
-	section "caddy criterion 2: any staging page without credentials is a 401; with them, the page"
-	local host path statuses want challenges n credentials body
-	local paths="/ /admin /staff /client /auth/login /robots.txt /sitemap.xml /coming-soon /api/products /healthz/ /webhooks /webhooks-x/stripe"
-	credentials=$(staging_credentials)
+case_caddy_staging_open() {
+	section "caddy criterion 2: staging is open: every staging host serves its frontend's pages"
+	local host statuses body
 	for host in $STAGING_HOSTS; do
-		statuses="" want="" challenges=0 n=0
-		for path in $paths; do
-			n=$((n + 1))
-			statuses+="$(via_caddy "$host" "$path") "
-			want+="401 "
-			if [[ $(response_header www-authenticate) == "Basic realm="* ]]; then challenges=$((challenges + 1)); fi
-		done
-		check "$host: every page without credentials is a 401 with a Basic challenge ($n paths: ${statuses% }; challenges $challenges/$n)" \
-			[ "$statuses$challenges" = "$want$n" ]
-	done
-	statuses=""
-	for host in $STAGING_HOSTS; do
-		statuses+="$(via_caddy "$host" / -X POST --data x) $(via_caddy "$host" / -u "$(staging_credentials | cut -d: -f1):wrong-password") "
-	done
-	check "a POST without credentials and a wrong password are 401s too (${statuses% })" \
-		[ "$statuses" = "401 401 401 401 401 401 " ]
-	for host in $STAGING_HOSTS; do
-		statuses=$(via_caddy "$host" /robots.txt -u "$credentials")
+		statuses=$(via_caddy "$host" /robots.txt)
 		body=$(response_body)
-		check "$host: with credentials, /robots.txt is the frontend's page for that host ($statuses, $(grep -m1 '^Sitemap:' <<<"$body" || echo 'no Sitemap line'))" \
+		check "$host: /robots.txt is the frontend's page for that host, no credentials asked ($statuses, $(grep -m1 '^Sitemap:' <<<"$body" || echo 'no Sitemap line'))" \
 			bash -c '[ "$1" = 200 ] && grep -qxF "Sitemap: https://$3/sitemap.xml" <<<"$2"' _ "$statuses" "$body" "$host"
 	done
-	statuses=$(via_caddy "$STAGING_HOST" / -u "$credentials")
-	check "with credentials, $STAGING_HOST/ returns the home page ($statuses, $(response_header content-type))" \
+	statuses=$(via_caddy "$STAGING_HOST" /)
+	check "$STAGING_HOST/ returns the home page ($statuses, $(response_header content-type))" \
 		bash -c '[ "$1" = 200 ] && [[ $2 == text/html* ]] && grep -qi "<html" "$3"' _ "$statuses" "$(response_header content-type)" "$TMP/caddy-response.body"
 	local log
 	log=$(dc exec -T caddy cat /var/log/caddy/staging-access.log 2>/dev/null || true)
 	check "staging's requests are logged as JSON to staging-access.log ($(grep -c '"host":"[a-z-]*staging.leviosa.care"' <<<"$log") entries), production's are not" \
 		bash -c 'grep -q "\"host\":\"staging.leviosa.care\"" <<<"$1" && ! grep -q "\"host\":\"leviosa.care\"" <<<"$1"' _ "$log"
-	check "... and the log holds no credential (Authorization redacted)" \
-		bash -c '! grep -qF -e "$2" -e "$3" <<<"$1"' _ "$log" "$STAGING_AUTH_PASSWORD" "$(printf '%s' "$credentials" | base64)"
 	log=$(dc exec -T caddy cat /var/log/caddy/access.log 2>/dev/null || true)
 	check "production's requests are logged as JSON to access.log ($(grep -c '"host":"[a-z.]*leviosa.care"' <<<"$log") entries), staging's are not" \
 		bash -c 'grep -q "\"host\":\"leviosa.care\"" <<<"$1" && ! grep -q "staging.leviosa.care" <<<"$1"' _ "$log"
 }
 
 case_caddy_staging_healthz() {
-	section "caddy criterion 3: staging /healthz is a 200 without credentials"
+	section "caddy criterion 3: staging /healthz is a 200 with staging's release"
 	local host statuses="" bodies=0 n=0
 	for host in $STAGING_HOSTS; do
 		n=$((n + 1))
 		statuses+="$(via_caddy "$host" /healthz) "
 		if [ "$(response_body)" = "{\"frontend\":\"$SHA1\",\"backend\":\"$SHA1\"}" ]; then bodies=$((bodies + 1)); fi
 	done
-	check "/healthz on ${STAGING_HOSTS// /, } answers without credentials (statuses ${statuses% })" \
+	check "/healthz on ${STAGING_HOSTS// /, } answers (statuses ${statuses% })" \
 		[ "$statuses" = "200 200 200 " ]
 	check "... with staging's release, $SHA1 for both apps ($bodies/$n)" [ "$bodies" = "$n" ]
 }
 
 case_caddy_robots() {
 	section "caddy criterion 4: staging responses carry X-Robots-Tag: noindex, production's don't"
-	local host got="" credentials
-	credentials=$(staging_credentials)
+	local host got=""
 	for host in $STAGING_HOSTS; do
 		got+="$host/=$(via_caddy "$host" /):$(response_header x-robots-tag) "
-		got+="$host/robots.txt=$(via_caddy "$host" /robots.txt -u "$credentials"):$(response_header x-robots-tag) "
+		got+="$host/robots.txt=$(via_caddy "$host" /robots.txt):$(response_header x-robots-tag) "
+		got+="$host/missing=$(via_caddy "$host" /no-such-page-harness):$(response_header x-robots-tag) "
 		got+="$host/healthz=$(via_caddy "$host" /healthz):$(response_header x-robots-tag) "
 		got+="$host/webhooks/stripe=$(post_webhook "$host" /webhooks/stripe "leviosa-harness-$RUN_ID-robots"):$(response_header x-robots-tag) "
 	done
 	note "staging: ${got% }"
-	check "every staging response (401, authenticated page, /healthz, webhook; on each host) carries X-Robots-Tag: noindex, once" \
+	check "every staging response (pages, a 404, /healthz, webhook; on each host) carries X-Robots-Tag: noindex, once" \
 		bash -c 'for r in $1; do [ "${r##*:}" = noindex ] || exit 1; done' _ "$got"
 	got=""
 	for host in $PROD_HOSTS; do
@@ -1504,7 +1475,7 @@ case_staging_rabbitmq
 case_staging_credentials
 case_staging_no_prod_restart
 case_caddy_webhooks
-case_caddy_staging_auth
+case_caddy_staging_open
 case_caddy_staging_healthz
 case_caddy_robots
 case_caddy_retry_window

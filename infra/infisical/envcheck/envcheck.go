@@ -29,7 +29,7 @@ var Environments = []string{"dev", "staging", "prod"}
 // frontend/.env) plus the three infrastructure files, rendered only so the
 // check proves those templates against real folders before the server does.
 // caddy.env and backup.env exist for prod only: Caddy belongs to production's
-// stack (it reads staging's /caddy too) and /backup is prod-only.
+// stack and /backup is prod-only.
 var files = map[string][]string{
 	"prod":    {"backend.env", "frontend.env", "admin.env", "redis.env", "postgres.env", "rabbitmq.env", "caddy.env", "backup.env"},
 	"staging": {"backend.env", "frontend.env", "admin.env", "redis.env"},
@@ -68,7 +68,6 @@ var (
 	alnumRE   = regexp.MustCompile(`^[A-Za-z0-9]+$`)
 	identRE   = regexp.MustCompile(`^[A-Za-z0-9_]+$`)
 	vhostRE   = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
-	bcryptRE  = regexp.MustCompile(`^\$2[aby]?\$[0-9]{2}\$[./A-Za-z0-9]{53}$`)
 	digitsRE  = regexp.MustCompile(`^[0-9]+$`)
 	commentRE = regexp.MustCompile(`^\s*(#.*)?$`)
 )
@@ -200,13 +199,7 @@ var rules = map[string]rule{
 		},
 	},
 	"caddy.env": {
-		required: []string{"CLOUDFLARE_API_TOKEN", "STAGING_BASIC_AUTH_USER", "STAGING_BASIC_AUTH_HASH"},
-		values: func(_ string, v map[string]string) []string {
-			if h, ok := v["STAGING_BASIC_AUTH_HASH"]; ok && h != "" && !bcryptRE.MatchString(h) {
-				return []string{"STAGING_BASIC_AUTH_HASH is not a bcrypt hash ($2a$<cost>$<53 characters>, e.g. from `caddy hash-password`)"}
-			}
-			return nil
-		},
+		required: []string{"CLOUDFLARE_API_TOKEN"},
 	},
 	"backup.env": {
 		required: []string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"},
@@ -300,7 +293,7 @@ func Check(env, file string, content []byte) Report {
 }
 
 func backendForbidden(env, key string) string {
-	for _, p := range []string{"ADMIN_", "BACKUP_", "CLOUDFLARE_", "STAGING_BASIC_AUTH_", "POSTGRES_", "RABBITMQ_DEFAULT_"} {
+	for _, p := range []string{"ADMIN_", "BACKUP_", "CLOUDFLARE_", "POSTGRES_", "RABBITMQ_DEFAULT_"} {
 		if strings.HasPrefix(key, p) {
 			return "it belongs to another consumer's folder (/admin, /backup, /caddy) or is a raw /db atom"
 		}

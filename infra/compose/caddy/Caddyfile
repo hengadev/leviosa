@@ -5,19 +5,13 @@
 # A plain file: no templating. Ansible's caddy role installs it into
 # /opt/leviosa/caddy/etc/, which docker-compose.prod.yml mounts read-only at
 # /etc/caddy. Values that differ per environment come from Caddy's env file
-# (env/caddy.env, rendered by the Infisical Agent from prod/caddy and
-# staging/caddy):
+# (env/caddy.env, rendered by the Infisical Agent from prod/caddy):
 #
 #   CLOUDFLARE_API_TOKEN      DNS challenge token, read at runtime ({env.*})
-#   STAGING_BASIC_AUTH_USER   staging's basic auth user        } read when the
-#   STAGING_BASIC_AUTH_HASH   its bcrypt hash (caddy           } file loads
-#                             hash-password)                   } ({$VAR})
 #
-# The Agent recreates Caddy when caddy.env changes, so {$VAR} values never go
-# stale. Staging is never served without its basic auth: with neither staging
-# value set it answers 401 to everything (production keeps serving); with only
-# one of them, Caddy refuses to load this file. caddy.env must single-quote the
-# hash: Compose expands `$` in unquoted env-file values, which mangles bcrypt.
+# Staging is open, like production: it runs Stripe in test mode, so nothing
+# done there costs or exposes anything real. It stays out of search results
+# (X-Robots-Tag: noindex).
 #
 # Routing, per stack:
 #   /webhooks/*    that stack's backend: Stripe's payment (/webhooks/stripe)
@@ -108,19 +102,10 @@ leviosa.care, www.leviosa.care, admin.leviosa.care, staff.leviosa.care {
 staging.leviosa.care, admin-staging.leviosa.care, staff-staging.leviosa.care {
 	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
 
-	# Basic auth on every path but /healthz (Promote reads staging's release
-	# from it) and /webhooks/* (Stripe cannot authenticate; the backend checks
-	# each webhook's signature). Staging runs real Twilio: an open OTP
-	# endpoint would be an SMS-pumping target.
-	@protected not path /healthz /webhooks/*
-	basic_auth @protected {
-		{$STAGING_BASIC_AUTH_USER} {$STAGING_BASIC_AUTH_HASH}
-	}
-
 	import stack staging_backend:3500 staging_frontend:3000
 
 	# Keep staging out of search results: X-Robots-Tag on every response.
-	# This line applies before the request is handled, so Caddy's own 401s
+	# This line applies before the request is handled, so Caddy's own errors
 	# carry it; the block below (deferred, because it removes a header) does
 	# not reach them, but sets it again so an upstream cannot replace it.
 	header X-Robots-Tag "noindex"
