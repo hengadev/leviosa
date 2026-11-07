@@ -230,7 +230,7 @@
 	{/if}
 
 	<Tabs value="all" class="space-y-4">
-		<TabsList class="inline-flex items-center w-fit bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1">
+		<TabsList class="inline-flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1">
 			{#each triggers as trigger}
 				<TabsTrigger
 					value={trigger.value}
