@@ -49,11 +49,8 @@
 </script>
 
 <svelte:head>
-    <title>{partnerName} — leviosa.care</title>
-    <meta
-        name="description"
-        content={data.partner?.bio || `${partnerName} — ${t.bookSession}`}
-    />
+    <title>{data.partner ? `${partnerName} — leviosa.care` : "leviosa.care"}</title>
+    <meta name="description" content={data.partner?.bio || (data.partner ? `${partnerName} — ${t.bookSession}` : t.bookSession)} />
 </svelte:head>
 
 <Header {locale} />
