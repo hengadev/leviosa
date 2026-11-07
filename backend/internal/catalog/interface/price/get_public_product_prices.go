@@ -11,7 +11,8 @@ import (
 )
 
 // GetPublicProductPrices handles GET /products/{id}/prices
-// Returns only active prices for a product (public access, no authentication required).
+// Returns only active prices of a published product (public access, no
+// authentication required); a draft or archived product answers 404.
 func (h *handler) GetPublicProductPrices(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -37,7 +38,7 @@ func (h *handler) GetPublicProductPrices(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	prices, err := h.svc.GetPricesByProductID(ctx, productID)
+	prices, err := h.svc.GetPublishedProductPrices(ctx, productID)
 	if err != nil {
 		httpx.RespondWithServiceError(w, logger, ctx, err, "get public product prices")
 		return
