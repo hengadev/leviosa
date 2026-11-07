@@ -48,6 +48,26 @@ func (r *CreatePractitionerRequest) Valid(ctx context.Context) error {
 	return errs.AsError()
 }
 
+// BecomePractitionerRequest is an administrator who is also the practice's
+// practitioner giving their own account the practitioner profile.
+type BecomePractitionerRequest struct {
+	Occupation string `json:"occupation,omitempty"`
+	Bio        string `json:"bio,omitempty"`
+}
+
+func (r *BecomePractitionerRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+
+	if len(r.Occupation) > 200 {
+		errs.Set("occupation", "occupation must be 200 characters or less")
+	}
+	if len(r.Bio) > 1000 {
+		errs.Set("bio", "bio must be 1000 characters or less")
+	}
+
+	return errs.AsError()
+}
+
 // CreatePractitionerResponse carries the generated password: it is shown to
 // the admin once and stored nowhere else in clear.
 type CreatePractitionerResponse struct {

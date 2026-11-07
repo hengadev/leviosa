@@ -34,7 +34,7 @@ func (s *AuthAggregatorService) CreatePractitioner(ctx context.Context, adminID 
 		return nil, err
 	}
 
-	partnerID, err := s.createPractitionerProfile(ctx, adminID, userID, request)
+	partnerID, err := s.createPractitionerProfile(ctx, adminID, userID, request.Bio, request.Occupation)
 	if err != nil {
 		s.undoPractitioner(ctx, userID)
 		return nil, err
@@ -48,13 +48,13 @@ func (s *AuthAggregatorService) CreatePractitioner(ctx context.Context, adminID 
 	}, nil
 }
 
-func (s *AuthAggregatorService) createPractitionerProfile(ctx context.Context, adminID, userID uuid.UUID, request *domain.CreatePractitionerRequest) (uuid.UUID, error) {
-	partner, err := s.partner.CreatePartner(ctx, userID, strings.TrimSpace(request.Bio), "", nil, nil)
+func (s *AuthAggregatorService) createPractitionerProfile(ctx context.Context, adminID, userID uuid.UUID, bio, occupation string) (uuid.UUID, error) {
+	partner, err := s.partner.CreatePartner(ctx, userID, strings.TrimSpace(bio), "", nil, nil)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("create partner profile: %w", err)
 	}
 
-	if occupation := strings.TrimSpace(request.Occupation); occupation != "" {
+	if occupation := strings.TrimSpace(occupation); occupation != "" {
 		if _, err := s.partner.UpdatePartner(ctx, partner.ID, &domain.UpdatePartnerRequest{Occupation: &occupation}); err != nil {
 			return uuid.Nil, fmt.Errorf("set partner occupation: %w", err)
 		}

@@ -44,6 +44,7 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 
 	// Creates a practitioner: account, verified profile and practice room (admin only).
 	router.HandleFunc("POST "+CreatePractitionerEndpoint, RequireAdministrator(mw.EnableCORS(h.CreatePractitioner)))
+	router.HandleFunc("POST "+BecomePractitionerEndpoint, RequireAdministrator(mw.EnableCORS(h.BecomePractitioner)))
 
 	// Deletes the current user's own account.
 	router.HandleFunc("DELETE "+DeleteOwnAccountEndpoint, RequireStandard(mw.EnableCORS(h.DeleteOwnAccount)))
