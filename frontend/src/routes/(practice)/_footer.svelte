@@ -19,7 +19,7 @@
             {data.email}
         </a>
         <span class="flex gap-4 sm:ml-auto">
-            <!-- The mentions légales page arrives with issue 001; it will join these links. -->
+            <a href="/legal/mentions-legales" class="hover:text-white focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none">{t.legal}</a>
             <a href="/legal/privacy" class="hover:text-white focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none">{t.privacy}</a>
             <a href="/legal/terms" class="hover:text-white focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none">{t.terms}</a>
         </span>

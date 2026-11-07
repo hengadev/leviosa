@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 // the booking lookup and the legal pages. The old multi-practitioner routes
 // (services, team, about, contact, book) redirect to `/` and are not listed.
 // `/coming-soon` carries its own `noindex` meta tag.
-const STATIC_ROUTES = ['/', '/en', '/bookings', '/legal/privacy', '/legal/terms'];
+const STATIC_ROUTES = ['/', '/en', '/bookings', '/legal/privacy', '/legal/terms', '/legal/mentions-legales'];
 
 export const GET: RequestHandler = async ({ url }) => {
     const paths = [...STATIC_ROUTES];
