@@ -97,15 +97,17 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			users: mockUsers.map(mapBackendUserToFrontend),
 			pendingUsers: mockUsers.filter((u) => u.state === "pending").map(mapBackendUserToFrontend),
 			partners: mockPartners.map(mapBackendPartnerToFrontend),
-			partnersError: false
+			partnersError: false,
+			selfPractitioner: false
 		};
 	}
 
 	try {
-		const [usersRes, pendingRes, partnersRes] = await Promise.all([
+		const [usersRes, pendingRes, partnersRes, ownProfileRes] = await Promise.all([
 			fetch(`${env.API_URL}/admin/users`),
 			fetch(`${env.API_URL}/admin/auth/users/pending`),
-			fetch(`${env.API_URL}/admin/partners`)
+			fetch(`${env.API_URL}/admin/partners`),
+			fetch(`${env.API_URL}/partners/me`)
 		]);
 
 		if (!usersRes.ok) {
@@ -133,14 +135,52 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			partnersError = true;
 		}
 
-		return { users, pendingUsers, partners, partnersError };
+		// Whether the logged-in admin is also the practitioner (a verified
+		// profile of their own), which hides the "Je suis aussi praticien" button.
+		let selfPractitioner = false;
+		if (ownProfileRes.ok) {
+			const ownProfile: BackendPartnerResponse = await ownProfileRes.json();
+			selfPractitioner =
+				ownProfile.stripe_account_status === "active" && ownProfile.stripe_onboarding_complete;
+		}
+
+		return { users, pendingUsers, partners, partnersError, selfPractitioner };
 	} catch (error) {
 		console.error("Error loading admin users page:", error);
-		return { users: [], pendingUsers: [], partners: [], partnersError: false };
+		return { users: [], pendingUsers: [], partners: [], partnersError: false, selfPractitioner: false };
 	}
 };
 
 export const actions: Actions = {
+	// The logged-in admin is also the practitioner: their own account gets the
+	// verified profile and the practice room, and keeps the admin role.
+	becomePractitioner: async ({ request, fetch }) => {
+		const formData = await request.formData();
+		const field = (name: string) => ((formData.get(name) as string | null) ?? "").trim();
+		const profile = { occupation: field("occupation"), bio: field("bio") };
+
+		if (env.USE_MOCK_DATA === "true") {
+			return { success: "Votre compte est aussi praticien." };
+		}
+
+		try {
+			const res = await fetch(`${env.API_URL}/admin/partners/me`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(profile)
+			});
+			if (!res.ok) {
+				const errorText = await res.text();
+				throw new Error(`Failed to become practitioner: ${res.statusText} - ${errorText}`);
+			}
+			return {
+				success: "Votre compte est aussi praticien : vos disponibilités se saisissent dans l'espace praticien."
+			};
+		} catch (error) {
+			console.error("Error becoming practitioner:", error);
+			return { error: "Impossible de faire de votre compte un praticien" };
+		}
+	},
 	// Creates a practitioner in one step: the account (with a generated
 	// password, shown once), the verified profile and the practice room their
 	// availabilities need.

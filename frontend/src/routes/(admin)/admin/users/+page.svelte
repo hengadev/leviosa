@@ -25,6 +25,7 @@
 		FileText,
 		CreditCard,
 		UserPlus,
+		UserCog,
 		Copy
 	} from "@lucide/svelte";
 
@@ -47,6 +48,7 @@
 	let verifyPartnerDialogOpen = $state(false);
 	let deletePartnerDialogOpen = $state(false);
 	let createPartnerDialogOpen = $state(false);
+	let becomePractitionerDialogOpen = $state(false);
 	let passwordCopied = $state(false);
 
 	async function copyPassword(password: string) {
@@ -174,6 +176,7 @@
 			verifyPartnerDialogOpen = false;
 			deletePartnerDialogOpen = false;
 			createPartnerDialogOpen = false;
+			becomePractitionerDialogOpen = false;
 			passwordCopied = false;
 		}
 	});
@@ -408,7 +411,17 @@
 
 		<!-- Partners Tab -->
 		<TabsContent value="partners" class="p-6">
-			<div class="mb-4 flex justify-end">
+			<div class="mb-4 flex flex-wrap justify-end gap-2">
+				{#if !data.selfPractitioner}
+					<button
+						type="button"
+						onclick={() => (becomePractitionerDialogOpen = true)}
+						class="inline-flex items-center gap-2 px-4 py-2 border border-border-input text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm"
+					>
+						<UserCog size={16} />
+						Je suis aussi praticien
+					</button>
+				{/if}
 				<button
 					type="button"
 					onclick={() => (createPartnerDialogOpen = true)}
@@ -1031,4 +1044,64 @@
 			</form>
 		</Modal>
 	{/if}
+{/if}
+
+<!-- Become Practitioner Dialog/Drawer -->
+{#snippet becomePractitionerForm()}
+	<form method="POST" action="?/becomePractitioner" use:enhance={() => {
+		return async ({ update }) => {
+			await update({ reset: false });
+		};
+	}} class="mt-6 grid gap-4">
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			Titre (affiché sur la page du cabinet)
+			<input name="occupation" maxlength="200" placeholder="ex. Ostéopathe" autocomplete="off" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal" />
+		</label>
+		<label class="grid gap-1 text-sm font-medium text-foreground">
+			Présentation (affichée sur la page du cabinet)
+			<textarea name="bio" rows="4" maxlength="1000" class="px-3 py-2 border border-border-input rounded-lg bg-background font-normal"></textarea>
+		</label>
+		<p class="text-xs text-muted-foreground">Votre compte reste administrateur. Vous saisissez ensuite vos disponibilités dans l'espace praticien, avec le même identifiant.</p>
+		<div class="flex w-full justify-end gap-3">
+			<button
+				type="button"
+				onclick={() => (becomePractitionerDialogOpen = false)}
+				class="px-4 py-2 border border-border-input text-foreground-alt rounded-lg hover:bg-muted transition-colors font-medium text-sm"
+			>
+				Annuler
+			</button>
+			<button
+				type="submit"
+				class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+			>
+				Devenir praticien
+			</button>
+		</div>
+	</form>
+{/snippet}
+
+{#if isMobile}
+	<Drawer bind:isOpen={becomePractitionerDialogOpen}>
+		<div class="sticky top-0 bg-background pb-4 border-b border-border-card -mx-4 px-4 -mt-4 pt-4 z-10">
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl font-semibold tracking-tight">Je suis aussi praticien</h2>
+				<button
+					type="button"
+					onclick={() => (becomePractitionerDialogOpen = false)}
+					class="p-2 hover:bg-muted rounded-md transition-colors"
+				>
+					<X class="text-foreground size-5" />
+				</button>
+			</div>
+		</div>
+		{@render becomePractitionerForm()}
+	</Drawer>
+{:else}
+	<Modal
+		bind:isOpen={becomePractitionerDialogOpen}
+		title="Je suis aussi praticien"
+		description="Votre compte reçoit un profil public et la salle de vos disponibilités."
+	>
+		{@render becomePractitionerForm()}
+	</Modal>
 {/if}

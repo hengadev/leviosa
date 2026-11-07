@@ -13,6 +13,7 @@
 		UserRound,
 		LogOut,
 		ExternalLink,
+		Shield,
 	} from "@lucide/svelte";
 	import type { Component } from "svelte";
 	import type { Permissions } from "$lib/security/permissions";
@@ -95,6 +96,12 @@
 			icon: Package,
 			adminOnly: true,
 		},
+		{
+			href: "/admin",
+			label: "Administration",
+			icon: Shield,
+			adminOnly: true,
+		},
 	];
 
 	/**
@@ -121,6 +128,12 @@
 			href: "/staff/profile",
 			label: "Profil",
 			icon: UserRound,
+		},
+		{
+			href: "/admin",
+			label: "Admin",
+			icon: Shield,
+			adminOnly: true,
 		},
 	];
 
