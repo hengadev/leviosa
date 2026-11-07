@@ -20,6 +20,19 @@
 		icon: Component;
 		external?: boolean;
 	}
+
+	/** The name the account shows: first and last name, else the email. */
+	export function accountName(user: App.User): string {
+		return [user.firstname, user.lastname].filter(Boolean).join(" ") || user.email;
+	}
+
+	export function accountInitial(user: App.User): string {
+		return (user.firstname?.[0] ?? user.email?.[0] ?? "L").toUpperCase();
+	}
+
+	export function roleLabel(user: App.User): string {
+		return user.role === "administrator" ? "Administrateur" : user.role === "partner" ? "Praticien" : user.role;
+	}
 </script>
 
 <script lang="ts">
@@ -54,13 +67,9 @@
 		return path.startsWith(href);
 	}
 
-	const name = $derived(
-		[user.firstname, user.lastname].filter(Boolean).join(" ") || user.email,
-	);
-	const initial = $derived((user.firstname?.[0] ?? user.email?.[0] ?? "L").toUpperCase());
-	const roleLabel = $derived(
-		user.role === "administrator" ? "Administrateur" : user.role === "partner" ? "Praticien" : user.role,
-	);
+	const name = $derived(accountName(user));
+	const initial = $derived(accountInitial(user));
+	const role = $derived(roleLabel(user));
 </script>
 
 <aside
@@ -147,7 +156,7 @@
 			{#if isCollapsed}
 				<div class="px-3 py-2 border-b border-border-card mb-1">
 					<p class="text-sm font-medium text-foreground truncate tracking-tight">{name}</p>
-					<p class="text-xs text-muted-foreground">{roleLabel}</p>
+					<p class="text-xs text-muted-foreground">{role}</p>
 				</div>
 			{/if}
 			{#each accountLinks as link (link.href)}
@@ -189,7 +198,7 @@
 					</div>
 					<div class="flex-1 min-w-0">
 						<p class="text-sm font-medium text-foreground truncate tracking-tight" title={user.email}>{name}</p>
-						<p class="text-xs text-muted-foreground">{roleLabel}</p>
+						<p class="text-xs text-muted-foreground">{role}</p>
 					</div>
 					<button
 						onclick={() => (userMenuOpen = !userMenuOpen)}
