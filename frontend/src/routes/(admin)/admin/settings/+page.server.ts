@@ -69,7 +69,7 @@ type BookingPolicySettings = { minimumNoticeHours: number; horizonWeeks: number;
 type PracticeOption = { id: string; label: string }
 
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
-    // ⬅️ pulls data from (ops)/+layout.server.ts
+    // The admin layout already lets administrators only; this is a second check.
     const { permissions } = await parent()
 
     if (!permissions.canAccessOps) {

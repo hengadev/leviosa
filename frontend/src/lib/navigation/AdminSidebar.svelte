@@ -7,6 +7,7 @@
 		Package,
 		HandCoins,
 		CalendarClock,
+		Settings,
 		ExternalLink,
 	} from "@lucide/svelte";
 	import type { Component } from "svelte";
@@ -90,6 +91,13 @@
 			href: "/admin/compta",
 			label: "Comptabilité",
 			icon: HandCoins,
+		},
+		// The practice settings: company details, public page, booking rules.
+		// Desktop only: the mobile bar is full and these are set up once.
+		{
+			href: "/admin/settings",
+			label: "Paramètres",
+			icon: Settings,
 		},
 	];
 

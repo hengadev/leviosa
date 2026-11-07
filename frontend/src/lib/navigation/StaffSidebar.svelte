@@ -7,7 +7,6 @@
 		CalendarCheck,
 		Package,
 		DollarSign,
-		Settings,
 		ChevronLeft,
 		ChevronRight,
 		UserRound,
@@ -195,26 +194,10 @@
 				</div>
 				<div class="flex items-center gap-1">
 					<ThemeToggle />
-					<a
-						href="/staff/settings"
-						class="p-2 rounded-md transition-all duration-200 text-foreground-alt hover:bg-muted hover:text-foreground"
-						aria-label="Paramètres"
-						title="Paramètres"
-					>
-						<Settings size={18} strokeWidth={1.5} />
-					</a>
 				</div>
 			{:else}
 				<div class="mx-auto flex flex-col items-center gap-2">
 					<ThemeToggle />
-					<a
-						href="/staff/settings"
-						class="p-2 rounded-md transition-all duration-200 text-foreground-alt hover:bg-muted"
-						aria-label="Paramètres"
-						title="Paramètres"
-					>
-						<Settings size={18} strokeWidth={1.5} />
-					</a>
 				</div>
 			{/if}
 		</div>
