@@ -186,13 +186,9 @@ export const actions: Actions = {
 			}
 		}
 
-		// Publishing needs an image (the backend refuses it otherwise): say
-		// so before creating anything.
+		// The image is optional, even for a published product.
 		const imageFile = formData.get('imageFile');
 		const hasImage = imageFile instanceof File && imageFile.size > 0;
-		if (status === 'published' && !hasImage) {
-			return fail(400, { error: 'Ajoutez une image pour publier le produit, ou créez-le en brouillon.' });
-		}
 
 		try {
 			const res = await fetch(`${env.API_URL}/admin/products`, {
@@ -235,7 +231,7 @@ export const actions: Actions = {
 			}
 
 			// The backend creates every product as a draft; apply the chosen
-			// status afterwards (publishing needs the image uploaded above).
+			// status afterwards.
 			if (status && status !== 'draft') {
 				const statusRes = await fetch(`${env.API_URL}/admin/products/${created.product_id}`, {
 					method: 'PATCH',

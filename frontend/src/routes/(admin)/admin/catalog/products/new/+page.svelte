@@ -239,7 +239,7 @@
 			(price === "" || price == null ? 1 : 0) +
 			(depositType !== "none" && (depositValue == null || Number.isNaN(depositValue)) ? 1 : 0),
 		annulation: 0,
-		publication: status === "published" && !imagePreview ? 1 : 0,
+		publication: 0,
 	});
 
 	const pointsLabel = (n: number) => (n === 1 ? "1 champ à compléter" : `${n} champs à compléter`);
@@ -540,7 +540,7 @@
 				<div>
 					<span class={labelClass}>Image du Produit</span>
 					<p class="text-xs text-muted-foreground mb-3">
-						Nécessaire pour publier. JPEG, PNG ou WebP, 10 Mo maximum. L'image n'est pas gardée dans le brouillon.
+						Facultative. JPEG, PNG ou WebP, 10 Mo maximum. L'image n'est pas gardée dans le brouillon.
 					</p>
 
 					<!-- The file input stays in the page under the preview: it is what the form sends. -->
@@ -593,9 +593,6 @@
 							<option value="archived">Archivé</option>
 						</select>
 					</div>
-					{#if status === "published" && !imagePreview}
-						<p class="mt-1 text-xs text-red-600">Ajoutez une image pour publier, ou créez le produit en brouillon.</p>
-					{/if}
 				</div>
 			</div>
 
