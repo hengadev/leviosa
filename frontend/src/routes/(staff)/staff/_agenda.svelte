@@ -18,7 +18,7 @@
 
 <div class="bg-background rounded-2xl border border-border overflow-hidden">
     <div class="px-5 py-4 flex items-center justify-between">
-        <h2 class="font-display text-sm font-semibold tracking-tight text-foreground">Agenda du jour</h2>
+        <h2 class="text-base font-semibold text-foreground">Agenda du jour</h2>
         <span class="text-[11px] text-muted-foreground tabular-nums">{slots.length} séance{slots.length !== 1 ? 's' : ''}</span>
     </div>
 

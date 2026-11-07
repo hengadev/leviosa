@@ -14,7 +14,7 @@
 
 <div class="bg-background rounded-2xl border border-border overflow-hidden">
     <div class="px-5 py-4">
-        <h2 class="font-display text-sm font-semibold tracking-tight text-foreground">Activité récente</h2>
+        <h2 class="text-base font-semibold text-foreground">Activité récente</h2>
     </div>
 
     {#if events.length === 0}

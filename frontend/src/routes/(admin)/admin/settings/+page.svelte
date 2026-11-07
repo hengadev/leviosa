@@ -6,15 +6,16 @@
 </script>
 
 <svelte:head>
-	<title>Paramètres | Staff</title>
+	<title>Paramètres | Admin</title>
 </svelte:head>
 
-<div class="p-6 lg:p-10 max-w-4xl">
-    <div class="mb-10">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">Configuration</p>
-        <h1 class="font-display text-4xl lg:text-5xl font-semibold tracking-tight text-foreground leading-[1.1]">Paramètres</h1>
-        <p class="text-muted-foreground mt-3 text-sm">Configurez les informations de l'entreprise et les paramètres système</p>
-        <div class="mt-4 h-px w-16 bg-foreground/20"></div>
+<div class="container mx-auto px-4 py-8 lg:py-12">
+    <div class="mb-8">
+        <h1 class="text-3xl lg:text-4xl font-bold mb-2 text-foreground">Paramètres</h1>
+        <p class="text-muted-foreground">Configurez les informations de l'entreprise et les paramètres système</p>
     </div>
-    <Settings {data} />
+    <!-- Forms read better narrow than across the whole page. -->
+    <div class="max-w-4xl">
+        <Settings {data} />
+    </div>
 </div>
