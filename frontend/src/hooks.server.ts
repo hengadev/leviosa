@@ -68,6 +68,22 @@ export const handle: Handle = async ({ event, resolve }) => {
         return await resolveWithPageLang(event, resolve);
     }
 
+    // enrich fetch with custom header with client IP. Set before the public
+    // routes return: the /api/* proxies the pages call are public paths, and
+    // they too must reach the backend as the logged-in user.
+    event.fetch = async (input, init = {}) => {
+        // Read lazily so a token refreshed inside validateSession() is picked up.
+        // The browser stores the token under sessionCookieName but the backend always
+        // expects it as leviosa_access_token.
+        const currentToken = event.cookies.get(event.locals.sessionCookieName) ?? "";
+        init.headers = {
+            ...(init.headers ?? {}),
+            [env.CLIENT_IP_HEADER ?? 'x-client-ip']: getClientIP(event.request),
+            ...(currentToken ? { Cookie: `leviosa_access_token=${currentToken}` } : {})
+        };
+        return fetch(input, init);
+    };
+
     // Routes that require authentication - all others are public
     const requiresAuth = (pathname: string) => {
         const protectedPrefixes = ['/staff', '/admin', '/client'];
@@ -94,20 +110,6 @@ export const handle: Handle = async ({ event, resolve }) => {
         if (isHttpError(err)) throw err;
         console.error("Error validating session:", err)
     }
-
-    // enrich fetch with custom header with client IP
-    event.fetch = async (input, init = {}) => {
-        // Read lazily so a token refreshed inside validateSession() is picked up.
-        // The browser stores the token under sessionCookieName but the backend always
-        // expects it as leviosa_access_token.
-        const currentToken = event.cookies.get(event.locals.sessionCookieName) ?? "";
-        init.headers = {
-            ...(init.headers ?? {}),
-            [env.CLIENT_IP_HEADER ?? 'x-client-ip']: getClientIP(event.request),
-            Cookie: `leviosa_access_token=${currentToken}`
-        };
-        return fetch(input, init);
-    };
 
     return await resolveWithPageLang(event, resolve);
 };
