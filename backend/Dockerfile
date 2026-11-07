@@ -29,7 +29,7 @@ COPY . .
 ARG COMMIT_SHA=dev
 ENV CGO_ENABLED=1
 RUN xx-go build -ldflags="-s -w -X github.com/Leviosa-care/leviosa/backend/internal/app.ReleaseSHA=${COMMIT_SHA}" -v -o leviosa ./cmd/app && xx-verify leviosa
-RUN xx-go build -ldflags="-s -w" -v -o seed ./cmd/seed/main.go && xx-verify seed
+RUN xx-go build -ldflags="-s -w" -v -o seed ./cmd/seed && xx-verify seed
 
 FROM alpine:latest
 RUN apk add --no-cache ca-certificates
