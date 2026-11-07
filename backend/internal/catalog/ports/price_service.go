@@ -9,6 +9,9 @@ import (
 type PriceService interface {
 	PrivatePriceService
 	PublicPriceService
+	// GetPublishedProductPrices serves the public price route: the active
+	// prices of a published product, not found for a draft or archived one.
+	GetPublishedProductPrices(ctx context.Context, productID string) ([]*domain.Price, error)
 }
 
 // PublicPriceService contains read-only methods for price lookups.
