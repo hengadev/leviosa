@@ -109,6 +109,7 @@ type PublicProduct = {
         cancellationHours: number;
         cancellationTiers?: CancellationTier[];
         deposit?: unknown;
+        publishedStatus: string;
     };
 };
 
@@ -213,10 +214,12 @@ export async function loadPracticePage(fetchFn: typeof fetch): Promise<PracticeP
         }
     }
 
+    // Only a published product is offered: a draft or archived one leaves
+    // the page as if none were chosen (booking would refuse it).
     let product: PracticeProduct | null = null;
     if (productSettings?.product_id) {
         const publicProduct = await getJson<PublicProduct>(fetchFn, `/products/${productSettings.product_id}`);
-        if (publicProduct?.product) {
+        if (publicProduct?.product?.publishedStatus === "published") {
             const prices = await getJson<PublicPrice[]>(fetchFn, `/products/${productSettings.product_id}/prices`);
             const price = prices?.find((p) => p.interval === "one_time") ?? prices?.[0] ?? null;
             product = {
@@ -230,7 +233,7 @@ export async function loadPracticePage(fetchFn: typeof fetch): Promise<PracticeP
     }
 
     const booking =
-        partnerSettings?.partner_id && productSettings?.product_id
+        partnerSettings?.partner_id && productSettings?.product_id && product
             ? await loadBooking(fetchFn, partnerSettings.partner_id, productSettings.product_id)
             : null;
 
