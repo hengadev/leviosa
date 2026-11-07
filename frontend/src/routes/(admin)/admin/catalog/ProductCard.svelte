@@ -1,5 +1,9 @@
 <script lang="ts">
-	import { Clock, Calendar, MapPin, SquarePen, Trash2, Archive, Copy } from "@lucide/svelte";
+	import { Clock, Calendar, MapPin, SquarePen, Trash2, Archive, ArchiveRestore, Copy, ImageIcon } from "@lucide/svelte";
+	import { untrack } from "svelte";
+	import { enhance } from "$app/forms";
+	import type { SubmitFunction } from "@sveltejs/kit";
+	import { getToastContext } from "$lib/components/toast";
 	import { type SuperValidated } from "sveltekit-superforms";
 	import { superForm } from "sveltekit-superforms";
 	import AlertDialog from "./AlertDialog.svelte";
@@ -24,12 +28,37 @@
 		updateProductForm,
 	}: Props = $props();
 
-	let { id, name, price, category, description, duration, image, published } =
-		card;
+	// Derived: after an action the page reloads its data and the card follows.
+	let { id, name, price, description, duration, image, published } = $derived(card);
+
+	const toast = getToastContext();
+
+	const statusLabel: Record<string, string> = {
+		published: "Publié",
+		draft: "Brouillon",
+		archived: "Archivé",
+	};
+
+	// Archived: kept for the bookings that refer to it, no longer offered.
+	// Restoring brings it back as a draft, to publish again on purpose.
+	const archived = $derived(published === "archived");
+	const statusEnhance: SubmitFunction = () => {
+		return async ({ result, update }) => {
+			if (result.type === "success") {
+				toast.success("Succès", archived ? "Produit restauré en brouillon" : "Produit archivé");
+				await update();
+			} else if (result.type === "failure") {
+				toast.error("Erreur", (result.data as { productError?: string })?.productError ?? "Une erreur est survenue");
+			} else if (result.type === "error") {
+				toast.error("Erreur", "Une erreur est survenue. Veuillez réessayer.");
+			}
+		};
+	};
 
 	// One delete form per card, each with its own id.
+	// The list is keyed by product: a card's product never changes.
 	const { enhance: deleteEnhance } = superForm(deleteProductForm, {
-		id: `delete-product-${id}`,
+		id: `delete-product-${untrack(() => card.id)}`,
 		resetForm: true,
 	});
 
@@ -80,14 +109,20 @@
 	class="bg-card border border-border-card rounded-lg overflow-hidden hover:shadow-card transition-shadow"
 >
 	<div class="aspect-video bg-muted relative">
-		<img src={image} alt={name} class="w-full h-full object-cover" />
+		{#if image}
+			<img src={image} alt={name} class="w-full h-full object-cover" />
+		{:else}
+			<div class="w-full h-full flex items-center justify-center text-muted-foreground" aria-hidden="true">
+				<ImageIcon size={32} strokeWidth={1.5} />
+			</div>
+		{/if}
 		<div class="absolute top-3 right-3 flex gap-2">
 			<span
 				class="inline-flex items-center px-2.5 py-0.5 text-xs font-medium rounded-full {getStatusBadge(
 					published
 				)}"
 			>
-				{published}
+				{statusLabel[published] ?? published}
 			</span>
 		</div>
 	</div>
@@ -134,13 +169,22 @@
 				>
 					<Copy size={14} />
 				</a>
-				<button
-					type="button"
-					class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-					aria-label="Archiver"
-				>
-					<Archive size={14} />
-				</button>
+				<form method="POST" action="?/setProductStatus" use:enhance={statusEnhance}>
+					<input type="hidden" name="id" value={id} />
+					<input type="hidden" name="status" value={archived ? "draft" : "archived"} />
+					<button
+						type="submit"
+						class="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+						aria-label={archived ? "Restaurer en brouillon" : "Archiver"}
+						title={archived ? "Restaurer en brouillon" : "Archiver : n'est plus proposé, reste lié aux réservations"}
+					>
+						{#if archived}
+							<ArchiveRestore size={14} />
+						{:else}
+							<Archive size={14} />
+						{/if}
+					</button>
+				</form>
 				<AlertDialog
 					label="Supprimer"
 					message={`Le produit « ${name} » et toutes ses données seront supprimés.`}
