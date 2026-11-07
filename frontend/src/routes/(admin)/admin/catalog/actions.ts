@@ -18,19 +18,32 @@ import {
 // PERF: Currently working on
 
 export async function createCategory({ request, fetch }: RequestEvent) {
-    const formData = await request.formData()
-    const formValidated = await superValidate(formData, arktype(categorySchema, { defaults: categoryDefaults }))
+    const formValidated = await superValidate(request, arktype(categorySchema, { defaults: categoryDefaults }))
     if (!formValidated.valid) {
-        console.log("invalid from")
         if (formValidated.errors.name) return setError(formValidated, "name", "Le nom saisi n'est pas valide.")
         if (formValidated.errors.description) return setError(formValidated, "description", "La description est requise.")
+        return setError(formValidated, "Le formulaire n'est pas valide. Veuillez vérifier les champs saisis.")
     }
-    formData.delete("id")
+    if (!formValidated.data.name.trim()) return setError(formValidated, "name", "Le nom est requis.")
+
+    // The backend takes JSON, and only the name and description: a new
+    // category is a draft, the chosen status is applied right after.
     const res = await fetch(`${env.API_URL}/admin/categories`, {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: formValidated.data.name.trim(), description: formValidated.data.description }),
     })
-    console.log("fetch to golang backend done")
+    if (res.ok && formValidated.data.status !== "draft") {
+        const { id } = await res.json()
+        const statusRes = await fetch(`${env.API_URL}/admin/categories/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: formValidated.data.status }),
+        })
+        if (!statusRes.ok) {
+            return setError(formValidated, "La catégorie a été créée en brouillon, mais son statut n'a pas pu être modifié.")
+        }
+    }
     if (!res.ok) {
         switch (res.status) {
             case 403:
@@ -38,7 +51,7 @@ export async function createCategory({ request, fetch }: RequestEvent) {
             case 404:
                 return setError(formValidated, "La ressource demandée est introuvable.")
             case 409:
-                return setError(formValidated, "Cette ressource est déjà utilisée et ne peut pas être supprimée.")
+                return setError(formValidated, "Une catégorie porte déjà ce nom.")
             case 500:
                 return setError(formValidated, "Une erreur serveur est survenue. Le service semble momentanément indisponible.")
             case 400:
@@ -48,7 +61,6 @@ export async function createCategory({ request, fetch }: RequestEvent) {
                 return setError(formValidated, "Une erreur est survenue. Veuillez réessayer.");
         }
     }
-    console.log("Category successfully created. The status found is:", res.status)
     return {
         form: formValidated,
         success: true,

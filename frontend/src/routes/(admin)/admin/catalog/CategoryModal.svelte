@@ -14,16 +14,22 @@
 
 	let { children, modalForm = $bindable() }: Props = $props();
 
+	let open = $state(false);
+
 	const {
 		form,
 		errors,
 		enhance,
 	} = superForm(modalForm, {
 		resetForm: true,
+		// Close once the category exists; on an error the dialog stays open to show it.
+		onResult: ({ result }) => {
+			if (result.type === "success") open = false;
+		},
 	});
 </script>
 
-<Dialog.Root>
+<Dialog.Root bind:open>
 	<!-- The trigger is the button: what the page passes is only its content,
 	     a button inside it would be invalid HTML and break hydration. -->
 	<Dialog.Trigger
@@ -69,6 +75,9 @@
 							class="w-full px-4 py-2.5 border border-border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-foreground focus:border-transparent text-sm"
 						/>
 					</div>
+					{#if $errors.name}
+						<p class="mt-1 text-sm text-red-600">{$errors.name.join(" ")}</p>
+					{/if}
 				</div>
 
 				<div>
@@ -106,6 +115,10 @@
 					</div>
 				</div>
 
+				{#if $errors._errors}
+					<p class="text-sm text-red-600" role="alert">{$errors._errors.join(" ")}</p>
+				{/if}
+
 				<div class="flex w-full justify-end pt-2">
 					<Button.Root
 						type="submit"
@@ -116,17 +129,12 @@
 				</div>
 			</form>
 
-			<Button.Root
-				type="button"
-				class="cursor-pointer absolute right-5 top-5"
+			<Dialog.Close
+				class="absolute right-5 top-5 focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer"
 			>
-				<Dialog.Close
-					class="focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer"
-				>
-					<X class="text-foreground size-5" />
-					<span class="sr-only">Close</span>
-				</Dialog.Close>
-			</Button.Root>
+				<X class="text-foreground size-5" />
+				<span class="sr-only">Fermer</span>
+			</Dialog.Close>
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
