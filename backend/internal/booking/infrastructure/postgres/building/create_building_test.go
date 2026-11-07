@@ -35,6 +35,18 @@ func TestCreateBuilding(t *testing.T) {
 		require.Equal(t, 1, count, "Building should be inserted in database")
 	})
 
+	t.Run("should create a building that can be read back", func(t *testing.T) {
+		tb.ClearBuildingsTable(t, ctx, testPool)
+
+		require.NoError(t, repo.Create(ctx, buildingEncx))
+
+		// GetByID scans the encryption metadata, so Create must write it.
+		retrieved, err := repo.GetByID(ctx, buildingEncx.ID)
+		require.NoError(t, err)
+		assert.Equal(t, buildingEncx.ID, retrieved.ID)
+		assert.Equal(t, buildingEncx.Metadata, retrieved.Metadata)
+	})
+
 	t.Run("should handle duplicate building ID", func(t *testing.T) {
 		// Clean up before test
 		tb.ClearBuildingsTable(t, ctx, testPool)

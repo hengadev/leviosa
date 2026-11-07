@@ -15,9 +15,9 @@ func (r *Repository) Create(ctx context.Context, buildingEncx *domain.BuildingEn
 			city_encrypted, city_hash, postal_code_encrypted,
 			country_encrypted, country_hash, description_encrypted,
 			phone_encrypted, email_encrypted, dek_encrypted, key_version,
-			is_active, created_at, updated_at
+			is_active, created_at, updated_at, metadata
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
 		)
 	`, r.schema)
 
@@ -40,6 +40,7 @@ func (r *Repository) Create(ctx context.Context, buildingEncx *domain.BuildingEn
 		buildingEncx.IsActive,
 		buildingEncx.CreatedAt,
 		buildingEncx.UpdatedAt,
+		buildingEncx.Metadata,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("create building", err)
