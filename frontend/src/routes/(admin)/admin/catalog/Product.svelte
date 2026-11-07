@@ -44,7 +44,7 @@
 			.filter(
 				(card) =>
 					availability === defaultAvailability ||
-					card.published === availability
+					card.availability === availability
 			)
 			.filter((card) =>
 				card.name.toLowerCase().includes(searchValue.toLowerCase())
