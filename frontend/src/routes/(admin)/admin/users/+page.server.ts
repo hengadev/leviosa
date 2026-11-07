@@ -153,7 +153,8 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
 export const actions: Actions = {
 	// The logged-in admin is also the practitioner: their own account gets the
-	// verified profile and the practice room, and keeps the admin role.
+	// verified profile and the practice room, keeps the admin role, and becomes
+	// the practitioner shown on the public practice page.
 	becomePractitioner: async ({ request, fetch }) => {
 		const formData = await request.formData();
 		const field = (name: string) => ((formData.get(name) as string | null) ?? "").trim();
@@ -173,8 +174,22 @@ export const actions: Actions = {
 				const errorText = await res.text();
 				throw new Error(`Failed to become practitioner: ${res.statusText} - ${errorText}`);
 			}
+			const { partner_id }: { partner_id: string } = await res.json();
+
+			const settingRes = await fetch(`${env.API_URL}/admin/settings/practice-page/partner`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ partner_id })
+			});
+			if (!settingRes.ok) {
+				console.error("Set practice page partner failed:", settingRes.status, await settingRes.text());
+				return {
+					error: "Votre compte est aussi praticien, mais la page publique n'a pas pu être mise à jour : choisissez-vous dans Paramètres → Page publique."
+				};
+			}
+
 			return {
-				success: "Votre compte est aussi praticien : vos disponibilités se saisissent dans l'espace praticien."
+				success: "Votre compte est aussi praticien et la page publique vous présente : vos disponibilités se saisissent dans l'espace praticien."
 			};
 		} catch (error) {
 			console.error("Error becoming practitioner:", error);
