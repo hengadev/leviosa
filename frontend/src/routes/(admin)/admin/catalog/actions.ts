@@ -11,8 +11,6 @@ import {
     deleteProductDefaults,
     categorySchema,
     categoryDefaults,
-    deleteSchema,
-    deleteDefaults,
 } from './schemas'
 
 // PERF: Currently working on
@@ -67,38 +65,50 @@ export async function createCategory({ request, fetch }: RequestEvent) {
     }
 }
 
-export async function deleteCategory({ request, fetch }: RequestEvent) {
-    const form = await superValidate(request, arktype(deleteSchema, { defaults: deleteDefaults }))
-    if (!form.valid) {
-        console.log("invalid from")
-        return setError(form, "id", "L'ID saisi fourni n'est pas valide.")
+/** The message shown when a category request fails. */
+function categoryError(status: number): string {
+    switch (status) {
+        case 403:
+            return "Vous n'avez pas les droits pour effectuer cette action."
+        case 404:
+            return "Cette catégorie n'existe plus."
+        case 409:
+            return "Une catégorie porte déjà ce nom, ou elle contient encore des produits."
+        default:
+            return "Une erreur est survenue. Veuillez réessayer."
     }
-    const res = await fetch(`${env.API_URL}/admin/categories/${form.data.id}`, {
-        method: "DELETE",
+}
+
+// The edit and delete forms of a category card: plain forms, each answered
+// with { categoryError } on failure, so the card shows it in a toast.
+export async function updateCategory({ request, fetch }: RequestEvent) {
+    const data = await request.formData()
+    const id = String(data.get("id") ?? "")
+    const name = String(data.get("name") ?? "").trim()
+    const status = String(data.get("status") ?? "")
+    if (!id) return fail(400, { categoryError: "Catégorie introuvable." })
+    if (!name) return fail(400, { categoryError: "Le nom est requis." })
+    if (!["draft", "published", "archived"].includes(status)) return fail(400, { categoryError: "Statut invalide." })
+
+    const res = await fetch(`${env.API_URL}/admin/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, description: String(data.get("description") ?? ""), status }),
     })
-    console.log("fetch to golang backend done")
-    if (!res.ok) {
-        switch (res.status) {
-            case 403:
-                return setError(form, "Vous n'avez pas les droits pour effectuer cette action.")
-            case 404:
-                return setError(form, "La ressource demandée est introuvable.")
-            case 409:
-                return setError(form, "Cette ressource est déjà utilisée et ne peut pas être supprimée.")
-            case 500:
-                return setError(form, "Une erreur serveur est survenue. Le service semble momentanément indisponible.")
-            case 400:
-                const errorMsg = await res.json()
-                return setError(form, "La requête que vous avez soumise contient des données incorrectes ou incomplètes. Veuillez vérifier les champs saisis et réessayer.", errorMsg.msg);
-            default:
-                return setError(form, "Une erreur est survenue. Veuillez réessayer.");
-        }
+    if (!res.ok) return fail(res.status, { categoryError: categoryError(res.status) })
+    return { categoryUpdated: true }
+}
+
+export async function deleteCategory({ request, fetch }: RequestEvent) {
+    const id = String((await request.formData()).get("id") ?? "")
+    if (!id) return fail(400, { categoryError: "Catégorie introuvable." })
+
+    const res = await fetch(`${env.API_URL}/admin/categories/${id}`, { method: "DELETE" })
+    if (res.status === 409) {
+        return fail(409, { categoryError: "Cette catégorie contient encore des produits : supprimez-les ou déplacez-les d'abord." })
     }
-    console.log("Category successfully removed. The status found is:", res.status)
-    return {
-        form,
-        success: true,
-    }
+    if (!res.ok) return fail(res.status, { categoryError: categoryError(res.status) })
+    return { categoryDeleted: true }
 }
 
 // NOTE: Done
