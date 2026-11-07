@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { page } from "$app/state";
 	import {
 		Home,
-		Calendar,
 		CalendarClock,
 		CalendarCheck,
 		Package,
@@ -11,9 +9,9 @@
 		ExternalLink,
 		Shield,
 	} from "@lucide/svelte";
-	import type { Component } from "svelte";
 	import type { Permissions } from "$lib/security/permissions";
 	import BackOfficeSidebar, { type AccountLink, type NavGroup } from "./BackOfficeSidebar.svelte";
+	import BackOfficeMobileNav from "./BackOfficeMobileNav.svelte";
 
 	interface SidebarProps {
 		user: App.User;
@@ -22,20 +20,6 @@
 	}
 
 	let { user, permissions, unreadCount = 0 }: SidebarProps = $props();
-
-	/**
-	 * Navigation item definition
-	 * - href: Route path
-	 * - label: Display text
-	 * - icon: Lucide icon component
-	 * - adminOnly: Whether only admin users can see this
-	 */
-	interface NavItem {
-		href: string;
-		label: string;
-		icon: Component;
-		adminOnly?: boolean;
-	}
 
 	const isAdmin = $derived(user.role === "administrator");
 
@@ -69,83 +53,17 @@
 		{ href: "https://leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
 	]);
 
-	/**
-	 * Mobile Navigation Structure
-	 * Consolidated to 5 items max for bottom bar
-	 */
-	const mobileNavigation: NavItem[] = [
-		{
-			href: "/staff",
-			label: "Accueil",
-			icon: Home,
-		},
-		{
-			href: "/staff/agenda/reservations",
-			label: "Réservations",
-			icon: CalendarCheck,
-		},
-		{
-			href: "/staff/agenda/disponibilites",
-			label: "Agenda",
-			icon: Calendar,
-		},
-		{
-			href: "/staff/profile",
-			label: "Profil",
-			icon: UserRound,
-		},
-		{
-			href: "/admin",
-			label: "Admin",
-			icon: Shield,
-			adminOnly: true,
-		},
+	// The phone bar: the daily pages; the rest is in its Menu drawer.
+	const mobileBar = [
+		{ href: "/staff", label: "Accueil" },
+		{ href: "/staff/agenda/reservations", label: "Réservations" },
+		{ href: "/staff/agenda/disponibilites", label: "Agenda" },
+		{ href: "/staff/profile", label: "Profil" },
 	];
-
-	/**
-	 * Filter navigation items based on user role
-	 */
-	const mobileItems = $derived(
-		mobileNavigation.filter((item) => !item.adminOnly || user.role === "administrator"),
-	);
-
-	/**
-	 * Check if a route is active
-	 */
-	function isActive(href: string): boolean {
-		const currentPath = page.url.pathname;
-		if (href === "/staff") {
-			return currentPath === "/staff";
-		}
-		return currentPath.startsWith(href);
-	}
 </script>
 
 {#if permissions.canAccessOps}
 	<BackOfficeSidebar area="Espace praticien" home="/staff" groups={navigation} {accountLinks} {user} />
 
-	<!-- Mobile Bottom Navigation -->
-	<nav
-		class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border-card pb-[env(safe-area-inset-bottom)]"
-		aria-label="Bottom navigation"
-	>
-		<ul class="flex items-center justify-around px-1 py-1">
-			{#each mobileItems as item (item.href)}
-				{@const active = isActive(item.href)}
-				<li class="flex-1">
-					<a
-						href={item.href}
-						class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg transition-all duration-200
-		                   {active ? 'text-foreground' : 'text-muted-foreground'}"
-						aria-current={active ? "page" : undefined}
-					>
-						<item.icon size={20} strokeWidth={active ? 2 : 1.5} />
-						<span class="text-xs font-medium">
-							{item.label}
-						</span>
-					</a>
-				</li>
-			{/each}
-		</ul>
-	</nav>
+	<BackOfficeMobileNav home="/staff" groups={navigation} bar={mobileBar} {accountLinks} {user} />
 {/if}
