@@ -3,6 +3,7 @@ package price
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
@@ -24,9 +25,10 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 	// For simplicity, let's assume `input` has relevant fields for `Price.Valid` check.
 	// A new `errs.Price` will be constructed for `Valid` call.
 	tempPrice := domain.Price{
-		ProductID:      productID,
-		Amount:         request.Amount,
-		Currency:       request.Currency,
+		ProductID: productID,
+		Amount:    request.Amount,
+		// Currencies are stored in uppercase ("EUR"), the code booking looks up.
+		Currency:       strings.ToUpper(strings.TrimSpace(request.Currency)),
 		Interval:       domain.Interval(request.Interval),
 		TaxRatePercent: request.TaxRatePercent,
 	}
@@ -56,7 +58,7 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 	stripeReq := domain.CreateStripePriceRequest{
 		ProductID: stripeProductID, // Use Stripe's product ID
 		Amount:    int64(request.Amount),
-		Currency:  request.Currency,
+		Currency:  tempPrice.Currency,
 		Interval:  request.Interval,
 		Active:    true, // Default to active when creating prices
 		Nickname:  "",   // Set from request.Nickname if needed
@@ -73,15 +75,17 @@ func (s *PriceService) CreatePrice(ctx context.Context, productIDStr string, req
 		return "", errs.NewExternalServiceErr(fmt.Errorf("failed to create price in Stripe: %w", err), "Stripe API")
 	}
 
-	// 5. Store new Price details in your database.
+	// 5. Store new Price details in your database. The currency and interval
+	// are the ones asked for: Stripe answers with a lowercase currency, and
+	// with no interval at all for a one-time price.
 	now := time.Now()
 	newPrice := &domain.Price{
 		ID:             uuid.New(),      // Generate a new internal ID
 		ProductID:      productID,       // Your internal product ID
 		StripePriceID:  paymentPrice.ID, // Stripe's price ID
 		Amount:         int(paymentPrice.Amount),
-		Currency:       paymentPrice.Currency,
-		Interval:       domain.Interval(paymentPrice.Interval),
+		Currency:       tempPrice.Currency,
+		Interval:       tempPrice.Interval,
 		IsActive:       paymentPrice.Active,
 		TaxRatePercent: request.TaxRatePercent, // Local-only field; not synced to Stripe
 		CreatedAt:      now,                    // DB will set this, but for returning, use now or Stripe's created time

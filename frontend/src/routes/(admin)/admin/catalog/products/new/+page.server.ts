@@ -162,7 +162,7 @@ export const actions: Actions = {
 			},
 			price: {
 				amount: Math.round(parseFloat(price) * 100),
-				currency: 'eur',
+				currency: 'EUR',
 				interval: 'one_time',
 			},
 		};
