@@ -64,7 +64,7 @@ Set the payment hold to 1–2 minutes in the booking policy settings first.
 - [ ] `/staff/catalog` — view categories, products, prices, exercises, coupons, promo codes
 - [ ] `/staff/messages` — send and receive messages
 - [ ] `/staff/profile` — update profile
-- [ ] `/staff/settings` — save settings
+- [ ] `/admin/settings` — save settings
 - [ ] `/staff/statistics/analytics` loads
 - [ ] `/staff/statistics/finances` loads
 - [ ] Stripe onboarding link generates and redirects
