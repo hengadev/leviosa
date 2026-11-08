@@ -132,6 +132,7 @@ func TestSetPracticePageVideo(t *testing.T) {
 	t.Run("persists a valid video URL", func(t *testing.T) {
 		videoURL := "https://media.leviosa.care/practice.mp4"
 		repo := &mockSettingsRepository{}
+		repo.On("GetString", ctx, settings.PracticePageVideoURL).Return(nil, errNotSet)
 		repo.On("SetString", ctx, mock.MatchedBy(func(s *domain.Setting[string]) bool {
 			return s.Key == settings.PracticePageVideoURL && s.Value == videoURL
 		})).Return(nil)
@@ -146,6 +147,7 @@ func TestSetPracticePageVideo(t *testing.T) {
 
 	t.Run("accepts an empty URL, clearing the video", func(t *testing.T) {
 		repo := &mockSettingsRepository{}
+		repo.On("GetString", ctx, settings.PracticePageVideoURL).Return(nil, errNotSet)
 		repo.On("SetString", ctx, mock.MatchedBy(func(s *domain.Setting[string]) bool {
 			return s.Key == settings.PracticePageVideoURL && s.Value == ""
 		})).Return(nil)

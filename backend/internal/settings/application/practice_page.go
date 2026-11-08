@@ -81,12 +81,8 @@ func (s *SettingsService) SetPracticePageVideo(ctx context.Context, request *dom
 
 	// An empty URL is a valid value: it clears the video so the practice page
 	// shows its placeholder frame.
-	setting := NewSetting(settings.PracticePageVideoURL, strings.TrimSpace(request.VideoURL))
-	if err := s.repo.SetString(ctx, setting); err != nil {
-		return nil, fmt.Errorf("set practice page video: %w", err)
+	if err := s.replacePracticePageVideo(ctx, strings.TrimSpace(request.VideoURL)); err != nil {
+		return nil, err
 	}
-
-	s.auditFieldUpdate(ctx, settings.PracticePageVideoURL, setting.Value)
-
 	return &domain.SetPracticePageVideoResponse{Success: true}, nil
 }

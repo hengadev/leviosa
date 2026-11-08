@@ -2,6 +2,7 @@ package settings_test
 
 import (
 	"context"
+	"io"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/settings/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/settings/ports"
@@ -71,3 +72,40 @@ func (m *mockEventPublisher) PublishSettingUpdate(ctx context.Context, key strin
 }
 
 var _ ports.EventPublisher = (*mockEventPublisher)(nil)
+
+// mockSettingsMedia is an in-memory test double for ports.SettingsMedia. PutObject
+// records the bytes it was given.
+type mockSettingsMedia struct {
+	mock.Mock
+	put map[string][]byte
+}
+
+func (m *mockSettingsMedia) GetLogo(ctx context.Context) ([]byte, error) { return nil, nil }
+
+func (m *mockSettingsMedia) UploadLogo(ctx context.Context, key string, file io.Reader, size int64, contentType string) (string, error) {
+	return key, nil
+}
+
+func (m *mockSettingsMedia) PutObject(ctx context.Context, key string, body io.ReadSeeker, size int64, contentType string) error {
+	args := m.Called(ctx, key, size, contentType)
+	data, _ := io.ReadAll(body)
+	if m.put == nil {
+		m.put = map[string][]byte{}
+	}
+	m.put[key] = data
+	return args.Error(0)
+}
+
+func (m *mockSettingsMedia) GetObject(ctx context.Context, key, rangeHeader string) (*domain.MediaObject, error) {
+	args := m.Called(ctx, key, rangeHeader)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.MediaObject), args.Error(1)
+}
+
+func (m *mockSettingsMedia) DeleteObject(ctx context.Context, key string) error {
+	return m.Called(ctx, key).Error(0)
+}
+
+var _ ports.SettingsMedia = (*mockSettingsMedia)(nil)

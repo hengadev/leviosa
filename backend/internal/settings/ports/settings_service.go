@@ -47,6 +47,8 @@ type SettingsService interface {
 	SetPracticePagePartner(ctx context.Context, request *domain.SetPracticePagePartnerRequest) (*domain.SetPracticePagePartnerResponse, error)
 	SetPracticePageProduct(ctx context.Context, request *domain.SetPracticePageProductRequest) (*domain.SetPracticePageProductResponse, error)
 	SetPracticePageVideo(ctx context.Context, request *domain.SetPracticePageVideoRequest) (*domain.SetPracticePageVideoResponse, error)
+	UploadPracticePageVideo(ctx context.Context, file io.ReadSeeker, size int64) (*domain.UploadPracticePageVideoResponse, error)
+	GetMedia(ctx context.Context, key, rangeHeader string) (*domain.MediaObject, error)
 	SetBookingPolicy(ctx context.Context, request *domain.SetBookingPolicyRequest) (*domain.SetBookingPolicyResponse, error)
 	// COMMENTED OUT: Event publishing is now an internal implementation detail
 	// External modules should access settings via this interface's getter methods
