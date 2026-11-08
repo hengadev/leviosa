@@ -38,7 +38,7 @@ var (
 	}
 	providers = []string{
 		"STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_CONNECT_WEBHOOK_SECRET",
-		"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
+		"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM",
 		"TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "TWILIO_REGION", "TWILIO_EDGE", "TWILIO_SENDER",
 	}
 	frontendBase = []string{
@@ -63,7 +63,7 @@ func keys(groups ...[]string) []string {
 // wantKeys: environment -> file -> its exact key set for the fixture folders.
 var wantKeys = map[string]map[string][]string{
 	"prod": {
-		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "SMTP_FROM", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
+		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
 		"frontend.env": keys(frontendBase),
 		"admin.env":    keys(adminKeys),
 		"redis.env":    {"REDIS_PASSWORD"},

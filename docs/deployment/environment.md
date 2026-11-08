@@ -140,7 +140,7 @@ Terraform. A copy here would appear twice in `backend.env`.
 | --- | :-: | :-: | :-: | --- | --- |
 | `SMTP_HOST`, `SMTP_PORT` | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator (issue 036) |
 | `SMTP_USERNAME`, `SMTP_PASSWORD` (a Zoho app password) | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator |
-| `SMTP_FROM` (the sender address) | ✓ | ✓ | absent | `backend.env`, but **no consumer yet**: the backend has no from-address setting | operator |
+| `SMTP_FROM` (the sender address) | ✓ | ✓ | absent | `backend.env` → backend, `check-email`: the sender of the booking emails and the check email (`contact@leviosa.care`, or `Leviosa <contact@leviosa.care>`). Empty falls back to `SMTP_USERNAME`, which works only when the login is a mailbox (Zoho), not a relay ID (Brevo). The other emails send from the `support_email` setting | operator |
 
 ### `/twilio` (whole into `backend.env`)
 
