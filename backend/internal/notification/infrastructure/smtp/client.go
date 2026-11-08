@@ -22,6 +22,10 @@ type SMTPConfig struct {
 	Port     int
 	Username string
 	Password string
+	// From is the sender of the emails that name none (booking emails, the
+	// check email). Empty falls back to Username, which suits a mailbox
+	// login (Zoho) but not a relay's (Brevo's is an @smtp-brevo.com ID).
+	From string
 }
 
 type SMTPClient struct {
@@ -42,8 +46,8 @@ func NewSMTPClient(config SMTPConfig) *SMTPClient {
 }
 
 // SendCheckEmail sends one short test email to `to` through the same message
-// and dialer path as every other email (the sender falls back to the SMTP
-// username, as for booking emails). The check-email run mode uses it to prove
+// and dialer path as every other email (the sender is the configured From,
+// as for booking emails). The check-email run mode uses it to prove
 // the SMTP settings end to end.
 func (c *SMTPClient) SendCheckEmail(ctx context.Context, to string) error {
 	data := struct {
@@ -245,8 +249,8 @@ func (c *SMTPClient) SendLatePaymentRefundEmail(ctx context.Context, req domain.
 	return c.sendComposed(ctx, req.ToEmail, domain.ComposeLatePaymentRefund(req, time.Now()))
 }
 
-// sendComposed sends an email composed by the domain. The sender falls back
-// to the SMTP username, as for every booking email.
+// sendComposed sends an email composed by the domain, from the configured
+// From, as every booking email.
 func (c *SMTPClient) sendComposed(ctx context.Context, to string, email domain.ComposedEmail) error {
 	return c.sendEmail(ctx, &domain.EmailRequest{
 		To:          to,
@@ -347,6 +351,9 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 		return fmt.Errorf("email subject cannot be empty: %w", errs.ErrInvalidValue)
 	}
 
+	if fromEmail == "" {
+		fromEmail = c.config.From
+	}
 	if fromEmail == "" {
 		fromEmail = c.config.Username
 	}

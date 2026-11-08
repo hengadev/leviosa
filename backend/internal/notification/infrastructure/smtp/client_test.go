@@ -149,6 +149,30 @@ func TestSendEmail_WithoutAttachment_HasNoAttachmentPart(t *testing.T) {
 	}
 }
 
+func TestSendEmail_SenderIsFromElseUsername(t *testing.T) {
+	sender := func(c *SMTPClient, buf *bytes.Buffer) string {
+		t.Helper()
+		if err := c.SendCheckEmail(context.Background(), "client@example.com"); err != nil {
+			t.Fatalf("SendCheckEmail: %v", err)
+		}
+		msg, err := mail.ReadMessage(buf)
+		if err != nil {
+			t.Fatalf("parse message: %v", err)
+		}
+		return msg.Header.Get("From")
+	}
+
+	c, buf := capturingClient(t)
+	if got := sender(c, buf); got != "noreply@leviosa.test" {
+		t.Errorf("without From, From = %q, want the SMTP username", got)
+	}
+
+	c.config.From = "contact@leviosa.test"
+	if got := sender(c, buf); got != "contact@leviosa.test" {
+		t.Errorf("From = %q, want the configured From", got)
+	}
+}
+
 func TestSendBookingConfirmationEmail_LocalizedWithCalendar(t *testing.T) {
 	start := time.Date(2026, 11, 3, 13, 30, 0, 0, time.UTC) // 14:30 in Paris
 	req := domain.BookingConfirmationRequest{
