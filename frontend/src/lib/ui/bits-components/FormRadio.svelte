@@ -1,6 +1,6 @@
 <script lang="ts">
     import { RadioGroup } from "bits-ui";
-    import { cn } from "$lib/utils/design-system";
+    import { cn } from "#lib/utils/design-system.ts";
 
     interface Option {
         value: string;

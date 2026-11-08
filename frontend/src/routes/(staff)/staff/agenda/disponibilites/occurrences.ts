@@ -7,7 +7,7 @@ import {
 	toZoned,
 	type ZonedDateTime
 } from '@internationalized/date';
-import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
+import { PRACTICE_TIME_ZONE } from '#lib/i18n/practice.ts';
 
 // Occurrences of a recurring availability, for the partner agenda. Mirrors
 // the backend's expansion (backend/internal/booking/domain/recurrence.go),

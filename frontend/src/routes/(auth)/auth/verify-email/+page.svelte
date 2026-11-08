@@ -8,7 +8,7 @@
     import { ArrowLeft } from "@lucide/svelte";
 
     import ProgressIndicator from "../ProgressIndicator.svelte";
-    import { getRegistrationContext } from "$lib/context/register.svelte";
+    import { getRegistrationContext } from "#lib/context/register.svelte.ts";
     import { focusNextTarget, focusPrevTarget } from "./helper";
 
     let { data }: PageProps = $props();
@@ -49,7 +49,7 @@
     }
     // import SuperDebug from "sveltekit-superforms";
 
-    import type { Step } from "$lib/types/step";
+    import type { Step } from "#lib/types/step.ts";
     let steps: Step[] = [
         { id: 1, name: "Email", status: "current" },
         { id: 2, name: "Identité", status: "upcoming" },

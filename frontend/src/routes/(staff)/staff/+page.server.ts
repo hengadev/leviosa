@@ -1,6 +1,6 @@
 import type { PageServerLoad } from './$types';
 import { redirect, isRedirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 // ── Types ────────────────────────────────────────────────────────
 

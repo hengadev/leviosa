@@ -2,7 +2,7 @@
 	import type { PageProps } from './$types';
 	import type { ThreadSummary, ThreadMessage, BookingContext } from './+page.server';
 	import { Send, ArrowLeft, Calendar, Clock } from '@lucide/svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	let { data }: PageProps = $props();
 

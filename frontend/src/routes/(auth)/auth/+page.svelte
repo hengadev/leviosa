@@ -5,9 +5,9 @@
     import { Tabs, Button } from "bits-ui";
     import { superForm } from "sveltekit-superforms";
 
-    import Input from "$lib/ui/Input.svelte";
-    import Alert from "$lib/ui/Alert.svelte";
-    import { getRegistrationContext } from "$lib/context/register.svelte";
+    import Input from "#lib/ui/Input.svelte";
+    import Alert from "#lib/ui/Alert.svelte";
+    import { getRegistrationContext } from "#lib/context/register.svelte.ts";
     import { buttons, type OAuthButton } from "./oauth_buttons";
 
     let { data }: PageProps = $props();
@@ -15,8 +15,8 @@
     import { goto } from "$app/navigation";
     import { page } from "$app/state";
     const redirectFrom = page.url.searchParams.get("redirectFrom");
-    import { MESSAGES } from "$lib/utils/redirect";
-    import { capitalizeFirstWord } from "$lib/utils/capitalize";
+    import { MESSAGES } from "#lib/utils/redirect.ts";
+    import { capitalizeFirstWord } from "#lib/utils/capitalize.ts";
 
 
     const { form, errors, enhance, constraints } = superForm(data.loginForm, {

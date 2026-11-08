@@ -1,14 +1,14 @@
 <script lang="ts">
 	import type { PageData, ActionData } from "./$types";
 	import { enhance } from "$app/forms";
-	import Tabs from "$lib/ui/bits-components/Tabs.svelte";
-	import TabsList from "$lib/ui/bits-components/TabsList.svelte";
-	import TabsTrigger from "$lib/ui/bits-components/TabsTrigger.svelte";
-	import TabsContent from "$lib/ui/bits-components/TabsContent.svelte";
-	import Modal from "$lib/ui/Modal.svelte";
-	import Drawer from "$lib/ui/Drawer.svelte";
-	import { cn } from "$lib/utils/design-system";
-	import { ROLES } from "$lib/types/role";
+	import Tabs from "#lib/ui/bits-components/Tabs.svelte";
+	import TabsList from "#lib/ui/bits-components/TabsList.svelte";
+	import TabsTrigger from "#lib/ui/bits-components/TabsTrigger.svelte";
+	import TabsContent from "#lib/ui/bits-components/TabsContent.svelte";
+	import Modal from "#lib/ui/Modal.svelte";
+	import Drawer from "#lib/ui/Drawer.svelte";
+	import { cn } from "#lib/utils/design-system.ts";
+	import { ROLES } from "#lib/types/role.ts";
 	import {
 		Shield,
 		ShieldCheck,

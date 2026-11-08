@@ -1,10 +1,10 @@
 <script lang="ts">
     import { ChevronLeft, LoaderCircle, CircleCheck } from "@lucide/svelte";
     import { onDestroy, onMount, tick } from "svelte";
-    import { env } from "$env/dynamic/public";
+    import * as env from "$app/env/public";
     import type { Stripe, StripeElements } from "@stripe/stripe-js";
-    import { cap, dictionary, fmt, type Locale } from "$lib/i18n/practice";
-    import { isFrenchPhone, normalizePhone } from "$lib/phone";
+    import { cap, dictionary, fmt, type Locale } from "#lib/i18n/practice.ts";
+    import { isFrenchPhone, normalizePhone } from "#lib/phone.ts";
 
     // The booking card's details step and payment (issue 014, ADR-0018).
     // The client gives their details and accepts the terms of sale; the

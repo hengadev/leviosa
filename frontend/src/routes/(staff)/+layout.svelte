@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { LayoutProps } from "./$types";
-	import { setUserContext } from "$lib/context/user.svelte";
-	import StaffSidebar from "$lib/navigation/StaffSidebar.svelte";
-	import { adminDarkMode } from "$lib/stores/adminDarkMode.svelte";
-	import { browser } from "$app/environment";
+	import { setUserContext } from "#lib/context/user.svelte.ts";
+	import StaffSidebar from "#lib/navigation/StaffSidebar.svelte";
+	import { adminDarkMode } from "#lib/stores/adminDarkMode.svelte.ts";
+	import { browser } from "$app/env";
 
 	let { children, data }: LayoutProps = $props();
 

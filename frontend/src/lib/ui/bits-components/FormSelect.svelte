@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Select } from "bits-ui";
-    import { cn } from "$lib/utils/design-system";
+    import { cn } from "#lib/utils/design-system.ts";
     import { ChevronDown } from "@lucide/svelte";
     import {
         INPUT_VARIANTS,

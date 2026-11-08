@@ -3,7 +3,7 @@
 	// Submits `depositType` (none | fixed | percent) and `depositValue`
 	// (euros for a fixed amount, whole percentage points otherwise); the
 	// form action turns them into the API payload (lib/deposit.ts).
-	import { amountDueOnlineCents, type Deposit, type DepositType } from "$lib/deposit";
+	import { amountDueOnlineCents, type Deposit, type DepositType } from "#lib/deposit.ts";
 
 	type Props = {
 		deposit?: Deposit | null;

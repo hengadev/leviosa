@@ -4,7 +4,7 @@
     import { Button } from "bits-ui";
     import { ArrowLeft } from "@lucide/svelte";
 
-    import Input from "$lib/ui/Input.svelte";
+    import Input from "#lib/ui/Input.svelte";
     import ProgressIndicator from "../ProgressIndicator.svelte";
 
     let { data }: PageProps = $props();
@@ -35,7 +35,7 @@
             : products.filter((p: any) => selectedCategoryIds.includes(p.category ?? p.category_id ?? "")),
     );
 
-    import type { Step } from "$lib/types/step";
+    import type { Step } from "#lib/types/step.ts";
     let steps: Step[] = [
         { id: 1, name: "Email", status: "complete" },
         { id: 2, name: "Identité", status: "complete" },

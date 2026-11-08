@@ -3,7 +3,7 @@
  * Persists preference to localStorage
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 const STORAGE_KEY = 'admin-dark-mode';
 

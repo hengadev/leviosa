@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 export const actions = {
 	default: async ({ cookies, locals }) => {

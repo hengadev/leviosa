@@ -2,7 +2,7 @@
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 	import type { PublicBooking } from './+page.server';
-	import { cap, dictionary, fmt, type Locale } from '$lib/i18n/practice';
+	import { cap, dictionary, fmt, type Locale } from '#lib/i18n/practice.ts';
 	import { Mail, Clock, CheckCircle, XCircle, AlertCircle, Search, Phone as PhoneIcon, Loader2 } from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();

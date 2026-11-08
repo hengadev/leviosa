@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Check } from "@lucide/svelte";
 
-    import type { Step } from "$lib/types/step";
+    import type { Step } from "#lib/types/step.ts";
 
     type Props = {
         steps: Step[];

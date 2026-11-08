@@ -1,13 +1,13 @@
 import type { Actions, RequestEvent } from "./$types"
 import { error, fail, redirect } from "@sveltejs/kit"
-import { env } from "$env/dynamic/private"
+import * as env from "$app/env/private"
 
 import { message, setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
 
-import { MESSAGES, type MessageType } from "$lib/utils/redirect";
-import { forwardAuthCookies } from "$lib/utils/auth-helpers";
+import { MESSAGES, type MessageType } from "#lib/utils/redirect.ts";
+import { forwardAuthCookies } from "#lib/utils/auth-helpers.ts";
 
 function sanitizeRedirect(value: string | null): string | null {
     if (!value) return null;
@@ -220,6 +220,6 @@ export const actions = {
         // The backend GET endpoint will redirect to the provider's authorization screen
         // After authorization, the provider will redirect back to /auth/oauth/{provider}/callback
         // The backend callback handler will set cookies and redirect to the app
-        redirect(302, `${env.API_URL}/auth/oauth/${form.data.provider}`)
+        redirect(302, `${env.API_URL}/auth/oauth/${form.data.provider}`, { external: true })
     }
 } satisfies Actions

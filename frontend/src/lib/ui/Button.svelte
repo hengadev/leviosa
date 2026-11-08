@@ -3,7 +3,7 @@
     import {
         buttonVariants,
         type ButtonVariants,
-    } from "$lib/utils/design-system";
+    } from "#lib/utils/design-system.ts";
 
     type Props = {
         variant?: ButtonVariants["variant"];

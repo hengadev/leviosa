@@ -9,7 +9,7 @@
 		ExternalLink,
 		Shield,
 	} from "@lucide/svelte";
-	import type { Permissions } from "$lib/security/permissions";
+	import type { Permissions } from "#lib/security/permissions.ts";
 	import BackOfficeSidebar, { type AccountLink, type NavGroup } from "./BackOfficeSidebar.svelte";
 	import BackOfficeMobileNav from "./BackOfficeMobileNav.svelte";
 

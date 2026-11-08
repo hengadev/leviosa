@@ -9,7 +9,7 @@
 		Check,
 		Plus
 	} from '@lucide/svelte';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 
 	let { data }: PageProps = $props();
 

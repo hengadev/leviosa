@@ -6,15 +6,14 @@
 	// browser (not on the backend: creating a product creates it in Stripe)
 	// and restored on the next visit; « Dupliquer » on a product card opens
 	// this form filled from that product (?from=<id>), with a draft of its own.
-	import { enhance } from "$app/forms";
+	import { enhance, type SubmitFunction } from "$app/forms";
 	import { goto, replaceState } from "$app/navigation";
 	import { onMount, tick } from "svelte";
-	import type { SubmitFunction } from "@sveltejs/kit";
 	import { ArrowLeft, ArrowRight, Package, Clock, MapPin, Calendar, FileText, Tag, Euro, X, ImageIcon, Plus, Trash2, LoaderCircle } from "@lucide/svelte";
 	import type { PageData } from "./$types";
 	import type { ProductFormValues } from "./+page.server";
 	import DepositField from "../../DepositField.svelte";
-	import { getToastContext } from "$lib/components/toast";
+	import { getToastContext } from "#lib/components/toast/index.ts";
 
 	let { data }: { data: PageData } = $props();
 

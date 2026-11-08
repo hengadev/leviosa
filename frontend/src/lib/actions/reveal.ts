@@ -1,4 +1,4 @@
-import { ANIMATION_PRESETS, OBSERVER_CONFIG, type AnimationPreset } from '$lib/utils/animation-config';
+import { ANIMATION_PRESETS, OBSERVER_CONFIG, type AnimationPreset } from '#lib/utils/animation-config.ts';
 
 // Shared observer instance (performance optimization)
 let observer: IntersectionObserver | null = null;

@@ -1,10 +1,11 @@
-import { redirect, isRedirect, error, isHttpError, type Handle, type RequestEvent, type ResolveOptions } from '@sveltejs/kit';
-import { env } from "$env/dynamic/private"
+import { redirect, isRedirect, error, isHttpError, type RequestEvent } from '@sveltejs/kit';
+import type { Handle, ResolveOptions } from '@sveltejs/kit/hooks';
+import * as env from "$app/env/private"
 
-import { handleLoginRedirect } from '$lib/utils/redirect';
-import { getMockUserByRole } from '$lib/data/user';
-import { isAdminDomain, isStaffDomain, getSessionCookieName, getRefreshCookieName, getCookieDomain } from '$lib/server/hostname';
-import { forwardAuthCookies } from '$lib/utils/auth-helpers';
+import { handleLoginRedirect } from '#lib/utils/redirect.ts';
+import { getMockUserByRole } from '#lib/data/user.ts';
+import { isAdminDomain, isStaffDomain, getSessionCookieName, getRefreshCookieName, getCookieDomain } from '#lib/server/hostname.ts';
+import { forwardAuthCookies } from '#lib/utils/auth-helpers.ts';
 
 // The single-practitioner practice page replaced the multi-practitioner
 // public site (issue 009): these routes now redirect to it so no old URL is a
@@ -92,7 +93,8 @@ export const handle: Handle = async ({ event, resolve }) => {
     // enrich fetch with custom header with client IP. Set before the public
     // routes return: the /api/* proxies the pages call are public paths, and
     // they too must reach the backend as the logged-in user.
-    event.fetch = async (input, init = {}) => {
+    // SvelteKit 3 types event.fetch as readonly; it is still a plain property.
+    (event as { fetch: typeof fetch }).fetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
         // Read lazily so a token refreshed inside validateSession() is picked up.
         // The browser stores the token under sessionCookieName but the backend always
         // expects it as leviosa_access_token.

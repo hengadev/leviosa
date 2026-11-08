@@ -3,9 +3,9 @@
 	import { goto } from "$app/navigation";
 	import { ArrowLeft, Package, Clock, MapPin, Calendar, FileText, Tag, Euro, ImageIcon, Plus, Trash2 } from "@lucide/svelte";
 	import type { PageData, ActionData } from "./$types";
-	import type { CancellationTier } from "$lib/data/mockData";
+	import type { CancellationTier } from "#lib/data/mockData.ts";
 	import DepositField from "../../DepositField.svelte";
-	import { getToastContext } from "$lib/components/toast";
+	import { getToastContext } from "#lib/components/toast/index.ts";
 
 	let { data, form }: { data: PageData, form: ActionData } = $props();
 
@@ -38,7 +38,7 @@
 	let imageFileInput = $state<HTMLInputElement>();
 
 	function updateProductEnhance() {
-		return async ({ result }: { result: import('@sveltejs/kit').ActionResult }) => {
+		return async ({ result }: { result: import('$app/forms').ActionResult }) => {
 			if (result.type === 'redirect') {
 				toast.success('Succès', 'Produit mis à jour avec succès');
 				goto(result.location);
@@ -49,7 +49,7 @@
 	}
 
 	function uploadImageEnhance() {
-		return async ({ result }: { result: import('@sveltejs/kit').ActionResult }) => {
+		return async ({ result }: { result: import('$app/forms').ActionResult }) => {
 			isUploading = false;
 			if (result.type === 'redirect') {
 				toast.success('Succès', 'Image téléchargée avec succès');

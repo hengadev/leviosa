@@ -3,10 +3,9 @@
 	import type { SuperValidated } from "sveltekit-superforms";
 	import type { category } from "./schemas";
 	import CategoryModal from "./CategoryModal.svelte";
-	import type { Category } from "$lib/data/mockData";
-	import { enhance } from "$app/forms";
-	import type { SubmitFunction } from "@sveltejs/kit";
-	import { getToastContext } from "$lib/components/toast";
+	import type { Category } from "#lib/data/mockData.ts";
+	import { enhance, type SubmitFunction } from "$app/forms";
+	import { getToastContext } from "#lib/components/toast/index.ts";
 
 	type Props = {
 		createCategoryForm: SuperValidated<category>;

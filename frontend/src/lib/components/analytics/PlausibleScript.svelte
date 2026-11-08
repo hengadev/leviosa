@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { env } from "$env/dynamic/public";
+    import * as env from "$app/env/public";
 
     // Self-hosted, cookieless analytics (Plausible) — public routes only. See
     // docs/issues/008-cookieless-analytics.md: client/staff/admin dashboards

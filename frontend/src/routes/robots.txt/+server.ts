@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 
 export const GET: RequestHandler = ({ url }) => {
     // Pre-launch: keep crawlers out entirely and don't advertise a sitemap

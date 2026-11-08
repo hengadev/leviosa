@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { LayoutProps } from './$types';
-	import ClientSidebar from '$lib/navigation/ClientSidebar.svelte';
+	import ClientSidebar from '#lib/navigation/ClientSidebar.svelte';
 	import ProfileBanner from './ProfileBanner.svelte';
 
 	let { children, data }: LayoutProps = $props();

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { dictionary, type Locale } from "$lib/i18n/practice";
+    import { dictionary, type Locale } from "#lib/i18n/practice.ts";
 
     // Header of the practice page: the wordmark and the FR/EN switch. The
     // switch navigates between the page's two locales (`/` is French, `/en`

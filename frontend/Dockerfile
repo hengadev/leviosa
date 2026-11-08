@@ -26,7 +26,12 @@ COPY .npmrc* ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts && pnpm rebuild esbuild
 
 COPY . .
-RUN pnpm run build
+# The public origin, fixed at build time (adapter-node 6 has no runtime ORIGIN).
+# Left empty for the staging/production image: behind Caddy the origin comes
+# from PROTOCOL_HEADER/HOST_HEADER per request. Only local.compose.yaml, with
+# no proxy in front, passes it.
+ARG KIT_PATHS_ORIGIN=
+RUN KIT_PATHS_ORIGIN="$KIT_PATHS_ORIGIN" pnpm run build
 
 FROM gcr.io/distroless/nodejs22-debian12:nonroot AS runtime
 WORKDIR /usr/src/app

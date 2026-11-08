@@ -2,7 +2,7 @@ import type { RequestEvent } from "./$types"
 import { superValidate, setError } from 'sveltekit-superforms';
 import { fail } from "@sveltejs/kit";
 import { arktype } from 'sveltekit-superforms/adapters';
-import { env } from "$env/dynamic/private"
+import * as env from "$app/env/private"
 
 import {
     deleteProductSchema,

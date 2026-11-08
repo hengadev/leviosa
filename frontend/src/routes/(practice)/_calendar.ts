@@ -5,7 +5,7 @@
 // A day is carried as its key (YYYY-MM-DD) and as a Date at 12:00 UTC of that
 // date, which formats to the same date in Europe/Paris (UTC+1/+2).
 
-import { PRACTICE_TIME_ZONE } from "$lib/i18n/practice";
+import { PRACTICE_TIME_ZONE } from "#lib/i18n/practice.ts";
 
 export type CalendarMonth = { year: number; month: number }; // month: 0–11
 export type CalendarDay = { key: string; date: Date };

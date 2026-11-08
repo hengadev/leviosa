@@ -3,7 +3,7 @@
     import { Button } from "bits-ui";
     import { Eye, EyeOff } from "@lucide/svelte";
 
-    import { capitalizeFirstWord } from "$lib/utils/capitalize";
+    import { capitalizeFirstWord } from "#lib/utils/capitalize.ts";
 
     type Props = {
         name: string;

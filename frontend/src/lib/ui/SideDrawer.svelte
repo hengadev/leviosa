@@ -1,9 +1,9 @@
 <script lang="ts">
     import { run, createBubbler } from "svelte/legacy";
     import { onDestroy } from "svelte";
-    import { browser } from "$app/environment";
+    import { browser } from "$app/env";
     import { fly, fade } from "svelte/transition";
-    import { createHorizontalSwipeHandler } from "$lib/scripts/swipe";
+    import { createHorizontalSwipeHandler } from "#lib/scripts/swipe.ts";
 
     interface Props {
         isOpen?: boolean;

@@ -3,7 +3,7 @@
     import "../../app.css";
     import Navigation from "./navigation.svelte";
     import Footer from "./footer.svelte";
-    import PlausibleScript from "$lib/components/analytics/PlausibleScript.svelte";
+    import PlausibleScript from "#lib/components/analytics/PlausibleScript.svelte";
     let { data, children }: LayoutProps = $props();
     let { permissions } = data;
 </script>

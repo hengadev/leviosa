@@ -1,6 +1,6 @@
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { redirect, error } from '@sveltejs/kit';
-import { computePermissions } from '$lib/security/permissions';
+import { computePermissions } from '#lib/security/permissions.ts';
 
 export const load = async ({ locals, parent, fetch }) => {
 	const { user, permissions } = await parent();

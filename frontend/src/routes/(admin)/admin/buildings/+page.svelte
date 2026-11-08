@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageData } from "./$types";
 	import type { Building, Room, Allocation, Partner } from "./+page.server";
-	import Modal from "$lib/ui/Modal.svelte";
-	import Drawer from "$lib/ui/Drawer.svelte";
+	import Modal from "#lib/ui/Modal.svelte";
+	import Drawer from "#lib/ui/Drawer.svelte";
 	import {
 		Building2,
 		ChevronDown,

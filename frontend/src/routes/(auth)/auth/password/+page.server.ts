@@ -1,16 +1,16 @@
 import type { Actions, RequestEvent } from "./$types"
 import { fail, redirect } from "@sveltejs/kit"
 
-import { env } from "$env/dynamic/private";
+import * as env from "$app/env/private";
 
 import { setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
 import { parseDate } from "@internationalized/date";
 
-import { pad } from "$lib/utils/pad"
-import { mapGenderToBackend, formatPhoneToE164 } from "$lib/utils/auth-helpers";
-import { getCookieDomain } from "$lib/server/hostname";
+import { pad } from "#lib/utils/pad.ts"
+import { mapGenderToBackend, formatPhoneToE164 } from "#lib/utils/auth-helpers.ts";
+import { getCookieDomain } from "#lib/server/hostname.ts";
 
 
 const schema = type({

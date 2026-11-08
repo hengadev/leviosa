@@ -4,7 +4,7 @@ import { superValidate, setError } from "sveltekit-superforms"
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
 import { redirect } from "@sveltejs/kit";
-import { isAdminDomain, isStaffDomain, getCookieDomain } from "$lib/server/hostname";
+import { isAdminDomain, isStaffDomain, getCookieDomain } from "#lib/server/hostname.ts";
 
 function calculateAge(birthdate: string): number {
     const birth = new Date(birthdate);

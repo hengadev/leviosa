@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils/design-system";
+    import { cn } from "#lib/utils/design-system.ts";
     import { CalendarPlus, Search } from "@lucide/svelte";
 
     interface Props {

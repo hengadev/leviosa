@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import type { RequestHandler } from './$types';
 
 // Uploaded media (the practice page video) is served by the backend, which

@@ -1,4 +1,4 @@
-import { type Role } from '$lib/types/role'
+import { type Role } from '#lib/types/role.ts'
 
 export type Permissions = {
     // client area

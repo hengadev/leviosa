@@ -8,10 +8,10 @@
     import { CalendarDate, today as getToday, getLocalTimeZone } from "@internationalized/date";
     import { ArrowLeft } from "@lucide/svelte";
 
-    import Input from "$lib/ui/Input.svelte";
+    import Input from "#lib/ui/Input.svelte";
     import ProgressIndicator from "../ProgressIndicator.svelte";
-    import { getRegistrationContext } from "$lib/context/register.svelte";
-    import type { Step } from "$lib/types/step";
+    import { getRegistrationContext } from "#lib/context/register.svelte.ts";
+    import type { Step } from "#lib/types/step.ts";
 
     let { data }: PageProps = $props();
     const { form, enhance, errors } = superForm(data.form, {

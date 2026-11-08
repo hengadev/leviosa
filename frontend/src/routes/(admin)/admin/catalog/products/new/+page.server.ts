@@ -1,8 +1,8 @@
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
-import { depositFromForm, parseDeposit, type Deposit } from "$lib/deposit";
-import { mockAdminCategories, type Category, type CancellationTier } from "$lib/data/mockData";
+import * as env from '$app/env/private';
+import { depositFromForm, parseDeposit, type Deposit } from "#lib/deposit.ts";
+import { mockAdminCategories, type Category, type CancellationTier } from "#lib/data/mockData.ts";
 
 interface BackendCategory {
 	id: string;

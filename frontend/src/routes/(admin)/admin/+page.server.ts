@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { error, redirect, isRedirect } from '@sveltejs/kit';
 
 interface RecentBooking {

@@ -2,10 +2,10 @@ import type { Actions, PageServerLoad } from './$types';
 import { redirect, error, fail } from '@sveltejs/kit';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate } from 'sveltekit-superforms';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { productSchema, productDefaults } from '../../schemas';
-import { depositFromForm, parseDeposit } from "$lib/deposit";
-import { mockAdminCards, mockAdminCategories, type CardType, type Category, type CancellationTier } from "$lib/data/mockData";
+import { depositFromForm, parseDeposit } from "#lib/deposit.ts";
+import { mockAdminCards, mockAdminCategories, type CardType, type Category, type CancellationTier } from "#lib/data/mockData.ts";
 
 interface BackendCategory {
 	id: string;

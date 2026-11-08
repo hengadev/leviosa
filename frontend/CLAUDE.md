@@ -58,28 +58,28 @@ npm run prepare
 
 ## Configuration Files
 
-- `svelte.config.js` - SvelteKit configuration with Node.js adapter and path aliases
-- `vite.config.ts` - Vite configuration with Tailwind CSS v4 and SvelteKitPWA (Workbox) integration
+- `vite.config.ts` - Vite and SvelteKit configuration (SvelteKit 3 has no `svelte.config.js`): Tailwind CSS v4, and `withPwa` from `@vite-pwa/sveltekit`, which runs the `sveltekit()` plugin with the Node.js adapter and path aliases plus the Workbox service worker
+- `src/env.ts` - Every environment variable the app reads, declared with `defineEnvVars` (SvelteKit 3 exposes only declared variables, through `$app/env/private` and `$app/env/public`)
 - `tailwind.config.ts` - Tailwind CSS v4 configuration
 - `tsconfig.json` - TypeScript configuration extending SvelteKit defaults
 
 ## Path Aliases
 
-- `@/*` → `$lib` (SvelteKit's lib alias)
+- `@/*` → `#lib` (SvelteKit's lib alias)
 - `@assets/*` → `src/assets`
 
 ## Authentication System
 
 The app uses a session-based authentication system:
 
-1. **Development/Staging**: Uses `mockUser` from `$lib/data/user`
+1. **Development/Staging**: Uses `mockUser` from `#lib/data/user.ts`
 2. **Production**: Validates sessions via API calls to `/users/me`
 3. **Protected Routes**: All routes except `/auth` and `/legal` require authentication
 4. **Session Handling**: Automatic token injection in fetch requests via `hooks.server.ts`
 
 ## Environment Variables
 
-Located in `.env` file (private environment variables in SvelteKit):
+Declared in `src/env.ts` (a variable the code reads must be added there, or it is undefined); values come from `.env` in development and from the container's environment at runtime:
 - `NODE_ENV` - Environment mode
 - `SESSION_COOKIE_NAME` - Session cookie identifier
 - `API_URL` - Backend API URL

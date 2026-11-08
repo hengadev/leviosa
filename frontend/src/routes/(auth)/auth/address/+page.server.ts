@@ -5,7 +5,7 @@ import { fail, redirect } from "@sveltejs/kit"
 import { setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
-import { getCookieDomain } from "$lib/server/hostname";
+import { getCookieDomain } from "#lib/server/hostname.ts";
 
 const schema = type({
     address1: "string",

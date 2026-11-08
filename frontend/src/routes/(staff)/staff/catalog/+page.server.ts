@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from "./$types"
 import { fail, redirect } from "@sveltejs/kit"
-import { env } from "$env/dynamic/private"
+import * as env from "$app/env/private"
 
 import { setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
@@ -35,7 +35,7 @@ import {
     deletePromotionCodeSchema,
     deletePromotionCodeDefaults,
 } from "./schemas"
-import { mockCategories, mockProducts, mockPrices, mockCoupons, mockPromotionCodes } from "$lib/data/mockData"
+import { mockCategories, mockProducts, mockPrices, mockCoupons, mockPromotionCodes } from "#lib/data/mockData.ts"
 
 // Enable mock mode for development
 const MOCK_MODE = env.USE_MOCK_DATA === 'true'
