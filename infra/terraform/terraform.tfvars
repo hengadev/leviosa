@@ -37,13 +37,27 @@ hcloud_ssh_key_name = "terraform-leviosa"
 domain_name        = "leviosa.care"
 cloudflare_zone_id = "21d34caf8707b6977d1ca89537dae9a1"
 
-# Zoho Mail (issue 036): fill in from Zoho Mail admin > Domains once the
-# mailbox exists, then apply. Empty values create no record.
-email_mx_records       = {}
-email_spf_includes     = []
-email_dkim_records     = {}
-email_verification_txt = []
-email_dmarc            = ""
+# Mail: Zoho Mail receives (MX, issue 036), Brevo sends the app's emails
+# (SMTP relay). Values from Zoho Mail admin > Domains and Brevo > Senders,
+# domains & dedicated IPs > Domains. Empty values create no record.
+email_mx_records = {
+  "mx.zoho.eu"  = 10
+  "mx2.zoho.eu" = 20
+  "mx3.zoho.eu" = 50
+}
+# Zoho only: Brevo sends with its own bounce domain and passes DMARC through
+# its DKIM below.
+email_spf_includes = ["zohomail.eu"]
+email_dkim_records = {
+  "zmail._domainkey"  = { type = "TXT", content = "v=DKIM1; k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCrQMAEpPpTaEbJ60VYLgDj1v0HvFfES/kMWY5JOpzd0S9/Kl8c2dQGckWlNgCmMPxhjZ5AnyWamaXWHzlsyoewPMVWn84MyvrQNx4g9BEG4yjiqsd5aeOcxa3JQy/5h6chZEQf66AIYey+YGlFhMJKlp0O7r0mQoA/ND6tPVD7awIDAQAB" }
+  "brevo1._domainkey" = { type = "CNAME", content = "b1.leviosa-care.dkim.brevo.com" }
+  "brevo2._domainkey" = { type = "CNAME", content = "b2.leviosa-care.dkim.brevo.com" }
+}
+email_verification_txt = [
+  "zoho-verification=zb80254448.zmverify.zoho.eu",
+  "brevo-code:ab539570b000c988e949280adccc4148",
+]
+email_dmarc = "v=DMARC1; p=reject"
 
 # ============================================
 # Infisical
