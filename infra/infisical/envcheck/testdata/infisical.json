@@ -147,7 +147,8 @@
       "SMTP_HOST": "smtp.fixture.test",
       "SMTP_PORT": "587",
       "SMTP_USERNAME": "noreply-staging@fixture.leviosa.test",
-      "SMTP_PASSWORD": "fixture-staging-smtp-pass"
+      "SMTP_PASSWORD": "fixture-staging-smtp-pass",
+      "SMTP_FROM": "Leviosa <noreply@staging.fixture.leviosa.test>"
     },
     "/twilio": {
       "TWILIO_ACCOUNT_SID": "ACfixturestaging0000000000000000",

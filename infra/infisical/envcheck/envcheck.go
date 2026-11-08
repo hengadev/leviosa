@@ -124,7 +124,7 @@ var backendRequired = []string{
 var backendLater = []string{
 	"STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_CONNECT_WEBHOOK_SECRET",
 	"TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "TWILIO_REGION", "TWILIO_EDGE", "TWILIO_SENDER",
-	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
+	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM",
 }
 
 // FrontendKeys is the complete allowlist of frontend.env: what the SvelteKit
