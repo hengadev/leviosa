@@ -15,7 +15,7 @@ pnpm run dev          # start dev server
 pnpm run dev -- --open
 ```
 
-Configure environment variables in `.env` (`API_URL`, `SESSION_COOKIE_NAME`, `CLIENT_IP_HEADER`, etc.) — see `CLAUDE.md` for the full list. In development and staging, auth falls back to a mock user (`$lib/data/user`); production validates real sessions against the backend.
+Configure environment variables in `.env` (`API_URL`, `SESSION_COOKIE_NAME`, `CLIENT_IP_HEADER`, etc.) — see `CLAUDE.md` for the full list. In development and staging, auth falls back to a mock user (`#lib/data/user.ts`); production validates real sessions against the backend.
 
 ## Building
 

@@ -1,4 +1,4 @@
-import type { Deposit } from "$lib/deposit";
+import type { Deposit } from "#lib/deposit.ts";
 // Central mock data file for leviosa frontend
 // Consolidates all domain entity mock data in one place
 

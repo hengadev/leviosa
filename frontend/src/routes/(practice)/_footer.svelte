@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { dictionary, type Locale } from "$lib/i18n/practice";
+    import { dictionary, type Locale } from "#lib/i18n/practice.ts";
     import type { PracticePageData } from "./practice";
 
     let { locale, data }: { locale: Locale; data: PracticePageData } = $props();

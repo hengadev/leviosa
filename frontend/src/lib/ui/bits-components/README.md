@@ -26,7 +26,7 @@ This directory contains refactored components built with `bits-ui` primitives an
 ### Tabs Component
 ```svelte
 <script>
-    import { Tabs, TabsList, TabsTrigger, TabsContent } from '$lib/ui/bits-components';
+    import { Tabs, TabsList, TabsTrigger, TabsContent } from '#lib/ui/bits-components/index.ts';
     let selectedTab = 'events';
 </script>
 
@@ -50,7 +50,7 @@ This directory contains refactored components built with `bits-ui` primitives an
 ### EventCard Component
 ```svelte
 <script>
-    import { EventCard } from '$lib/ui/bits-components';
+    import { EventCard } from '#lib/ui/bits-components/index.ts';
 
     function handleEventClick(id) {
         console.log('Event clicked:', id);
@@ -73,7 +73,7 @@ This directory contains refactored components built with `bits-ui` primitives an
 ### Form Components
 ```svelte
 <script>
-    import { FormInput, FormSelect, FormRadio } from '$lib/ui/bits-components';
+    import { FormInput, FormSelect, FormRadio } from '#lib/ui/bits-components/index.ts';
 
     let email = '';
     let eventType = '';
@@ -141,7 +141,7 @@ All components use your existing design tokens from `src/app.css`:
 
 To replace old components:
 
-1. Import from `'$lib/ui/bits-components'` instead of old paths
+1. Import from `'#lib/ui/bits-components'` instead of old paths
 2. Update props to match new component APIs
 3. Test functionality and adjust as needed
 4. Move components from `bits-components/` to main `ui/` directory when ready

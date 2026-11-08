@@ -1,7 +1,7 @@
-import { env } from "$env/dynamic/private";
+import * as env from "$app/env/private";
 import type { PageServerLoad, Actions } from "./$types";
 import { redirect } from "@sveltejs/kit";
-import { mockUsers, mockPartners } from "$lib/data/mockData";
+import { mockUsers, mockPartners } from "#lib/data/mockData.ts";
 
 interface BackendUserResponse {
 	id: string;

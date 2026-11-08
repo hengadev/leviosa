@@ -1,13 +1,13 @@
 <script lang="ts">
     import { ArrowDown, Clock, CreditCard, MapPin } from "@lucide/svelte";
-    import { dictionary, fmt, infoBlocks, type Locale } from "$lib/i18n/practice";
+    import { dictionary, fmt, infoBlocks, type Locale } from "#lib/i18n/practice.ts";
     import Header from "./_header.svelte";
     import Video from "./_video.svelte";
     import Booking from "./_booking.svelte";
     import Timeline from "./_timeline.svelte";
     import Footer from "./_footer.svelte";
     import type { PracticePageData } from "./practice";
-    import { amountDueOnlineCents } from "$lib/deposit";
+    import { amountDueOnlineCents } from "#lib/deposit.ts";
 
     // The practice page (issue 009), ported from the chosen prototype
     // (variant D): a black hero band, a booking card, the session explained

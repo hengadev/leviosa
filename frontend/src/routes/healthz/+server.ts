@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import type { RequestHandler } from './$types';
 
 // Commit SHA this image was built from (frontend/Dockerfile bakes it in as

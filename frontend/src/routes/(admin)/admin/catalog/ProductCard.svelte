@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { Clock, Calendar, MapPin, SquarePen, Trash2, Archive, ArchiveRestore, Copy, ImageIcon } from "@lucide/svelte";
 	import { untrack } from "svelte";
-	import { enhance } from "$app/forms";
-	import type { SubmitFunction } from "@sveltejs/kit";
-	import { getToastContext } from "$lib/components/toast";
+	import { enhance, type SubmitFunction } from "$app/forms";
+	import { getToastContext } from "#lib/components/toast/index.ts";
 	import { type SuperValidated } from "sveltekit-superforms";
 	import { superForm } from "sveltekit-superforms";
 	import AlertDialog from "./AlertDialog.svelte";
-	import { type CardType, type Category } from "$lib/data/mockData";
+	import { type CardType, type Category } from "#lib/data/mockData.ts";
 	import type { DeleteProduct } from "./schemas";
 
 	type Props = {

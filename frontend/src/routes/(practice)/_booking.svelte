@@ -2,7 +2,7 @@
     import { ChevronLeft, ChevronRight } from "@lucide/svelte";
     import { onMount, tick } from "svelte";
     import { invalidateAll } from "$app/navigation";
-    import { cap, dictionary, fmt, type Locale } from "$lib/i18n/practice";
+    import { cap, dictionary, fmt, type Locale } from "#lib/i18n/practice.ts";
     import type { PracticeBooking, PracticeSlot } from "./practice";
     import Checkout from "./_checkout.svelte";
     import {

@@ -14,7 +14,7 @@
         ChevronRight,
     } from "@lucide/svelte";
     import type { Component } from "svelte";
-    import type { Permissions } from "$lib/security/permissions";
+    import type { Permissions } from "#lib/security/permissions.ts";
 
     interface SidebarProps {
         data: {

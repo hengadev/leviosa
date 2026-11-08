@@ -12,10 +12,10 @@
     } from "@lucide/svelte";
     import type { Snippet } from "svelte";
     import type { PageData } from "./$types";
-    import Drawer from "$lib/ui/Drawer.svelte";
+    import Drawer from "#lib/ui/Drawer.svelte";
     import { superForm } from "sveltekit-superforms";
 
-    import { browser } from "$app/environment";
+    import { browser } from "$app/env";
 
     // Detect if we're on mobile
     let isMobile = $state(false);

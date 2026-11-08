@@ -1,4 +1,4 @@
-import { ROLES } from "$lib/types/role";
+import { ROLES } from "#lib/types/role.ts";
 
 export const homeByRole = {
     [ROLES.visitor]: "/portal",

@@ -1,6 +1,6 @@
-import { env } from '$env/dynamic/private';
+import * as env from '$app/env/private';
 import { json } from '@sveltejs/kit';
-import { FRENCH_PHONE, normalizePhone } from '$lib/phone';
+import { FRENCH_PHONE, normalizePhone } from '#lib/phone.ts';
 import type { RequestHandler } from './$types';
 
 // POST /api/bookings — the practice page's guest booking (issue 014,

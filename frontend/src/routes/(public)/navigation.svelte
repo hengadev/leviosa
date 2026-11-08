@@ -1,11 +1,11 @@
 <script lang="ts">
-    import Button from "$lib/ui/Button.svelte";
-    import SideDrawer from "$lib/ui/SideDrawer.svelte";
+    import Button from "#lib/ui/Button.svelte";
+    import SideDrawer from "#lib/ui/SideDrawer.svelte";
     import Logo from "./__logo.svelte";
     import { page } from "$app/state";
     import { onMount, onDestroy } from "svelte";
-    import { browser } from "$app/environment";
-    import { type Permissions } from "$lib/security/permissions";
+    import { browser } from "$app/env";
+    import { type Permissions } from "#lib/security/permissions.ts";
     import { Menu, X } from "@lucide/svelte";
 
     interface Props {

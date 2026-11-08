@@ -6,7 +6,7 @@
 	import { page } from "$app/state";
 	import { afterNavigate } from "$app/navigation";
 	import { LogOut, Menu } from "@lucide/svelte";
-	import Drawer from "$lib/ui/Drawer.svelte";
+	import Drawer from "#lib/ui/Drawer.svelte";
 	import {
 		accountInitial,
 		accountName,

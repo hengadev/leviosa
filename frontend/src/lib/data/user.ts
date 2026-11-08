@@ -1,4 +1,4 @@
-import { ROLES, type Role } from "$lib/types/role";
+import { ROLES, type Role } from "#lib/types/role.ts";
 
 const base = {
     birthdate: "",

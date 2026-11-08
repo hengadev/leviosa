@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { infoBlocks, type Locale } from "$lib/i18n/practice";
+    import { infoBlocks, type Locale } from "#lib/i18n/practice.ts";
 
     // "A session, minute by minute": the hour as a proportional bar, then the
     // steps under it sharing the same column scale. Static placeholder copy

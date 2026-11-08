@@ -1,5 +1,5 @@
-import { computePermissions } from '$lib/security/permissions'
-import { ROLES } from '$lib/types/role'
+import { computePermissions } from '#lib/security/permissions.ts'
+import { ROLES } from '#lib/types/role.ts'
 
 export const load = async ({ locals }) => {
     const user = locals.user

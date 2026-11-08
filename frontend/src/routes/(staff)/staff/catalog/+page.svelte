@@ -1,9 +1,9 @@
 <script lang="ts">
     import type { PageData } from "./$types";
-    import Tabs from "$lib/ui/bits-components/Tabs.svelte";
-    import TabsList from "$lib/ui/bits-components/TabsList.svelte";
-    import TabsTrigger from "$lib/ui/bits-components/TabsTrigger.svelte";
-    import TabsContent from "$lib/ui/bits-components/TabsContent.svelte";
+    import Tabs from "#lib/ui/bits-components/Tabs.svelte";
+    import TabsList from "#lib/ui/bits-components/TabsList.svelte";
+    import TabsTrigger from "#lib/ui/bits-components/TabsTrigger.svelte";
+    import TabsContent from "#lib/ui/bits-components/TabsContent.svelte";
     import Categories from "./Categories.svelte";
     import Products from "./Products.svelte";
     import Prices from "./Prices.svelte";

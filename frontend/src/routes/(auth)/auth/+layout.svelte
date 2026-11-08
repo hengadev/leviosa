@@ -3,7 +3,7 @@
     import "../../../app.css";
     let { children }: LayoutProps = $props();
 
-    import { setRegistrationContext } from "$lib/context/register.svelte";
+    import { setRegistrationContext } from "#lib/context/register.svelte.ts";
     setRegistrationContext();
 </script>
 

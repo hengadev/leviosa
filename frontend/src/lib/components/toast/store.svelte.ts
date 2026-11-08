@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import type { Toast, ToastContext, ToastType } from './types';
 
 // One list of toasts for the whole app, read by the container the root

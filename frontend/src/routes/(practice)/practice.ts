@@ -1,7 +1,7 @@
-import { env } from "$env/dynamic/private";
-import { parseDeposit, type Deposit } from "$lib/deposit";
-import { mockPartners, mockProducts, mockPrices, mockUsers } from "$lib/data/mockData";
-import { PRACTICE_TIME_ZONE } from "$lib/i18n/practice";
+import * as env from "$app/env/private";
+import { parseDeposit, type Deposit } from "#lib/deposit.ts";
+import { mockPartners, mockProducts, mockPrices, mockUsers } from "#lib/data/mockData.ts";
+import { PRACTICE_TIME_ZONE } from "#lib/i18n/practice.ts";
 
 // Server-side loading for the practice page (issue 009), shared by `/` (fr)
 // and `/en`. The page is fed by real data: the practice page settings name

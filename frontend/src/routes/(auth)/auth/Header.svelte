@@ -1,6 +1,6 @@
 <script lang="ts">
-    import BackButton from "$lib/navigation/BackButton.svelte";
-    import PaginationIndicator from "$lib/ui/PaginationIndicator.svelte";
+    import BackButton from "#lib/navigation/BackButton.svelte";
+    import PaginationIndicator from "#lib/ui/PaginationIndicator.svelte";
 
     interface Props {
         selectedElement: number;

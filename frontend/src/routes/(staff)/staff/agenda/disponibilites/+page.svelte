@@ -14,8 +14,8 @@
 	} from '@lucide/svelte';
 	import { invalidateAll } from '$app/navigation';
 	import { parseDate, type CalendarDate } from '@internationalized/date';
-	import Modal from '$lib/ui/Modal.svelte';
-	import { PRACTICE_TIME_ZONE } from '$lib/i18n/practice';
+	import Modal from '#lib/ui/Modal.svelte';
+	import { PRACTICE_TIME_ZONE } from '#lib/i18n/practice.ts';
 	import { practiceDate, practiceInstant, type AvailabilityException } from './occurrences';
 	import { dayOpenings, firstWeeklyClash, firstWeekday, overlapping, weekday, type Opening } from './calendar';
 	import AvailabilityCalendar, { type DayTone } from './AvailabilityCalendar.svelte';

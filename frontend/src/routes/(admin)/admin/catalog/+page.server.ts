@@ -3,7 +3,7 @@ import type { Actions } from "./$types"
 import { error } from '@sveltejs/kit';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { superValidate, type SuperValidated } from 'sveltekit-superforms';
-import { env } from "$env/dynamic/private";
+import * as env from "$app/env/private";
 
 import {
 	deleteProductSchema,
@@ -13,7 +13,7 @@ import {
 	categoryDefaults,
 	type category,
 } from './schemas'
-import { type CardType, mockAdminCards, mockAdminCategories, type Category } from "$lib/data/mockData"
+import { type CardType, mockAdminCards, mockAdminCategories, type Category } from "#lib/data/mockData.ts"
 import {
 	defaultStatus,
 	defaultCategory,

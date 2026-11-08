@@ -3,8 +3,8 @@ import { fail, redirect } from "@sveltejs/kit";
 import { setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
-import { env } from "$env/dynamic/private";
-import { forwardAuthCookies } from "$lib/utils/auth-helpers";
+import * as env from "$app/env/private";
+import { forwardAuthCookies } from "#lib/utils/auth-helpers.ts";
 
 // Step 1: Request password reset
 const requestSchema = type({

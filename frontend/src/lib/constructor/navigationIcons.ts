@@ -1,5 +1,5 @@
 // types
-import type { Role } from "$lib/types/role"
+import type { Role } from "#lib/types/role.ts"
 
 export const NAVIGATION_BAR_SIZES = {
     Small: 'small',

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { adminDarkMode } from "$lib/stores/adminDarkMode.svelte";
+	import { adminDarkMode } from "#lib/stores/adminDarkMode.svelte.ts";
 	import { Moon, Sun } from "@lucide/svelte";
 
 	const isDark = $derived(adminDarkMode.get());

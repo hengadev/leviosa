@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Button } from "bits-ui";
-    import { cn } from "$lib/utils/design-system";
+    import { cn } from "#lib/utils/design-system.ts";
     import { ArrowLeft, ChevronLeft } from "@lucide/svelte";
     import {
         type ButtonSizeType,

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onDestroy, getContext } from 'svelte';
-	import { browser } from '$app/environment';
-	import { createVerticalSwipeHandler } from '$lib/scripts/swipe';
+	import { browser } from '$app/env';
+	import { createVerticalSwipeHandler } from '#lib/scripts/swipe.ts';
 
 	interface Props {
 		isOpen?: boolean;

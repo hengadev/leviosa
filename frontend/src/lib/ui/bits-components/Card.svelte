@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { cn } from "$lib/utils/design-system";
+    import { cn } from "#lib/utils/design-system.ts";
     // import type { PageProps } from "./$types";
     import {
         CARD_VARIANTS,

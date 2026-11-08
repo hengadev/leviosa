@@ -2,9 +2,9 @@ import { type } from 'arktype';
 import { superValidate, setError } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import type { RequestEvent } from './$types';
-import { env } from "$env/dynamic/private"
+import * as env from "$app/env/private"
 import { redirect } from '@sveltejs/kit';
-import { forwardAuthCookies } from '$lib/utils/auth-helpers';
+import { forwardAuthCookies } from '#lib/utils/auth-helpers.ts';
 
 const schema = type({
     email: "string.email",

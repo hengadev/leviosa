@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { isAdminDomain, isStaffDomain } from '$lib/server/hostname';
+import { isAdminDomain, isStaffDomain } from '#lib/server/hostname.ts';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const hostname = url.hostname;

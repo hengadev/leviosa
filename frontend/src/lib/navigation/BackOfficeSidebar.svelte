@@ -40,7 +40,7 @@
 	// each area gives its own navigation and account links.
 	import { page } from "$app/state";
 	import { ChevronLeft, ChevronRight, EllipsisVertical, LogOut } from "@lucide/svelte";
-	import ThemeToggle from "$lib/components/admin/ThemeToggle.svelte";
+	import ThemeToggle from "#lib/components/admin/ThemeToggle.svelte";
 
 	interface Props {
 		/** Under the brand name, e.g. "Administration". */

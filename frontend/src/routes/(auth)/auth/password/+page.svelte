@@ -8,8 +8,8 @@
 
     import ProgressIndicator from "../ProgressIndicator.svelte";
     import PreviousStep from "../PreviousStep.svelte";
-    import Input from "$lib/ui/Input.svelte";
-    import { getRegistrationContext } from "$lib/context/register.svelte";
+    import Input from "#lib/ui/Input.svelte";
+    import { getRegistrationContext } from "#lib/context/register.svelte.ts";
 
     const register = getRegistrationContext();
 
@@ -42,7 +42,7 @@
         $form.password === $form.confirm && $form.confirm != "",
     );
 
-    import type { Step } from "$lib/types/step";
+    import type { Step } from "#lib/types/step.ts";
     let steps: Step[] = [
         { id: 1, name: "Email", status: "complete" },
         { id: 2, name: "Identité", status: "complete" },

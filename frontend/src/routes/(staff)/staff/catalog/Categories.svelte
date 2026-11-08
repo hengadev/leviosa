@@ -10,9 +10,9 @@
     import type { Snippet } from "svelte";
     import { superForm } from "sveltekit-superforms";
     import type { PageData } from "./$types";
-    import Drawer from "$lib/ui/Drawer.svelte";
+    import Drawer from "#lib/ui/Drawer.svelte";
 
-    import { browser } from "$app/environment";
+    import { browser } from "$app/env";
 
     // Detect if we're on mobile
     let isMobile = $state(false);

@@ -39,8 +39,9 @@
 #             subdomains), and the admin/staff subdomain behavior lives in the
 #             SvelteKit app (frontend/src/hooks.server.ts parses the hostname),
 #             not in Caddy — so leaving it out costs no app behavior. With no
-#             proxy in front, the frontend sets ORIGIN instead of the
-#             PROTOCOL_HEADER/HOST_HEADER pair production uses: without either,
+#             proxy in front, the frontend image is built with a fixed
+#             origin (KIT_PATHS_ORIGIN) instead of the PROTOCOL_HEADER/
+#             HOST_HEADER pair production uses: without either,
 #             adapter-node assumes https and rejects form POSTs (login) as
 #             CSRF with 403
 #
@@ -166,14 +167,16 @@ services:
       dockerfile: Dockerfile
       args:
         COMMIT_SHA: local
+        # No proxy in front locally (production derives the origin per host
+        # from PROTOCOL_HEADER/HOST_HEADER behind Caddy instead): pin the single
+        # local hostname, or adapter-node assumes https and 403s form POSTs as
+        # CSRF. adapter-node 6 reads it at build time (paths.origin), not from
+        # a runtime ORIGIN variable.
+        KIT_PATHS_ORIGIN: http://localhost:${PORT:-3000}
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3000}
       API_URL: http://backend:${BACKEND_PORT:-3500}
-      # No proxy in front locally (production derives the origin per host from
-      # PROTOCOL_HEADER/HOST_HEADER behind Caddy instead): pin the single local
-      # hostname, or adapter-node assumes https and 403s form POSTs as CSRF.
-      ORIGIN: http://localhost:${PORT:-3000}
       SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-leviosa_session}
       CLIENT_IP_HEADER: ${CLIENT_IP_HEADER:-x-client-ip}
       COMING_SOON: ${COMING_SOON:-false}
