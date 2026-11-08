@@ -8,7 +8,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (c *service) CreateProduct(ctx context.Context, req domain.CreateStripeProductRequest) (*domain.PaymentProduct, error) {

@@ -134,6 +134,16 @@ Terraform. A copy here would appear twice in `backend.env`.
 | `STRIPE_WEBHOOK_SECRET` | ✓ | ✓ | optional (Stripe CLI) | `backend.env` → backend (`/webhooks/stripe`) | operator, from the endpoint registered in Stripe |
 | `STRIPE_CONNECT_WEBHOOK_SECRET` | ✓ | ✓ | optional | `backend.env` → backend (`/webhooks/stripe/connect`) | operator, from the Connect endpoint |
 
+**The endpoints' API version must be on stripe-go's release line**, today
+`endive` (stripe-go v87, `2026-10-28.endive`; any `20xx-xx-xx.endive`
+works). stripe-go rejects an event from another line before handling it,
+and the backend answers 400 ("webhook signature verification failed")
+even with the right secret: payments go through, bookings never confirm.
+Stripe cannot change an endpoint's API version, so moving stripe-go to
+another line means new endpoints (and new secrets) on that line, with the
+release. `TestVerifyWebhookSignature_AcceptsTheEndpointAPIVersion` pins
+the endpoints' version.
+
 ### `/smtp` — Zoho Mail (whole into `backend.env`)
 
 | Key | prod | staging | dev | Rendered into → read by | Written by |

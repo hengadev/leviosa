@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/stripe/stripe-go/v87/webhook"
 )
 
 // TestCreatePaymentIntent_SetsReceiptEmail verifies that CreatePaymentIntent
@@ -77,4 +78,35 @@ func TestCreatePaymentIntent_SetsReceiptEmail(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, sawReceiptEmail, "expected receipt_email to be omitted when not provided")
 	})
+}
+
+// TestVerifyWebhookSignature_AcceptsTheEndpointAPIVersion pins the API
+// version of the staging and production webhook endpoints. stripe-go rejects
+// an event from another release line (basil, dahlia, ...) before any
+// handling, so a stripe-go major bump that leaves endive fails here instead
+// of leaving every paid booking unconfirmed.
+func TestVerifyWebhookSignature_AcceptsTheEndpointAPIVersion(t *testing.T) {
+	const secret = "whsec_test"
+	payload := []byte(`{
+		"id": "evt_test_1",
+		"object": "event",
+		"api_version": "2026-09-30.endive",
+		"type": "payment_intent.succeeded",
+		"data": {"object": {
+			"id": "pi_test_1",
+			"object": "payment_intent",
+			"status": "succeeded",
+			"amount": 2000,
+			"currency": "eur",
+			"metadata": {"booking_id": "6b38f5c4-4673-4c70-b2e8-bf797857b63d"}
+		}}
+	}`)
+	signed := webhook.GenerateTestSignedPayload(&webhook.UnsignedPayload{Payload: payload, Secret: secret})
+
+	event, err := NewService("sk_test", "", secret).VerifyWebhookSignature(signed.Payload, signed.Header)
+	require.NoError(t, err)
+	assert.Equal(t, "pi_test_1", event.PaymentIntentID)
+	assert.Equal(t, "succeeded", event.Status)
+	assert.Equal(t, 2000, event.Amount)
+	assert.Equal(t, "6b38f5c4-4673-4c70-b2e8-bf797857b63d", event.Metadata["booking_id"])
 }

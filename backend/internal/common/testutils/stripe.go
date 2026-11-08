@@ -26,11 +26,11 @@ type StripeMockContainer struct {
 // accepted and responses map, never what a later call reads back.
 func SetupStripeMock(ctx context.Context, t *testing.T) (*StripeMockContainer, error) {
 	req := testcontainers.ContainerRequest{
-		// Pinned to the last release on the API version stripe-go v82 sends
-		// (2025-08-27.basil): later releases validate requests against newer
-		// API versions (promotion codes need "promotion" instead of "coupon").
+		// Pinned to a release on the API version line stripe-go v87 sends
+		// (endive): other lines validate requests against other API versions
+		// (basil's promotion codes took "coupon", endive's take "promotion").
 		// Move it together with the stripe-go major version.
-		Image:        "stripe/stripe-mock:v0.196.0",
+		Image:        "stripe/stripe-mock:v0.206.0",
 		ExposedPorts: []string{"12111/tcp"}, // Default stripe-mock port
 		WaitingFor:   wait.ForListeningPort("12111/tcp").WithStartupTimeout(2 * time.Minute),
 	}

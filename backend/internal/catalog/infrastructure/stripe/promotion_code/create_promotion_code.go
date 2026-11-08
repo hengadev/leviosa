@@ -6,13 +6,16 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) CreatePromotionCode(ctx context.Context, req *domain.CreatePromotionCodeRequest) (*domain.PromotionCode, error) {
 	params := &stripe.PromotionCodeCreateParams{
-		Coupon: stripe.String(req.CouponID),
-		Code:   stripe.String(req.Code),
+		Promotion: &stripe.PromotionCodeCreatePromotionParams{
+			Type:   stripe.String("coupon"),
+			Coupon: stripe.String(req.CouponID),
+		},
+		Code: stripe.String(req.Code),
 	}
 
 	// Set redemption limits

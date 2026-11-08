@@ -2,7 +2,7 @@ package pricePayment
 
 import (
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/ports"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 type service struct {

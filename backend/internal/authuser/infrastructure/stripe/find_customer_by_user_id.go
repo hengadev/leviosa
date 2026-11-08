@@ -5,7 +5,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 // FindCustomerByUserID finds a Stripe customer by user ID metadata
@@ -19,7 +19,7 @@ func (s *service) FindCustomerByUserID(ctx context.Context, userID uuid.UUID) (*
 	}
 
 	// Iterate through search results using the Seq2 iterator
-	for customer, err := range s.client.V1Customers.Search(ctx, searchParams) {
+	for customer, err := range s.client.V1Customers.Search(ctx, searchParams).All(ctx) {
 		if err != nil {
 			// If search is not available (e.g., in India), fall back to list all and filter
 			return s.findCustomerByUserIDFallback(ctx, userID)
@@ -38,7 +38,7 @@ func (s *service) findCustomerByUserIDFallback(ctx context.Context, userID uuid.
 	params := &stripe.CustomerListParams{}
 	userIDStr := userID.String()
 
-	for customer, err := range s.client.V1Customers.List(ctx, params) {
+	for customer, err := range s.client.V1Customers.List(ctx, params).All(ctx) {
 		if err != nil {
 			return nil, errs.ClassifyStripeError("find customer by user ID fallback", err)
 		}

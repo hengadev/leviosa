@@ -3,7 +3,7 @@ package promotionCodePayment
 import (
 	"context"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) DeletePromotionCode(ctx context.Context, stripePromotionID string) error {

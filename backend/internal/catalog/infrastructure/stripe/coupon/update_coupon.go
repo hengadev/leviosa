@@ -5,7 +5,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) UpdateCoupon(ctx context.Context, stripeCouponID string, req *domain.UpdateCouponRequest) (*domain.Coupon, error) {

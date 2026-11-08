@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 // DeleteCustomer deletes a Stripe customer

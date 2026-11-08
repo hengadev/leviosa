@@ -2,7 +2,7 @@ package authPayment
 
 import (
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 // service handles Stripe operations
