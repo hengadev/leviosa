@@ -54,8 +54,9 @@ func TestSMTPConfigFromEnv(t *testing.T) {
 	t.Setenv("SMTP_PORT", "465")
 	t.Setenv("SMTP_USERNAME", "noreply@example.com")
 	t.Setenv("SMTP_PASSWORD", "smtppassword")
+	t.Setenv("SMTP_FROM", "Leviosa <contact@example.com>")
 
-	want := smtpClient.SMTPConfig{Host: "smtp.zoho.eu", Port: 465, Username: "noreply@example.com", Password: "smtppassword"}
+	want := smtpClient.SMTPConfig{Host: "smtp.zoho.eu", Port: 465, Username: "noreply@example.com", Password: "smtppassword", From: "Leviosa <contact@example.com>"}
 	if got := SMTPConfigFromEnv(); got != want {
 		t.Fatalf("SMTPConfigFromEnv() = %+v, want %+v", got, want)
 	}

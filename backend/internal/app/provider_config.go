@@ -44,6 +44,7 @@ func SMTPConfigFromEnv() smtpClient.SMTPConfig {
 		Port:     getEnvInt("SMTP_PORT", 587),
 		Username: getEnv("SMTP_USERNAME", ""),
 		Password: getEnv("SMTP_PASSWORD", ""),
+		From:     getEnv("SMTP_FROM", ""),
 	}
 }
 
