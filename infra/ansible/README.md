@@ -83,14 +83,14 @@ export INFISICAL_VPS_CLIENT_ID=…
 export INFISICAL_VPS_CLIENT_SECRET=…
 
 # This computer's own SSH key, listed in the keys file (below)
-ssh-keygen -t ed25519 -C leviosa-<computer>
+ssh-keygen -t ed25519 -f ~/.ssh/leviosa-$(hostname) -C leviosa-$(hostname)
 ```
 
 `make setup` reads the server's IP through `infra/terraform/tf.sh output`,
 which also needs the `infisical login`.
 
 **Load this computer's key into the SSH agent first** (`eval "$(ssh-agent
--s)"` if the terminal has none, then `ssh-add ~/.ssh/leviosa-<computer>`).
+-s)"` if the terminal has none, then `ssh-add ~/.ssh/leviosa-$(hostname)`).
 Ansible connects to the IP, so `~/.ssh/config` does not apply, and it cannot
 type a passphrase: without the key every connection fails, and fail2ban bans
 this computer's IP after one or two runs (2 hours, or 24 hours for the DDoS
@@ -141,7 +141,7 @@ deploy_ci_ssh_public_keys:     # the CI key: the deploy user only, forced to the
 
 ### Adding a computer
 
-1. On the new computer: `ssh-keygen -t ed25519 -C leviosa-<computer>`, and
+1. On the new computer: `ssh-keygen -t ed25519 -f ~/.ssh/leviosa-$(hostname) -C leviosa-$(hostname)`, and
    install Ansible, the collections and the Infisical CLI (prerequisites).
 2. Add its `.pub` line to `deploy_ssh_public_keys` in the canonical keys file.
 3. **From a computer that already has access**, refresh its local keys file
