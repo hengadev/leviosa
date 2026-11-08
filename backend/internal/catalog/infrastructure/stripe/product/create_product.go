@@ -3,11 +3,11 @@ package productPayment
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
+	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v87"
 )
 
@@ -16,12 +16,10 @@ func (c *service) CreateProduct(ctx context.Context, req domain.CreateStripeProd
 		return nil, fmt.Errorf("name cannot be empty")
 	}
 
-	// Include more fields in idempotency key or use UUID
-	idempotencyKey := fmt.Sprintf("prod_%s_%s_%d",
-		strings.ReplaceAll(req.Name, " ", "_"),
-		strings.ReplaceAll(req.Description, " ", "_"),
-		time.Now().Unix(), // Or use a hash of metadata
-	)
+	// One key per creation, so stripe-go's retries of this request are not
+	// applied twice. Stripe caps keys at 255 characters: the key must not grow
+	// with the product's name or description.
+	idempotencyKey := "prod_" + uuid.NewString()
 
 	params := &stripe.ProductCreateParams{
 		Name:        stripe.String(req.Name),
@@ -44,8 +42,7 @@ func (c *service) CreateProduct(ctx context.Context, req domain.CreateStripeProd
 
 	var updatedAt time.Time
 	if stripeProduct.Updated > 0 {
-		t := time.Unix(stripeProduct.Updated, 0)
-		createdAt = t
+		updatedAt = time.Unix(stripeProduct.Updated, 0)
 	}
 
 	return &domain.PaymentProduct{
