@@ -61,12 +61,12 @@ Every Infisical-backed command uses this session: `make env`, `tf.sh`,
   Host leviosa <server ip>
       HostName <server ip>
       User root
-      IdentityFile ~/.ssh/leviosa-<this computer>
+      IdentityFile ~/.ssh/leviosa-<this computer's hostname>
       IdentitiesOnly yes
   ```
 
   With a passphrase, load the key once per terminal before Ansible:
-  `eval "$(ssh-agent -s)" && ssh-add ~/.ssh/leviosa-<this computer>`.
+  `eval "$(ssh-agent -s)" && ssh-add ~/.ssh/leviosa-$(hostname)`.
 - [ ] Check: `ssh leviosa true`. On the first connection, compare the host key
   fingerprint with one from a computer that already trusts the server.
 
