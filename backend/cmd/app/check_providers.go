@@ -82,7 +82,7 @@ func runCheckEmail(ctx context.Context, args []string, out io.Writer) error {
 		return fmt.Errorf("check-email: %s", redact(describeSMTPError(err), cfg.Password))
 	}
 
-	fmt.Fprintf(out, "check-email: OK, %s:%d accepted a test email to %s from %s\n", cfg.Host, cfg.Port, to, cfg.Username)
+	fmt.Fprintf(out, "check-email: OK, %s:%d accepted a test email to %s from %s\n", cfg.Host, cfg.Port, to, cfg.Sender())
 	return nil
 }
 
