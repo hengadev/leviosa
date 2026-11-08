@@ -15,7 +15,7 @@ import (
 	mw "github.com/Leviosa-care/leviosa/backend/internal/common/middleware"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/middleware/auth"
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )

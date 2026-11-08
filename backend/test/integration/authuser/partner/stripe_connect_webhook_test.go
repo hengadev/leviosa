@@ -13,8 +13,8 @@ import (
 	td "github.com/Leviosa-care/leviosa/backend/test/helpers"
 
 	"github.com/google/uuid"
-	"github.com/stripe/stripe-go/v82"
-	stripeWebhook "github.com/stripe/stripe-go/v82/webhook"
+	"github.com/stripe/stripe-go/v87"
+	stripeWebhook "github.com/stripe/stripe-go/v87/webhook"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

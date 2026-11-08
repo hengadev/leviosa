@@ -5,7 +5,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) GetPricesByProductID(ctx context.Context, productID string, opts *domain.PriceListOptions) ([]*domain.PaymentPrice, error) {
@@ -25,7 +25,7 @@ func (s *service) GetPricesByProductID(ctx context.Context, productID string, op
 	iter := s.Client.V1Prices.List(ctx, params)
 	var prices []*domain.PaymentPrice
 
-	for stripePrice, err := range iter {
+	for stripePrice, err := range iter.All(ctx) {
 		if err != nil {
 			return nil, err
 		}

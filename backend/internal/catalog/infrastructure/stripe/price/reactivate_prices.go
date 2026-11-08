@@ -3,7 +3,7 @@ package pricePayment
 import (
 	"context"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) ReactivatePrices(ctx context.Context, stripePriceIDs []string) error {

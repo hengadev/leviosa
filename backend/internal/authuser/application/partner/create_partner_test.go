@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hengadev/encx"
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

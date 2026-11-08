@@ -5,7 +5,7 @@ import (
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (s *service) CreatePrice(ctx context.Context, input domain.CreateStripePriceRequest) (*domain.PaymentPrice, error) {

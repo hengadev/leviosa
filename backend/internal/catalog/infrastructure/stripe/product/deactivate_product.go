@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stripe/stripe-go/v82"
+	"github.com/stripe/stripe-go/v87"
 )
 
 func (c *service) DeactivateProduct(ctx context.Context, stripeProductID string) error {
