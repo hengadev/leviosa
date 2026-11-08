@@ -48,7 +48,6 @@ export const refreshTokenDurationSchema = type({
 export const practicePageSchema = type({
     partner_id: "string.uuid",
     product_id: "string.uuid",
-    video_url: "string",
 })
 
 // Booking Policy Settings Schema (slot engine): minimum notice in hours,
@@ -98,7 +97,6 @@ export const companyInstagramDefaults: CompanyInstagram = {
 export const practicePageDefaults: PracticePage = {
     partner_id: "",
     product_id: "",
-    video_url: "",
 }
 
 export const bookingPolicyDefaults: BookingPolicy = {

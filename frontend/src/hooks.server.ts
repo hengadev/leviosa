@@ -25,7 +25,27 @@ function resolveWithPageLang(
     });
 }
 
+// adapter-node's BODY_SIZE_LIMIT is raised to 60M in the image, for the
+// practice page video upload only: that route streams the body to the
+// backend. Every other route keeps adapter-node's default of 512K, checked
+// here before anything reads the body.
+const DEFAULT_BODY_LIMIT = 512 * 1024;
+const LARGE_BODY_ROUTES = ['/admin/settings/video'];
+
+function bodyLimitResponse(request: Request, pathname: string): Response | null {
+    if (LARGE_BODY_ROUTES.includes(pathname)) return null;
+    const length = request.headers.get('content-length');
+    if (length === null) {
+        // A body without a declared length (chunked) can't be checked up front.
+        return request.headers.has('transfer-encoding') ? new Response('Length Required', { status: 411 }) : null;
+    }
+    return Number(length) > DEFAULT_BODY_LIMIT ? new Response('Payload Too Large', { status: 413 }) : null;
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
+    const bodyLimit = bodyLimitResponse(event.request, event.url.pathname);
+    if (bodyLimit) return bodyLimit;
+
 	// Detect hostname and set domain context
 	const hostname = event.url.hostname;
 	event.locals.isAdminDomain = isAdminDomain(hostname);

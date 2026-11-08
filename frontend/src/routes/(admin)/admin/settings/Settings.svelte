@@ -4,6 +4,7 @@
     import { Dialog, Button, Label, Separator } from "bits-ui";
     import { X, AlertCircle } from "@lucide/svelte";
     import { invalidateAll } from "$app/navigation";
+    import PracticeVideo from "./PracticeVideo.svelte";
 
     let { data }: { data: PageData } = $props();
 
@@ -348,7 +349,6 @@
                         onclick={() => {
                             $practicePageForm.partner_id = data.practicePage?.partnerId || "";
                             $practicePageForm.product_id = data.practicePage?.productId || "";
-                            $practicePageForm.video_url = data.practicePage?.videoUrl || "";
                             practicePageDialogOpen = true;
                         }}
                     >
@@ -369,14 +369,7 @@
                 </div>
 
                 <!-- Video -->
-                <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium text-sm">Vidéo de la page</div>
-                        <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
-                            {data.practicePage?.videoUrl || "Non définie (image d'attente affichée)"}
-                        </div>
-                    </div>
-                </div>
+                <PracticeVideo videoUrl={data.practicePage?.videoUrl ?? ""} />
             </div>
         </div>
 
@@ -1192,7 +1185,7 @@
                 Modifier la page publique
             </Dialog.Title>
             <Dialog.Description class="text-foreground-alt !mt-1 text-sm">
-                Choisissez le partenaire et le produit présentés sur la page du cabinet, et la vidéo affichée
+                Choisissez le partenaire et le produit présentés sur la page du cabinet
             </Dialog.Description>
 
             <Separator.Root class="bg-muted mx-5 !mb-2 !mt-5 block h-px" />
@@ -1230,21 +1223,6 @@
                             <option value={option.id}>{option.label}</option>
                         {/each}
                     </select>
-                </div>
-
-                <div class="grid gap-2 py-2">
-                    <Label.Root for="practice-video" class="text-sm font-medium">Vidéo (URL)</Label.Root>
-                    <input
-                        id="practice-video"
-                        name="video_url"
-                        type="url"
-                        bind:value={$practicePageForm.video_url}
-                        placeholder="https://… (vide = image d'attente)"
-                        class="h-input rounded-card-sm border-border-input bg-background placeholder:text-foreground-alt/50 hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
-                    />
-                    <p class="text-xs text-foreground-alt">
-                        Vidéo du cabinet uniquement — laissez vide pour afficher l'image d'attente.
-                    </p>
                 </div>
 
                 <div class="flex w-full justify-end gap-3">
