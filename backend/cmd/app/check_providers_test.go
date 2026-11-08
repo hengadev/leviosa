@@ -293,6 +293,7 @@ func setCheckEmailEnv(t *testing.T, server *fakeSMTP, password string) {
 	t.Setenv("SMTP_PORT", strconv.Itoa(server.port))
 	t.Setenv("SMTP_USERNAME", testSMTPUser)
 	t.Setenv("SMTP_PASSWORD", password)
+	t.Setenv("SMTP_FROM", "") // the sender is the username unless a test sets it
 }
 
 func TestCheckEmailRequiresExactlyOneRecipient(t *testing.T) {
@@ -341,6 +342,24 @@ func TestCheckEmailSucceedsThroughTheConfiguredSMTPServer(t *testing.T) {
 		t.Fatalf("unexpected success output: %q", out.String())
 	}
 	assertNoSecrets(t, out.String(), testSMTPPassword)
+}
+
+func TestCheckEmailSendsFromSMTPFrom(t *testing.T) {
+	server := newFakeSMTP(t, testSMTPUser, testSMTPPassword)
+	setCheckEmailEnv(t, server, testSMTPPassword)
+	t.Setenv("SMTP_FROM", "Leviosa <contact@leviosa.test>")
+
+	var out bytes.Buffer
+	if err := runCheckEmail(context.Background(), []string{"someone@example.com"}, &out); err != nil {
+		t.Fatalf("expected check-email to succeed, got %v", err)
+	}
+	mails := server.received()
+	if len(mails) != 1 || mails[0].from != "contact@leviosa.test" {
+		t.Fatalf("expected one email from contact@leviosa.test, got %+v", mails)
+	}
+	if !strings.Contains(out.String(), "from Leviosa <contact@leviosa.test>") {
+		t.Fatalf("expected the output to name the sender, got %q", out.String())
+	}
 }
 
 func TestCheckEmailReportsTheProviderErrorWithoutSecrets(t *testing.T) {

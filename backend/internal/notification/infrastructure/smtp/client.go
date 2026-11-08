@@ -28,6 +28,15 @@ type SMTPConfig struct {
 	From string
 }
 
+// Sender is the address the emails that name none are sent from: From,
+// else Username.
+func (c SMTPConfig) Sender() string {
+	if c.From != "" {
+		return c.From
+	}
+	return c.Username
+}
+
 type SMTPClient struct {
 	config SMTPConfig
 	// send delivers a built message; the SMTP dialer unless a test replaces
@@ -352,10 +361,7 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 	}
 
 	if fromEmail == "" {
-		fromEmail = c.config.From
-	}
-	if fromEmail == "" {
-		fromEmail = c.config.Username
+		fromEmail = c.config.Sender()
 	}
 
 	m := gomail.NewMessage()
