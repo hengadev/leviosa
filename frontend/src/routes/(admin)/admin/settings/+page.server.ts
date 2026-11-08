@@ -272,19 +272,34 @@ export const actions = {
                 body: JSON.stringify(body),
             })
 
-        // An empty video URL is meaningful (it clears the video back to the
-        // placeholder frame); partner and product are required UUIDs.
-        const [partnerRes, productRes, videoRes] = await Promise.all([
+        // The video is uploaded and removed on its own (the video endpoint
+        // next to this page, and removePracticePageVideo below).
+        const [partnerRes, productRes] = await Promise.all([
             post("partner", { partner_id: form.data.partner_id }),
             post("product", { product_id: form.data.product_id }),
-            post("video", { video_url: form.data.video_url }),
         ])
 
-        if (!partnerRes.ok || !productRes.ok || !videoRes.ok) {
-            return setError(form, "Partenaire, produit ou vidéo invalide.")
+        if (!partnerRes.ok || !productRes.ok) {
+            return setError(form, "Partenaire ou produit invalide.")
         }
 
         return { practicePageForm: form }
+    },
+
+    // Back to the placeholder frame; the backend deletes the uploaded file.
+    removePracticePageVideo: async ({ fetch }) => {
+        if (MOCK_MODE) {
+            return { videoRemoved: true }
+        }
+        const res = await fetch(`${env.API_URL}/admin/settings/practice-page/video`, {
+            method: "POST",
+            headers: { 'Content-Type': "application/json" },
+            body: JSON.stringify({ video_url: "" }),
+        })
+        if (!res.ok) {
+            return fail(res.status, { videoError: "La vidéo n'a pas pu être retirée. Veuillez réessayer." })
+        }
+        return { videoRemoved: true }
     },
 
     updateBookingPolicy: async ({ request, fetch, cookies }) => {

@@ -44,6 +44,12 @@ WORKDIR /usr/src/app
 ARG COMMIT_SHA=dev
 ENV COMMIT_SHA=${COMMIT_SHA}
 
+# adapter-node's request body limit, for the whole server. Raised from its
+# 512K default for the practice page video upload (50 MB plus the form's
+# overhead), which streams through to the backend without being buffered;
+# src/hooks.server.ts holds every other route to the old 512K.
+ENV BODY_SIZE_LIMIT=60M
+
 COPY --from=prod-deps /usr/src/app/node_modules/ ./node_modules/
 COPY --from=build /usr/src/app/build/ ./build/
 COPY --from=build /usr/src/app/package.json ./
