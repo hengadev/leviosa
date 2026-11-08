@@ -6,7 +6,8 @@
 # infra/compose/README.md), run by CI.
 
 .PHONY: help setup infisical-agent check-clean lint \
-        ssh-info status staging-status agent-status logs staging-logs \
+        ssh-info status staging-status agent-status agent-templates-drift \
+        logs staging-logs \
         install-deps terraform-outputs
 
 # Default target
@@ -35,6 +36,8 @@ help:
 	@echo "  make status          - Check production service status"
 	@echo "  make staging-status  - Check staging service status"
 	@echo "  make agent-status    - Check the Infisical Agent (systemd)"
+	@echo "  make agent-templates-drift - Compare the server's Agent templates with this"
+	@echo "                         checkout's (names only); differs = run make infisical-agent"
 	@echo "  make logs            - View production logs"
 	@echo "  make staging-logs    - View staging logs"
 	@echo ""
@@ -163,6 +166,13 @@ staging-status:
 agent-status:
 	@echo "Checking the Infisical Agent..."
 	@ssh root@$(VPS_IP) "systemctl status infisical-agent --no-pager; ls -la /opt/leviosa/env /opt/leviosa-staging/env"
+
+# The Agent renders from its installed templates, never from the repo: a
+# change under infra/infisical/templates reaches the server only through
+# `make infisical-agent` (or `make setup`). This says whether it has.
+agent-templates-drift:
+	@./check-agent-key.sh "$(KEYS_FILE)"
+	@./agent-templates-drift.sh "$(VPS_IP)"
 
 logs:
 	@echo "Streaming production logs (Ctrl+C to exit)..."

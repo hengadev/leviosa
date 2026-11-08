@@ -172,6 +172,7 @@ make setup                     # again: must report changed=0
 # months); prompts, falling back to INFISICAL_VPS_CLIENT_ID / _SECRET
 make infisical-agent
 make agent-status             # the Agent's state and the rendered env files
+make agent-templates-drift    # the server's Agent templates vs this checkout's
 ```
 
 `make setup` reads the server IP (and domain) from Terraform through

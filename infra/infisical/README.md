@@ -51,6 +51,14 @@ single service with `docker compose up -d --no-deps --force-recreate
 <service>` (see `infra/compose/README.md`); Postgres, RabbitMQ, backup and
 admin files get no command.
 
+**A template change needs the Agent role re-run.** The Agent renders from
+the copies the role installed in `/etc/infisical-agent/templates`, never
+from this directory: until `make infisical-agent` (or `make setup`) runs
+from a checkout that has the change, the server keeps rendering the old
+files, and `make env-check-<env>`, which renders from this checkout, does
+not show it. `make agent-templates-drift` (from `infra/ansible`, read-only)
+compares the server's copies with this checkout's.
+
 ## Placeholders
 
 The engine has no `env` function, so a template cannot know which
