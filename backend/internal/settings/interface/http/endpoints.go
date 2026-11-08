@@ -125,6 +125,12 @@ const (
 	SetPracticePagePartnerEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePagePartnerPath
 	SetPracticePageProductEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePageProductPath
 	SetPracticePageVideoEndpoint   = AdminSettingsBasePath + PracticePageBasePath + PracticePageVideoPath
+	// The practice page video as a file (multipart, field "video"); the JSON
+	// endpoint above still sets a link or clears the video.
+	UploadPracticePageVideoEndpoint = AdminSettingsBasePath + PracticePageBasePath + PracticePageVideoPath + "/upload"
+
+	// Uploaded media, public: the practice page video plays from here.
+	GetMediaEndpoint = "/media/{key...}"
 
 	// === Booking Policy Settings ===
 	// Minimum notice and booking horizon the slot engine applies

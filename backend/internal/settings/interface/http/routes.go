@@ -50,6 +50,10 @@ func (h *handler) RegisterExternalRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST "+SetPracticePagePartnerEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePagePartner)))
 	router.HandleFunc("POST "+SetPracticePageProductEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageProduct)))
 	router.HandleFunc("POST "+SetPracticePageVideoEndpoint, RequireAdministrator(mw.EnableCORS(h.SetPracticePageVideo)))
+	router.HandleFunc("POST "+UploadPracticePageVideoEndpoint, RequireAdministrator(mw.EnableCORS(h.UploadPracticePageVideo)))
+
+	// Uploaded media (public, GET and HEAD): the practice page video
+	router.HandleFunc("GET "+GetMediaEndpoint, h.GetMedia)
 
 	// Booking policy: public read, admin-only write
 	router.HandleFunc("GET "+GetBookingPolicyEndpoint, mw.EnableCORS(h.GetBookingPolicy))

@@ -124,6 +124,14 @@ func (m *mockSettingsService) SetPracticePageVideo(ctx context.Context, req *set
 	return nil, nil
 }
 
+func (m *mockSettingsService) UploadPracticePageVideo(ctx context.Context, file io.ReadSeeker, size int64) (*settingsDomain.UploadPracticePageVideoResponse, error) {
+	return nil, nil
+}
+
+func (m *mockSettingsService) GetMedia(ctx context.Context, key, rangeHeader string) (*settingsDomain.MediaObject, error) {
+	return nil, nil
+}
+
 func TestSettingsProvider_GetCompanyLogo_returnsURLFromService(t *testing.T) {
 	const wantURL = "https://s3.example.com/logo.png"
 

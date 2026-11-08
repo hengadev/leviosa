@@ -138,6 +138,14 @@ func (s *stubSettingsService) SetPracticePageVideo(ctx context.Context, req *set
 	return nil, nil
 }
 
+func (s *stubSettingsService) UploadPracticePageVideo(ctx context.Context, file io.ReadSeeker, size int64) (*settingsDomain.UploadPracticePageVideoResponse, error) {
+	return nil, nil
+}
+
+func (s *stubSettingsService) GetMedia(ctx context.Context, key, rangeHeader string) (*settingsDomain.MediaObject, error) {
+	return nil, nil
+}
+
 // fakeEmailClient implements ports.EmailService, recording the last
 // ContactFormRequest it received so tests can assert on it.
 type fakeEmailClient struct {
