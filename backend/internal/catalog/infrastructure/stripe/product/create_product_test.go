@@ -2,6 +2,7 @@ package productPayment_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
@@ -47,6 +48,20 @@ func TestCreateProduct(t *testing.T) {
 		assert.Equal(t, req.Name, product.Name)
 		assert.True(t, product.Active)
 		assert.False(t, product.CreatedAt.IsZero())
+	})
+
+	t.Run("creation with a long description", func(t *testing.T) {
+		// Stripe caps idempotency keys at 255 characters: the key must not
+		// grow with the product's name or description.
+		req := domain.CreateStripeProductRequest{
+			Name:        "Séance de sophrologie individuelle",
+			Description: strings.Repeat("Une séance pour apprendre à se détendre. ", 20),
+		}
+
+		product, err := stripeService.CreateProduct(ctx, req)
+
+		require.NoError(t, err)
+		assert.NotEmpty(t, product.ID)
 	})
 
 	t.Run("creation fails with empty name", func(t *testing.T) {
