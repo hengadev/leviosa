@@ -4,7 +4,7 @@
     import { env } from "$env/dynamic/public";
     import type { Stripe, StripeElements } from "@stripe/stripe-js";
     import { cap, dictionary, fmt, type Locale } from "$lib/i18n/practice";
-    import { isFrenchPhone } from "$lib/phone";
+    import { isFrenchPhone, normalizePhone } from "$lib/phone";
 
     // The booking card's details step and payment (issue 014, ADR-0018).
     // The client gives their details and accepts the terms of sale; the
@@ -192,7 +192,21 @@
                     },
                 },
             });
-            elements.create("payment", { layout: "tabs" }).mount(paymentMount);
+            // The details step's values, so Link's "save my information"
+            // form does not ask for them again. Link wants the phone in
+            // international form: 0612345678 → +33612345678.
+            elements
+                .create("payment", {
+                    layout: "tabs",
+                    defaultValues: {
+                        billingDetails: {
+                            name: `${firstName.trim()} ${lastName.trim()}`,
+                            email: email.trim(),
+                            phone: "+33" + normalizePhone(phone).slice(1),
+                        },
+                    },
+                })
+                .mount(paymentMount);
         } catch {
             formError = t.paymentLoadFailed;
         }
