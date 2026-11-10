@@ -28,7 +28,7 @@ only source of configuration).
    │  caddy ── TLS via Cloudflare DNS-01, lb_try_duration 30 s               │
    │   ├─ livio.leviosa.care, admin., staff.                                 │
    │   │     /webhooks/* ─► backend:3500     else ─► frontend:3000           │  /opt/leviosa
-   │   ├─ leviosa.care, www.   /webhooks/* ─► backend  else ─► 302 livio.    │  (prod stack)
+   │   ├─ leviosa.care, www.   everything ─► 302 livio.leviosa.care          │  (prod stack)
    │   └─ staging., admin-staging., staff-staging.   (open, noindex)         │
    │         /webhooks/* ─► staging_backend  else ─► staging_frontend        │  /opt/leviosa-staging
    │                                                                         │  (staging stack)

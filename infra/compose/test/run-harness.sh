@@ -94,7 +94,7 @@ BROKEN_MIGRATION=29991231235959_harness_broken_migration.sql
 CADDYFILE=$COMPOSE_DIR/caddy/Caddyfile
 CADDY_IMAGE=serfriz/caddy-cloudflare:2.11 # docker-compose.prod.yml's caddy image
 PROD_HOSTS="livio.leviosa.care admin.leviosa.care staff.leviosa.care"
-# The apex and www redirect to PROD_HOST, but still serve Stripe's webhooks.
+# The apex and www only redirect to PROD_HOST: no request reaches a backend.
 REDIRECT_HOSTS="leviosa.care www.leviosa.care"
 PROD_HOST=livio.leviosa.care
 STAGING_HOSTS="staging.leviosa.care admin-staging.leviosa.care staff-staging.leviosa.care"
@@ -953,8 +953,10 @@ case_caddy() {
 	for host in $REDIRECT_HOSTS; do
 		statuses+="$host=$(via_caddy "$host" '/some/page?a=1'):$(response_header location) "
 		bodies+="$host=302:https://$PROD_HOST/some/page?a=1 "
+		statuses+="$host/webhooks=$(post_webhook "$host" /webhooks/stripe "leviosa-harness-$RUN_ID-apex"):$(response_header location) "
+		bodies+="$host/webhooks=302:https://$PROD_HOST/webhooks/stripe "
 	done
-	check "the apex hosts redirect to $PROD_HOST, path and query kept, temporarily (${statuses% })" \
+	check "the apex hosts redirect to $PROD_HOST, path and query kept, temporarily, webhooks included (${statuses% })" \
 		[ "$statuses" = "$bodies" ]
 	via_caddy leviosa.care /healthz >/dev/null
 	check "... with production's headers (HSTS with preload, no Server)" \
@@ -1318,7 +1320,7 @@ case_caddy_webhooks() {
 	local prod_backend staging_backend
 	prod_backend=$(cid backend)
 	staging_backend=$(scid staging_backend)
-	webhook_checks production "$PROD_HOSTS $REDIRECT_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
+	webhook_checks production "$PROD_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
 	webhook_checks staging "$STAGING_HOSTS" "$staging_backend" staging_backend "$prod_backend" "production's backend"
 	backend_route_checks production "$PROD_HOST"
 	backend_route_checks staging "$STAGING_HOST"
