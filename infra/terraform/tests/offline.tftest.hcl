@@ -366,10 +366,10 @@ run "server_and_dns" {
       [cloudflare_dns_record.apex_a.name, cloudflare_dns_record.apex_aaaa.name],
       [for r in cloudflare_dns_record.web : r.name]
       )) == toset([
-      "leviosa.care", "www.leviosa.care", "admin.leviosa.care", "staff.leviosa.care",
+      "leviosa.care", "www.leviosa.care", "livio.leviosa.care", "admin.leviosa.care", "staff.leviosa.care",
       "staging.leviosa.care", "admin-staging.leviosa.care", "staff-staging.leviosa.care",
     ])
-    error_message = "Web records must be exactly apex, www, admin, staff, staging, admin-staging and staff-staging (no analytics)."
+    error_message = "Web records must be exactly apex, www, livio, admin, staff, staging, admin-staging and staff-staging (no analytics)."
   }
 
   assert {
