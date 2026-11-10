@@ -2,9 +2,12 @@
 
 locals {
   # Web hosts, all proxied to the one server; Caddy routes each to its stack
-  # (production: apex, www, admin, staff; staging: staging, admin-staging,
-  # staff-staging). No `analytics` host: Plausible is not on this server.
-  web_subdomains = toset(["www", "admin", "staff", "staging", "admin-staging", "staff-staging"])
+  # (production: livio, admin, staff, plus the apex and www, which redirect to
+  # livio until the apex gets its own site; staging: staging, admin-staging,
+  # staff-staging). One level under the apex only: Cloudflare's universal
+  # certificate covers *.leviosa.care, not *.livio.leviosa.care. No
+  # `analytics` host: Plausible is not on this server.
+  web_subdomains = toset(["www", "livio", "admin", "staff", "staging", "admin-staging", "staff-staging"])
 }
 
 resource "cloudflare_dns_record" "apex_a" {
