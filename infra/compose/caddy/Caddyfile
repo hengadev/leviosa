@@ -104,23 +104,11 @@ livio.leviosa.care, admin.leviosa.care, staff.leviosa.care {
 
 # The apex is kept for another site; until it has one, it sends visitors to
 # Livio's (302: browsers do not cache it, so the apex can change later).
-# Stripe's webhooks are still served here, since Stripe does not follow
-# redirects: drop this handle once both endpoints in the Stripe dashboard
-# point at livio.leviosa.care.
+# Nothing here reaches a backend: Stripe's endpoints name livio.leviosa.care.
 leviosa.care, www.leviosa.care {
 	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
 	import production
-
-	handle /webhooks/* {
-		reverse_proxy backend:3500 {
-			lb_try_duration 30s
-			lb_try_interval 250ms
-		}
-	}
-
-	handle {
-		redir https://livio.leviosa.care{uri} 302
-	}
+	redir https://livio.leviosa.care{uri} 302
 }
 
 # ─── Staging ─────────────────────────────────────────────────────────────────
