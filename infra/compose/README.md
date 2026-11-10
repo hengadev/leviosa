@@ -186,7 +186,8 @@ Caddy when `caddy.env` changes).
 
 | Hosts | Upstreams |
 | --- | --- |
-| `leviosa.care`, `www.`, `admin.`, `staff.` | `/webhooks/*` → `backend:3500`, anything else → `frontend:3000` |
+| `livio.leviosa.care`, `admin.`, `staff.` | `/webhooks/*` → `backend:3500`, anything else → `frontend:3000` |
+| `leviosa.care`, `www.` | `/webhooks/*` → `backend:3500`, anything else → 302 to `https://livio.leviosa.care` (same path), until the apex gets its own site |
 | `staging.`, `admin-staging.`, `staff-staging.` | `/webhooks/*` → `staging_backend:3500`, anything else → `staging_frontend:3000` |
 
 - **Webhooks.** Stripe's payment (`/webhooks/stripe`) and Connect

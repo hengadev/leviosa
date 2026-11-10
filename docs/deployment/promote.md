@@ -104,7 +104,7 @@ A rollback is a Promote with the SHA of an earlier release.
 3. **Run Promote** with `sha` set to that SHA. It goes through the same checks
    and the same deploy as any release.
 4. **Check the result.** The job summary shows the deployed SHA, and
-   `https://leviosa.care/healthz` reports it for both apps.
+   `https://livio.leviosa.care/healthz` reports it for both apps.
 
 **What rolls back:** both images, plus the compose file and the deploy script,
 because the server reads them from the deployed commit.

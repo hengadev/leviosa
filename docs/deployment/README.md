@@ -26,9 +26,10 @@ only source of configuration).
    │ Hetzner cax11 (ARM), nbg1 (Terraform; primary IPs survive a rebuild)    │
    │                                                                         │
    │  caddy ── TLS via Cloudflare DNS-01, lb_try_duration 30 s               │
-   │   ├─ leviosa.care, www., admin., staff.                                 │
+   │   ├─ livio.leviosa.care, admin., staff.                                 │
    │   │     /webhooks/* ─► backend:3500     else ─► frontend:3000           │  /opt/leviosa
-   │   └─ staging., admin-staging., staff-staging.   (open, noindex)         │  (prod stack)
+   │   ├─ leviosa.care, www.   /webhooks/* ─► backend  else ─► 302 livio.    │  (prod stack)
+   │   └─ staging., admin-staging., staff-staging.   (open, noindex)         │
    │         /webhooks/* ─► staging_backend  else ─► staging_frontend        │  /opt/leviosa-staging
    │                                                                         │  (staging stack)
    │  shared, owned by prod:  postgres (a role + db per env)                 │

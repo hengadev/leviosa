@@ -93,7 +93,10 @@ BROKEN_MIGRATION=29991231235959_harness_broken_migration.sql
 # caddy/Caddyfile's sites, and the hosts it no longer serves.
 CADDYFILE=$COMPOSE_DIR/caddy/Caddyfile
 CADDY_IMAGE=serfriz/caddy-cloudflare:2.11 # docker-compose.prod.yml's caddy image
-PROD_HOSTS="leviosa.care www.leviosa.care admin.leviosa.care staff.leviosa.care"
+PROD_HOSTS="livio.leviosa.care admin.leviosa.care staff.leviosa.care"
+# The apex and www redirect to PROD_HOST, but still serve Stripe's webhooks.
+REDIRECT_HOSTS="leviosa.care www.leviosa.care"
+PROD_HOST=livio.leviosa.care
 STAGING_HOSTS="staging.leviosa.care admin-staging.leviosa.care staff-staging.leviosa.care"
 DROPPED_HOSTS="analytics.leviosa.care www.staging.leviosa.care"
 STAGING_HOST=staging.leviosa.care
@@ -743,9 +746,9 @@ case_static() {
 	local prod_json harness_json hosts want
 	prod_json=$(caddy_offline adapt 2>/dev/null || true)
 	harness_json=$(caddy_offline adapt -e LEVIOSA_CADDY_TLS=internal 2>/dev/null || true)
-	want=$(tr ' ' '\n' <<<"$PROD_HOSTS $STAGING_HOSTS" | sort | paste -sd ' ' -)
+	want=$(tr ' ' '\n' <<<"$PROD_HOSTS $REDIRECT_HOSTS $STAGING_HOSTS" | sort | paste -sd ' ' -)
 	hosts=$(tls_subjects "$prod_json")
-	check "production variant: certificates for exactly the seven hosts ($hosts)" [ "$hosts" = "$want" ]
+	check "production variant: certificates for exactly the eight hosts ($hosts)" [ "$hosts" = "$want" ]
 	check "... from ACME through the Cloudflare DNS challenge, its token read at runtime from caddy.env" \
 		bash -c '[[ $1 == *"\"issuers\":[{\"challenges\":{\"dns\":{\"provider\":{\"api_token\":\"{env.CLOUDFLARE_API_TOKEN}\",\"name\":\"cloudflare\"}}},\"module\":\"acme\"}]"* ]] &&
 			[[ $1 != *"\"module\":\"internal\""* ]]' _ "$prod_json"
@@ -924,12 +927,12 @@ case_caddy() {
 	note "caddy published on $address (http) and $https (https)"
 	check "caddy is published on loopback only" [ "${address%%:*} ${https%%:*}" = "127.0.0.1 127.0.0.1" ]
 	# Caddy issues the internal CA's certificates as it starts: wait for them.
-	until [ "$(via_caddy leviosa.care /healthz)" = 200 ] || [ "$waited" -ge 30 ]; do
+	until [ "$(via_caddy "$PROD_HOST" /healthz)" = 200 ] || [ "$waited" -ge 30 ]; do
 		sleep 1
 		waited=$((waited + 1))
 	done
 	body=$(response_body)
-	check "GET https://leviosa.care/healthz through caddy reports $SHA2 for both apps ($body)" \
+	check "GET https://$PROD_HOST/healthz through caddy reports $SHA2 for both apps ($body)" \
 		[ "$body" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
 	for host in $PROD_HOSTS; do
 		n=$((n + 1))
@@ -938,14 +941,25 @@ case_caddy() {
 	done
 	check "every production host (${PROD_HOSTS// /, }) reaches production's frontend: /healthz reports $SHA2 ($bodies/$n; statuses ${statuses% })" \
 		[ "$bodies" = "$n" ]
-	got=$(curl -s --max-time 10 -o /dev/null -w '%{http_code} %{redirect_url}' -H 'Host: leviosa.care' "http://$address/healthz" || true)
-	check "plain HTTP redirects to HTTPS, as in production ($got)" [ "$got" = "308 https://leviosa.care/healthz" ]
-	via_caddy leviosa.care /healthz >/dev/null
+	got=$(curl -s --max-time 10 -o /dev/null -w '%{http_code} %{redirect_url}' -H "Host: $PROD_HOST" "http://$address/healthz" || true)
+	check "plain HTTP redirects to HTTPS, as in production ($got)" [ "$got" = "308 https://$PROD_HOST/healthz" ]
+	via_caddy "$PROD_HOST" /healthz >/dev/null
 	check "production responses keep the security headers (HSTS with preload, nosniff, SAMEORIGIN) and drop Server" \
 		bash -c '[ "$1" = "max-age=31536000; includeSubDomains; preload" ] && [ "$2" = nosniff ] && [ "$3" = SAMEORIGIN ] &&
 			[ "$4" = "strict-origin-when-cross-origin" ] && [ -z "$5" ]' _ \
 		"$(response_header strict-transport-security)" "$(response_header x-content-type-options)" \
 		"$(response_header x-frame-options)" "$(response_header referrer-policy)" "$(response_header server)"
+	statuses="" bodies=""
+	for host in $REDIRECT_HOSTS; do
+		statuses+="$host=$(via_caddy "$host" '/some/page?a=1'):$(response_header location) "
+		bodies+="$host=302:https://$PROD_HOST/some/page?a=1 "
+	done
+	check "the apex hosts redirect to $PROD_HOST, path and query kept, temporarily (${statuses% })" \
+		[ "$statuses" = "$bodies" ]
+	via_caddy leviosa.care /healthz >/dev/null
+	check "... with production's headers (HSTS with preload, no Server)" \
+		bash -c '[ "$1" = "max-age=31536000; includeSubDomains; preload" ] && [ -z "$2" ]' _ \
+		"$(response_header strict-transport-security)" "$(response_header server)"
 	statuses=""
 	for host in $DROPPED_HOSTS; do
 		statuses+="$host=$(via_caddy "$host" /healthz) "
@@ -1100,7 +1114,7 @@ case_staging_side_by_side() {
 		body=$(response_body)
 		check "through Caddy, $STAGING_HOST reaches staging_frontend by its service name ($body)" \
 			[ "$body" = "{\"frontend\":\"$SHA1\",\"backend\":\"$SHA1\"}" ]
-		via_caddy leviosa.care /healthz >/dev/null
+		via_caddy "$PROD_HOST" /healthz >/dev/null
 		body=$(response_body)
 		check "through Caddy, production's hosts still reach production ($body)" \
 			[ "$body" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
@@ -1304,9 +1318,9 @@ case_caddy_webhooks() {
 	local prod_backend staging_backend
 	prod_backend=$(cid backend)
 	staging_backend=$(scid staging_backend)
-	webhook_checks production "$PROD_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
+	webhook_checks production "$PROD_HOSTS $REDIRECT_HOSTS" "$prod_backend" "production's backend" "$staging_backend" staging_backend
 	webhook_checks staging "$STAGING_HOSTS" "$staging_backend" staging_backend "$prod_backend" "production's backend"
-	backend_route_checks production leviosa.care
+	backend_route_checks production "$PROD_HOST"
 	backend_route_checks staging "$STAGING_HOST"
 }
 
@@ -1325,10 +1339,10 @@ case_caddy_staging_open() {
 	local log
 	log=$(dc exec -T caddy cat /var/log/caddy/staging-access.log 2>/dev/null || true)
 	check "staging's requests are logged as JSON to staging-access.log ($(grep -c '"host":"[a-z-]*staging.leviosa.care"' <<<"$log") entries), production's are not" \
-		bash -c 'grep -q "\"host\":\"staging.leviosa.care\"" <<<"$1" && ! grep -q "\"host\":\"leviosa.care\"" <<<"$1"' _ "$log"
+		bash -c 'grep -q "\"host\":\"staging.leviosa.care\"" <<<"$1" && ! grep -q "\"host\":\"livio.leviosa.care\"" <<<"$1"' _ "$log"
 	log=$(dc exec -T caddy cat /var/log/caddy/access.log 2>/dev/null || true)
 	check "production's requests are logged as JSON to access.log ($(grep -c '"host":"[a-z.]*leviosa.care"' <<<"$log") entries), staging's are not" \
-		bash -c 'grep -q "\"host\":\"leviosa.care\"" <<<"$1" && ! grep -q "staging.leviosa.care" <<<"$1"' _ "$log"
+		bash -c 'grep -q "\"host\":\"livio.leviosa.care\"" <<<"$1" && ! grep -q "staging.leviosa.care" <<<"$1"' _ "$log"
 }
 
 case_caddy_staging_healthz() {
@@ -1405,10 +1419,10 @@ recreate_under_load() { # $1 service, $2 expected status, $3 host, $4 path, curl
 
 case_caddy_retry_window() {
 	section "caddy criterion 5: requests sent while the backend or the frontend is recreated get no 502"
-	recreate_under_load backend 400 leviosa.care /webhooks/stripe -X POST -A "leviosa-harness-$RUN_ID-stream" \
+	recreate_under_load backend 400 "$PROD_HOST" /webhooks/stripe -X POST -A "leviosa-harness-$RUN_ID-stream" \
 		-H 'Content-Type: application/json' -H 'Stripe-Signature: t=1,v1=0000' --data '{"type":"harness.test"}'
-	recreate_under_load frontend 200 leviosa.care /healthz
-	via_caddy leviosa.care /healthz >/dev/null
+	recreate_under_load frontend 200 "$PROD_HOST" /healthz
+	via_caddy "$PROD_HOST" /healthz >/dev/null
 	check "production still serves $SHA2 for both apps through Caddy ($(response_body))" \
 		[ "$(response_body)" = "{\"frontend\":\"$SHA2\",\"backend\":\"$SHA2\"}" ]
 }

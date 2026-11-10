@@ -156,7 +156,7 @@ change, and monthly.
    ```
 
 5. **Start the apps** (`docker compose --project-directory /opt/leviosa
-   up -d --no-deps backend frontend`), check `https://leviosa.care/healthz`,
+   up -d --no-deps backend frontend`), check `https://livio.leviosa.care/healthz`,
    then `rm /root/restore.dump`.
 6. A dump brings back data deleted after it was taken (accounts erased on
    request, for instance): re-apply those deletions.
