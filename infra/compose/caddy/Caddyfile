@@ -74,10 +74,8 @@
 
 # ─── Production ──────────────────────────────────────────────────────────────
 
-leviosa.care, www.leviosa.care, admin.leviosa.care, staff.leviosa.care {
-	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
-	import stack backend:3500 frontend:3000
-
+# Headers and access log of every production site.
+(production) {
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options "nosniff"
@@ -94,6 +92,34 @@ leviosa.care, www.leviosa.care, admin.leviosa.care, staff.leviosa.care {
 			roll_keep_for 720h
 		}
 		format json
+	}
+}
+
+# Livio's site: the practice page, its admin and its staff.
+livio.leviosa.care, admin.leviosa.care, staff.leviosa.care {
+	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
+	import stack backend:3500 frontend:3000
+	import production
+}
+
+# The apex is kept for another site; until it has one, it sends visitors to
+# Livio's (302: browsers do not cache it, so the apex can change later).
+# Stripe's webhooks are still served here, since Stripe does not follow
+# redirects: drop this handle once both endpoints in the Stripe dashboard
+# point at livio.leviosa.care.
+leviosa.care, www.leviosa.care {
+	import tls_{$LEVIOSA_CADDY_TLS:cloudflare}
+	import production
+
+	handle /webhooks/* {
+		reverse_proxy backend:3500 {
+			lb_try_duration 30s
+			lb_try_interval 250ms
+		}
+	}
+
+	handle {
+		redir https://livio.leviosa.care{uri} 302
 	}
 }
 

@@ -90,7 +90,7 @@ jobs:
     # the repository settings (docs/deployment/promote.md).
     environment:
       name: production
-      url: https://leviosa.care/healthz
+      url: https://livio.leviosa.care/healthz
     # One production deploy at a time, in its own group (staging's is
     # deploy-staging). A second Promote waits for the running one instead of
     # cancelling it halfway (the server's runner also refuses a second
