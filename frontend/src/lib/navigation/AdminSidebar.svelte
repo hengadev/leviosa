@@ -53,7 +53,7 @@
 	const accountLinks: AccountLink[] = $derived([
 		// The admin's agenda and availabilities, as the practitioner
 		...(selfPractitioner ? [{ href: "/staff", label: "Espace praticien", icon: CalendarClock }] : []),
-		{ href: "https://leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
+		{ href: "https://livio.leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
 	]);
 
 	// The phone bar: the daily pages; the rest is in its Menu drawer.

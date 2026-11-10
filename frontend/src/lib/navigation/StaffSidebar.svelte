@@ -50,7 +50,7 @@
 	// panel from the account menu, as the admin panel links here.
 	const accountLinks: AccountLink[] = $derived([
 		...(isAdmin ? [{ href: "/admin", label: "Administration", icon: Shield }] : []),
-		{ href: "https://leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
+		{ href: "https://livio.leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
 	]);
 
 	// The phone bar: the daily pages; the rest is in its Menu drawer.
