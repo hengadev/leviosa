@@ -41,6 +41,20 @@ override_resource {
   override_during = plan
 }
 
+# Documentation addresses (RFC 5737, RFC 3849) for the server's primary IPs,
+# so the DNS assertions can compare the records' content.
+override_resource {
+  target          = hcloud_primary_ip.main["ipv4"]
+  override_during = plan
+  values          = { ip_address = "192.0.2.10" }
+}
+
+override_resource {
+  target          = hcloud_primary_ip.main["ipv6"]
+  override_during = plan
+  values          = { ip_network = "2001:db8:10::/64" }
+}
+
 override_resource {
   target          = aws_s3_bucket.media["staging"]
   override_during = plan
@@ -362,18 +376,34 @@ run "server_and_dns" {
   }
 
   assert {
-    condition = toset(concat(
-      [cloudflare_dns_record.apex_a.name, cloudflare_dns_record.apex_aaaa.name],
-      [for r in cloudflare_dns_record.web : r.name]
-      )) == toset([
-      "leviosa.care", "www.leviosa.care", "livio.leviosa.care", "admin.leviosa.care", "staff.leviosa.care",
-      "staging.leviosa.care", "admin-staging.leviosa.care", "staff-staging.leviosa.care",
-    ])
-    error_message = "Web records must be exactly apex, www, livio, admin, staff, staging, admin-staging and staff-staging (no analytics)."
+    condition = (
+      toset([for r in cloudflare_dns_record.web : r.name]) == toset([for r in cloudflare_dns_record.web_aaaa : r.name]) &&
+      toset([for r in cloudflare_dns_record.web : r.name]) == toset([
+        "livio.leviosa.care", "admin.leviosa.care", "staff.leviosa.care",
+        "staging.leviosa.care", "admin-staging.leviosa.care", "staff-staging.leviosa.care",
+      ])
+    )
+    error_message = "The server's hosts, each with an A and an AAAA record, must be exactly livio, admin, staff, staging, admin-staging and staff-staging (no analytics)."
   }
 
   assert {
-    condition     = cloudflare_dns_record.apex_a.proxied && cloudflare_dns_record.apex_aaaa.proxied && alltrue([for r in cloudflare_dns_record.web : r.proxied])
+    condition = (
+      alltrue([for r in cloudflare_dns_record.web : r.type == "A" && r.content == hcloud_primary_ip.main["ipv4"].ip_address]) &&
+      alltrue([for r in cloudflare_dns_record.web_aaaa : r.type == "AAAA" && r.content == cidrhost(hcloud_primary_ip.main["ipv6"].ip_network, 1)])
+    )
+    error_message = "Each server host must point straight at the server's IPs, not through the apex."
+  }
+
+  assert {
+    condition = (
+      cloudflare_dns_record.apex.name == "leviosa.care" && cloudflare_dns_record.apex.type == "CNAME" && cloudflare_dns_record.apex.content == "livio.leviosa.care" &&
+      cloudflare_dns_record.www.name == "www.leviosa.care" && cloudflare_dns_record.www.type == "CNAME" && cloudflare_dns_record.www.content == "leviosa.care"
+    )
+    error_message = "The apex must be a CNAME to livio.leviosa.care, and www a CNAME to the apex."
+  }
+
+  assert {
+    condition     = cloudflare_dns_record.apex.proxied && cloudflare_dns_record.www.proxied && alltrue([for r in concat(values(cloudflare_dns_record.web), values(cloudflare_dns_record.web_aaaa)) : r.proxied])
     error_message = "Every web record must be proxied by Cloudflare."
   }
 

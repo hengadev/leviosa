@@ -27,8 +27,8 @@ output "domain_name" {
 }
 
 output "web_hostnames" {
-  value       = concat([var.domain_name], sort([for sub in local.web_subdomains : "${sub}.${var.domain_name}"]))
-  description = "Proxied hostnames pointing at the server"
+  value       = concat([var.domain_name, "www.${var.domain_name}"], sort([for sub in local.server_hosts : "${sub}.${var.domain_name}"]))
+  description = "Proxied hostnames that reach the server (the apex and www through livio)"
 }
 
 output "aws_region" {
