@@ -180,6 +180,9 @@ network).
 templating, run by production's `caddy` service (the only one publishing host
 ports). Ansible's caddy role installs it into `/opt/leviosa/caddy/etc/`, which
 the compose file mounts read-only at `/etc/caddy`; `deploy` never touches it.
+A Caddyfile change therefore ships with `make setup`, which installs it and
+reloads Caddy, not with a release or a Promote. When it needs new hosts,
+`make infra-apply` (their DNS records) comes first.
 Values that differ per environment come from `env/caddy.env` through Caddy's
 placeholder `{env.CLOUDFLARE_API_TOKEN}`, read at runtime (the Agent recreates
 Caddy when `caddy.env` changes).

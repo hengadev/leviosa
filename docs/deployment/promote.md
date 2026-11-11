@@ -113,6 +113,7 @@ because the server reads them from the deployed commit.
 
 - the database schema and its data;
 - the configuration in Infisical: an older release reads today's values;
+- the Caddyfile, which `make setup` installs, never a deploy;
 - Postgres, RabbitMQ and Redis data, and media in S3.
 
 If a value was renamed or removed in Infisical since the older release, put it

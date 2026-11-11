@@ -94,6 +94,7 @@ One binary (`backend/cmd/app`, `./leviosa <mode>` in the image):
 | --- | --- |
 | Push to `main` | `.github/workflows/ci.yaml` runs every check, builds and pushes both images for the commit, then runs `deploy staging <sha>` ([ci.md](ci.md)). A red check stops the release. |
 | Check staging | `https://staging.leviosa.care` (open, Stripe in test mode, `noindex`). `/healthz` reports both SHAs. |
+| Caddyfile changed? | Not shipped by a release: `make setup` installs it and reloads Caddy, for both stacks at once (after `make infra-apply` when it adds hosts). |
 | **Promote** | Actions → *Promote to production* → Run workflow, **`sha` empty**: ships the exact release staging serves, after checking both apps report the same SHA, it is on `main` and both images exist ([promote.md](promote.md)). |
 
 Both go through one server-side command, `deploy <stack> <sha>`
