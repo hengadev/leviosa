@@ -1,42 +1,84 @@
 # Cloudflare DNS for leviosa.care.
 
 locals {
-  # Web hosts, all proxied to the one server; Caddy routes each to its stack
-  # (production: livio, admin, staff, plus the apex and www, which redirect to
-  # livio until the apex gets its own site; staging: staging, admin-staging,
-  # staff-staging). One level under the apex only: Cloudflare's universal
-  # certificate covers *.leviosa.care, not *.livio.leviosa.care. No
-  # `analytics` host: Plausible is not on this server.
-  web_subdomains = toset(["www", "livio", "admin", "staff", "staging", "admin-staging", "staff-staging"])
+  # The hosts the server answers, each with its own A and AAAA records:
+  # production's livio, admin and staff; staging's staging, admin-staging and
+  # staff-staging. Caddy routes each to its stack. None depends on the apex,
+  # so the apex can be pointed elsewhere without moving them. One level under
+  # the apex only: Cloudflare's universal certificate covers *.leviosa.care,
+  # not *.livio.leviosa.care. No `analytics` host: Plausible is not on this
+  # server.
+  server_hosts = toset(["livio", "admin", "staff", "staging", "admin-staging", "staff-staging"])
 }
 
-resource "cloudflare_dns_record" "apex_a" {
+resource "cloudflare_dns_record" "web" {
+  for_each = local.server_hosts
+
   zone_id = var.cloudflare_zone_id
-  name    = var.domain_name
+  name    = "${each.key}.${var.domain_name}"
   type    = "A"
   content = hcloud_primary_ip.main["ipv4"].ip_address
   proxied = true
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "apex_aaaa" {
+resource "cloudflare_dns_record" "web_aaaa" {
+  for_each = local.server_hosts
+
   zone_id = var.cloudflare_zone_id
-  name    = var.domain_name
+  name    = "${each.key}.${var.domain_name}"
   type    = "AAAA"
   content = cidrhost(hcloud_primary_ip.main["ipv6"].ip_network, 1) # the server answers on ::1 of its /64
   proxied = true
   ttl     = 1
+
+  # Cloudflare refuses an AAAA record next to a CNAME of the same name: these
+  # come once each host's CNAME (before the server_hosts records) is an A.
+  depends_on = [cloudflare_dns_record.web]
 }
 
-resource "cloudflare_dns_record" "web" {
-  for_each = local.web_subdomains
-
+# The apex follows Livio's site for now (Caddy redirects it there); point it
+# at the apex's own site when it has one. A CNAME at the apex is flattened by
+# Cloudflare, and sits next to the mail records.
+resource "cloudflare_dns_record" "apex" {
   zone_id = var.cloudflare_zone_id
-  name    = "${each.key}.${var.domain_name}"
+  name    = var.domain_name
+  type    = "CNAME"
+  content = "livio.${var.domain_name}"
+  proxied = true
+  ttl     = 1
+
+  # Only once the apex's AAAA record has left (it becomes livio's, below):
+  # Cloudflare refuses a CNAME next to an A or AAAA of the same name.
+  depends_on = [cloudflare_dns_record.web_aaaa]
+}
+
+# www goes wherever the apex goes.
+resource "cloudflare_dns_record" "www" {
+  zone_id = var.cloudflare_zone_id
+  name    = "www.${var.domain_name}"
   type    = "CNAME"
   content = var.domain_name
   proxied = true
   ttl     = 1
+}
+
+# From the layout where every host was a CNAME to the apex's A and AAAA: the
+# records keep their Cloudflare IDs. The apex's AAAA becomes livio's, which
+# takes it off the apex before the CNAME arrives there (depends_on above).
+moved {
+  from = cloudflare_dns_record.apex_a
+  to   = cloudflare_dns_record.apex
+}
+
+moved {
+  from = cloudflare_dns_record.apex_aaaa
+  to   = cloudflare_dns_record.web_aaaa["livio"]
+}
+
+moved {
+  from = cloudflare_dns_record.web["www"]
+  to   = cloudflare_dns_record.www
 }
 
 # ============================================
