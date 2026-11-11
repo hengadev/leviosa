@@ -407,9 +407,46 @@ run "server_and_dns" {
     error_message = "Every web record must be proxied by Cloudflare."
   }
 
+  # Mail records from the email_* inputs (Zoho receives, Brevo sends).
   assert {
-    condition     = length(cloudflare_dns_record.mx) == 0 && length(cloudflare_dns_record.spf) == 0 && length(cloudflare_dns_record.dkim) == 0
-    error_message = "No mail record exists until Zoho's values are filled in (issue 036)."
+    condition = (
+      toset(keys(cloudflare_dns_record.mx)) == toset(keys(var.email_mx_records)) &&
+      alltrue([for k, r in cloudflare_dns_record.mx : r.name == "leviosa.care" && r.type == "MX" && r.content == k && r.priority == var.email_mx_records[k]])
+    )
+    error_message = "One MX record on the apex per email_mx_records entry, with its priority."
+  }
+
+  assert {
+    condition = (
+      length(cloudflare_dns_record.spf) == 1 &&
+      cloudflare_dns_record.spf[0].name == "leviosa.care" &&
+      cloudflare_dns_record.spf[0].content == "\"v=spf1 ${join(" ", [for d in var.email_spf_includes : "include:${d}"])} ~all\""
+    )
+    error_message = "One SPF record on the apex including every email_spf_includes domain, soft-failing the rest."
+  }
+
+  assert {
+    condition = (
+      toset([for r in cloudflare_dns_record.dkim : r.name]) == toset([for k, _ in var.email_dkim_records : "${k}.leviosa.care"]) &&
+      alltrue([for k, r in cloudflare_dns_record.dkim : r.type == var.email_dkim_records[k].type && r.content == (r.type == "TXT" ? "\"${var.email_dkim_records[k].content}\"" : var.email_dkim_records[k].content)])
+    )
+    error_message = "One DKIM record per email_dkim_records entry: TXT content quoted, CNAME content as given."
+  }
+
+  assert {
+    condition = (
+      toset([for r in cloudflare_dns_record.verification : r.content]) == toset([for v in var.email_verification_txt : "\"${v}\""]) &&
+      length(cloudflare_dns_record.dmarc) == (var.email_dmarc != "" ? 1 : 0) &&
+      alltrue([for r in cloudflare_dns_record.dmarc : r.name == "_dmarc.leviosa.care" && r.content == "\"${var.email_dmarc}\""])
+    )
+    error_message = "The verification TXT records and the DMARC record must match their inputs."
+  }
+
+  assert {
+    condition = !anytrue([
+      for r in concat(values(cloudflare_dns_record.mx), cloudflare_dns_record.spf, values(cloudflare_dns_record.dkim), values(cloudflare_dns_record.verification), cloudflare_dns_record.dmarc) : r.proxied
+    ])
+    error_message = "No mail record may be proxied by Cloudflare."
   }
 }
 
