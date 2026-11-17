@@ -24,6 +24,7 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			b.reminded_at,
 			b.hold_expires_at,
 			b.locale,
+			b.amount_paid_online_cents, b.cancelled_by, b.refunded_amount_cents,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
@@ -169,6 +170,9 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			&bookingEncx.RemindedAt,
 			&bookingEncx.HoldExpiresAt,
 			&bookingEncx.Locale,
+			&bookingEncx.AmountPaidOnlineCents,
+			&bookingEncx.CancelledBy,
+			&bookingEncx.RefundedAmountCents,
 			&bookingEncx.CreatedAt,
 			&bookingEncx.UpdatedAt,
 			&bookingEncx.DEKEncrypted,
