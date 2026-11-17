@@ -3,6 +3,7 @@ package booking
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -305,5 +306,112 @@ func TestLatePayment(t *testing.T) {
 		assert.Equal(t, 0, notificationSpy.CountFor(confirmations, late.ID))
 		assert.Equal(t, 1, notificationSpy.CountFor(refundNotices, late.ID))
 		assert.Equal(t, domain.BookingStatusAwaitingPayment, storedBooking(t, ctx, other.ID).Status, "the other client's hold is untouched")
+	})
+}
+
+// releaseHold posts the booking page's release of a payment hold, as the
+// checkout does when the client leaves the payment step.
+func releaseHold(t *testing.T, client *http.Client, token string) int {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodPost, testServerURL+"/bookings/release-hold?token="+url.QueryEscape(token), nil)
+	require.NoError(t, err)
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	return resp.StatusCode
+}
+
+func TestReleaseHold(t *testing.T) {
+	ctx := context.Background()
+	client := &http.Client{Timeout: 10 * time.Second}
+	payments := mockPayments(t)
+
+	t.Run("should offer the slot again as soon as the client leaves the payment step", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+
+		held := holdGuestBooking(t, ctx, f, f.at(10, 15), "claire@example.com", domain.BookingLocaleFR)
+		require.NotEmpty(t, held.Token)
+		assertSameInstants(t, []time.Time{f.at(9, 0), f.at(11, 30)}, slotsOfDay(t, client, f))
+
+		assert.Equal(t, http.StatusNoContent, releaseHold(t, client, held.Token))
+
+		stored := storedBooking(t, ctx, held.ID)
+		assert.Equal(t, domain.BookingStatusExpired, stored.Status)
+		assert.Equal(t, 1, payments.CancelsOf(*held.PaymentIntentID), "the PaymentIntent is canceled")
+		assert.Equal(t, ports.PaymentIntentStatusCanceled, payments.IntentStatus(*held.PaymentIntentID))
+		assertSameInstants(t, []time.Time{f.at(9, 0), f.at(10, 15), f.at(11, 30)}, slotsOfDay(t, client, f))
+
+		// Another client can book the slot right away.
+		assert.Equal(t, http.StatusCreated, postBooking(t, client, f.availabilityID, f.productID, f.at(10, 15)))
+
+		// Stripe's canceled webhook changes nothing, and nobody is emailed.
+		require.NoError(t, service.HandlePaymentWebhook(ctx, &ports.WebhookEvent{
+			ID:              "evt_canceled",
+			Type:            ports.WebhookEventPaymentIntentCanceled,
+			PaymentIntentID: *held.PaymentIntentID,
+			Metadata:        map[string]string{"booking_id": held.ID.String()},
+		}))
+		assert.Equal(t, domain.BookingStatusExpired, storedBooking(t, ctx, held.ID).Status)
+		assert.Equal(t, 0, notificationSpy.CountFor(paymentFailures, held.ID))
+		assert.Equal(t, 0, notificationSpy.CountFor(cancellations, held.ID))
+	})
+
+	t.Run("should change nothing more when released twice", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+
+		held := holdGuestBooking(t, ctx, f, f.at(10, 15), "claire@example.com", domain.BookingLocaleFR)
+		require.Equal(t, http.StatusNoContent, releaseHold(t, client, held.Token))
+		first := storedBooking(t, ctx, held.ID)
+
+		assert.Equal(t, http.StatusNoContent, releaseHold(t, client, held.Token))
+
+		second := storedBooking(t, ctx, held.ID)
+		assert.True(t, first.UpdatedAt.Equal(second.UpdatedAt), "the booking is not written again")
+		assert.Equal(t, 1, payments.CancelsOf(*held.PaymentIntentID), "the PaymentIntent is canceled once")
+	})
+
+	t.Run("should keep the hold when the payment went through", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+
+		held := holdGuestBooking(t, ctx, f, f.at(10, 15), "claire@example.com", domain.BookingLocaleFR)
+		// Paid, its webhook not received yet: Stripe refuses the cancel.
+		require.NoError(t, payments.ConfirmPaymentIntent(ctx, *held.PaymentIntentID))
+
+		assert.Equal(t, http.StatusConflict, releaseHold(t, client, held.Token))
+
+		assert.Equal(t, domain.BookingStatusAwaitingPayment, storedBooking(t, ctx, held.ID).Status)
+		assert.Equal(t, ports.PaymentIntentStatusSucceeded, payments.IntentStatus(*held.PaymentIntentID))
+		assertSameInstants(t, []time.Time{f.at(9, 0), f.at(11, 30)}, slotsOfDay(t, client, f))
+
+		// The webhook then confirms it as usual.
+		require.NoError(t, service.HandlePaymentWebhook(ctx, paymentSucceededEvent(t, ctx, held.ID)))
+		assert.Equal(t, domain.BookingStatusConfirmed, storedBooking(t, ctx, held.ID).Status)
+	})
+
+	t.Run("should leave a confirmed booking alone", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		f := setupSlotFixture(t, ctx)
+
+		held := holdGuestBooking(t, ctx, f, f.at(10, 15), "claire@example.com", domain.BookingLocaleFR)
+		confirmBookingPayment(t, ctx, held.ID)
+		cancels := payments.CancelsOf(*held.PaymentIntentID)
+
+		assert.Equal(t, http.StatusNoContent, releaseHold(t, client, held.Token))
+
+		assert.Equal(t, domain.BookingStatusConfirmed, storedBooking(t, ctx, held.ID).Status)
+		assert.Equal(t, cancels, payments.CancelsOf(*held.PaymentIntentID), "the PaymentIntent is not canceled")
+	})
+
+	t.Run("should refuse an invalid token", func(t *testing.T) {
+		assert.Equal(t, http.StatusUnauthorized, releaseHold(t, client, "not-a-token"))
+		other := domain.GenerateBookingToken(uuid.New(), time.Now().Add(48*time.Hour), []byte("another secret"))
+		assert.Equal(t, http.StatusUnauthorized, releaseHold(t, client, other))
+	})
+
+	t.Run("should require a token", func(t *testing.T) {
+		assert.Equal(t, http.StatusBadRequest, releaseHold(t, client, ""))
 	})
 }
