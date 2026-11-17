@@ -91,31 +91,33 @@
 	interface Transaction {
 		id: string;
 		slotStartTime: string;
+		paidAt: string;
 		productId: string;
 		productName: string;
 		amountCents: number;
+		netCents: number;
 		paymentStatus: 'paid' | 'pending' | 'refunded';
 		bookingStatus: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 	}
 
+	// Revenue is the money collected, on the day it was paid: a deposit paid
+	// this month counts this month, whenever the session takes place.
 	const filteredTransactions = $derived(
 		(data.summary?.transactions ?? []).filter((tx: Transaction) =>
-			getYearMonth(tx.slotStartTime) === selectedMonth,
+			getYearMonth(tx.paidAt) === selectedMonth,
 		),
 	);
 
 	// Recompute KPIs for the selected month
 	const selectedMonthPaid = $derived(
-		filteredTransactions
-			.filter((tx: Transaction) => tx.paymentStatus === 'paid')
-			.reduce((sum: number, tx: Transaction) => sum + tx.amountCents, 0),
+		filteredTransactions.reduce((sum: number, tx: Transaction) => sum + tx.netCents, 0),
 	);
 
 	const prevMonthKey = $derived(prevYearMonth(selectedMonth));
 	const prevMonthPaid = $derived(
 		(data.summary?.transactions ?? [])
-			.filter((tx: Transaction) => tx.paymentStatus === 'paid' && getYearMonth(tx.slotStartTime) === prevMonthKey)
-			.reduce((sum: number, tx: Transaction) => sum + tx.amountCents, 0),
+			.filter((tx: Transaction) => getYearMonth(tx.paidAt) === prevMonthKey)
+			.reduce((sum: number, tx: Transaction) => sum + tx.netCents, 0),
 	);
 
 	const selectedMonthPending = $derived(
@@ -141,11 +143,11 @@
 		if (!data.summary?.transactions) return [];
 		const byMonth = new Map<string, MonthlyEarning>();
 		data.summary.transactions.forEach((tx: Transaction) => {
-			const key = getYearMonth(tx.slotStartTime);
-			const d = new Date(tx.slotStartTime);
+			const key = getYearMonth(tx.paidAt);
+			const d = new Date(tx.paidAt);
 			const label = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
 			const existing = byMonth.get(key);
-			byMonth.set(key, { key, label, amountInCents: (existing?.amountInCents ?? 0) + tx.amountCents });
+			byMonth.set(key, { key, label, amountInCents: (existing?.amountInCents ?? 0) + tx.netCents });
 		});
 		return Array.from(byMonth.values())
 			.sort((a, b) => a.key.localeCompare(b.key))
@@ -180,9 +182,10 @@
 			['revenue_previous_month_cents', String(prevMonthPaid)],
 			['pending_cents', String(selectedMonthPending)],
 			[],
-			['id', 'slot_start_time', 'product_name', 'amount_cents', 'payment_status', 'booking_status'],
+			['id', 'paid_at', 'slot_start_time', 'product_name', 'amount_cents', 'payment_status', 'booking_status'],
 			...filteredTransactions.map((tx: Transaction) => [
 				tx.id,
+				tx.paidAt,
 				tx.slotStartTime,
 				tx.productName,
 				String(tx.amountCents),
@@ -352,7 +355,8 @@
 						<table class="w-full">
 							<thead>
 								<tr class="bg-muted/50 border-b border-border">
-									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Date / Heure</th>
+									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Payé le</th>
+									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Séance</th>
 									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Prestation</th>
 									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Statut paiement</th>
 									<th class="text-left py-3 px-6 text-xs font-medium text-muted-foreground uppercase tracking-wider">Statut réservation</th>
@@ -362,6 +366,9 @@
 							<tbody>
 								{#each filteredTransactions as tx (tx.id)}
 									<tr class="border-b border-border hover:bg-muted/30 transition-colors">
+										<td class="py-3 px-6 text-sm text-muted-foreground whitespace-nowrap">
+											{formatDate(tx.paidAt)}
+										</td>
 										<td class="py-3 px-6 text-sm text-muted-foreground whitespace-nowrap">
 											{formatDateTime(tx.slotStartTime)}
 										</td>

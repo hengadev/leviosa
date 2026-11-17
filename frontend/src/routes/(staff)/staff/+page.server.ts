@@ -54,6 +54,11 @@ interface BackendBooking {
 	currency: string;
 }
 
+interface BackendEarningsTransaction {
+	paid_at: string;
+	net_cents: number;
+}
+
 interface BackendDailyMetrics {
 	date: string;
 	total_minutes_booked: number;
@@ -320,12 +325,31 @@ export const load: PageServerLoad = async ({ locals, fetch }) => {
 	const currentBookings = allBookings.filter((b) => isInPeriod(b.slot_start_time, currentStart, currentEnd));
 	const prevBookings = allBookings.filter((b) => isInPeriod(b.slot_start_time, prevStart, prevEnd));
 
-	const currentRevenue = currentBookings
-		.filter((b) => b.payment_status === 'paid')
-		.reduce((sum, b) => sum + (b.total_price_cents || 0), 0);
-	const prevRevenue = prevBookings
-		.filter((b) => b.payment_status === 'paid')
-		.reduce((sum, b) => sum + (b.total_price_cents || 0), 0);
+	// Revenue is the money collected, on the day it was paid (the deposit of
+	// a session booked today counts today), as the finances page counts it:
+	// read from the earnings transactions, which carry both.
+	let earnings: BackendEarningsTransaction[] = [];
+	try {
+		const res = await fetch(`${env.API_URL}/partners/earnings/${partnerId}`);
+		if (res.status === 401) {
+			throw redirect(302, '/auth');
+		}
+		if (res.ok) {
+			const data = await res.json();
+			earnings = Array.isArray(data?.transactions) ? data.transactions : [];
+		} else {
+			console.error(`Failed to fetch earnings: ${res.status} ${res.statusText}`);
+		}
+	} catch (err) {
+		if (isRedirect(err)) throw err;
+		console.error('Error loading earnings:', err);
+	}
+	const collectedIn = (startDay: string, endDay: string) =>
+		earnings
+			.filter((t) => t.paid_at && isInPeriod(t.paid_at, startDay, endDay))
+			.reduce((sum, t) => sum + (t.net_cents || 0), 0);
+	const currentRevenue = collectedIn(currentStart, currentEnd);
+	const prevRevenue = collectedIn(prevStart, prevEnd);
 
 	kpi = {
 		revenueCents: currentRevenue,

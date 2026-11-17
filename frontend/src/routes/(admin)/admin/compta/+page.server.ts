@@ -14,6 +14,8 @@ interface APISummary {
 interface APITransaction {
 	id: string;
 	slot_start_time: string;
+	/** The day the payment counts on: revenue is counted on the day it was paid. */
+	paid_at: string;
 	client_name: string;
 	partner_name: string;
 	product_name: string;
@@ -108,7 +110,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 
 		const transactions: Transaction[] = (api.transactions ?? []).map((t) => ({
 			id: t.id,
-			date: t.slot_start_time,
+			date: t.paid_at || t.slot_start_time,
 			description: t.product_name,
 			clientName: t.client_name,
 			partnerName: t.partner_name,
