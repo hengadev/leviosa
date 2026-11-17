@@ -118,6 +118,19 @@ func (r *Repository) ExpireHold(ctx context.Context, id uuid.UUID, now time.Time
 	return result.RowsAffected() == 1, nil
 }
 
+func (r *Repository) ReleaseHold(ctx context.Context, id uuid.UUID, now time.Time) (bool, error) {
+	query := fmt.Sprintf(`
+		UPDATE %s.bookings
+		SET status = $2, hold_expires_at = $4, updated_at = NOW()
+		WHERE id = $1 AND status = $3
+	`, r.schema)
+	result, err := r.pool.Exec(ctx, query, id, domain.BookingStatusExpired, domain.BookingStatusAwaitingPayment, now)
+	if err != nil {
+		return false, errs.ClassifyPgError("release hold", err)
+	}
+	return result.RowsAffected() == 1, nil
+}
+
 func (r *Repository) ClaimLatePaymentRefund(ctx context.Context, id uuid.UUID) (bool, error) {
 	query := fmt.Sprintf(`
 		UPDATE %s.bookings

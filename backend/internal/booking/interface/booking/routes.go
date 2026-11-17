@@ -22,6 +22,8 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	// Public booking endpoints (unauthenticated — used by guest booking page)
 	router.HandleFunc("GET /bookings/lookup", mw.EnableCORS(h.LookupBooking))
 	router.HandleFunc("POST /bookings/{id}/cancel-public", mw.EnableCORS(h.CancelBookingPublic))
+	// The client left the payment step: free the slot now (ADR-0018)
+	router.HandleFunc("POST /bookings/release-hold", mw.EnableCORS(h.ReleaseHold))
 	// Free slots for the practice page's calendar (slot engine, issue 010)
 	router.HandleFunc("GET /slots", mw.EnableCORS(h.GetFreeSlots))
 
