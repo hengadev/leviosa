@@ -19,6 +19,7 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 	t.Run("serializes summary and transaction rows", func(t *testing.T) {
 		txnID := uuid.New()
 		slotStart := time.Date(2026, 7, 1, 9, 30, 0, 0, time.UTC)
+		paidAt := time.Date(2026, 6, 20, 14, 5, 0, 0, time.UTC)
 
 		resp := &FinancialSummaryResponse{
 			Summary: FinancialSummary{
@@ -29,11 +30,13 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 			Transactions: []FinancialTransaction{
 				{
 					ID:            txnID,
+					PaidAt:        paidAt,
 					SlotStartTime: slotStart,
 					ClientName:    "Marie Dupont",
 					PartnerName:   "Dr. Martin",
 					ProductName:   "Massage Relaxant 60min",
 					AmountCents:   5000,
+					RefundedCents: 0,
 					PaymentStatus: PaymentStatusPaid,
 					BookingStatus: BookingStatusCompleted,
 				},
@@ -62,17 +65,19 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 		assert.Equal(t, []string{"net_revenue_cents", "50150"}, records[3])
 
 		assert.Equal(t, []string{
-			"id", "slot_start_time", "client_name", "partner_name",
-			"product_name", "amount_cents", "payment_status", "booking_status",
+			"id", "paid_at", "slot_start_time", "client_name", "partner_name",
+			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status",
 		}, records[4])
 
 		assert.Equal(t, []string{
 			txnID.String(),
+			"2026-06-20T14:05:00Z",
 			"2026-07-01T09:30:00Z",
 			"Marie Dupont",
 			"Dr. Martin",
 			"Massage Relaxant 60min",
 			"5000",
+			"0",
 			"paid",
 			"completed",
 		}, records[5])
@@ -95,8 +100,8 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 		// blank separator line is ignored by encoding/csv's reader).
 		require.Len(t, records, 5)
 		assert.Equal(t, []string{
-			"id", "slot_start_time", "client_name", "partner_name",
-			"product_name", "amount_cents", "payment_status", "booking_status",
+			"id", "paid_at", "slot_start_time", "client_name", "partner_name",
+			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status",
 		}, records[4])
 	})
 
@@ -130,6 +135,7 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 					PartnerName:   "Dr. Dupont",
 					ProductName:   "Drainage Lymphatique",
 					AmountCents:   5000,
+					RefundedCents: 5000,
 					PaymentStatus: PaymentStatusRefunded,
 					BookingStatus: BookingStatusCancelled,
 				},
@@ -146,8 +152,9 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 
 		require.Len(t, records, 7)
 		assert.Equal(t, id1.String(), records[5][0])
-		assert.Equal(t, "paid", records[5][6])
+		assert.Equal(t, "paid", records[5][8])
 		assert.Equal(t, id2.String(), records[6][0])
-		assert.Equal(t, "refunded", records[6][6])
+		assert.Equal(t, "5000", records[6][7], "the refunded amount")
+		assert.Equal(t, "refunded", records[6][8])
 	})
 }

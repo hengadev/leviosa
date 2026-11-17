@@ -114,9 +114,11 @@ type CancelBookingRequest struct {
 type Transaction struct {
 	ID              uuid.UUID     `json:"id"`
 	SlotStartTime   string        `json:"slot_start_time"`
+	PaidAt          string        `json:"paid_at"` // the day the payment counts on (the booking's creation)
 	ProductID       uuid.UUID     `json:"product_id"`
 	ProductName     string        `json:"product_name"`
-	AmountCents     int           `json:"amount_cents"`
+	AmountCents     int           `json:"amount_cents"` // paid online (the deposit), or the price due when unpaid
+	NetCents        int           `json:"net_cents"`    // paid minus refunded; 0 when unpaid or disputed
 	PaymentStatus   PaymentStatus `json:"payment_status"`
 	BookingStatus   BookingStatus `json:"booking_status"`
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
@@ -17,11 +16,11 @@ import (
 const financialSummaryMaxFetch = 10000
 
 func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.Time) (*domain.FinancialSummaryResponse, error) {
-	// Fetch paid and refunded bookings. payment_status is a plain column so it can
-	// be filtered in SQL. slot_start_time is encrypted, so the date range is applied
-	// in-memory after decryption. We use CreatedAfter as a SQL pre-filter to narrow
-	// the dataset: bookings are rarely created before the slot they cover, so this
-	// matches the same pattern as GetAnalyticsSummary without missing real data.
+	// Payments made in [from, to): the money collected, on the day it was
+	// paid (domain.CollectedCents). A booking is paid minutes after it is
+	// created, so created_at, a plain column, selects the range in SQL.
+	// to is exclusive; the repository's bound is inclusive.
+	lastInstant := to.Add(-time.Microsecond)
 	repoFilter := ports.BookingFilter{
 		PaymentStatus: []domain.PaymentStatus{
 			domain.PaymentStatusPaid,
@@ -33,6 +32,7 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		// expired is not revenue yet (ADR-0018).
 		ExcludeStatus:  domain.NonAppointmentStatuses(),
 		CreatedAfter:   &from,
+		CreatedBefore:  &lastInstant,
 		OrderBy:        "created_at",
 		OrderDirection: "desc",
 		Limit:          financialSummaryMaxFetch,
@@ -61,33 +61,23 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		decrypted = append(decrypted, b)
 	}
 
-	// Filter by slot_start_time within [from, to] in-memory (encrypted field).
-	var inRange []*domain.Booking
-	for _, b := range decrypted {
-		if !b.SlotStartTime.Before(from) && b.SlotStartTime.Before(to) {
-			inRange = append(inRange, b)
-		}
-	}
-
-	// Compute aggregates. Disputed bookings are tracked separately (DisputedCents) and
-	// excluded from gross/net revenue until the dispute closes and the payment status
-	// resolves back to paid or refunded — see FinancialSummary doc comment.
+	// Compute aggregates. Gross is everything collected, refunds what was
+	// given back, net the difference. Disputed payments are tracked separately
+	// (DisputedCents) and kept out of gross and net until the dispute closes
+	// and the payment status resolves back to paid or refunded — see the
+	// FinancialSummary doc comment.
 	var grossRevenueCents, refundsCents, disputedCents int
-	for _, b := range inRange {
-		switch b.PaymentStatus {
-		case domain.PaymentStatusPaid:
-			grossRevenueCents += b.TotalPriceCents
-		case domain.PaymentStatusRefunded:
-			refundsCents += b.TotalPriceCents
-		case domain.PaymentStatusDisputed:
-			disputedCents += b.TotalPriceCents
+	for _, b := range decrypted {
+		if b.PaymentStatus == domain.PaymentStatusDisputed {
+			disputedCents += b.CollectedCents()
+			continue
 		}
+		grossRevenueCents += b.CollectedCents()
+		refundsCents += b.RefundedCents()
 	}
 
-	// Sort transactions by slot_start_time descending.
-	sort.Slice(inRange, func(i, j int) bool {
-		return inRange[i].SlotStartTime.After(inRange[j].SlotStartTime)
-	})
+	// Most recent payment first (the repository already orders by created_at).
+	inRange := decrypted
 
 	// Build enriched transaction rows.
 	transactions := make([]domain.FinancialTransaction, 0, len(inRange))
@@ -95,7 +85,9 @@ func (s *BookingService) GetFinancialSummary(ctx context.Context, from, to time.
 		t := domain.FinancialTransaction{
 			ID:            b.ID,
 			SlotStartTime: b.SlotStartTime,
-			AmountCents:   b.TotalPriceCents,
+			PaidAt:        b.PaidAt(),
+			AmountCents:   b.CollectedCents(),
+			RefundedCents: b.RefundedCents(),
 			PaymentStatus: b.PaymentStatus,
 			BookingStatus: b.Status,
 			ClientName:    "Utilisateur inconnu",
