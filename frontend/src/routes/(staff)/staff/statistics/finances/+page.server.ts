@@ -5,9 +5,14 @@ import * as env from '$app/env/private';
 export interface Transaction {
 	id: string;
 	slotStartTime: string;
+	/** The day the payment counts on: revenue is counted on the day it was paid. */
+	paidAt: string;
 	productId: string;
 	productName: string;
+	/** Paid online (the deposit when there is one), or the price due when unpaid. */
 	amountCents: number;
+	/** Paid minus refunded: what the transaction brought in. */
+	netCents: number;
 	paymentStatus: 'paid' | 'pending' | 'refunded';
 	bookingStatus: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 }
@@ -24,9 +29,11 @@ export interface EarningsSummary {
 interface BackendTransaction {
 	id: string;
 	slot_start_time: string;
+	paid_at: string;
 	product_id: string;
 	product_name: string;
 	amount_cents: number;
+	net_cents: number;
 	payment_status: 'paid' | 'pending' | 'refunded';
 	booking_status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
 }
@@ -89,9 +96,11 @@ export const load: PageServerLoad = async ({ locals, fetch, url }) => {
 		transactions: backend.transactions.map((t) => ({
 			id: t.id,
 			slotStartTime: t.slot_start_time,
+			paidAt: t.paid_at,
 			productId: t.product_id,
 			productName: t.product_name,
 			amountCents: t.amount_cents,
+			netCents: t.net_cents ?? 0,
 			paymentStatus: t.payment_status,
 			bookingStatus: t.booking_status,
 		})),
