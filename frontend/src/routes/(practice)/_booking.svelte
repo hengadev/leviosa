@@ -95,7 +95,19 @@
         if (!token) return;
         // Stripe appends redirect_status; a failed redirect payment leaves the
         // client on the calendar rather than waiting for a confirmation.
-        if (url.searchParams.get("redirect_status") !== "failed") resumeToken = token;
+        if (url.searchParams.get("redirect_status") !== "failed") {
+            resumeToken = token;
+        } else {
+            // Its slot is held for nothing: free it, then show it free again.
+            void fetch(`/api/bookings/release?token=${encodeURIComponent(token)}`, { method: "POST" })
+                .catch(() => {
+                    // the hold then runs out on its own
+                })
+                .then(() => invalidateAll())
+                .catch(() => {
+                    // keep the slots already shown
+                });
+        }
         url.searchParams.delete("booking");
         url.searchParams.delete("payment_intent");
         url.searchParams.delete("payment_intent_client_secret");
