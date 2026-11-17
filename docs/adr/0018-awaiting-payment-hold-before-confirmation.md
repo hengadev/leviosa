@@ -24,6 +24,7 @@ confirmed → completed | cancelled | no_show   (unchanged)
 - An `awaiting_payment` booking holds its slot for a **payment hold** of 15 minutes (configurable). It counts as taken when slots are derived.
 - The Stripe webhook confirming the payment moves it to `confirmed`. Confirmation email/SMS are sent only then.
 - When the hold elapses unpaid, the booking becomes `expired` and the slot is offered again.
+- When the client leaves the payment step unpaid (changes slot, e.g. after a declined card; closes or leaves the page; comes back from a failed redirect payment), the booking page releases the hold at once (`POST /bookings/release-hold` with the booking token): the PaymentIntent is canceled, then the booking becomes `expired`. If Stripe refuses the cancel (the payment is processing or succeeded), the hold is kept and the webhook settles it.
 - A payment that succeeds after expiry confirms the booking if the slot is still free; otherwise it is refunded automatically and the client is notified.
 - Payment is collected with the Stripe Payment Element embedded in the booking page, on the PaymentIntent `CreateBooking` already creates, rather than a redirect to Stripe Checkout.
 - The amount collected online is the product's deposit when one is set (the remainder is not collected by Leviosa), otherwise the full price.
