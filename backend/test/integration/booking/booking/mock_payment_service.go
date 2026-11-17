@@ -145,6 +145,10 @@ func (m *MockPaymentService) CancelPaymentIntent(ctx context.Context, paymentInt
 	}
 
 	m.cancels = append(m.cancels, paymentIntentID)
+	// Stripe refuses canceling an intent that is paid or being paid.
+	if intent.Status == ports.PaymentIntentStatusSucceeded || intent.Status == ports.PaymentIntentStatusProcessing {
+		return fmt.Errorf("payment intent cannot be canceled in status %s", intent.Status)
+	}
 	intent.Status = ports.PaymentIntentStatusCanceled
 	return nil
 }
