@@ -382,6 +382,8 @@ func TestGetPartnerEarnings(t *testing.T) {
 		lastMonthBooking.SlotEndTime = lastMonthBooking.SlotStartTime.Add(time.Hour)
 		require.NoError(t, lastMonthBooking.Confirm())
 		lastMonthBooking.PaymentStatus = domain.PaymentStatusPaid
+		// Earnings count on the day the booking was paid, its creation.
+		lastMonthBooking.CreatedAt = lastMonthBooking.SlotStartTime.AddDate(0, 0, -3)
 		lastMonthEncx, err := domain.ProcessBookingEncx(ctx, crypto, lastMonthBooking)
 		require.NoError(t, err)
 		require.NoError(t, tbooking.InsertBookingEncx(t, ctx, testPool, lastMonthEncx))

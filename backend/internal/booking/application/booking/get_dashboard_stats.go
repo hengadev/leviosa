@@ -78,9 +78,9 @@ func (s *BookingService) GetDashboardStats(ctx context.Context) (*domain.Dashboa
 		if err != nil {
 			return nil, fmt.Errorf("decrypt booking %s: %w", bookingEncx.ID, err)
 		}
-		if booking.PaymentStatus == domain.PaymentStatusPaid {
-			stats.RevenueThisWeek += booking.TotalPriceCents
-		}
+		// Money collected this week (domain.CollectedCents): the bookings
+		// are filtered on their creation, which is their payment day.
+		stats.RevenueThisWeek += booking.NetCollectedCents()
 	}
 
 	// Build recent and upcoming booking lists only when optional deps are available.

@@ -56,11 +56,14 @@ func (s *BookingService) GetAnalyticsSummary(ctx context.Context, months int) (*
 	}
 
 	// --- Current month KPIs ---
-	currentMonthBookings := filterBySlotMonth(decrypted, now.Year(), now.Month())
+	// Revenue is the money collected, on the day it was paid
+	// (domain.CollectedCents): the deposit of a session booked this month
+	// counts this month, whenever the session takes place.
+	currentMonthBookings := filterByPaidMonth(decrypted, now.Year(), now.Month())
 
 	var totalRevenue int
 	for _, b := range currentMonthBookings {
-		totalRevenue += b.TotalPriceCents
+		totalRevenue += b.CollectedCents()
 	}
 
 	avgBookingValue := 0
@@ -93,11 +96,11 @@ func (s *BookingService) GetAnalyticsSummary(ctx context.Context, months int) (*
 	}, nil
 }
 
-// filterBySlotMonth returns bookings whose slot_start_time falls within the given year and month.
-func filterBySlotMonth(bookings []*domain.Booking, year int, month time.Month) []*domain.Booking {
+// filterByPaidMonth returns bookings paid within the given year and month.
+func filterByPaidMonth(bookings []*domain.Booking, year int, month time.Month) []*domain.Booking {
 	var out []*domain.Booking
 	for _, b := range bookings {
-		if b.SlotStartTime.Year() == year && b.SlotStartTime.Month() == month {
+		if paidAt := b.PaidAt(); paidAt.Year() == year && paidAt.Month() == month {
 			out = append(out, b)
 		}
 	}
@@ -173,9 +176,9 @@ func buildMonthlyRevenue(bookings []*domain.Booking, months int, currentMonthSta
 	}
 
 	for _, b := range bookings {
-		key := b.SlotStartTime.Format("2006-01")
+		key := b.PaidAt().In(currentMonthStart.Location()).Format("2006-01")
 		if _, ok := buckets[key]; ok {
-			buckets[key].revenue += b.TotalPriceCents
+			buckets[key].revenue += b.CollectedCents()
 			buckets[key].count++
 		}
 	}
@@ -212,7 +215,7 @@ func buildTopProducts(ctx context.Context, bookings []*domain.Booking, resolveNa
 			productAgg[b.ProductID] = a
 		}
 		a.bookings++
-		a.revenue += b.TotalPriceCents
+		a.revenue += b.CollectedCents()
 	}
 
 	type entry struct {

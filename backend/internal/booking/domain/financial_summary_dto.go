@@ -24,19 +24,24 @@ type FinancialSummary struct {
 
 // FinancialTransaction is a single row in the financial transactions list.
 type FinancialTransaction struct {
-	ID              uuid.UUID     `json:"id"`
-	SlotStartTime   time.Time     `json:"slot_start_time"`
-	ClientName      string        `json:"client_name"`
-	PartnerName     string        `json:"partner_name"`
-	ProductName     string        `json:"product_name"`
-	AmountCents     int           `json:"amount_cents"`
-	PaymentStatus   PaymentStatus `json:"payment_status"`
-	BookingStatus   BookingStatus `json:"booking_status"`
+	ID            uuid.UUID `json:"id"`
+	SlotStartTime time.Time `json:"slot_start_time"`
+	// PaidAt is the day the payment counts on (the booking's creation).
+	PaidAt      time.Time `json:"paid_at"`
+	ClientName  string    `json:"client_name"`
+	PartnerName string    `json:"partner_name"`
+	ProductName string    `json:"product_name"`
+	// AmountCents is what the client paid online (the deposit when there is one).
+	AmountCents int `json:"amount_cents"`
+	// RefundedCents is what was given back to the client.
+	RefundedCents int           `json:"refunded_cents"`
+	PaymentStatus PaymentStatus `json:"payment_status"`
+	BookingStatus BookingStatus `json:"booking_status"`
 }
 
 // FinancialSummaryResponse is the response shape for GET /admin/bookings/financial-summary.
 type FinancialSummaryResponse struct {
-	Summary      FinancialSummary      `json:"summary"`
+	Summary      FinancialSummary       `json:"summary"`
 	Transactions []FinancialTransaction `json:"transactions"`
 }
 
@@ -72,11 +77,13 @@ func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
 
 	header := []string{
 		"id",
+		"paid_at",
 		"slot_start_time",
 		"client_name",
 		"partner_name",
 		"product_name",
 		"amount_cents",
+		"refunded_cents",
 		"payment_status",
 		"booking_status",
 	}
@@ -87,11 +94,13 @@ func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
 	for _, t := range r.Transactions {
 		row := []string{
 			t.ID.String(),
+			t.PaidAt.UTC().Format(time.RFC3339),
 			t.SlotStartTime.UTC().Format(time.RFC3339),
 			t.ClientName,
 			t.PartnerName,
 			t.ProductName,
 			fmt.Sprintf("%d", t.AmountCents),
+			fmt.Sprintf("%d", t.RefundedCents),
 			string(t.PaymentStatus),
 			string(t.BookingStatus),
 		}

@@ -60,19 +60,22 @@ func (s *BookingService) GetPartnerEarnings(ctx context.Context, partnerID uuid.
 		Transactions:      []domain.Transaction{},
 	}
 
+	// Earnings are the money collected, on the day it was paid (see
+	// domain.CollectedCents): a deposit paid today counts today, whatever
+	// the date of the session.
 	for _, booking := range bookings {
-		bookingYear, bookingMonth, _ := booking.SlotStartTime.Date()
+		paidAt := booking.PaidAt()
+		paidYear, paidMonth, _ := paidAt.Date()
+		net := booking.NetCollectedCents()
 
-		if booking.PaymentStatus == domain.PaymentStatusPaid {
-			if bookingYear == currentYear && bookingMonth == currentMonth {
-				summary.CurrentMonthCents += booking.TotalPriceCents
-			}
-			if bookingYear == lastYear && bookingMonth == lastMonth {
-				summary.LastMonthCents += booking.TotalPriceCents
-			}
-			if booking.SlotStartTime.After(sevenDaysAgo) || booking.SlotStartTime.Equal(sevenDaysAgo) {
-				summary.NextPayoutCents += booking.TotalPriceCents
-			}
+		if paidYear == currentYear && paidMonth == currentMonth {
+			summary.CurrentMonthCents += net
+		}
+		if paidYear == lastYear && paidMonth == lastMonth {
+			summary.LastMonthCents += net
+		}
+		if !paidAt.Before(sevenDaysAgo) {
+			summary.NextPayoutCents += net
 		}
 
 		if booking.PaymentStatus == domain.PaymentStatusPending {
@@ -84,12 +87,20 @@ func (s *BookingService) GetPartnerEarnings(ctx context.Context, partnerID uuid.
 			productName = "Produit inconnu"
 		}
 
+		// What was paid online; the price still due for an unpaid booking.
+		amount := booking.CollectedCents()
+		if amount == 0 {
+			amount = booking.TotalPriceCents
+		}
+
 		summary.Transactions = append(summary.Transactions, domain.Transaction{
 			ID:            booking.ID,
 			SlotStartTime: booking.SlotStartTime.Format(time.RFC3339),
+			PaidAt:        paidAt.Format(time.RFC3339),
 			ProductID:     booking.ProductID,
 			ProductName:   productName,
-			AmountCents:   booking.TotalPriceCents,
+			AmountCents:   amount,
+			NetCents:      net,
 			PaymentStatus: booking.PaymentStatus,
 			BookingStatus: booking.Status,
 		})
