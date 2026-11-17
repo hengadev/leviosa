@@ -19,6 +19,12 @@
     // expiry job canceled the intent — the card says so in the page's
     // language, never with Stripe's raw error, and sends the client back to
     // the calendar, whose slots are refreshed.
+    //
+    // When the client leaves the payment step without paying (changes slot,
+    // e.g. after a declined card, closes or leaves the page), the hold is
+    // released at once so the slot is offered again, rather than kept until
+    // the hold runs out. Never while a payment is under way: a redirect-based
+    // method leaves the page with the payment still to complete.
     type Props = {
         locale: Locale;
         productId: string;
@@ -61,6 +67,30 @@
     let holdTimer: ReturnType<typeof setTimeout> | null = null;
 
     const holdElapsed = () => holdExpiresAt != null && Date.now() >= holdExpiresAt.getTime();
+
+    let holdReleased = false;
+
+    /**
+     * Frees the slot of a booking left unpaid on the payment step. keepalive
+     * lets the request finish while the page unloads.
+     */
+    function releaseHold(): Promise<void> {
+        if (holdReleased || !token || phase !== "payment" || busy) return Promise.resolve();
+        holdReleased = true;
+        if (holdTimer) clearTimeout(holdTimer);
+        return fetch(`/api/bookings/release?token=${encodeURIComponent(token)}`, { method: "POST", keepalive: true })
+            .then(() => undefined)
+            .catch(() => {
+                // the hold then runs out on its own
+            });
+    }
+
+    /** Back to the calendar, the slot released first so the calendar offers it again. */
+    async function leave() {
+        if (busy) return;
+        await releaseHold();
+        onBack();
+    }
 
     async function showExpired(wasRefunded = false) {
         if (holdTimer) clearTimeout(holdTimer);
@@ -305,6 +335,8 @@
     });
 
     onDestroy(() => {
+        // Navigating away within the site while on the payment step.
+        void releaseHold();
         if (pollTimer) clearTimeout(pollTimer);
         if (holdTimer) clearTimeout(holdTimer);
     });
@@ -315,12 +347,22 @@
         submitted && message ? "border-rose-600 focus-visible:ring-rose-600/25" : "border-neutral-300 focus-visible:border-neutral-950";
 </script>
 
+<!-- Closing the tab or leaving the site on the payment step. -->
+<!-- Back to the page from the browser's cache once the hold was released: the slot is no longer held. -->
+<svelte:window
+    onpagehide={() => void releaseHold()}
+    onpageshow={(event) => {
+        if (event.persisted && holdReleased && phase === "payment") void showExpired();
+    }}
+/>
+
 <div id="checkout" class="max-w-md min-w-0">
     {#if phase === "details" || phase === "payment"}
         <button
             type="button"
-            onclick={() => onBack()}
-            class="-ml-2 mb-6 inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-950 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none"
+            onclick={leave}
+            disabled={busy}
+            class="-ml-2 mb-6 inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 hover:text-neutral-950 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
             <ChevronLeft class="size-4" aria-hidden="true" />
             {t.changeSlot}
