@@ -50,6 +50,12 @@ type BookingRepository interface {
 	// before now to expired, and reports whether this call moved it.
 	ExpireHold(ctx context.Context, id uuid.UUID, now time.Time) (bool, error)
 
+	// ReleaseHold ends the hold of one booking still awaiting payment, before
+	// it elapses (the client left the payment step): the booking becomes
+	// expired with its hold ending at now. It reports whether this call moved
+	// it; a booking confirmed or expired meanwhile is left alone.
+	ReleaseHold(ctx context.Context, id uuid.UUID, now time.Time) (bool, error)
+
 	// ClaimLatePaymentRefund marks the payment of an expired booking as
 	// refunded, only if it is not already: of two deliveries of the same late
 	// payment, only the one that gets true refunds it. ReleaseLatePaymentRefund

@@ -105,6 +105,16 @@ type BookingService interface {
 	// all paid/refunded transactions for the given date range.
 	GetFinancialSummary(ctx context.Context, from, to time.Time) (*domain.FinancialSummaryResponse, error)
 
+	// ReleaseHoldByToken frees the slot of a booking still awaiting payment
+	// when the client leaves the payment step (changes slot, closes the page,
+	// comes back from a failed redirect payment), instead of keeping it until
+	// the payment hold elapses (ADR-0018). The PaymentIntent is canceled
+	// first, so no payment can go through afterwards; when Stripe refuses
+	// (a payment is under way or went through), the hold is kept and a
+	// conflict is returned. A booking no longer awaiting payment is left
+	// alone without error.
+	ReleaseHoldByToken(ctx context.Context, token string) error
+
 	// LookupBookingByToken verifies a booking token and returns a public response.
 	LookupBookingByToken(ctx context.Context, token string) (*domain.PublicBookingLookupResponse, error)
 
