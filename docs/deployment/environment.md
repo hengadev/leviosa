@@ -144,12 +144,16 @@ another line means new endpoints (and new secrets) on that line, with the
 release. `TestVerifyWebhookSignature_AcceptsTheEndpointAPIVersion` pins
 the endpoints' version.
 
-### `/smtp` — Zoho Mail (whole into `backend.env`)
+### `/smtp` — Brevo SMTP relay (whole into `backend.env`)
+
+Brevo sends the app's emails; Zoho Mail only receives (the `leviosa.care`
+MX records and the `contact@` mailbox). The backend speaks plain SMTP, so
+these keys alone choose the provider.
 
 | Key | prod | staging | dev | Rendered into → read by | Written by |
 | --- | :-: | :-: | :-: | --- | --- |
-| `SMTP_HOST`, `SMTP_PORT` | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator (issue 036) |
-| `SMTP_USERNAME`, `SMTP_PASSWORD` (a Zoho app password) | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator |
+| `SMTP_HOST`, `SMTP_PORT` (`smtp-relay.brevo.com`, `587`) | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator (issue 036) |
+| `SMTP_USERNAME`, `SMTP_PASSWORD` (Brevo's SMTP login, an `@smtp-brevo.com` ID, and an SMTP key) | ✓ | ✓ | absent | `backend.env` → backend, `check-email` | operator |
 | `SMTP_FROM` (the sender address) | ✓ | ✓ | absent | `backend.env` → backend, `check-email`: the sender of the booking emails and the check email (`contact@leviosa.care`, or `Leviosa <contact@leviosa.care>`). Empty falls back to `SMTP_USERNAME`, which works only when the login is a mailbox (Zoho), not a relay ID (Brevo). The other emails send from the `support_email` setting | operator |
 
 ### `/twilio` (whole into `backend.env`)

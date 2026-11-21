@@ -8,7 +8,7 @@ Leviosa is booking and activity management software for service businesses — m
 - **Product catalog & pricing** — categories and products (treatments, classes, events) with capacity tracking and Stripe-backed pricing/checkout
 - **Payments** — Stripe integration for checkout and customer billing
 - **Client messaging** — direct conversations between businesses and their clients
-- **Notifications** — booking confirmations and reminders over email (SMTP, Zoho Mail) and SMS (Twilio)
+- **Notifications** — booking confirmations and reminders over email (SMTP through Brevo) and SMS (Twilio)
 - **Auth & accounts** — email/OTP sign-in, sessions, and Google/Apple OAuth
 - **Settings** — per-business configuration (OTP policy, notification preferences, etc.)
 
@@ -35,7 +35,7 @@ Leviosa is booking and activity management software for service businesses — m
 - **Encryption keys**: AWS KMS for the encx KEK, with the pepper supplied as configuration (ADR-0015).
 - **Payments**: Stripe.
 - **Configuration**: Infisical, the only source of every secret and environment value (ADR-0017).
-- **Notifications**: SMTP (Zoho Mail), Twilio SMS (EU region IE1).
+- **Notifications**: email through Brevo's SMTP relay (Zoho Mail hosts the `leviosa.care` mailbox), Twilio SMS (EU region IE1).
 
 ## Local Development
 

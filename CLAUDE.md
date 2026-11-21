@@ -106,7 +106,7 @@ See `backend/CLAUDE.md` for the full breakdown, including booking-domain feature
 - Go 1.26.11 (modular monolith, single binary)
 - PostgreSQL 17.5, Redis (alpine), RabbitMQ 3 (management)
 - AWS S3, AWS KMS (encx KEK; the pepper comes from configuration — ADR-0015)
-- External integrations: Stripe, SMTP (Zoho Mail), Twilio SMS (IE1 region, API key)
+- External integrations: Stripe, SMTP through the Brevo relay (the `contact@leviosa.care` mailbox is Zoho Mail), Twilio SMS (IE1 region, API key)
 
 **Infrastructure**:
 - One Hetzner VPS, two Docker Compose stacks (production owns Postgres, RabbitMQ and Caddy; staging runs its own backend, frontend and Redis) (ADR-0016)

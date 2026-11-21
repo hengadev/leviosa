@@ -599,7 +599,7 @@
 - **Stripe**: Payment processing, promotion codes
 - **AWS S3**: Image and file storage
 - **Twilio**: SMS notifications
-- **SMTP (Zoho Mail)**: Email notifications
+- **SMTP (Brevo relay)**: Email notifications (Zoho Mail receives)
 - **AWS KMS + Infisical**: Encryption key management (ADR-0015; HashiCorp Vault is gone)
 
 ### Message Queue (RabbitMQ)

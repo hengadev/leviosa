@@ -17,7 +17,7 @@ checks are in [infra/ansible/README.md](../../infra/ansible/README.md#verificati
 - [ ] Membership of both projects, `leviosa` and `leviosa-infra`, with write
   access to `leviosa`'s `/aws` and `/backup` (Terraform writes them through
   your login).
-- [ ] Access to Hetzner, Cloudflare, AWS, Stripe, Twilio, Zoho, Docker Hub and
+- [ ] Access to Hetzner, Cloudflare, AWS, Stripe, Twilio, Zoho, Brevo, Docker Hub and
   the GitHub repository, for the rare manual steps.
 
 ## 2. Tools

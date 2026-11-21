@@ -149,7 +149,8 @@ page to `/coming-soon`, except `/healthz`, `/robots.txt` and `/sitemap.xml`;
 `robots.txt` then disallows indexing. Production starts that way. Changing the
 value reaches the frontend within about a minute (the Agent recreates it); no
 deploy is needed. Turning it off is the launch, which waits on the encx
-data-key cache release, the Zoho mailbox and a verified Twilio sender.
+data-key cache release, working email (the Zoho mailbox and Brevo sending)
+and a verified Twilio sender.
 
 ## When Infisical is down
 
@@ -218,7 +219,7 @@ no command to run.
 | Terraform's inputs (Hetzner, Cloudflare, AWS admin) | Infisical `leviosa-infra` | new token or key in the provider's console → update `leviosa-infra` → revoke the old one | read by the next `tf.sh` run |
 | Stripe secret key and webhook secrets (`/stripe`) | Infisical | roll in the Stripe dashboard (a webhook secret is rolled on its endpoint) | automatic: the backend is recreated |
 | Twilio API key (`/twilio`) | Infisical | new API key **in the IE1 region** → update `/twilio` → `check-sms` → delete the old key in Twilio | automatic: the backend is recreated |
-| SMTP app password (`/smtp`, Zoho) | Infisical | new app password in Zoho → update `/smtp` → `check-email` → revoke the old one | automatic: the backend is recreated |
+| SMTP key (`/smtp`, Brevo) | Infisical | new SMTP key in Brevo (SMTP & API) → update `/smtp` → `check-email` → delete the old key | automatic: the backend is recreated |
 | Cloudflare DNS token for Caddy (`prod/caddy`; separate from Terraform's) | Infisical | new token (DNS edit on the zone) → update `prod/caddy` → revoke the old one | automatic: Caddy is recreated |
 | Postgres: production's role (`prod/db`) | Infisical | `ALTER ROLE … PASSWORD …` in the database **first**, then update `prod/db` (`POSTGRES_PASSWORD` applies only at first initialisation) | the backend gets the new `DATABASE_URL` automatically; the ALTER is manual |
 | Postgres: staging's role (`staging/db`) | Infisical | update `staging/db`, then `make setup` at once | the staging backend gets the new URL automatically; the role's password is re-applied by the next `make setup` (`setup-shared-services.sh`) |
