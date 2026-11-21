@@ -82,10 +82,10 @@ moved {
 }
 
 # ============================================
-# Mailbox provider (Zoho Mail, issue 036)
+# Mail: Zoho Mail receives, Brevo sends (issue 036)
 # ============================================
-# Driven by the email_* inputs in terraform.tfvars; none exist until Zoho
-# provides them. Mail records are never proxied.
+# Driven by the email_* inputs in terraform.tfvars; an empty input creates
+# no record. Mail records are never proxied.
 
 resource "cloudflare_dns_record" "mx" {
   for_each = var.email_mx_records

@@ -146,8 +146,8 @@ variable "cloudflare_zone_id" {
   }
 }
 
-# Mailbox provider (Zoho, issue 036). All empty until Zoho provides them;
-# an empty value creates no record.
+# Mail providers: Zoho Mail receives, Brevo sends (issue 036). An empty value
+# creates no record.
 
 variable "email_mx_records" {
   description = "Inbound MX hosts, mapped to their priority (e.g. { \"mx.zoho.eu\" = 10 })"
@@ -162,13 +162,13 @@ variable "email_spf_includes" {
 }
 
 variable "email_dkim_records" {
-  description = "Mailbox provider DKIM records, keyed by record name relative to the domain (e.g. zmail._domainkey)"
+  description = "Mail provider DKIM records, keyed by record name relative to the domain (e.g. zmail._domainkey)"
   type        = map(object({ type = string, content = string }))
   default     = {}
 }
 
 variable "email_verification_txt" {
-  description = "Apex TXT records proving domain ownership (e.g. Zoho's zoho-verification=...)"
+  description = "Apex TXT records proving domain ownership (e.g. zoho-verification=..., brevo-code:...)"
   type        = list(string)
   default     = []
 }

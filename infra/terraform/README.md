@@ -14,7 +14,7 @@ profile and no local tfvars file.
 | Area | Resources |
 | --- | --- |
 | Hetzner | One `cax11` (ARM) in `nbg1` (`hcloud_server.main`), minimal cloud-init (Ansible does the rest), and its **primary IPs** (IPv4 + IPv6), which survive a server rebuild |
-| Cloudflare | Proxied records: `livio`, `admin`, `staff`, `staging`, `admin-staging`, `staff-staging` each with an A and AAAA record to the server; `leviosa.care` a CNAME to `livio` (until the apex gets its own site) and `www` a CNAME to the apex. Mail records (MX, SPF, DKIM, verification, DMARC) from the `email_*` inputs, empty until Zoho provides them (issue 036) |
+| Cloudflare | Proxied records: `livio`, `admin`, `staff`, `staging`, `admin-staging`, `staff-staging` each with an A and AAAA record to the server; `leviosa.care` a CNAME to `livio` (until the apex gets its own site) and `www` a CNAME to the apex. Mail records (MX, SPF, DKIM, verification, DMARC) from the `email_*` inputs: Zoho Mail receives (MX, SPF, DKIM), Brevo sends (DKIM CNAMEs; its own bounce domain, so no SPF include) |
 | AWS, per environment (`staging`, `prod`) | Private media bucket `leviosa-care-<env>-media` (SSE, versioning, non-current versions expire after 30 days); encx KEK: symmetric KMS key + `alias/leviosa-<env>`, `prevent_destroy`, 30-day deletion window; app IAM user `leviosa-<env>-app` with an access key and one policy: its own bucket and its own key only |
 | AWS, production backups | Bucket `leviosa-care-prod-backups` (SSE, versioning, lifecycle expiry); IAM user `leviosa-prod-backup` that can list, read and write it but **not delete** |
 | AWS, shared | The state bucket `leviosa-terraform-state` (imported, `prevent_destroy`) |
@@ -224,7 +224,7 @@ variables.tf       inputs (the two secrets default to empty and refuse to plan)
 terraform.tfvars   non-secret input values (committed)
 hetzner.tf         server + primary IPs
 cloud-init.yml.tftpl  minimal cloud-init (python3 for Ansible)
-cloudflare.tf      web records, mail records (empty until Zoho)
+cloudflare.tf      web records, mail records (Zoho receives, Brevo sends)
 s3.tf              media bucket per environment
 kms.tf             encx KEK + alias per environment
 iam.tf             app IAM user, policy and access key per environment
