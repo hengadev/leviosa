@@ -64,7 +64,7 @@ func allPreviews() []preview {
 	return previews
 }
 
-func indexRow(p preview, rendered emailpreview.Rendered) string {
+func indexRow(p preview, rendered emailpreview.Preview) string {
 	attachments := ""
 	if len(rendered.Attachments) > 0 {
 		names := make([]string, 0, len(rendered.Attachments))

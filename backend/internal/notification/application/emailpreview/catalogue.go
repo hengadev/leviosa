@@ -71,8 +71,8 @@ type Entry struct {
 	Locales []domain.Locale
 }
 
-// Rendered is one email rendered with the sample data.
-type Rendered struct {
+// Preview is one email rendered with the sample data.
+type Preview struct {
 	Subject string
 	HTML    string
 	// Attachments are the attachment file names.
@@ -203,7 +203,7 @@ func List() []Entry {
 // Render composes and renders the email id in locale with the sample data.
 // An unknown id or a locale the email does not exist in is a not-found
 // error (errs.ErrDomainNotFound).
-func Render(id string, locale domain.Locale) (Rendered, error) {
+func Render(id string, locale domain.Locale) (Preview, error) {
 	for _, e := range catalogue {
 		if e.ID != id {
 			continue
@@ -214,15 +214,15 @@ func Render(id string, locale domain.Locale) (Rendered, error) {
 		email := e.compose(locale)
 		html, err := domain.RenderEmailTemplate(email.Template, email.Data)
 		if err != nil {
-			return Rendered{}, err
+			return Preview{}, err
 		}
 		attachments := make([]string, 0, len(email.Attachments))
 		for _, a := range email.Attachments {
 			attachments = append(attachments, a.Filename)
 		}
-		return Rendered{Subject: email.Subject, HTML: html, Attachments: attachments}, nil
+		return Preview{Subject: email.Subject, HTML: html, Attachments: attachments}, nil
 	}
-	return Rendered{}, errs.NewNotFoundErr(ErrUnknownPreview, "email preview "+id+" ("+string(locale)+")")
+	return Preview{}, errs.NewNotFoundErr(ErrUnknownPreview, "email preview "+id+" ("+string(locale)+")")
 }
 
 func hasLocale(locales []domain.Locale, locale domain.Locale) bool {
