@@ -11,6 +11,7 @@
 		CheckCircle2,
 		Circle
 	} from '@lucide/svelte';
+	import PageActionsMenu from '#lib/components/admin/PageActionsMenu.svelte';
 	import type { PageData } from './$types';
 	import type { RecentBookingUI } from './+page.server';
 
@@ -69,7 +70,13 @@
 
 <div class="container mx-auto px-4 py-8 lg:py-12">
 	<div class="mb-8">
-		<h1 class="text-3xl lg:text-4xl font-bold mb-1">Tableau de bord</h1>
+		<div class="flex items-center justify-between gap-4 mb-1">
+			<h1 class="text-3xl lg:text-4xl font-bold">Tableau de bord</h1>
+			<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
+			<div class="lg:hidden">
+				<PageActionsMenu />
+			</div>
+		</div>
 		<p class="text-muted-foreground">Activité récente et aperçu de votre activité</p>
 	</div>
 
