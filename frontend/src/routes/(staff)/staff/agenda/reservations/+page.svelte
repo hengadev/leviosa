@@ -34,18 +34,15 @@
 		);
 	}
 
+	/** Black and white only: a booking still to come stands out, a settled one recedes. */
 	function statusBadge(status: string): string {
 		switch (status) {
 			case 'confirmed':
-				return 'bg-blue-100 text-blue-700';
-			case 'completed':
-				return 'bg-green-100 text-green-700';
-			case 'no_show':
-				return 'bg-orange-100 text-orange-700';
+				return 'bg-foreground text-background';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
+				return 'bg-muted text-muted-foreground';
 			default:
-				return 'bg-gray-100 text-gray-700';
+				return 'bg-muted text-foreground';
 		}
 	}
 
@@ -64,22 +61,11 @@
 		}
 	}
 
+	/** Only shown when the payment needs attention, so one outlined style is enough. */
 	function paymentStatusBadge(status: string): string {
-		switch (status) {
-			case 'paid':
-				return 'bg-green-50 text-green-600 border-green-200';
-			case 'pending':
-				return 'bg-yellow-50 text-yellow-600 border-yellow-200';
-			case 'failed':
-				return 'bg-red-50 text-red-600 border-red-200';
-			case 'refunded':
-			case 'partially_refunded':
-				return 'bg-purple-50 text-purple-600 border-purple-200';
-			case 'disputed':
-				return 'bg-red-50 text-red-600 border-red-200';
-			default:
-				return 'bg-gray-50 text-gray-600 border-gray-200';
-		}
+		return status === 'disputed' || status === 'failed'
+			? 'border-foreground text-foreground'
+			: 'border-border text-muted-foreground';
 	}
 
 	function paymentStatusLabel(status: string): string {
@@ -341,7 +327,7 @@
 						{#if isActionable(booking)}
 							<div class="flex gap-2">
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
 									title="Marquer comme terminé"
 									onclick={() => completeBooking(booking.id)}
 									disabled={actionLoading[booking.id + '_complete']}
@@ -350,7 +336,7 @@
 									{actionLoading[booking.id + '_complete'] ? '…' : 'Terminer'}
 								</button>
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border text-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 									title="Marquer absent"
 									onclick={() => markNoShow(booking.id)}
 									disabled={actionLoading[booking.id + '_noshow']}

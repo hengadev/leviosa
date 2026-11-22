@@ -4,11 +4,12 @@
     let { slots }: { slots: TodaySlot[] } = $props();
 
     const statusConfig: Record<string, { label: string; dot: string; text: string }> = {
-        confirmed: { label: 'À venir', dot: 'bg-blue-500', text: 'text-blue-500' },
-        completed: { label: 'Terminé', dot: 'bg-green-500', text: 'text-green-500' },
-        in_progress: { label: 'En cours', dot: 'bg-green-500', text: 'text-green-500' },
-        no_show: { label: 'Absent', dot: 'bg-amber-500', text: 'text-amber-500' },
-        cancelled: { label: 'Annulé', dot: 'bg-red-400 dark:bg-red-500', text: 'text-red-500 dark:text-red-400' },
+        // Black and white: what is still to happen is solid, what is settled recedes.
+        confirmed: { label: 'À venir', dot: 'bg-foreground', text: 'text-foreground' },
+        in_progress: { label: 'En cours', dot: 'bg-foreground', text: 'text-foreground' },
+        completed: { label: 'Terminé', dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
+        no_show: { label: 'Absent', dot: 'bg-muted-foreground', text: 'text-muted-foreground' },
+        cancelled: { label: 'Annulé', dot: 'bg-muted-foreground/40', text: 'text-muted-foreground' },
     };
 
     function getStatus(status: string) {

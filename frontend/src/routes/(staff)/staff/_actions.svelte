@@ -8,9 +8,9 @@
 {#if actions.length > 0}
 <div class="bg-background rounded-2xl border border-border overflow-hidden">
     <div class="px-5 py-4 flex items-center gap-3">
-        <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse"></div>
         <h2 class="text-base font-semibold text-foreground">Actions requises</h2>
-        <span class="ml-auto text-[11px] font-semibold text-amber-600 dark:text-amber-400 tabular-nums">{actions.length}</span>
+        <span class="ml-auto text-[11px] font-semibold text-foreground tabular-nums">{actions.length}</span>
     </div>
     <div class="divide-y divide-border">
         {#each actions as action}
