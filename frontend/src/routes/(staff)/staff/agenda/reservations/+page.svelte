@@ -3,6 +3,7 @@
 	import type { Booking } from './+page.server';
 	import { invalidateAll } from '$app/navigation';
 	import { Dialog } from 'bits-ui';
+	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
 	import { Clock, MapPin, Mail, Phone, CheckCircle, XCircle, AlertCircle, Ban } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
@@ -212,6 +213,13 @@
 	<title>Réservations | Staff</title>
 </svelte:head>
 
+<!-- An administrator without a practitioner profile: nothing to show yet -->
+{#if data.profileMissing}
+	<div class="container mx-auto px-4 py-8 lg:py-12">
+		<h1 class="text-3xl lg:text-4xl font-bold mb-8 text-foreground">Réservations</h1>
+		<PractitionerProfileMissing />
+	</div>
+{:else}
 <div class="container mx-auto px-4 py-8 lg:py-12">
 	<div class="mb-8">
 		<h1 class="text-3xl lg:text-4xl font-bold mb-2 text-foreground">Réservations</h1>
@@ -361,6 +369,7 @@
 		{/each}
 	</div>
 </div>
+{/if}
 
 <Dialog.Root bind:open={cancelDialogOpen}>
 	<Dialog.Portal>
