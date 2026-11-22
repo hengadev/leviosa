@@ -243,7 +243,7 @@
 		<div
 			class="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0 lg:overflow-visible"
 			bind:this={tabsListEl}
-			onclick={scrollActiveTabIntoView}
+			onfocusin={scrollActiveTabIntoView}
 		>
 				<TabsList class="inline-flex items-center bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1 max-lg:h-auto">
 					{#each triggers as trigger}
@@ -259,7 +259,7 @@
 		</div>
 
 		<!-- All Users Tab -->
-		<TabsContent value="all" class="p-6">
+		<TabsContent value="all" class="py-4 lg:p-6">
 			<div class="hidden lg:block bg-background border border-border-card rounded-lg overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
@@ -355,7 +355,7 @@
 					<li class="px-4 py-8 text-center text-muted-foreground">Aucun utilisateur trouvé</li>
 				{:else}
 					{#each data.users as user (user.id)}
-						<li class="p-4 space-y-3">
+						<li class="p-4 space-y-1">
 							<div class="flex items-start gap-3">
 								<div class="w-9 h-9 shrink-0 rounded-full bg-muted flex items-center justify-center">
 									<span class="text-xs font-semibold text-foreground-alt uppercase">
@@ -389,14 +389,16 @@
 											{user.status === "approved" ? "Approuvé" : "En attente"}
 										</span>
 									</div>
-									<p class="mt-2 text-xs text-muted-foreground">Créé le {formatDate(user.createdAt)}</p>
 								</div>
 							</div>
-							<div class="flex items-center justify-end gap-1">
+							<div class="flex items-center justify-between gap-2 pl-12">
+								<p class="text-xs text-muted-foreground">Créé le {formatDate(user.createdAt)}</p>
+								<div class="flex items-center gap-1">
 								<button
 									onclick={() => openEditDialog(user)}
 									class="inline-flex size-11 items-center justify-center rounded-md text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
 									title="Modifier le rôle"
+									aria-label="Modifier le rôle"
 								>
 									<Shield size={16} />
 								</button>
@@ -404,9 +406,11 @@
 									onclick={() => openDeleteDialog(user)}
 									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 									title="Supprimer"
+									aria-label="Supprimer"
 								>
 									<Trash2 size={16} />
 								</button>
+							</div>
 							</div>
 						</li>
 					{/each}
@@ -415,7 +419,7 @@
 		</TabsContent>
 
 		<!-- Pending Users Tab -->
-		<TabsContent value="pending" class="p-6">
+		<TabsContent value="pending" class="py-4 lg:p-6">
 			<div class="hidden lg:block bg-background border border-border-card rounded-lg overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
@@ -492,7 +496,7 @@
 					<li class="px-4 py-8 text-center text-muted-foreground">Aucun utilisateur en attente</li>
 				{:else}
 					{#each data.pendingUsers as user (user.id)}
-						<li class="p-4 space-y-3">
+						<li class="p-4 space-y-1">
 							<div class="flex items-start gap-3">
 								<div class="w-9 h-9 shrink-0 rounded-full bg-muted flex items-center justify-center">
 									<span class="text-xs font-semibold text-foreground-alt uppercase">
@@ -507,10 +511,11 @@
 										</p>
 									{/if}
 									<p class="mt-2 text-xs text-muted-foreground">Téléphone : {user.telephone || "-"}</p>
-									<p class="mt-1 text-xs text-muted-foreground">Demandé le {formatDate(user.createdAt)}</p>
 								</div>
 							</div>
-							<div class="flex flex-wrap items-center justify-end gap-2">
+							<div class="flex items-center justify-between gap-2 pl-12">
+								<p class="text-xs text-muted-foreground">Demandé le {formatDate(user.createdAt)}</p>
+								<div class="flex items-center gap-2">
 								<button
 									onclick={() => openApproveDialog(user)}
 									class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 rounded-md transition-colors"
@@ -523,9 +528,11 @@
 									onclick={() => openDeleteDialog(user)}
 									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 									title="Supprimer"
+									aria-label="Supprimer"
 								>
 									<Trash2 size={16} />
 								</button>
+							</div>
 							</div>
 						</li>
 					{/each}
@@ -534,7 +541,7 @@
 		</TabsContent>
 
 		<!-- Partners Tab -->
-		<TabsContent value="partners" class="p-6">
+		<TabsContent value="partners" class="py-4 lg:p-6">
 			<div class="mb-4 flex flex-wrap justify-end gap-2">
 				{#if !data.selfPractitioner}
 					<button
@@ -682,7 +689,7 @@
 				{:else}
 					{#each data.partners as partner (partner.id)}
 						{@const user = getUserForPartner(partner)}
-						<li class="p-4 space-y-3">
+						<li class="p-4 space-y-1">
 							<div class="flex items-start gap-3">
 								<div class="w-9 h-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
 									<Building2 size={16} class="text-blue-600 dark:text-blue-400" />
@@ -725,10 +732,11 @@
 											{partner.productCount} prod.
 										</span>
 									</div>
-									<p class="mt-2 text-xs text-muted-foreground">Créé le {formatDate(partner.createdAt)}</p>
 								</div>
 							</div>
-							<div class="flex flex-wrap items-center justify-end gap-2">
+							<div class="flex items-center justify-between gap-2 pl-12">
+								<p class="text-xs text-muted-foreground">Créé le {formatDate(partner.createdAt)}</p>
+								<div class="flex items-center gap-2">
 								{#if !(partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active")}
 									<button
 										onclick={() => openVerifyPartnerDialog(partner)}
@@ -743,9 +751,11 @@
 									onclick={() => openDeletePartnerDialog(partner)}
 									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
 									title="Supprimer"
+									aria-label="Supprimer"
 								>
 									<Trash2 size={16} />
 								</button>
+							</div>
 							</div>
 						</li>
 					{/each}
