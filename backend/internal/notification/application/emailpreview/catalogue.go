@@ -206,7 +206,7 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "login_code", Label: "Code de vérification", Audience: AudienceClient, Locales: frenchOnly},
+		Entry: Entry{ID: "login_code", Label: "Code de vérification", Audience: AudiencePractice, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposeOTPEmail(domain.OTPEmailRequest{
 				ToEmail: sampleClientEmail, OTP: sampleLoginCode, FromEmail: samplePracticeEmail,
