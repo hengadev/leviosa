@@ -526,7 +526,7 @@
                 {#if data.practiceAccess}
                     <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
                         <div class="flex-1 min-w-0">
-                            <div class="font-medium text-sm">Code de la porte</div>
+                            <div class="font-medium text-sm">Code d'accès</div>
                             <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
                                 {#if !data.practiceAccess.doorCode}
                                     Non défini
@@ -1330,7 +1330,7 @@
 
             <form method="POST" action="?/updatePracticeAccess" use:practiceAccessEnhance class="grid gap-4">
                 <div class="grid gap-2 py-2">
-                    <Label.Root for="practice-access-door-code" class="text-sm font-medium">Code de la porte</Label.Root>
+                    <Label.Root for="practice-access-door-code" class="text-sm font-medium">Code d'accès</Label.Root>
                     <input
                         id="practice-access-door-code"
                         name="door_code"
