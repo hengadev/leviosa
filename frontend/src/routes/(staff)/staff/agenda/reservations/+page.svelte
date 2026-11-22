@@ -5,7 +5,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { Dialog } from 'bits-ui';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
-	import { Clock, MapPin, Mail, Phone, CheckCircle, XCircle, AlertCircle, Ban } from '@lucide/svelte';
+	import { Clock, CheckCircle, XCircle, AlertCircle, Ban } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
 
@@ -73,7 +73,10 @@
 			case 'failed':
 				return 'bg-red-50 text-red-600 border-red-200';
 			case 'refunded':
+			case 'partially_refunded':
 				return 'bg-purple-50 text-purple-600 border-purple-200';
+			case 'disputed':
+				return 'bg-red-50 text-red-600 border-red-200';
 			default:
 				return 'bg-gray-50 text-gray-600 border-gray-200';
 		}
@@ -89,9 +92,18 @@
 				return 'Échoué';
 			case 'refunded':
 				return 'Remboursé';
+			case 'partially_refunded':
+				return 'Remboursé en partie';
+			case 'disputed':
+				return 'Contesté';
 			default:
 				return status;
 		}
+	}
+
+	/** A payment state other than the usual "paid" (or "pending" on a free booking) */
+	function paymentNeedsAttention(status: string): boolean {
+		return status !== 'paid' && status !== 'pending';
 	}
 
 	/** A confirmed booking is eligible for complete/no-show only if its end time has passed */
@@ -281,69 +293,39 @@
 	<div class="space-y-3">
 		{#each filtered as booking (booking.id)}
 			<div class="bg-background rounded-xl border border-border p-4 sm:p-5 hover:shadow-mini transition-shadow">
-				<div class="flex flex-col sm:flex-row sm:items-start gap-4">
-					<!-- Client Avatar -->
-					<div
-						class="w-10 h-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0"
-					>
-						<span class="text-sm font-semibold text-foreground">{booking.clientInitials}</span>
-					</div>
-
+				<div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
 					<!-- Main Info -->
 					<div class="flex-1 min-w-0">
-						<div class="flex flex-wrap items-center gap-2 mb-1">
-							<p class="font-semibold text-foreground">{booking.clientName}</p>
-							<span class="px-2 py-0.5 rounded-full text-xs font-medium {statusBadge(booking.status)}">
-								{statusLabel(booking.status)}
-							</span>
-							<span class="px-2 py-0.5 rounded-full text-xs font-medium border {paymentStatusBadge(booking.paymentStatus)}">
-								{paymentStatusLabel(booking.paymentStatus)}
-							</span>
+						<div class="flex items-start justify-between gap-3">
+							<p class="font-semibold text-foreground truncate">{booking.clientName}</p>
+							<!-- On the phone the amount sits beside the name; from sm up it heads the actions column -->
+							<p class="font-semibold text-foreground tabular-nums sm:hidden">{formatCents(booking.amountInCents)}</p>
 						</div>
 						<p class="text-sm text-muted-foreground mb-2">{booking.productName}</p>
 
-						<div class="flex flex-wrap gap-4 text-sm text-muted-foreground">
+						<div class="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
 							<span class="flex items-center gap-1.5">
 								<Clock size={13} />
 								{formatDateTime(booking.startTime)} – {formatTime(booking.endTime)}
 							</span>
-							<span class="flex items-center gap-1.5">
-								<MapPin size={13} />
-								{booking.roomName}
+							<span class="px-2 py-0.5 rounded-full text-xs font-medium {statusBadge(booking.status)}">
+								{statusLabel(booking.status)}
 							</span>
+							<!-- Paying is what confirms a booking, so "paid" is the normal case: only a refund, a dispute or a failure is worth a pill -->
+							{#if paymentNeedsAttention(booking.paymentStatus)}
+								<span class="px-2 py-0.5 rounded-full text-xs font-medium border {paymentStatusBadge(booking.paymentStatus)}">
+									{paymentStatusLabel(booking.paymentStatus)}
+								</span>
+							{/if}
 						</div>
-
-						<!-- Client contact details (no notes: Leviosa stores no health data, ADR-0019) -->
-						{#if booking.clientEmail || booking.clientPhone}
-							<div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-								{#if booking.clientEmail}
-									<a
-										href="mailto:{booking.clientEmail}"
-										class="flex items-center gap-1.5 hover:text-foreground transition-colors"
-									>
-										<Mail size={13} />
-										{booking.clientEmail}
-									</a>
-								{/if}
-								{#if booking.clientPhone}
-									<a
-										href="tel:{booking.clientPhone}"
-										class="flex items-center gap-1.5 hover:text-foreground transition-colors"
-									>
-										<Phone size={13} />
-										{booking.clientPhone}
-									</a>
-								{/if}
-							</div>
-						{/if}
 					</div>
 
 					<!-- Amount + Actions -->
-					<div class="flex flex-col items-end gap-2 flex-shrink-0">
-						<p class="font-semibold text-foreground">{formatCents(booking.amountInCents)}</p>
+					<div class="flex flex-col items-stretch sm:items-end gap-2 flex-shrink-0">
+						<p class="hidden sm:block font-semibold text-foreground tabular-nums">{formatCents(booking.amountInCents)}</p>
 						{#if isCancellable(booking)}
 							<button
-								class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+								class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
 								onclick={() => openCancelDialog(booking)}
 							>
 								<Ban size={13} />
@@ -353,7 +335,7 @@
 						{#if isActionable(booking)}
 							<div class="flex gap-2">
 								<button
-									class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
 									title="Marquer comme terminé"
 									onclick={() => completeBooking(booking.id)}
 									disabled={actionLoading[booking.id + '_complete']}
@@ -362,7 +344,7 @@
 									{actionLoading[booking.id + '_complete'] ? '…' : 'Terminer'}
 								</button>
 								<button
-									class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors disabled:opacity-50"
 									title="Marquer absent"
 									onclick={() => markNoShow(booking.id)}
 									disabled={actionLoading[booking.id + '_noshow']}

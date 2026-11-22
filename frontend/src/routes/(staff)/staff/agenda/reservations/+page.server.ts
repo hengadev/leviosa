@@ -6,15 +6,11 @@ export interface Booking {
 	id: string;
 	clientId: string;
 	clientName: string;
-	clientEmail: string;
-	clientPhone: string;
-	clientInitials: string;
 	productName: string;
 	startTime: string;
 	endTime: string;
-	roomName: string;
 	status: 'confirmed' | 'completed' | 'no_show' | 'cancelled';
-	paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+	paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | 'partially_refunded' | 'disputed';
 	amountInCents: number;
 	currency: string;
 	/** What cancelling from the agenda refunds the client: all they paid online. */
@@ -55,23 +51,13 @@ export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 		}
 
 		const bookings: Booking[] = data.map((booking: any) => {
-			const clientInitials = (booking.client_name || '??')
-				.split(' ')
-				.map((s: string) => s[0]?.toUpperCase() || '')
-				.slice(0, 2)
-				.join('');
-
 			return {
 				id: booking.id,
 				clientId: booking.client_id,
 				clientName: booking.client_name || 'Client inconnu',
-				clientEmail: booking.client_email || '',
-				clientPhone: booking.client_phone || '',
-				clientInitials,
 				productName: booking.product_name || 'Produit inconnu',
 				startTime: booking.slot_start_time,
 				endTime: booking.slot_end_time,
-				roomName: booking.room_name || 'Salle inconnue',
 				status: booking.status || 'confirmed',
 				paymentStatus: booking.payment_status || 'pending',
 				amountInCents: booking.total_price_cents || 0,
