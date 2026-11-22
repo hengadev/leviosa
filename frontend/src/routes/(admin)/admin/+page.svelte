@@ -3,6 +3,7 @@
 	import { Ban, CalendarX, Phone } from '@lucide/svelte';
 	import PageActionsMenu from '#lib/components/admin/PageActionsMenu.svelte';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
+	import SmsButton from '#lib/components/practice/SmsButton.svelte';
 	import type { PageData } from './$types';
 	import type { TodaySession } from './+page.server';
 
@@ -27,6 +28,11 @@
 	function countLabel(count: number): string {
 		if (count === 0) return 'aucune séance';
 		return `${count} ${count > 1 ? 'séances' : 'séance'}`;
+	}
+
+	/** First word of the stored client name, for SMS button labels. */
+	function firstName(name: string): string {
+		return name.trim().split(/\s+/)[0] || name;
 	}
 
 	/** "Prochaine séance · dans 25 min", or "En cours" once it has started. */
@@ -71,13 +77,16 @@
 						{next.productName}{next.paymentLabel ? ` · ${next.paymentLabel}` : ''}
 					</p>
 					{#if next.phone}
-						<a
-							href="tel:{next.phone}"
-							class="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-background font-medium text-foreground"
-						>
-							<Phone size={18} />
-							Appeler {next.phoneLabel}
-						</a>
+						<div class="mt-4 grid grid-cols-[1fr_2.75rem] gap-2">
+							<a
+								href="tel:{next.phone}"
+								class="flex h-11 items-center justify-center gap-2 rounded-xl bg-background font-medium text-foreground"
+							>
+								<Phone size={18} />
+								Appeler {next.phoneLabel}
+							</a>
+							<SmsButton phone={next.phone} firstName={firstName(next.clientName)} variant="wide" />
+						</div>
 					{/if}
 				</section>
 
@@ -104,6 +113,7 @@
 										>
 											<Phone size={18} />
 										</a>
+										<SmsButton phone={session.phone} firstName={firstName(session.clientName)} />
 									{/if}
 								</li>
 							{/each}
