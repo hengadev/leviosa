@@ -121,3 +121,13 @@ export function activeTab(path: string): TabId | null {
 	if (cabinetGroups.some((group) => group.items.some((item) => within(path, item.href)))) return "cabinet";
 	return null;
 }
+
+/**
+ * Whether a path is one of the pages the Cabinet page lists, where the phone
+ * shows a way back to Cabinet. Their sub-pages (a product form) have their
+ * own way back to the page above them.
+ */
+export function isCabinetPage(path: string): boolean {
+	const bare = path.length > 1 ? path.replace(/\/$/, "") : path;
+	return cabinetGroups.some((group) => group.items.some((item) => item.href === bare));
+}

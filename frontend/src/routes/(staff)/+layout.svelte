@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { LayoutProps } from "./$types";
 	import { setUserContext } from "#lib/context/user.svelte.ts";
+	import CabinetBackLink from "#lib/navigation/CabinetBackLink.svelte";
 	import StaffSidebar from "#lib/navigation/StaffSidebar.svelte";
 	import { adminDarkMode } from "#lib/stores/adminDarkMode.svelte.ts";
 	import { browser } from "$app/env";
@@ -36,6 +37,9 @@
 	<StaffSidebar user={data.user} permissions={data.permissions} unreadCount={data.unreadCount} />
 	<!-- Room under the content for the fixed bottom bar and the home indicator -->
 	<main class="flex-1 min-w-0 bg-background overflow-x-hidden pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+		{#if data.user.role === "administrator"}
+			<CabinetBackLink />
+		{/if}
 		{@render children()}
 	</main>
 </div>
