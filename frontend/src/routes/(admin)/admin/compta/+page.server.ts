@@ -69,7 +69,7 @@ export interface ComptaData {
 	transactions: Transaction[];
 	from: string;
 	to: string;
-	last7Days: Last7DaysStats;
+	last7Days: Last7DaysStats | null;
 }
 
 function getMockLast7Days(): Last7DaysStats {
@@ -117,25 +117,34 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 	try {
 		const [summaryRes, statsRes] = await Promise.all([
 			fetch(`${env.API_URL}/admin/bookings/financial-summary?from=${from}&to=${to}`),
-			fetch(`${env.API_URL}/admin/dashboard/stats`)
+			fetch(`${env.API_URL}/admin/dashboard/stats`).catch(() => new Response(null, { status: 503 }))
 		]);
-		for (const res of [summaryRes, statsRes]) {
-			if (res.status === 401 || res.status === 403) {
-				throw redirect(302, '/auth');
-			}
-			if (!res.ok) {
-				throw new Error(`Failed to fetch: ${res.status} ${res.statusText}`);
-			}
+		if (summaryRes.status === 401 || summaryRes.status === 403) {
+			throw redirect(302, '/auth');
+		}
+		if (!summaryRes.ok) {
+			throw new Error(`Failed to fetch financial summary: ${summaryRes.status} ${summaryRes.statusText}`);
 		}
 
 		const api: APIFinancialSummary = await summaryRes.json();
-		const statsApi: DashboardStatsAPI = await statsRes.json();
-		const last7Days: Last7DaysStats = {
-			revenueThisWeek: statsApi.revenue_this_week,
-			bookingsThisWeek: statsApi.bookings_this_week,
-			upcomingBookingsCount: statsApi.upcoming_bookings_count,
-			pendingBookingsCount: statsApi.pending_bookings_count
-		};
+
+		// The last 7 days are a bonus: the month's figures still show without them
+		let last7Days: Last7DaysStats | null = null;
+		try {
+			if (statsRes.ok) {
+				const statsApi: DashboardStatsAPI = await statsRes.json();
+				last7Days = {
+					revenueThisWeek: statsApi.revenue_this_week,
+					bookingsThisWeek: statsApi.bookings_this_week,
+					upcomingBookingsCount: statsApi.upcoming_bookings_count,
+					pendingBookingsCount: statsApi.pending_bookings_count
+				};
+			} else {
+				console.error('Error loading dashboard stats:', statsRes.status);
+			}
+		} catch (err) {
+			console.error('Error loading dashboard stats:', err);
+		}
 
 		const summary: SummaryKPIs = {
 			grossRevenueInCents: api.summary.gross_revenue_cents,

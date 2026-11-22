@@ -38,7 +38,7 @@
 			: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
 	}
 
-	function getTypeLabel(type: string) {
+	function getTypeLabel(type: string): string {
 		return type === 'payment' ? 'Paiement' : 'Remboursement';
 	}
 
@@ -168,45 +168,48 @@
 				class="flex h-11 items-center gap-2 bg-card border border-border rounded-lg px-4 text-sm text-foreground hover:bg-muted/50 transition-colors"
 			>
 				<Download size={16} />
-				CSV
+				<span><span class="hidden sm:inline">Exporter&nbsp;</span>CSV</span>
 			</a>
 		</div>
 	</div>
 
 	<!-- Last 7 days -->
+	{#if data.last7Days}
+	<h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activité</h2>
 	<div class="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-		<div class="bg-card rounded-lg border border-border p-4 lg:p-6">
-			<div class="flex items-center gap-2 mb-2 lg:mb-3">
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
 				<TrendingUp size={16} class="text-muted-foreground" />
-				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenus (7j)</span>
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenus (7 j)</span>
 			</div>
-			<div class="text-xl lg:text-2xl font-bold text-foreground">{formatCents(data.last7Days.revenueThisWeek)}</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{formatCents(data.last7Days.revenueThisWeek)}</div>
 		</div>
-		<div class="bg-card rounded-lg border border-border p-4 lg:p-6">
-			<div class="flex items-center gap-2 mb-2 lg:mb-3">
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
 				<Calendar size={16} class="text-muted-foreground" />
-				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Réservations (7j)</span>
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Réservations (7 j)</span>
 			</div>
-			<div class="text-xl lg:text-2xl font-bold text-foreground">{data.last7Days.bookingsThisWeek}</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.bookingsThisWeek}</div>
 		</div>
-		<div class="bg-card rounded-lg border border-border p-4 lg:p-6">
-			<div class="flex items-center gap-2 mb-2 lg:mb-3">
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
 				<Users size={16} class="text-muted-foreground" />
 				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">À venir</span>
 			</div>
-			<div class="text-xl lg:text-2xl font-bold text-foreground">{data.last7Days.upcomingBookingsCount}</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.upcomingBookingsCount}</div>
 		</div>
-		<div class="bg-card rounded-lg border border-border p-4 lg:p-6">
-			<div class="flex items-center gap-2 mb-2 lg:mb-3">
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
 				<Hourglass size={16} class="text-muted-foreground" />
 				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">En attente</span>
 			</div>
-			<div class="text-xl lg:text-2xl font-bold text-foreground">{data.last7Days.pendingBookingsCount}</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.pendingBookingsCount}</div>
 		</div>
 	</div>
+	{/if}
 
 	<!-- Summary KPIs: compact 2×2 on a phone, net revenue most prominent -->
-	<h2 class="sr-only">Totaux du mois</h2>
+	<h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{monthLabel}</h2>
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
 		<!-- Gross Revenue -->
 		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
