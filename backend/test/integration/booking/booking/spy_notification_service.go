@@ -160,6 +160,22 @@ type IntegrationEmailSpy struct {
 	BookingReminders     []notificationDomain.BookingReminderRequest
 	PartnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	LatePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
+	AccessUpdates        []notificationDomain.BookingAccessUpdateRequest
+}
+
+// AccessUpdateSnapshot returns copies of the access update emails recorded
+// so far.
+func (s *IntegrationEmailSpy) AccessUpdateSnapshot() []notificationDomain.BookingAccessUpdateRequest {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]notificationDomain.BookingAccessUpdateRequest(nil), s.AccessUpdates...)
+}
+
+func (s *IntegrationEmailSpy) SendBookingAccessUpdateEmail(ctx context.Context, req notificationDomain.BookingAccessUpdateRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.AccessUpdates = append(s.AccessUpdates, req)
+	return nil
 }
 
 // LatePaymentRefundSnapshot returns copies of the late-payment refund emails
@@ -199,6 +215,7 @@ func (s *IntegrationEmailSpy) Reset() {
 	s.BookingConfirmations, s.BookingReminders, s.PartnerNotices = nil, nil, nil
 	s.ClientCancellations, s.PartnerCancellations = nil, nil
 	s.LatePaymentRefunds = nil
+	s.AccessUpdates = nil
 }
 
 func (s *IntegrationEmailSpy) SendOTPEmail(ctx context.Context, req notificationDomain.OTPEmailRequest) error {

@@ -46,6 +46,14 @@ type spyEmailService struct {
 	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
 	partnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	latePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
+	accessUpdates        []notificationDomain.BookingAccessUpdateRequest
+}
+
+func (s *spyEmailService) SendBookingAccessUpdateEmail(ctx context.Context, req notificationDomain.BookingAccessUpdateRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.accessUpdates = append(s.accessUpdates, req)
+	return nil
 }
 
 func (s *spyEmailService) SendLatePaymentRefundEmail(ctx context.Context, req notificationDomain.LatePaymentRefundRequest) error {
