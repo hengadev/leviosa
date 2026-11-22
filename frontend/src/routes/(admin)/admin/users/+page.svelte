@@ -162,6 +162,16 @@
 		deletePartnerDialogOpen = true;
 	}
 
+	// Scroll the active tab into view on the phone-sized tab row.
+	let tabsListEl = $state<HTMLDivElement | null>(null);
+	function scrollActiveTabIntoView() {
+		requestAnimationFrame(() => {
+			tabsListEl
+				?.querySelector('[data-state="active"]')
+				?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+		});
+	}
+
 	const availableRoles = Object.entries(ROLES).map(([key, value]) => ({
 		label: key.charAt(0).toUpperCase() + key.slice(1),
 		value: value
@@ -218,7 +228,7 @@
 					<button
 						type="button"
 						onclick={() => copyPassword(form.createdPractitioner.password)}
-						class="inline-flex items-center gap-1 px-2 py-1 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors text-xs font-medium"
+						class="inline-flex min-h-11 items-center gap-1 px-3 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors text-xs font-medium"
 					>
 						<Copy size={14} />
 						{passwordCopied ? "Copié" : "Copier"}
@@ -230,21 +240,27 @@
 	{/if}
 
 	<Tabs value="all" class="space-y-4">
-		<TabsList class="inline-flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1">
-			{#each triggers as trigger}
-				<TabsTrigger
-					value={trigger.value}
-					class="px-4 py-2 rounded-none bg-transparent border-b-2 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer flex items-center gap-2"
-				>
-					{trigger.name}
-					<span class="text-xs bg-muted px-2 py-0.5 rounded-full">{trigger.count}</span>
-				</TabsTrigger>
-			{/each}
-		</TabsList>
+		<div
+			class="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0 lg:overflow-visible"
+			bind:this={tabsListEl}
+			onclick={scrollActiveTabIntoView}
+		>
+				<TabsList class="inline-flex items-center bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1 max-lg:h-auto">
+					{#each triggers as trigger}
+						<TabsTrigger
+							value={trigger.value}
+							class="px-4 py-2 max-lg:min-h-11 rounded-none bg-transparent border-b-2 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer flex items-center gap-2"
+						>
+							{trigger.name}
+							<span class="text-xs bg-muted px-2 py-0.5 rounded-full">{trigger.count}</span>
+						</TabsTrigger>
+					{/each}
+				</TabsList>
+		</div>
 
 		<!-- All Users Tab -->
 		<TabsContent value="all" class="p-6">
-			<div class="bg-background border border-border-card rounded-lg overflow-hidden">
+			<div class="hidden lg:block bg-background border border-border-card rounded-lg overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead>
@@ -333,11 +349,74 @@
 					</table>
 				</div>
 			</div>
+
+			<ul class="lg:hidden divide-y divide-border-card bg-background border border-border-card rounded-lg">
+				{#if data.users.length === 0}
+					<li class="px-4 py-8 text-center text-muted-foreground">Aucun utilisateur trouvé</li>
+				{:else}
+					{#each data.users as user (user.id)}
+						<li class="p-4 space-y-3">
+							<div class="flex items-start gap-3">
+								<div class="w-9 h-9 shrink-0 rounded-full bg-muted flex items-center justify-center">
+									<span class="text-xs font-semibold text-foreground-alt uppercase">
+										{user.email[0].toUpperCase()}
+									</span>
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-medium text-foreground break-all">{user.email}</p>
+									{#if user.firstname || user.lastname}
+										<p class="text-xs text-muted-foreground">
+											{user.firstname} {user.lastname}
+										</p>
+									{/if}
+									<div class="mt-2 flex flex-wrap gap-2">
+										<span class={getRoleBadgeClass(user.role)}>
+											{#if user.role === "administrator"}
+												<Shield size={12} />
+											{:else if user.role === "partner"}
+												<ShieldCheck size={12} />
+											{:else}
+												<KeyRound size={12} />
+											{/if}
+											{user.role}
+										</span>
+										<span class={getStatusBadgeClass(user.status)}>
+											{#if user.status === "approved"}
+												<UserCheck size={12} />
+											{:else}
+												<Clock size={12} />
+											{/if}
+											{user.status === "approved" ? "Approuvé" : "En attente"}
+										</span>
+									</div>
+									<p class="mt-2 text-xs text-muted-foreground">Créé le {formatDate(user.createdAt)}</p>
+								</div>
+							</div>
+							<div class="flex items-center justify-end gap-1">
+								<button
+									onclick={() => openEditDialog(user)}
+									class="inline-flex size-11 items-center justify-center rounded-md text-foreground-alt hover:text-foreground hover:bg-muted transition-colors"
+									title="Modifier le rôle"
+								>
+									<Shield size={16} />
+								</button>
+								<button
+									onclick={() => openDeleteDialog(user)}
+									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+									title="Supprimer"
+								>
+									<Trash2 size={16} />
+								</button>
+							</div>
+						</li>
+					{/each}
+				{/if}
+			</ul>
 		</TabsContent>
 
 		<!-- Pending Users Tab -->
 		<TabsContent value="pending" class="p-6">
-			<div class="bg-background border border-border-card rounded-lg overflow-hidden">
+			<div class="hidden lg:block bg-background border border-border-card rounded-lg overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead>
@@ -407,6 +486,51 @@
 					</table>
 				</div>
 			</div>
+
+			<ul class="lg:hidden divide-y divide-border-card bg-background border border-border-card rounded-lg">
+				{#if data.pendingUsers.length === 0}
+					<li class="px-4 py-8 text-center text-muted-foreground">Aucun utilisateur en attente</li>
+				{:else}
+					{#each data.pendingUsers as user (user.id)}
+						<li class="p-4 space-y-3">
+							<div class="flex items-start gap-3">
+								<div class="w-9 h-9 shrink-0 rounded-full bg-muted flex items-center justify-center">
+									<span class="text-xs font-semibold text-foreground-alt uppercase">
+										{user.email[0].toUpperCase()}
+									</span>
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-medium text-foreground break-all">{user.email}</p>
+									{#if user.firstname || user.lastname}
+										<p class="text-xs text-muted-foreground">
+											{user.firstname} {user.lastname}
+										</p>
+									{/if}
+									<p class="mt-2 text-xs text-muted-foreground">Téléphone : {user.telephone || "-"}</p>
+									<p class="mt-1 text-xs text-muted-foreground">Demandé le {formatDate(user.createdAt)}</p>
+								</div>
+							</div>
+							<div class="flex flex-wrap items-center justify-end gap-2">
+								<button
+									onclick={() => openApproveDialog(user)}
+									class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 rounded-md transition-colors"
+									title="Approuver"
+								>
+									<UserCheck size={14} />
+									Approuver
+								</button>
+								<button
+									onclick={() => openDeleteDialog(user)}
+									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+									title="Supprimer"
+								>
+									<Trash2 size={16} />
+								</button>
+							</div>
+						</li>
+					{/each}
+				{/if}
+			</ul>
 		</TabsContent>
 
 		<!-- Partners Tab -->
@@ -416,7 +540,7 @@
 					<button
 						type="button"
 						onclick={() => (becomePractitionerDialogOpen = true)}
-						class="inline-flex items-center gap-2 px-4 py-2 border border-border-input text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm"
+						class="inline-flex max-lg:min-h-11 items-center gap-2 px-4 py-2 border border-border-input text-foreground rounded-lg hover:bg-muted transition-colors font-medium text-sm"
 					>
 						<UserCog size={16} />
 						Je suis aussi praticien
@@ -425,7 +549,7 @@
 				<button
 					type="button"
 					onclick={() => (createPartnerDialogOpen = true)}
-					class="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
+					class="inline-flex max-lg:min-h-11 items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 				>
 					<UserPlus size={16} />
 					Ajouter un praticien
@@ -437,7 +561,7 @@
 					<p class="text-sm font-medium">Impossible de charger les partenaires. Veuillez rafraîchir la page.</p>
 				</div>
 			{/if}
-			<div class="bg-background border border-border-card rounded-lg overflow-hidden">
+			<div class="hidden lg:block bg-background border border-border-card rounded-lg overflow-hidden">
 				<div class="overflow-x-auto">
 					<table class="w-full">
 						<thead>
@@ -549,6 +673,84 @@
 					</table>
 				</div>
 			</div>
+
+			<ul class="lg:hidden divide-y divide-border-card bg-background border border-border-card rounded-lg">
+				{#if data.partners.length === 0}
+					<li class="px-4 py-8 text-center text-muted-foreground">
+						{data.partnersError ? "Erreur de chargement" : "Aucun partenaire trouvé"}
+					</li>
+				{:else}
+					{#each data.partners as partner (partner.id)}
+						{@const user = getUserForPartner(partner)}
+						<li class="p-4 space-y-3">
+							<div class="flex items-start gap-3">
+								<div class="w-9 h-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+									<Building2 size={16} class="text-blue-600 dark:text-blue-400" />
+								</div>
+								<div class="min-w-0 flex-1">
+									<p class="text-sm font-medium text-foreground break-all">
+										{user ? user.email : partner.id}
+									</p>
+									{#if user && (user.firstname || user.lastname)}
+										<p class="text-xs text-muted-foreground">
+											{user.firstname} {user.lastname}
+										</p>
+									{/if}
+									<p class="mt-2 text-sm text-muted-foreground">{truncate(partner.bio, 80)}</p>
+									<div class="mt-2 flex flex-wrap gap-2">
+										<span class={getVerificationBadgeClass(partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active")}>
+											{#if partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active"}
+												<BadgeCheck size={12} />
+												Vérifié
+											{:else}
+												<Clock size={12} />
+												Non vérifié
+											{/if}
+										</span>
+										<span class={getStripeBadgeClass(partner.stripeOnboardingComplete, partner.stripeAccountStatus)}>
+											<CreditCard size={12} />
+											{#if partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active"}
+												Complet
+											{:else if partner.stripeAccountStatus === "pending"}
+												En attente
+											{:else}
+												Incomplet
+											{/if}
+										</span>
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted text-xs text-foreground-alt">
+											<FileText size={10} />
+											{partner.categoryCount} cat.
+										</span>
+										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted text-xs text-foreground-alt">
+											{partner.productCount} prod.
+										</span>
+									</div>
+									<p class="mt-2 text-xs text-muted-foreground">Créé le {formatDate(partner.createdAt)}</p>
+								</div>
+							</div>
+							<div class="flex flex-wrap items-center justify-end gap-2">
+								{#if !(partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active")}
+									<button
+										onclick={() => openVerifyPartnerDialog(partner)}
+										class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+										title="Vérifier"
+									>
+										<BadgeCheck size={14} />
+										Vérifier
+									</button>
+								{/if}
+								<button
+									onclick={() => openDeletePartnerDialog(partner)}
+									class="inline-flex size-11 items-center justify-center rounded-md text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+									title="Supprimer"
+								>
+									<Trash2 size={16} />
+								</button>
+							</div>
+						</li>
+					{/each}
+				{/if}
+			</ul>
 		</TabsContent>
 	</Tabs>
 </div>
