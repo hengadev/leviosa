@@ -71,5 +71,17 @@ func (p *InProcessPracticeAccessProvider) address(ctx context.Context, roomID uu
 		slog.WarnContext(ctx, "failed to read the building for the practice access", "building_id", room.BuildingID, "error", err)
 		return ""
 	}
-	return strings.TrimSpace(fmt.Sprintf("%s, %s %s", building.Address, building.PostalCode, building.City))
+	return joinAddress(building.Address, strings.TrimSpace(building.PostalCode+" "+building.City))
+}
+
+// joinAddress joins the non-empty parts of an address with ", ", so a
+// building without a postal code or city leaves no dangling comma.
+func joinAddress(parts ...string) string {
+	kept := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			kept = append(kept, part)
+		}
+	}
+	return strings.Join(kept, ", ")
 }
