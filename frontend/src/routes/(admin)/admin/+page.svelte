@@ -242,12 +242,5 @@
 			<Package size={15} />
 			<span class="whitespace-nowrap">Gérer les produits</span>
 		</a>
-		<a
-			href="/admin/bookings"
-			class="inline-flex items-center gap-2 px-4 py-2 bg-background border border-border-input text-foreground-alt rounded-lg hover:bg-muted transition-colors text-sm font-medium"
-		>
-			<Calendar size={15} />
-			<span class="whitespace-nowrap">Voir les réservations</span>
-		</a>
 	</div>
 </div>
