@@ -2,7 +2,7 @@
     import type { PageData } from "./$types";
     import { superForm } from "sveltekit-superforms";
     import { Dialog, Button, Label, Separator, Tabs } from "bits-ui";
-    import { X, AlertCircle, Building2, Globe, CalendarClock, ShieldCheck } from "@lucide/svelte";
+    import { X, AlertCircle, Building2, Globe, CalendarClock, ShieldCheck, KeyRound } from "@lucide/svelte";
     import { invalidateAll, replaceState } from "$app/navigation";
     import { page } from "$app/state";
     import PracticeVideo from "./PracticeVideo.svelte";
@@ -15,6 +15,7 @@
         { value: "company", label: "Entreprise", icon: Building2 },
         { value: "practice", label: "Page publique", icon: Globe },
         { value: "booking", label: "Réservation", icon: CalendarClock },
+        { value: "access", label: "Accès", icon: KeyRound },
         { value: "security", label: "Sécurité", icon: ShieldCheck },
     ] as const;
     type TabValue = (typeof tabs)[number]["value"];
@@ -153,6 +154,22 @@
         resetForm: false,
         onUpdated: ({ form }) => {
             if (form.valid) bookingPolicyDialogOpen = false;
+        },
+    });
+
+    // Practice Access Form (code de la porte, instructions d'accès). Private:
+    // the door code stays masked until "Afficher".
+    let practiceAccessDialogOpen = $state(false);
+    let showDoorCode = $state(false);
+    const {
+        form: practiceAccessForm,
+        errors: practiceAccessErrors,
+        enhance: practiceAccessEnhance,
+        delayed: practiceAccessDelayed,
+    } = superForm(data.practiceAccessForm, {
+        resetForm: false,
+        onUpdated: ({ form }) => {
+            if (form.valid) practiceAccessDialogOpen = false;
         },
     });
 
@@ -467,6 +484,80 @@
                     </div>
                 {:else}
                     <p class="text-sm text-foreground-alt">Impossible de charger la politique de réservation.</p>
+                {/if}
+            </div>
+        </div>
+        </Tabs.Content>
+
+        <Tabs.Content value="access">
+        <!-- Practice Access Section -->
+        <div class="bg-white rounded-lg border border-border-card overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-card flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold">Accès au cabinet</h2>
+                    <p class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
+                        Ces informations sont privées : elles ne sont envoyées qu'aux clients ayant une réservation confirmée
+                    </p>
+                </div>
+                {#if data.practiceAccess}
+                    <Button.Root
+                        type="button"
+                        class="cursor-pointer shrink-0"
+                        onclick={() => {
+                            $practiceAccessForm.door_code = data.practiceAccess?.doorCode ?? "";
+                            $practiceAccessForm.access_instructions = data.practiceAccess?.accessInstructions ?? "";
+                            practiceAccessDialogOpen = true;
+                        }}
+                    >
+                        <div class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            Modifier
+                        </div>
+                    </Button.Root>
+                {/if}
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="py-3 border-b border-border-card last:border-0">
+                    <div class="font-medium text-sm">Adresse du cabinet</div>
+                    <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
+                        {data.settings?.company?.address || "Non définie"}
+                    </div>
+                    <p class="text-xs text-foreground-alt mt-1">Se modifie dans l'onglet Entreprise.</p>
+                </div>
+                {#if data.practiceAccess}
+                    <div class="flex items-center justify-between gap-4 py-3 border-b border-border-card last:border-0">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-sm">Code de la porte</div>
+                            <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
+                                {#if !data.practiceAccess.doorCode}
+                                    Non défini
+                                {:else if showDoorCode}
+                                    <span class="font-mono">{data.practiceAccess.doorCode}</span>
+                                {:else}
+                                    <span aria-label="Code masqué">••••••</span>
+                                {/if}
+                            </div>
+                        </div>
+                        {#if data.practiceAccess.doorCode}
+                            <Button.Root
+                                type="button"
+                                class="cursor-pointer shrink-0"
+                                aria-pressed={showDoorCode}
+                                onclick={() => (showDoorCode = !showDoorCode)}
+                            >
+                                <div class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                                    {showDoorCode ? "Masquer" : "Afficher"}
+                                </div>
+                            </Button.Root>
+                        {/if}
+                    </div>
+                    <div class="py-3 border-b border-border-card last:border-0">
+                        <div class="font-medium text-sm">Instructions d'accès</div>
+                        <div class="text-sm text-foreground-alt mt-1 whitespace-pre-line [overflow-wrap:anywhere]">
+                            {data.practiceAccess.accessInstructions || "Non définies"}
+                        </div>
+                    </div>
+                {:else}
+                    <p class="text-sm text-foreground-alt">Impossible de charger l'accès au cabinet.</p>
                 {/if}
             </div>
         </div>
@@ -1208,6 +1299,83 @@
                     <Button.Root type="submit" class="cursor-pointer" disabled={$bookingPolicyDelayed}>
                         <div class="h-input rounded-input bg-dark text-background shadow-mini hover:bg-dark/95 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-8 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
                             {$bookingPolicyDelayed ? "Enregistrement..." : "Enregistrer"}
+                        </div>
+                    </Button.Root>
+                </div>
+            </form>
+
+            <Button.Root type="button" class="cursor-pointer">
+                <Dialog.Close class="focus-visible:ring-foreground focus-visible:ring-offset-background focus-visible:outline-hidden absolute right-5 top-5 rounded-md focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer">
+                    <X class="text-foreground size-5" />
+                    <span class="sr-only">Close</span>
+                </Dialog.Close>
+            </Button.Root>
+        </Dialog.Content>
+    </Dialog.Portal>
+</Dialog.Root>
+
+<!-- Practice Access Dialog -->
+<Dialog.Root bind:open={practiceAccessDialogOpen}>
+    <Dialog.Portal>
+        <Dialog.Overlay class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/80" />
+        <Dialog.Content class="rounded-card-lg bg-background shadow-popover data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 outline-hidden fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] border p-8 sm:max-w-[540px] md:w-full">
+            <Dialog.Title class="w-full text-xl font-semibold tracking-tight">
+                Modifier l'accès au cabinet
+            </Dialog.Title>
+            <Dialog.Description class="text-foreground-alt !mt-1 text-sm">
+                Informations privées, envoyées uniquement aux clients ayant une réservation confirmée. Laissez un champ vide pour l'effacer
+            </Dialog.Description>
+
+            <Separator.Root class="bg-muted mx-5 !mb-2 !mt-5 block h-px" />
+
+            <form method="POST" action="?/updatePracticeAccess" use:practiceAccessEnhance class="grid gap-4">
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="practice-access-door-code" class="text-sm font-medium">Code de la porte</Label.Root>
+                    <input
+                        id="practice-access-door-code"
+                        name="door_code"
+                        type="text"
+                        maxlength="50"
+                        autocomplete="off"
+                        spellcheck="false"
+                        bind:value={$practiceAccessForm.door_code}
+                        class="h-input rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden inline-flex w-full items-center border px-4 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    />
+                    <p class="text-xs text-foreground-alt">50 caractères au plus.</p>
+                    {#if $practiceAccessErrors.door_code}
+                        <p class="text-sm text-destructive" role="alert">{$practiceAccessErrors.door_code[0]}</p>
+                    {/if}
+                </div>
+
+                <div class="grid gap-2 py-2">
+                    <Label.Root for="practice-access-instructions" class="text-sm font-medium">Instructions d'accès</Label.Root>
+                    <textarea
+                        id="practice-access-instructions"
+                        name="access_instructions"
+                        rows="5"
+                        maxlength="1000"
+                        bind:value={$practiceAccessForm.access_instructions}
+                        class="rounded-card-sm border-border-input bg-background hover:border-dark-40 focus:ring-foreground focus:ring-offset-background focus:outline-hidden w-full border px-4 py-3 text-base focus:ring-2 focus:ring-offset-2 sm:text-sm transition-all"
+                    ></textarea>
+                    <p class="text-xs text-foreground-alt">Bâtiment, étage, interphone… 1000 caractères au plus.</p>
+                    {#if $practiceAccessErrors.access_instructions}
+                        <p class="text-sm text-destructive" role="alert">{$practiceAccessErrors.access_instructions[0]}</p>
+                    {/if}
+                </div>
+
+                {#if $practiceAccessErrors._errors?.length}
+                    <p class="text-sm text-destructive" role="alert">{$practiceAccessErrors._errors[0]}</p>
+                {/if}
+
+                <div class="flex w-full justify-end gap-3">
+                    <Button.Root type="button" class="cursor-pointer">
+                        <Dialog.Close class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-6 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            Annuler
+                        </Dialog.Close>
+                    </Button.Root>
+                    <Button.Root type="submit" class="cursor-pointer" disabled={$practiceAccessDelayed}>
+                        <div class="h-input rounded-input bg-dark text-background shadow-mini hover:bg-dark/95 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-8 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all">
+                            {$practiceAccessDelayed ? "Enregistrement..." : "Enregistrer"}
                         </div>
                     </Button.Root>
                 </div>

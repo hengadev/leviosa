@@ -30,6 +30,8 @@ import {
     practicePageDefaults,
     bookingPolicySchema,
     bookingPolicyDefaults,
+    practiceAccessSchema,
+    practiceAccessDefaults,
 } from "./schemas"
 // Enable mock mode for staging
 const MOCK_MODE = env.USE_MOCK_DATA === 'true'
@@ -68,6 +70,10 @@ type BookingPolicySettings = { minimumNoticeHours: number; horizonWeeks: number;
 // administrator can put on the public page.
 type PracticeOption = { id: string; label: string }
 
+// Practice access: the door code and access instructions. Private: read from
+// the admin-only endpoint, server-side, and never logged.
+type PracticeAccessSettings = { doorCode: string; accessInstructions: string }
+
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     // The admin layout already lets administrators only; this is a second check.
     const { permissions } = await parent()
@@ -89,6 +95,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     const refreshTokenDurationForm = await superValidate(arktype(refreshTokenDurationSchema, { defaults: refreshTokenDurationDefaults }))
     const practicePageForm = await superValidate(arktype(practicePageSchema, { defaults: practicePageDefaults }))
     const bookingPolicyForm = await superValidate(arktype(bookingPolicySchema, { defaults: bookingPolicyDefaults }))
+    const practiceAccessForm = await superValidate(arktype(practiceAccessSchema, { defaults: practiceAccessDefaults }))
 
     let settings: Settings | null = null
     let settingsError = false
@@ -225,6 +232,27 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         }
     }
 
+    // Practice access: admin-only GET, empty values while unset. Best-effort.
+    let practiceAccess: PracticeAccessSettings | null = null
+    if (MOCK_MODE) {
+        practiceAccess = { doorCode: '', accessInstructions: '' }
+    } else {
+        try {
+            const accessRes = await fetch(`${env.API_URL}/admin/settings/practice-access`, {
+                headers: { 'Authorization': `Bearer ${sessionCookie}` },
+            })
+            if (accessRes.ok) {
+                const access: { door_code?: string; access_instructions?: string } = await accessRes.json()
+                practiceAccess = {
+                    doorCode: access.door_code ?? '',
+                    accessInstructions: access.access_instructions ?? '',
+                }
+            }
+        } catch {
+            practiceAccess = null
+        }
+    }
+
     return {
         companyNameForm,
         companyEmailForm,
@@ -239,6 +267,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         practicePageForm,
         bookingPolicyForm,
         bookingPolicy,
+        practiceAccessForm,
+        practiceAccess,
         settings,
         settingsError,
         practicePage,
@@ -343,6 +373,49 @@ export const actions = {
         }
 
         return { bookingPolicyForm: form }
+    },
+
+    updatePracticeAccess: async ({ request, fetch, cookies }) => {
+        const form = await superValidate(request, arktype(practiceAccessSchema, { defaults: practiceAccessDefaults }))
+
+        if (!form.valid) {
+            return fail(400, { practiceAccessForm: form })
+        }
+
+        if (MOCK_MODE) {
+            // Never log the door code or the instructions.
+            console.log('[MOCK] Updating practice access')
+            return { practiceAccessForm: form }
+        }
+
+        const sessionCookie = cookies.get('session');
+
+        const res = await fetch(`${env.API_URL}/admin/settings/practice-access`, {
+            method: "POST",
+            headers: {
+                'Content-Type': "application/json",
+                'Authorization': `Bearer ${sessionCookie}`,
+            },
+            body: JSON.stringify({
+                door_code: form.data.door_code,
+                access_instructions: form.data.access_instructions,
+            }),
+        })
+
+        if (!res.ok) {
+            switch (res.status) {
+                case 400:
+                    return setError(form, "Valeurs invalides (code : 50 caractères au plus, sur une ligne ; instructions : 1000 caractères au plus).")
+                case 401:
+                    return setError(form, "Non autorisé. Veuillez vous reconnecter.")
+                case 403:
+                    return setError(form, "Accès refusé. Vous devez être administrateur.")
+                default:
+                    return setError(form, "Erreur lors de l'enregistrement. Réessayez.")
+            }
+        }
+
+        return { practiceAccessForm: form }
     },
 
     updateCompanyName: async ({ request, fetch, cookies }) => {
