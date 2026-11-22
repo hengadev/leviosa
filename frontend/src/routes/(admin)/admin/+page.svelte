@@ -126,7 +126,7 @@
 		</div>
 	</div>
 
-	<div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+	<div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
 		<!-- Recent Bookings -->
 		<div class="lg:col-span-3 bg-background rounded-lg border border-border-card">
 			<div class="flex items-center justify-between px-6 py-4 border-b border-border-card">
@@ -231,16 +231,5 @@
 				</div>
 			{/if}
 		</div>
-	</div>
-
-	<!-- Quick Actions -->
-	<div class="flex flex-wrap gap-3">
-		<a
-			href="/admin/products"
-			class="inline-flex items-center gap-2 px-4 py-2 bg-background border border-border-input text-foreground-alt rounded-lg hover:bg-muted transition-colors text-sm font-medium"
-		>
-			<Package size={15} />
-			<span class="whitespace-nowrap">Gérer les produits</span>
-		</a>
 	</div>
 </div>
