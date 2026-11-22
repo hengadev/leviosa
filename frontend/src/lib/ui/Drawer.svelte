@@ -129,7 +129,7 @@
 		width: 100%;
 		max-height: 90vh;
 		overflow-y: auto;
-		padding: 1rem;
+		padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
 		box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
 		border-top-left-radius: var(--border-top-radius);
 		border-top-right-radius: var(--border-top-radius);
