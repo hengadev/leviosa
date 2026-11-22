@@ -194,7 +194,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
                     logo_content_type: '',
                 },
                 otp: {
-                    duration: parseInt(find('otp_duration') || '300'),
+                    duration: parseInt(find('otp_duration') || '600'),
                     length: parseInt(find('otp_length') || '6'),
                     max_attempts: parseInt(find('otp_max_attempts') || '5'),
                 },

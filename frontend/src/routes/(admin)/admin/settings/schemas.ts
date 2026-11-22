@@ -123,7 +123,7 @@ export const practiceAccessDefaults: PracticeAccess = {
 }
 
 export const otpDurationDefaults: OtpDuration = {
-    duration: 300,
+    duration: 600,
 }
 
 export const otpLengthDefaults: OtpLength = {

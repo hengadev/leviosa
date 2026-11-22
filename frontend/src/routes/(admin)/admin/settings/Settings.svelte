@@ -628,14 +628,14 @@
                     <div class="flex-1 min-w-0">
                         <div class="font-medium text-sm">Durée de validité OTP</div>
                         <div class="text-sm text-foreground-alt mt-1 [overflow-wrap:anywhere]">
-                            {formatSeconds(data.settings?.otp?.duration || 300)} (60-3600 secondes)
+                            {formatSeconds(data.settings?.otp?.duration || 600)} (60-3600 secondes)
                         </div>
                     </div>
                     <Button.Root
                         type="button"
                         class="cursor-pointer shrink-0"
                         onclick={() => {
-                            $otpDurationForm.duration = data.settings?.otp?.duration || 300;
+                            $otpDurationForm.duration = data.settings?.otp?.duration || 600;
                             otpDurationDialogOpen = true;
                         }}
                     >
