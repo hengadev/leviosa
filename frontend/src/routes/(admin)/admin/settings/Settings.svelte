@@ -1,12 +1,36 @@
 <script lang="ts">
     import type { PageData } from "./$types";
     import { superForm } from "sveltekit-superforms";
-    import { Dialog, Button, Label, Separator } from "bits-ui";
-    import { X, AlertCircle } from "@lucide/svelte";
-    import { invalidateAll } from "$app/navigation";
+    import { Dialog, Button, Label, Separator, Tabs } from "bits-ui";
+    import { X, AlertCircle, Building2, Globe, CalendarClock, ShieldCheck } from "@lucide/svelte";
+    import { invalidateAll, replaceState } from "$app/navigation";
+    import { page } from "$app/state";
     import PracticeVideo from "./PracticeVideo.svelte";
 
     let { data }: { data: PageData } = $props();
+
+    // One tab per group of settings, so the page never stacks every section.
+    // The open tab is kept in `?tab=` so a reload or a shared link lands on it.
+    const tabs = [
+        { value: "company", label: "Entreprise", icon: Building2 },
+        { value: "practice", label: "Page publique", icon: Globe },
+        { value: "booking", label: "Réservation", icon: CalendarClock },
+        { value: "security", label: "Sécurité", icon: ShieldCheck },
+    ] as const;
+    type TabValue = (typeof tabs)[number]["value"];
+
+    function isTab(value: string | null): value is TabValue {
+        return tabs.some((tab) => tab.value === value);
+    }
+
+    const requestedTab = page.url.searchParams.get("tab");
+    let activeTab: string = $state(isTab(requestedTab) ? requestedTab : "company");
+
+    function selectTab(value: string) {
+        const url = new URL(page.url.href);
+        url.searchParams.set("tab", value);
+        replaceState(url, page.state);
+    }
 
     let retrying = $state(false);
 
@@ -204,7 +228,23 @@
     </div>
 {:else}
 <div class="flex-1 overflow-y-auto p-6">
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto">
+    <Tabs.Root bind:value={activeTab} onValueChange={selectTab} class="space-y-6">
+        <Tabs.List
+            class="flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1"
+        >
+            {#each tabs as tab (tab.value)}
+                <Tabs.Trigger
+                    value={tab.value}
+                    class="px-4 py-2 rounded-none bg-transparent border-b-2 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
+                >
+                    <tab.icon size={16} />
+                    <span>{tab.label}</span>
+                </Tabs.Trigger>
+            {/each}
+        </Tabs.List>
+
+        <Tabs.Content value="company">
         <!-- Company Information Section -->
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
@@ -325,7 +365,9 @@
                 </div>
             </div>
         </div>
+        </Tabs.Content>
 
+        <Tabs.Content value="practice">
         <!-- Practice Page Section -->
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
@@ -372,7 +414,9 @@
                 <PracticeVideo videoUrl={data.practicePage?.videoUrl ?? ""} />
             </div>
         </div>
+        </Tabs.Content>
 
+        <Tabs.Content value="booking">
         <!-- Booking Policy Section -->
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
@@ -426,7 +470,9 @@
                 {/if}
             </div>
         </div>
+        </Tabs.Content>
 
+        <Tabs.Content value="security" class="space-y-6">
         <!-- OTP Configuration Section -->
         <div class="bg-white rounded-lg border border-border-card overflow-hidden">
             <div class="px-6 py-4 border-b border-border-card">
@@ -558,6 +604,8 @@
                 </div>
             </div>
         </div>
+        </Tabs.Content>
+    </Tabs.Root>
     </div>
 </div>
 
