@@ -299,3 +299,13 @@ func NewGetBookingPolicyRequest(t *testing.T, ctx context.Context, serverURL str
 func NewSetBookingPolicyRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetBookingPolicyRequest) *http.Request {
 	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.SetBookingPolicyEndpoint, request)
 }
+
+func NewGetPracticeAccessRequest(t *testing.T, ctx context.Context, serverURL string) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, serverURL+settingsEndpoints.AdminGetPracticeAccessEndpoint, nil)
+	require.NoError(t, err)
+	return req
+}
+
+func NewSetPracticeAccessRequest(t *testing.T, ctx context.Context, serverURL string, request settingsDomain.SetPracticeAccessRequest) *http.Request {
+	return newJSONRequest(t, ctx, http.MethodPost, serverURL+settingsEndpoints.AdminSetPracticeAccessEndpoint, request)
+}

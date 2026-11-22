@@ -39,6 +39,14 @@ type LatePaymentNotificationService interface {
 	SendLatePaymentRefund(ctx context.Context, data BookingNotificationData) error
 }
 
+// AccessUpdateNotificationService tells a client with an upcoming confirmed
+// booking that the practice access code changed, with the current access.
+// Implemented by the notification module next to BookingNotificationService,
+// which reads the practice access at send time; data.ClientEmail is set.
+type AccessUpdateNotificationService interface {
+	SendBookingAccessUpdate(ctx context.Context, data BookingNotificationData) error
+}
+
 // BookingNotificationData contains information needed to send booking notifications.
 // Required fields (IDs) are always populated by the booking service.
 // Optional fields may be populated if available, otherwise the notification

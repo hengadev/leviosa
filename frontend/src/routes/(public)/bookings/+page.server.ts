@@ -27,6 +27,16 @@ export type PublicBooking = {
 	cancelled_by?: 'client' | 'practitioner';
 	cancelled_at?: string;
 	refunded_amount_cents?: number;
+	/**
+	 * How to get into the practice; present only while the booking is
+	 * confirmed and its slot has not ended, and a door code or instructions
+	 * are set (issue 024).
+	 */
+	access?: {
+		address: string;
+		door_code: string;
+		instructions: string;
+	};
 };
 
 /** Why a cancellation failed, shown in the booking's language by the page. */

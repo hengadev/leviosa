@@ -2,11 +2,14 @@ package notification
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	bookingDomain "github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	catalogDomain "github.com/Leviosa-care/leviosa/backend/internal/catalog/domain"
 	notificationDomain "github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
@@ -43,6 +46,14 @@ type spyEmailService struct {
 	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
 	partnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	latePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
+	accessUpdates        []notificationDomain.BookingAccessUpdateRequest
+}
+
+func (s *spyEmailService) SendBookingAccessUpdateEmail(ctx context.Context, req notificationDomain.BookingAccessUpdateRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.accessUpdates = append(s.accessUpdates, req)
+	return nil
 }
 
 func (s *spyEmailService) SendLatePaymentRefundEmail(ctx context.Context, req notificationDomain.LatePaymentRefundRequest) error {
@@ -851,4 +862,167 @@ func TestSendLatePaymentRefund_FrenchByDefault(t *testing.T) {
 	}
 	assertEqual(t, "Locale", string(notificationDomain.LocaleFR), string(spy.latePaymentRefunds[0].Locale))
 	assertEqual(t, "BookAgainURL", "https://app.leviosa.com/", spy.latePaymentRefunds[0].BookAgainURL)
+}
+
+// ---- Practice access ----
+
+// fakePracticeAccess is a practice access port whose values the test changes
+// between sends, like an admin changing the door code.
+type fakePracticeAccess struct {
+	mu      sync.Mutex
+	access  bookingDomain.PracticeAccess
+	err     error
+	roomIDs []uuid.UUID
+}
+
+func (f *fakePracticeAccess) GetPracticeAccess(ctx context.Context, roomID uuid.UUID) (bookingDomain.PracticeAccess, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.roomIDs = append(f.roomIDs, roomID)
+	return f.access, f.err
+}
+
+func (f *fakePracticeAccess) set(doorCode, instructions string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.access = bookingDomain.PracticeAccess{Address: "Port address", DoorCode: doorCode, Instructions: instructions}
+}
+
+func practiceAccessBookingData() bookingPorts.BookingNotificationData {
+	data := makeBookingData()
+	data.ClientEmail = "client@example.com"
+	data.ClientName = "Alice Smith"
+	data.PartnerEmail = "partner@example.com"
+	data.PartnerName = "Bob Jones"
+	data.Address = "Building address"
+	return data
+}
+
+func TestBookingEmails_PracticeAccessReadAtSendTime(t *testing.T) {
+	data := practiceAccessBookingData()
+	access := &fakePracticeAccess{}
+	access.set("1111A", "Ring twice.")
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	WithPracticeAccessProvider(access)(adapter)
+
+	if err := adapter.sendBookingConfirmationEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := adapter.sendBookingReminderEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	access.set("2222B", "Second floor.\nLeft door.")
+
+	if err := adapter.sendBookingConfirmationEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := adapter.sendBookingReminderEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(spy.bookingConfirmations) != 2 || len(spy.bookingReminders) != 2 {
+		t.Fatalf("expected 2 confirmations and 2 reminders, got %d and %d", len(spy.bookingConfirmations), len(spy.bookingReminders))
+	}
+	assertEqual(t, "first confirmation DoorCode", "1111A", spy.bookingConfirmations[0].DoorCode)
+	assertEqual(t, "first confirmation AccessInstructions", "Ring twice.", spy.bookingConfirmations[0].AccessInstructions)
+	assertEqual(t, "first reminder DoorCode", "1111A", spy.bookingReminders[0].DoorCode)
+	assertEqual(t, "second confirmation DoorCode", "2222B", spy.bookingConfirmations[1].DoorCode)
+	assertEqual(t, "second confirmation AccessInstructions", "Second floor.\nLeft door.", spy.bookingConfirmations[1].AccessInstructions)
+	assertEqual(t, "second reminder DoorCode", "2222B", spy.bookingReminders[1].DoorCode)
+	assertEqual(t, "second reminder AccessInstructions", "Second floor.\nLeft door.", spy.bookingReminders[1].AccessInstructions)
+
+	// The address row keeps the adapter's practice address, not the port's.
+	assertEqual(t, "confirmation Address", "Building address", spy.bookingConfirmations[1].Address)
+	assertEqual(t, "reminder Address", "Building address", spy.bookingReminders[1].Address)
+
+	for _, roomID := range access.roomIDs {
+		if roomID != data.RoomID {
+			t.Errorf("practice access read for room %s, want the booking's room %s", roomID, data.RoomID)
+		}
+	}
+
+	// Partner notices carry no practice access.
+	if len(spy.partnerNotices) != 2 {
+		t.Fatalf("expected 2 partner notices, got %d", len(spy.partnerNotices))
+	}
+	for _, notice := range spy.partnerNotices {
+		if s := fmt.Sprintf("%+v", notice); strings.Contains(s, "1111A") || strings.Contains(s, "2222B") {
+			t.Errorf("partner notice carries the door code: %s", s)
+		}
+	}
+}
+
+func TestBookingEmails_FailingPracticeAccessStillSends(t *testing.T) {
+	data := practiceAccessBookingData()
+	access := &fakePracticeAccess{err: errors.New("settings unavailable")}
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	WithPracticeAccessProvider(access)(adapter)
+
+	if err := adapter.sendBookingConfirmationEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := adapter.sendBookingReminderEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(spy.bookingConfirmations) != 1 || len(spy.bookingReminders) != 1 || len(spy.partnerNotices) != 1 {
+		t.Fatalf("emails must still go out: %d confirmations, %d reminders, %d partner notices",
+			len(spy.bookingConfirmations), len(spy.bookingReminders), len(spy.partnerNotices))
+	}
+	confirmation, reminder := spy.bookingConfirmations[0], spy.bookingReminders[0]
+	if confirmation.DoorCode != "" || confirmation.AccessInstructions != "" {
+		t.Errorf("confirmation must carry no practice access on a read error, got %q / %q", confirmation.DoorCode, confirmation.AccessInstructions)
+	}
+	if reminder.DoorCode != "" || reminder.AccessInstructions != "" {
+		t.Errorf("reminder must carry no practice access on a read error, got %q / %q", reminder.DoorCode, reminder.AccessInstructions)
+	}
+	assertEqual(t, "confirmation Address", "Building address", confirmation.Address)
+}
+
+func TestBookingEmails_NoPracticeAccessProvider(t *testing.T) {
+	data := practiceAccessBookingData()
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+
+	if err := adapter.sendBookingConfirmationEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := spy.bookingConfirmations[0]; got.DoorCode != "" || got.AccessInstructions != "" {
+		t.Errorf("no practice access without a provider, got %q / %q", got.DoorCode, got.AccessInstructions)
+	}
+}
+
+func TestSendAccessUpdate_LocaleAccessAndManageLink(t *testing.T) {
+	data := practiceAccessBookingData()
+	data.Locale = "en"
+	data.Token = "abc123token"
+	access := &fakePracticeAccess{}
+	access.set("2222B", "Second floor.")
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	WithPracticeAccessProvider(access)(adapter)
+
+	if err := adapter.sendAccessUpdateEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.accessUpdates) != 1 {
+		t.Fatalf("expected 1 access update email, got %d", len(spy.accessUpdates))
+	}
+	req := spy.accessUpdates[0]
+	assertEqual(t, "ToEmail", data.ClientEmail, req.ToEmail)
+	assertEqual(t, "Locale", "en", string(req.Locale))
+	assertEqual(t, "DoorCode", "2222B", req.DoorCode)
+	assertEqual(t, "AccessInstructions", "Second floor.", req.AccessInstructions)
+	assertEqual(t, "Address", "Building address", req.Address)
+	assertEqual(t, "PartnerName", "Bob Jones", req.PartnerName)
+	assertEqual(t, "ManageURL", "https://app.leviosa.com/bookings?token=abc123token", req.ManageURL)
+	if len(spy.bookingReminders) != 0 || len(spy.bookingConfirmations) != 0 || len(spy.partnerNotices) != 0 {
+		t.Error("the access update sends only the access update email")
+	}
 }

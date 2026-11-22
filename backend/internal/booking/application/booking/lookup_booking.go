@@ -137,5 +137,31 @@ func (s *BookingService) publicResponse(ctx context.Context, booking *domain.Boo
 		resp.RefundPreview = preview
 	}
 
+	resp.Access = s.practiceAccessView(ctx, booking)
+
 	return resp
+}
+
+// practiceAccessView is the practice access the booking page shows, or nil
+// when the visibility rule hides it, when neither a door code nor
+// instructions are set, or when it cannot be read: a failed read never fails
+// the lookup. The values are never logged.
+func (s *BookingService) practiceAccessView(ctx context.Context, booking *domain.Booking) *domain.PracticeAccessView {
+	if s.practiceAccess == nil || !domain.ShowsPracticeAccess(booking, s.now()) {
+		return nil
+	}
+	access, err := s.practiceAccess.GetPracticeAccess(ctx, booking.RoomID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read the practice access of a looked-up booking",
+			"booking_id", booking.ID, "error", err)
+		return nil
+	}
+	if !access.IsSet() {
+		return nil
+	}
+	return &domain.PracticeAccessView{
+		Address:      access.Address,
+		DoorCode:     access.DoorCode,
+		Instructions: access.Instructions,
+	}
 }

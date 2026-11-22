@@ -22,8 +22,10 @@ type BookingService struct {
 	tokenSecret         []byte
 	audit               audit.Logger
 	policyProvider      ports.BookingPolicyProvider
+	practiceAccess      ports.PracticeAccessProvider
 	exceptionRepo       ports.AvailabilityExceptionRepository
 	latePaymentNotifier ports.LatePaymentNotificationService
+	accessNotifier      ports.AccessUpdateNotificationService
 	clock               func() time.Time
 }
 
@@ -78,11 +80,25 @@ func WithBookingPolicyProvider(p ports.BookingPolicyProvider) Option {
 	return func(s *BookingService) { s.policyProvider = p }
 }
 
+// WithPracticeAccessProvider injects the source of the practice access
+// (address, door code, instructions) the booking page shows a confirmed,
+// upcoming booking. Without it the lookup carries no access.
+func WithPracticeAccessProvider(p ports.PracticeAccessProvider) Option {
+	return func(s *BookingService) { s.practiceAccess = p }
+}
+
 // WithLatePaymentNotifier injects the notification sent to a client whose
 // late payment was refunded because the slot was no longer available. If not
 // provided, the refund is made without an email.
 func WithLatePaymentNotifier(n ports.LatePaymentNotificationService) Option {
 	return func(s *BookingService) { s.latePaymentNotifier = n }
+}
+
+// WithAccessUpdateNotifier injects the notification that emails the current
+// practice access to the clients of upcoming bookings. If not provided,
+// SendAccessUpdate sends nothing.
+func WithAccessUpdateNotifier(n ports.AccessUpdateNotificationService) Option {
+	return func(s *BookingService) { s.accessNotifier = n }
 }
 
 // WithAuditLogger injects the audit-log port used to record sensitive

@@ -24,6 +24,9 @@ type EmailService interface {
 	SendBookingClientCancellationEmail(ctx context.Context, req domain.BookingClientCancellationRequest) error
 	SendBookingPartnerCancellationEmail(ctx context.Context, req domain.BookingPartnerCancellationRequest) error
 	SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error
+	// SendBookingAccessUpdateEmail tells a client with an upcoming booking, in
+	// the booking's locale, that the practice access code changed.
+	SendBookingAccessUpdateEmail(ctx context.Context, req domain.BookingAccessUpdateRequest) error
 
 	// SendLatePaymentRefundEmail tells a client their late payment was
 	// refunded because the slot was no longer available (ADR-0018).

@@ -288,6 +288,13 @@ func (c *SMTPClient) SendBookingReminderEmail(ctx context.Context, req domain.Bo
 	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingReminder(req, time.Now()))
 }
 
+// SendBookingAccessUpdateEmail tells a client with an upcoming booking, in
+// the booking's locale, that the practice access code changed, with the new
+// access. No attachment.
+func (c *SMTPClient) SendBookingAccessUpdateEmail(ctx context.Context, req domain.BookingAccessUpdateRequest) error {
+	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingAccessUpdate(req, time.Now()))
+}
+
 func (c *SMTPClient) SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error {
 	data := struct {
 		Name         string

@@ -32,6 +32,13 @@ const (
 	BookingMinimumNoticeHours = "booking_minimum_notice_hours"
 	BookingHorizonWeeks       = "booking_horizon_weeks"
 	BookingPaymentHoldMinutes = "booking_payment_hold_minutes"
+
+	// Practice access (docs/issues/023-practice-access-settings.md): the door
+	// code and access instructions of the practice. Private: stored encrypted
+	// (settings.encrypted), readable and writable only by administrators,
+	// never served by a public or internal route nor the bulk endpoint.
+	PracticeAccessDoorCode     = "practice_access_door_code"
+	PracticeAccessInstructions = "practice_access_instructions"
 )
 
 // NOTE: the key that I am going to keep

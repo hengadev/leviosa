@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -113,12 +114,25 @@ var (
 	realNotificationAdapter *bookingNotification.BookingNotificationAdapter
 	notificationSMSSpy      *IntegrationSMSSpy
 	notificationEmailSpy    *IntegrationEmailSpy
+	// accessNotificationAdapter is the same real adapter, also reading the
+	// practice access at send time, as the app wires it.
+	accessNotificationAdapter *bookingNotification.BookingNotificationAdapter
 
 	auditLogger *audit.PostgresLogger
 
 	// Real settings repository behind the booking policy: tests change the
 	// policy through it, as the admin settings endpoint does.
 	settingsRepo settingsPorts.SettingsRepository
+
+	// Real settings service: tests set the practice access through it, as the
+	// admin settings endpoint does. practiceAccess wraps the in-process
+	// provider the booking service reads, so a test can make its read fail.
+	settingsSvc    settingsPorts.SettingsService
+	practiceAccess *switchablePracticeAccess
+
+	// suiteClockOffset shifts the booking service's clock (nanoseconds), so a
+	// test can look at a booking after its slot has ended. Zero: time.Now.
+	suiteClockOffset atomic.Int64
 
 	// Real availability service: the partner area creates, edits and deletes
 	// availabilities through it (recurring availability tests).
@@ -281,16 +295,31 @@ func TestMain(m *testing.M) {
 	// Booking policy from the real settings service, as the app wires it.
 	settingsRepo = settingsPostgres.New(ctx, testPool)
 	realSettingsService := settingsService.New(settingsRepo, nil, crypto, settingsNoop.NewPublisher(), nil)
+	settingsSvc = realSettingsService
 	if err := settingsRepo.SetInt(ctx, &settingsDomain.Setting[int]{Key: settingsContracts.BookingMinimumNoticeHours, Value: suiteMinimumNoticeHours}); err != nil {
 		log.Fatalf("Failed to set the suite's booking policy: %v", err)
+	}
+
+	realBuildingRepo := buildingPostgres.New(ctx, testPool)
+	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
+
+	realRoomRepo := roomPostgres.New(ctx, testPool)
+	realRoomService := roomAppService.New(realRoomRepo, realBuildingRepo, crypto)
+
+	// Practice access from the real settings service, as the app wires it.
+	practiceAccess = &switchablePracticeAccess{
+		provider: bookingSettings.NewInProcessPracticeAccessProvider(realSettingsService, realRoomService, realBuildingService),
 	}
 
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
 		bookingService.WithTokenSecret(testTokenSecret),
 		bookingService.WithAuditLogger(auditLogger),
 		bookingService.WithLatePaymentNotifier(notificationSpy),
+		bookingService.WithAccessUpdateNotifier(notificationSpy),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
 		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)),
+		bookingService.WithPracticeAccessProvider(practiceAccess),
+		bookingService.WithClock(func() time.Time { return time.Now().Add(time.Duration(suiteClockOffset.Load())) }),
 		bookingService.WithAvailabilityExceptionRepository(exceptionRepo))
 
 	allocationRepo, err := allocationPostgres.New(ctx, testPool)
@@ -305,12 +334,6 @@ func TestMain(m *testing.M) {
 	// assert that an SMS send is actually attempted end-to-end, not just that
 	// the notification port was invoked.
 
-	realBuildingRepo := buildingPostgres.New(ctx, testPool)
-	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
-
-	realRoomRepo := roomPostgres.New(ctx, testPool)
-	realRoomService := roomAppService.New(realRoomRepo, realBuildingRepo, crypto)
-
 	notificationSMSSpy = &IntegrationSMSSpy{}
 	notificationEmailSpy = &IntegrationEmailSpy{}
 	realNotificationAdapter = bookingNotification.NewBookingNotificationAdapter(
@@ -322,6 +345,17 @@ func TestMain(m *testing.M) {
 		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
 		catalogProductService,
 		&stubSettingsProvider{},
+	)
+	accessNotificationAdapter = bookingNotification.NewBookingNotificationAdapter(
+		notificationEmailSpy,
+		notificationSMSSpy,
+		"https://app.leviosa.test",
+		bookingNotification.NewInProcessUserFetcher(realAuthUserService),
+		bookingNotification.NewInProcessRoomFetcher(realRoomService),
+		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
+		catalogProductService,
+		&stubSettingsProvider{},
+		bookingNotification.WithPracticeAccessProvider(practiceAccess),
 	)
 
 	// Pre-compute the hash of the test service key so the mock secret reader can

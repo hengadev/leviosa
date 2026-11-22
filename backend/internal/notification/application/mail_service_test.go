@@ -188,6 +188,9 @@ func (f *fakeEmailClient) SendBookingPartnerCancellationEmail(ctx context.Contex
 func (f *fakeEmailClient) SendBookingReminderEmail(ctx context.Context, req domain.BookingReminderRequest) error {
 	return nil
 }
+func (f *fakeEmailClient) SendBookingAccessUpdateEmail(ctx context.Context, req domain.BookingAccessUpdateRequest) error {
+	return nil
+}
 func (f *fakeEmailClient) SendLatePaymentRefundEmail(ctx context.Context, req domain.LatePaymentRefundRequest) error {
 	return nil
 }
@@ -272,5 +275,11 @@ func (s *stubSettingsService) GetBookingPolicy(ctx context.Context) (*settingsDo
 	return nil, nil
 }
 func (s *stubSettingsService) SetBookingPolicy(ctx context.Context, req *settingsDomain.SetBookingPolicyRequest) (*settingsDomain.SetBookingPolicyResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) GetPracticeAccess(ctx context.Context) (*settingsDomain.GetPracticeAccessResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetPracticeAccess(ctx context.Context, req *settingsDomain.SetPracticeAccessRequest) (*settingsDomain.SetPracticeAccessResponse, error) {
 	return nil, nil
 }

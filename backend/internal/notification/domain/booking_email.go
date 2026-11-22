@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,11 @@ type BookingConfirmationRequest struct {
 	// ManageURL opens the booking token page, where the client can see and
 	// cancel the booking. Empty when the booking has no token.
 	ManageURL string
+
+	// DoorCode and AccessInstructions are the practice access, read when the
+	// email is sent. Private: never in the calendar file, never logged.
+	DoorCode           string
+	AccessInstructions string
 }
 
 // BookingPartnerNoticeRequest tells the partner a new booking was confirmed.
@@ -84,6 +90,9 @@ type clientConfirmationStrings struct {
 	PaidOnlineLabel   string
 	BalanceLabel      string
 	ReferenceLabel    string
+	AccessHeading     string
+	DoorCodeLabel     string
+	InstructionsLabel string
 	ManageText        string
 	ManageButton      string
 	CalendarNote      string
@@ -109,6 +118,9 @@ var clientConfirmationCopy = map[Locale]clientConfirmationStrings{
 		PaidOnlineLabel:   "Payé en ligne",
 		BalanceLabel:      "Reste à régler sur place, par carte",
 		ReferenceLabel:    "Référence",
+		AccessHeading:     "Accès au cabinet",
+		DoorCodeLabel:     "Code d'accès",
+		InstructionsLabel: "Indications",
 		ManageText:        "Vous pouvez consulter ou annuler votre réservation à tout moment depuis ce lien :",
 		ManageButton:      "Gérer ma réservation",
 		CalendarNote:      "Le fichier joint (.ics) ajoute ce rendez-vous à votre agenda.",
@@ -132,6 +144,9 @@ var clientConfirmationCopy = map[Locale]clientConfirmationStrings{
 		PaidOnlineLabel:   "Paid online",
 		BalanceLabel:      "Balance due by card at the practice",
 		ReferenceLabel:    "Reference",
+		AccessHeading:     "Getting in",
+		DoorCodeLabel:     "Door code",
+		InstructionsLabel: "Directions",
 		ManageText:        "You can view or cancel your booking at any time from this link:",
 		ManageButton:      "Manage my booking",
 		CalendarNote:      "The attached file (.ics) adds this appointment to your calendar.",
@@ -159,6 +174,32 @@ type BookingConfirmationView struct {
 	ManageURL  string
 	BookingID  string
 	Year       int
+	PracticeAccessView
+}
+
+// PracticeAccessView is the practice access block of the client confirmation
+// and reminder: shown only when HasAccess, i.e. a door code or access
+// instructions are set.
+type PracticeAccessView struct {
+	HasAccess bool
+	DoorCode  string
+	// AccessInstructions are the instruction lines, rendered with line breaks
+	// between them and HTML-escaped like any template value.
+	AccessInstructions []string
+}
+
+// newPracticeAccessView builds the access block from the door code and the
+// access instructions.
+func newPracticeAccessView(doorCode, instructions string) PracticeAccessView {
+	view := PracticeAccessView{DoorCode: strings.TrimSpace(doorCode)}
+	instructions = strings.TrimSpace(strings.ReplaceAll(instructions, "\r\n", "\n"))
+	if instructions != "" {
+		for _, line := range strings.Split(instructions, "\n") {
+			view.AccessInstructions = append(view.AccessInstructions, strings.TrimRight(line, " \t\r"))
+		}
+	}
+	view.HasAccess = view.DoorCode != "" || len(view.AccessInstructions) > 0
+	return view
 }
 
 // BookingCalendarUID is the stable iCalendar UID of a booking.
@@ -187,6 +228,8 @@ func ComposeBookingConfirmation(req BookingConfirmationRequest, now time.Time) C
 		ManageURL:   req.ManageURL,
 		BookingID:   req.BookingID,
 		Year:        now.In(practiceLocation).Year(),
+
+		PracticeAccessView: newPracticeAccessView(req.DoorCode, req.AccessInstructions),
 	}
 	if req.BalanceDueCents > 0 {
 		view.BalanceDue = FormatMoney(req.BalanceDueCents, req.Currency, locale)
@@ -196,6 +239,8 @@ func ComposeBookingConfirmation(req BookingConfirmationRequest, now time.Time) C
 	if req.PartnerName != "" {
 		summary = fmt.Sprintf("%s – %s", req.ProductName, req.PartnerName)
 	}
+	// The calendar file carries the address and the manage link only, never
+	// the door code or the access instructions.
 	event := CalendarEvent{
 		UID:      BookingCalendarUID(req.BookingID),
 		Start:    req.StartTime,
@@ -274,6 +319,9 @@ type clientReminderStrings struct {
 	PractitionerLabel string
 	AddressLabel      string
 	ReferenceLabel    string
+	AccessHeading     string
+	DoorCodeLabel     string
+	InstructionsLabel string
 	ManageText        string
 	ManageButton      string
 	SignOff           string
@@ -294,6 +342,9 @@ var clientReminderCopy = map[Locale]clientReminderStrings{
 		PractitionerLabel: "Avec",
 		AddressLabel:      "Adresse",
 		ReferenceLabel:    "Référence",
+		AccessHeading:     "Accès au cabinet",
+		DoorCodeLabel:     "Code d'accès",
+		InstructionsLabel: "Indications",
 		ManageText:        "Un empêchement ? Vous pouvez consulter ou annuler votre réservation depuis ce lien :",
 		ManageButton:      "Gérer ma réservation",
 		SignOff:           "À très bientôt,",
@@ -312,6 +363,9 @@ var clientReminderCopy = map[Locale]clientReminderStrings{
 		PractitionerLabel: "With",
 		AddressLabel:      "Address",
 		ReferenceLabel:    "Reference",
+		AccessHeading:     "Getting in",
+		DoorCodeLabel:     "Door code",
+		InstructionsLabel: "Directions",
 		ManageText:        "Can't make it? You can view or cancel your booking from this link:",
 		ManageButton:      "Manage my booking",
 		SignOff:           "See you soon,",
@@ -333,6 +387,7 @@ type BookingReminderView struct {
 	ManageURL   string
 	BookingID   string
 	Year        int
+	PracticeAccessView
 }
 
 // ComposeBookingReminder builds the client reminder email in the request's
@@ -355,6 +410,8 @@ func ComposeBookingReminder(req BookingReminderRequest, now time.Time) ComposedE
 		ManageURL:   req.ManageURL,
 		BookingID:   req.BookingID,
 		Year:        now.In(practiceLocation).Year(),
+
+		PracticeAccessView: newPracticeAccessView(req.DoorCode, req.AccessInstructions),
 	}
 
 	return ComposedEmail{

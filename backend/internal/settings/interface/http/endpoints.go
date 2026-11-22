@@ -141,6 +141,15 @@ const (
 	GetBookingPolicyEndpoint = SettingsBasePath + BookingPolicyPath
 	SetBookingPolicyEndpoint = AdminSettingsBasePath + BookingPolicyPath
 
+	// === Practice Access Settings ===
+	// The door code and access instructions of the practice
+	// (docs/issues/023-practice-access-settings.md). Private: admin-only read
+	// and write, no public or internal route, not in the bulk endpoint.
+	PracticeAccessPath = "/practice-access"
+
+	AdminGetPracticeAccessEndpoint = AdminSettingsBasePath + PracticeAccessPath
+	AdminSetPracticeAccessEndpoint = AdminSettingsBasePath + PracticeAccessPath
+
 	// === Bulk Settings Endpoints ===
 
 	BulkPath = "/bulk"

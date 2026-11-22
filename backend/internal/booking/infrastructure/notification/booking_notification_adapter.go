@@ -44,6 +44,22 @@ type BookingNotificationAdapter struct {
 	buildingFetcher  BuildingFetcher
 	productFetcher   catalogPorts.PublicProductService
 	settingsProvider notificationPorts.SettingsProvider
+	// practiceAccess supplies the door code and the access instructions of
+	// the client confirmation and reminder, read at send time (never through
+	// the cached settingsProvider). Nil: the emails carry no access block.
+	practiceAccess bookingPorts.PracticeAccessProvider
+}
+
+// AdapterOption configures optional dependencies of the adapter.
+type AdapterOption func(*BookingNotificationAdapter)
+
+// WithPracticeAccessProvider gives the adapter the practice access port, so
+// the client confirmation and reminder show the door code and the access
+// instructions as they are when the email is sent.
+func WithPracticeAccessProvider(provider bookingPorts.PracticeAccessProvider) AdapterOption {
+	return func(a *BookingNotificationAdapter) {
+		a.practiceAccess = provider
+	}
 }
 
 // UserFetcher retrieves user details by ID.
@@ -91,8 +107,9 @@ func NewBookingNotificationAdapter(
 	buildingFetcher BuildingFetcher,
 	productFetcher catalogPorts.PublicProductService,
 	settingsProvider notificationPorts.SettingsProvider,
+	opts ...AdapterOption,
 ) *BookingNotificationAdapter {
-	return &BookingNotificationAdapter{
+	a := &BookingNotificationAdapter{
 		emailService:     emailService,
 		smsService:       smsService,
 		frontendOrigin:   frontendOrigin,
@@ -102,6 +119,10 @@ func NewBookingNotificationAdapter(
 		productFetcher:   productFetcher,
 		settingsProvider: settingsProvider,
 	}
+	for _, opt := range opts {
+		opt(a)
+	}
+	return a
 }
 
 // SendBookingConfirmation sends a booking confirmation email (fire-and-forget).
@@ -144,6 +165,14 @@ func (a *BookingNotificationAdapter) SendPaymentDisputeAlert(ctx context.Context
 // (fire-and-forget).
 func (a *BookingNotificationAdapter) SendLatePaymentRefund(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "late payment refund", data, a.sendLatePaymentRefundEmail)
+	return nil
+}
+
+// SendBookingAccessUpdate tells the client of an upcoming booking that the
+// practice access code changed, with the access read at send time
+// (fire-and-forget).
+func (a *BookingNotificationAdapter) SendBookingAccessUpdate(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	go a.sendAsync(detach(ctx), "access update", data, a.sendAccessUpdateEmail)
 	return nil
 }
 
@@ -251,6 +280,7 @@ func (a *BookingNotificationAdapter) sendBookingConfirmationEmail(ctx context.Co
 			balance = 0
 		}
 		clientFirst, clientLast := clientNames(data)
+		doorCode, instructions := a.practiceAccessDetails(ctx, data)
 
 		req := notificationDomain.BookingConfirmationRequest{
 			ToEmail:               data.ClientEmail,
@@ -267,6 +297,8 @@ func (a *BookingNotificationAdapter) sendBookingConfirmationEmail(ctx context.Co
 			BalanceDueCents:       balance,
 			Currency:              data.Currency,
 			ManageURL:             a.buildTokenURL(data.Token),
+			DoorCode:              doorCode,
+			AccessInstructions:    instructions,
 		}
 
 		if err := a.emailService.SendBookingConfirmationEmail(ctx, req); err != nil {
@@ -320,6 +352,26 @@ func (a *BookingNotificationAdapter) practiceAddress(ctx context.Context, data b
 		}
 	}
 	return data.Address
+}
+
+// practiceAccessDetails reads the door code and the access instructions of
+// the booking's room through the practice access port, at send time. The
+// address stays the one from practiceAddress. On a read error the email goes
+// out without the access block; the error is logged with the booking ID only,
+// never a value.
+func (a *BookingNotificationAdapter) practiceAccessDetails(ctx context.Context, data bookingPorts.BookingNotificationData) (string, string) {
+	if a.practiceAccess == nil {
+		return "", ""
+	}
+	access, err := a.practiceAccess.GetPracticeAccess(ctx, data.RoomID)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to read practice access for notification, sending without it",
+			"booking_id", data.BookingID,
+			"error", err,
+		)
+		return "", ""
+	}
+	return access.DoorCode, access.Instructions
 }
 
 // clientNames returns the client's first and last names, from the booking
@@ -410,6 +462,7 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 	}
 
 	clientFirst, clientLast := clientNames(data)
+	doorCode, instructions := a.practiceAccessDetails(ctx, data)
 	req := notificationDomain.BookingReminderRequest{
 		ToEmail:     data.ClientEmail,
 		ToFirstName: clientFirst,
@@ -422,10 +475,54 @@ func (a *BookingNotificationAdapter) sendBookingReminderEmail(ctx context.Contex
 		StartTime:   data.SlotStartTime,
 		EndTime:     data.SlotEndTime,
 		ManageURL:   a.buildTokenURL(data.Token),
+
+		DoorCode:           doorCode,
+		AccessInstructions: instructions,
 	}
 
 	if err := a.emailService.SendBookingReminderEmail(ctx, req); err != nil {
 		slog.ErrorContext(ctx, "failed to send booking reminder email",
+			"booking_id", data.BookingID,
+			"error", err,
+		)
+	}
+
+	return nil
+}
+
+// sendAccessUpdateEmail sends the access update in the booking's locale,
+// with the appointment, the practice access read now and the manage link.
+func (a *BookingNotificationAdapter) sendAccessUpdateEmail(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	a.enrichData(ctx, &data)
+
+	if data.ClientEmail == "" {
+		slog.WarnContext(ctx, "no client email available for access update",
+			"booking_id", data.BookingID,
+		)
+		return nil
+	}
+
+	clientFirst, clientLast := clientNames(data)
+	doorCode, instructions := a.practiceAccessDetails(ctx, data)
+	req := notificationDomain.BookingAccessUpdateRequest{
+		ToEmail:     data.ClientEmail,
+		ToFirstName: clientFirst,
+		ToLastName:  clientLast,
+		Locale:      notificationDomain.ParseLocale(data.Locale),
+		BookingID:   data.BookingID.String(),
+		ProductName: data.ProductName,
+		PartnerName: data.PartnerName,
+		Address:     a.practiceAddress(ctx, data),
+		StartTime:   data.SlotStartTime,
+		EndTime:     data.SlotEndTime,
+		ManageURL:   a.buildTokenURL(data.Token),
+
+		DoorCode:           doorCode,
+		AccessInstructions: instructions,
+	}
+
+	if err := a.emailService.SendBookingAccessUpdateEmail(ctx, req); err != nil {
+		slog.ErrorContext(ctx, "failed to send access update email",
 			"booking_id", data.BookingID,
 			"error", err,
 		)

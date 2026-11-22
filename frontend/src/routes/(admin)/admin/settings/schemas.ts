@@ -59,6 +59,16 @@ export const bookingPolicySchema = type({
     payment_hold_minutes: "5 <= number.integer <= 60",
 })
 
+// Practice Access Settings Schema (door code and access instructions): both
+// optional (empty clears them), plain text, the backend's length limits.
+export const practiceAccessSchema = type({
+    door_code: "string <= 50",
+    access_instructions: "string <= 1000",
+    // Email the new door code to the clients of upcoming bookings when it
+    // changed (the dialog's checkbox, ticked by default).
+    notify_clients: "boolean",
+})
+
 // Types
 export type CompanyName = Infer<typeof companyNameSchema>
 export type CompanyEmail = Infer<typeof companyEmailSchema>
@@ -67,6 +77,7 @@ export type CompanyAddress = Infer<typeof companyAddressSchema>
 export type CompanyInstagram = Infer<typeof companyInstagramSchema>
 export type PracticePage = Infer<typeof practicePageSchema>
 export type BookingPolicy = Infer<typeof bookingPolicySchema>
+export type PracticeAccess = Infer<typeof practiceAccessSchema>
 export type OtpDuration = Infer<typeof otpDurationSchema>
 export type OtpLength = Infer<typeof otpLengthSchema>
 export type OtpMaxAttempts = Infer<typeof otpMaxAttemptsSchema>
@@ -103,6 +114,12 @@ export const bookingPolicyDefaults: BookingPolicy = {
     minimum_notice_hours: 12,
     horizon_weeks: 8,
     payment_hold_minutes: 15,
+}
+
+export const practiceAccessDefaults: PracticeAccess = {
+    door_code: "",
+    access_instructions: "",
+    notify_clients: true,
 }
 
 export const otpDurationDefaults: OtpDuration = {
