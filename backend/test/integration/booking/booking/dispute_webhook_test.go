@@ -236,3 +236,50 @@ func TestDisputeWebhook_ClosedWonRevertsToPaid(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, domain.PaymentStatusPaid, b.PaymentStatus, "a won dispute should resolve back to paid")
 }
+
+// A payment that succeeds on a confirmed booking (a retry after a failed
+// payment) marks it paid, as before, but sends no payment receipt: the
+// booking confirmation already told the client their payment went through.
+func TestPaymentSucceededOnConfirmedBooking_SendsNoReceipt(t *testing.T) {
+	ctx := context.Background()
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	defer tu.ClearAuthData(t, ctx, authCtx)
+
+	bookingID, paymentIntentID := setupPaidBookingForDispute(t, ctx, httpClient, "-retry")
+
+	failedEvent := &ports.WebhookEvent{
+		ID:              "evt_test_" + uuid.New().String(),
+		Type:            ports.WebhookEventPaymentIntentPaymentFailed,
+		PaymentIntentID: paymentIntentID,
+		Status:          "requires_payment_method",
+		Metadata:        map[string]string{"booking_id": bookingID.String()},
+	}
+	require.NoError(t, service.HandlePaymentWebhook(ctx, failedEvent))
+
+	encx, err := bookingRepo.GetByID(ctx, bookingID)
+	require.NoError(t, err)
+	b, err := domain.DecryptBookingEncx(ctx, crypto, encx)
+	require.NoError(t, err)
+	require.Equal(t, domain.PaymentStatusFailed, b.PaymentStatus)
+
+	notificationSpy.PaymentConfirmations = nil
+
+	succeededEvent := &ports.WebhookEvent{
+		ID:              "evt_test_" + uuid.New().String(),
+		Type:            ports.WebhookEventPaymentIntentSucceeded,
+		PaymentIntentID: paymentIntentID,
+		Status:          "succeeded",
+		Amount:          b.TotalPriceCents,
+		Currency:        b.Currency,
+		Metadata:        map[string]string{"booking_id": bookingID.String()},
+	}
+	require.NoError(t, service.HandlePaymentWebhook(ctx, succeededEvent))
+
+	encx, err = bookingRepo.GetByID(ctx, bookingID)
+	require.NoError(t, err)
+	b, err = domain.DecryptBookingEncx(ctx, crypto, encx)
+	require.NoError(t, err)
+	assert.Equal(t, domain.PaymentStatusPaid, b.PaymentStatus, "the payment is still recorded")
+	assert.Equal(t, domain.BookingStatusConfirmed, b.Status)
+	assert.Empty(t, notificationSpy.PaymentConfirmations, "no payment receipt is sent")
+}
