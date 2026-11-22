@@ -274,3 +274,9 @@ func (s *stubSettingsService) GetBookingPolicy(ctx context.Context) (*settingsDo
 func (s *stubSettingsService) SetBookingPolicy(ctx context.Context, req *settingsDomain.SetBookingPolicyRequest) (*settingsDomain.SetBookingPolicyResponse, error) {
 	return nil, nil
 }
+func (s *stubSettingsService) GetPracticeAccess(ctx context.Context) (*settingsDomain.GetPracticeAccessResponse, error) {
+	return nil, nil
+}
+func (s *stubSettingsService) SetPracticeAccess(ctx context.Context, req *settingsDomain.SetPracticeAccessRequest) (*settingsDomain.SetPracticeAccessResponse, error) {
+	return nil, nil
+}

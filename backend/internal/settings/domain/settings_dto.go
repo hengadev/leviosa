@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/validation"
 	"github.com/google/uuid"
@@ -284,6 +286,30 @@ type SetBookingPolicyResponse struct {
 	Message string `json:"message,omitempty"`
 }
 
+// Practice access (docs/issues/023-practice-access-settings.md): the door
+// code and access instructions of the practice. Both are private and may be
+// empty (unset or cleared).
+const (
+	MaxPracticeAccessDoorCodeLength     = 50
+	MaxPracticeAccessInstructionsLength = 1000
+)
+
+type GetPracticeAccessResponse struct {
+	DoorCode           string `json:"door_code"`
+	AccessInstructions string `json:"access_instructions"`
+}
+
+type SetPracticeAccessRequest struct {
+	DoorCode           string `json:"door_code"`
+	AccessInstructions string `json:"access_instructions"`
+}
+
+type SetPracticeAccessResponse struct {
+	Success bool `json:"success"`
+	// CodeChanged tells whether the door code differs from the stored one.
+	CodeChanged bool `json:"code_changed"`
+}
+
 type ErrorResponse struct {
 	Error   string            `json:"error"`
 	Details map[string]string `json:"details,omitempty"`
@@ -401,6 +427,44 @@ func (d SetBookingPolicyRequest) Valid(ctx context.Context) error {
 		errs.Set("payment_hold_minutes", fmt.Sprintf("payment hold must be between %d and %d minutes", MinPaymentHoldMinutes, MaxPaymentHoldMinutes))
 	}
 	return errs.AsError()
+}
+
+// Valid checks the trimmed values: lengths in characters and plain text
+// (no control characters; the instructions keep their line breaks). Empty
+// values are valid: they clear the field. The messages name the field, never
+// its content.
+func (d SetPracticeAccessRequest) Valid(ctx context.Context) error {
+	var errs errsx.Map
+	code := strings.TrimSpace(d.DoorCode)
+	if utf8.RuneCountInString(code) > MaxPracticeAccessDoorCodeLength {
+		errs.Set("door_code", fmt.Sprintf("door code cannot exceed %d characters", MaxPracticeAccessDoorCodeLength))
+	} else if !isPlainText(code, false) {
+		errs.Set("door_code", "door code must be plain text on one line")
+	}
+	instructions := strings.TrimSpace(d.AccessInstructions)
+	if utf8.RuneCountInString(instructions) > MaxPracticeAccessInstructionsLength {
+		errs.Set("access_instructions", fmt.Sprintf("access instructions cannot exceed %d characters", MaxPracticeAccessInstructionsLength))
+	} else if !isPlainText(instructions, true) {
+		errs.Set("access_instructions", "access instructions must be plain text")
+	}
+	return errs.AsError()
+}
+
+// isPlainText reports whether s is valid UTF-8 without control characters;
+// line breaks and tabs are allowed when multiline is set.
+func isPlainText(s string, multiline bool) bool {
+	if !utf8.ValidString(s) {
+		return false
+	}
+	for _, r := range s {
+		if multiline && (r == '\n' || r == '\r' || r == '\t') {
+			continue
+		}
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func (d SetPracticePageVideoRequest) Valid(ctx context.Context) error {

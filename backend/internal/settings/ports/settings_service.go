@@ -29,6 +29,8 @@ type SettingsService interface {
 	GetPracticePageVideo(ctx context.Context) (*domain.GetPracticePageVideoResponse, error)
 	// booking policy (defaults apply while unset)
 	GetBookingPolicy(ctx context.Context) (*domain.GetBookingPolicyResponse, error)
+	// practice access (private, administrators only; empty values while unset)
+	GetPracticeAccess(ctx context.Context) (*domain.GetPracticeAccessResponse, error)
 	// setters
 	SetCompanyName(ctx context.Context, request *domain.SetCompanyNameRequest) (*domain.SetCompanyNameResponse, error)
 	SetCompanyEmail(ctx context.Context, request *domain.SetCompanyEmailRequest) (*domain.SetCompanyEmailResponse, error)
@@ -50,6 +52,7 @@ type SettingsService interface {
 	UploadPracticePageVideo(ctx context.Context, file io.ReadSeeker, size int64) (*domain.UploadPracticePageVideoResponse, error)
 	GetMedia(ctx context.Context, key, rangeHeader string) (*domain.MediaObject, error)
 	SetBookingPolicy(ctx context.Context, request *domain.SetBookingPolicyRequest) (*domain.SetBookingPolicyResponse, error)
+	SetPracticeAccess(ctx context.Context, request *domain.SetPracticeAccessRequest) (*domain.SetPracticeAccessResponse, error)
 	// COMMENTED OUT: Event publishing is now an internal implementation detail
 	// External modules should access settings via this interface's getter methods
 	// PublishSettingUpdate(ctx context.Context, key string, value any) error
