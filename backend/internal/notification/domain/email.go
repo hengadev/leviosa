@@ -78,6 +78,11 @@ type BookingReminderRequest struct {
 	// ManageURL opens the booking token page. Empty when the booking has no
 	// token.
 	ManageURL string
+
+	// DoorCode and AccessInstructions are the practice access, read when the
+	// reminder is sent. Private: never logged.
+	DoorCode           string
+	AccessInstructions string
 }
 
 // Contact Form Notification — sent to staff/company inbox when a visitor

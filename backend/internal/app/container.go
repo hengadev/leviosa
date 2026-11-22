@@ -504,6 +504,8 @@ func (c *Container) setupServices(ctx context.Context) error {
 
 	c.AvailabilityService = availabilitySvc.New(c.AvailabilityRepo, c.AllocationRepo, c.RoomRepo, c.RoomScheduleRepo, c.ProductService, c.Crypto)
 
+	practiceAccessProvider := bookingSettings.NewInProcessPracticeAccessProvider(c.SettingsService, c.RoomService, c.BuildingService)
+
 	notificationAdapter := bookingNotification.NewBookingNotificationAdapter(
 		sharedEmailClient,
 		sharedSMSClient,
@@ -513,6 +515,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingNotification.NewInProcessBuildingFetcher(c.BuildingService),
 		c.ProductService,
 		notificationSettingsProvider,
+		bookingNotification.WithPracticeAccessProvider(practiceAccessProvider),
 	)
 	c.BookingNotificationService = notificationAdapter
 
@@ -529,7 +532,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
 		bookingSvc.WithAuditLogger(c.AuditLogger),
 		bookingSvc.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(c.SettingsService)),
-		bookingSvc.WithPracticeAccessProvider(bookingSettings.NewInProcessPracticeAccessProvider(c.SettingsService, c.RoomService, c.BuildingService)),
+		bookingSvc.WithPracticeAccessProvider(practiceAccessProvider),
 		bookingSvc.WithAvailabilityExceptionRepository(c.ExceptionRepo),
 		bookingSvc.WithLatePaymentNotifier(notificationAdapter),
 	)

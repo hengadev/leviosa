@@ -280,3 +280,105 @@ func TestComposeBookingReminder_NoManageLinkWithoutToken(t *testing.T) {
 		t.Error("no manage button without a manage link")
 	}
 }
+
+const (
+	testDoorCode     = "4821B"
+	testInstructions = "Sonnez à l'interphone « Cabinet ».\r\n2e étage, porte de gauche."
+)
+
+func TestComposeBookingEmails_PracticeAccessBlock(t *testing.T) {
+	cases := []struct {
+		locale                         Locale
+		heading, codeLabel, instrLabel string
+	}{
+		{LocaleFR, "Accès au cabinet", "Code d&#39;accès", "Indications"},
+		{LocaleEN, "Getting in", "Door code", "Directions"},
+	}
+	for _, tc := range cases {
+		confirmation := testConfirmationRequest(tc.locale)
+		confirmation.DoorCode = testDoorCode
+		confirmation.AccessInstructions = testInstructions
+		reminder := testReminderRequest(tc.locale)
+		reminder.DoorCode = testDoorCode
+		reminder.AccessInstructions = testInstructions
+
+		for name, email := range map[string]ComposedEmail{
+			"confirmation": ComposeBookingConfirmation(confirmation, composeNow),
+			"reminder":     ComposeBookingReminder(reminder, composeNow),
+		} {
+			body := renderComposed(t, email)
+			for _, want := range []string{
+				tc.heading, tc.codeLabel, tc.instrLabel, testDoorCode,
+				"Sonnez à l&#39;interphone « Cabinet ».<br />2e étage, porte de gauche.",
+				"12 rue de la Paix, 75002 Paris",
+			} {
+				if !strings.Contains(body, want) {
+					t.Errorf("%s %s: missing %q", tc.locale, name, want)
+				}
+			}
+		}
+	}
+}
+
+func TestComposeBookingEmails_PracticeAccessPartial(t *testing.T) {
+	confirmation := testConfirmationRequest(LocaleEN)
+	confirmation.DoorCode = testDoorCode
+	body := renderComposed(t, ComposeBookingConfirmation(confirmation, composeNow))
+	assertContains(t, body, "Getting in")
+	assertContains(t, body, testDoorCode)
+	if strings.Contains(body, "Directions") {
+		t.Error("no directions row without instructions")
+	}
+
+	reminder := testReminderRequest(LocaleEN)
+	reminder.AccessInstructions = "Ring twice."
+	body = renderComposed(t, ComposeBookingReminder(reminder, composeNow))
+	assertContains(t, body, "Getting in")
+	assertContains(t, body, "Ring twice.")
+	if strings.Contains(body, "Door code") {
+		t.Error("no door code row without a door code")
+	}
+}
+
+func TestComposeBookingEmails_NoPracticeAccessBlockWhenUnset(t *testing.T) {
+	for _, locale := range []Locale{LocaleFR, LocaleEN} {
+		confirmation := testConfirmationRequest(locale)
+		confirmation.DoorCode = "  "
+		confirmation.AccessInstructions = "\n "
+		for name, email := range map[string]ComposedEmail{
+			"confirmation": ComposeBookingConfirmation(confirmation, composeNow),
+			"reminder":     ComposeBookingReminder(testReminderRequest(locale), composeNow),
+		} {
+			body := renderComposed(t, email)
+			for _, absent := range []string{"Accès au cabinet", "Getting in", "Code d&#39;accès", "Door code"} {
+				if strings.Contains(body, absent) {
+					t.Errorf("%s %s: no access block expected, found %q", locale, name, absent)
+				}
+			}
+			assertContains(t, body, "12 rue de la Paix, 75002 Paris")
+		}
+	}
+}
+
+func TestComposeBookingEmails_PracticeAccessIsEscaped(t *testing.T) {
+	confirmation := testConfirmationRequest(LocaleFR)
+	confirmation.DoorCode = `<b>12</b>`
+	confirmation.AccessInstructions = "<script>alert(1)</script>\n<a href=\"https://evil.test\">here</a>"
+	reminder := testReminderRequest(LocaleFR)
+	reminder.DoorCode = confirmation.DoorCode
+	reminder.AccessInstructions = confirmation.AccessInstructions
+
+	for name, email := range map[string]ComposedEmail{
+		"confirmation": ComposeBookingConfirmation(confirmation, composeNow),
+		"reminder":     ComposeBookingReminder(reminder, composeNow),
+	} {
+		body := renderComposed(t, email)
+		for _, raw := range []string{"<script>", "<b>12</b>", `<a href="https://evil.test">`} {
+			if strings.Contains(body, raw) {
+				t.Errorf("%s: unescaped %q in the email", name, raw)
+			}
+		}
+		assertContains(t, body, "&lt;b&gt;12&lt;/b&gt;")
+		assertContains(t, body, "&lt;script&gt;alert(1)&lt;/script&gt;<br />&lt;a href=&#34;https://evil.test&#34;&gt;here&lt;/a&gt;")
+	}
+}
