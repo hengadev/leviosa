@@ -261,3 +261,119 @@ func TestSendBookingPartnerNoticeEmail_French(t *testing.T) {
 		t.Errorf("unexpected subject %q", subject)
 	}
 }
+
+// parseSent reads the captured message and returns its headers' decoded
+// subject and its HTML body.
+func parseSent(t *testing.T, buf *bytes.Buffer) (*mail.Message, string, string) {
+	t.Helper()
+	msg, err := mail.ReadMessage(buf)
+	if err != nil {
+		t.Fatalf("parse message: %v", err)
+	}
+	subject, err := new(mime.WordDecoder).DecodeHeader(msg.Header.Get("Subject"))
+	if err != nil {
+		t.Fatalf("decode subject: %v", err)
+	}
+	var html string
+	for _, p := range leafParts(t, msg.Header.Get("Content-Type"), msg.Body) {
+		if strings.HasPrefix(p.contentType, "text/html") {
+			html = string(p.body)
+		}
+	}
+	return msg, subject, html
+}
+
+func TestSendContactFormEmail_FromCompanyReplyToVisitor(t *testing.T) {
+	c, buf := capturingClient(t)
+	err := c.SendContactFormEmail(context.Background(), domain.ContactFormRequest{
+		ToEmail: "inbox@leviosa.test", FromEmail: "contact@leviosa.test",
+		Name: "Marie Leroy", ContactEmail: "marie.leroy@example.com", ContactPhone: "+33698765432",
+		Message: "Bonjour,\nAvez-vous des créneaux le samedi ?", SubmittedAt: "05/03/2026 10:00",
+	})
+	if err != nil {
+		t.Fatalf("SendContactFormEmail: %v", err)
+	}
+
+	msg, subject, html := parseSent(t, buf)
+	if subject != "Nouveau message de contact — Marie Leroy" {
+		t.Errorf("subject = %q", subject)
+	}
+	if got := msg.Header.Get("From"); got != "contact@leviosa.test" {
+		t.Errorf("From = %q, want the request's FromEmail", got)
+	}
+	if got := msg.Header.Get("To"); got != "inbox@leviosa.test" {
+		t.Errorf("To = %q", got)
+	}
+	if got := msg.Header.Get("Reply-To"); got != "marie.leroy@example.com" {
+		t.Errorf("Reply-To = %q, want the visitor's email", got)
+	}
+	for _, want := range []string{"Marie Leroy", "marie.leroy@example.com", "05/03/2026 10:00"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("body misses %q", want)
+		}
+	}
+}
+
+func TestSendContactFormEmail_NoReplyToWithoutVisitorEmail(t *testing.T) {
+	c, buf := capturingClient(t)
+	err := c.SendContactFormEmail(context.Background(), domain.ContactFormRequest{
+		ToEmail: "inbox@leviosa.test", FromEmail: "contact@leviosa.test", Name: "Marie Leroy", Message: "Bonjour",
+	})
+	if err != nil {
+		t.Fatalf("SendContactFormEmail: %v", err)
+	}
+	msg, _, _ := parseSent(t, buf)
+	if got := msg.Header.Get("Reply-To"); got != "" {
+		t.Errorf("Reply-To = %q, want none", got)
+	}
+}
+
+func TestSendPaymentDisputeAlertEmail_FromRequestSender(t *testing.T) {
+	c, buf := capturingClient(t)
+	c.config.From = "noreply@leviosa.test"
+	err := c.SendPaymentDisputeAlertEmail(context.Background(), domain.PaymentDisputeAlertRequest{
+		ToEmail: "inbox@leviosa.test", BookingID: "b7k3xq", ClientName: "Jean Dupont",
+		ProductName: "Massage", Amount: "€70.00", DisputeReason: "fraudulent", FromEmail: "contact@leviosa.test",
+	})
+	if err != nil {
+		t.Fatalf("SendPaymentDisputeAlertEmail: %v", err)
+	}
+
+	msg, subject, html := parseSent(t, buf)
+	if subject != "Litige de paiement — réservation b7k3xq" {
+		t.Errorf("subject = %q", subject)
+	}
+	if got := msg.Header.Get("From"); got != "contact@leviosa.test" {
+		t.Errorf("From = %q, want the request's FromEmail", got)
+	}
+	if got := msg.Header.Get("Reply-To"); got != "" {
+		t.Errorf("Reply-To = %q, want none", got)
+	}
+	for _, want := range []string{"b7k3xq", "Jean Dupont", "Massage", "€70.00", "fraudulent"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("body misses %q", want)
+		}
+	}
+}
+
+func TestSendPaymentFailedEmail_FallsBackToConfiguredFrom(t *testing.T) {
+	c, buf := capturingClient(t)
+	c.config.From = "noreply@leviosa.test"
+	err := c.SendPaymentFailedEmail(context.Background(), domain.PaymentNotificationRequest{
+		ToEmail: "client@example.com", ToFirstName: "Jean", Amount: "€70.00", Product: "Massage",
+		PaymentDate: "05 March 2026", RetryURL: "https://leviosa.test/bookings",
+	})
+	if err != nil {
+		t.Fatalf("SendPaymentFailedEmail: %v", err)
+	}
+	msg, subject, html := parseSent(t, buf)
+	if subject != "Échec de votre paiement" {
+		t.Errorf("subject = %q", subject)
+	}
+	if got := msg.Header.Get("From"); got != "noreply@leviosa.test" {
+		t.Errorf("From = %q, want the configured From when the request names none", got)
+	}
+	if !strings.Contains(html, "https://leviosa.test/bookings") {
+		t.Error("body misses the retry link")
+	}
+}

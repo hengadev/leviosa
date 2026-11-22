@@ -43,6 +43,7 @@ type spyEmailService struct {
 	partnerCancellations []notificationDomain.BookingPartnerCancellationRequest
 	bookingReminders     []notificationDomain.BookingReminderRequest
 	paymentNotifications []notificationDomain.PaymentNotificationRequest
+	paymentFailures      []notificationDomain.PaymentNotificationRequest
 	disputeAlerts        []notificationDomain.PaymentDisputeAlertRequest
 	partnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	latePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
@@ -82,6 +83,9 @@ func (s *spyEmailService) SendPaymentNotificationEmail(ctx context.Context, req 
 	return nil
 }
 func (s *spyEmailService) SendPaymentFailedEmail(ctx context.Context, req notificationDomain.PaymentNotificationRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.paymentFailures = append(s.paymentFailures, req)
 	return nil
 }
 func (s *spyEmailService) SendBookingConfirmationEmail(ctx context.Context, req notificationDomain.BookingConfirmationRequest) error {
@@ -375,6 +379,36 @@ func TestSendPaymentConfirmation_MapsFieldsCorrectly(t *testing.T) {
 	assertEqual(t, "ToLastName", "White", got.ToLastName)
 	assertEqual(t, "Amount", "€50.00", got.Amount)
 	assertEqual(t, "Product", "Pre-populated Product", got.Product)
+}
+
+// The failed payment notice is French: the amount and the date of the
+// attempt are formatted as in the booking emails.
+func TestSendPaymentFailed_FormatsInFrench(t *testing.T) {
+	data := makeBookingData()
+	data.ProductName = "Massage"
+	users := map[uuid.UUID]*UserInfo{
+		data.ClientID: {Email: "client@example.com", FirstName: "Carol", LastName: "White"},
+	}
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, users, nil, nil, nil)
+
+	before := time.Now()
+	if err := adapter.sendPaymentFailedEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.paymentFailures) != 1 {
+		t.Fatalf("expected 1 failed payment notice, got %d", len(spy.paymentFailures))
+	}
+
+	got := spy.paymentFailures[0]
+	assertEqual(t, "ToEmail", "client@example.com", got.ToEmail)
+	assertEqual(t, "Amount", "50,00\u00a0€", got.Amount)
+	if got.PaymentDate != notificationDomain.FormatDate(before, notificationDomain.LocaleFR) &&
+		got.PaymentDate != notificationDomain.FormatDate(time.Now(), notificationDomain.LocaleFR) {
+		t.Errorf("PaymentDate = %q, want today's date in French", got.PaymentDate)
+	}
+	assertEqual(t, "RetryURL", "https://app.leviosa.com/bookings", got.RetryURL)
 }
 
 func TestSendBookingConfirmation_GuestBooking(t *testing.T) {

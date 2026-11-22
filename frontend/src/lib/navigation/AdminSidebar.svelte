@@ -8,6 +8,7 @@
 		CalendarClock,
 		Settings,
 		ExternalLink,
+		Mail,
 	} from "@lucide/svelte";
 	import type { Permissions } from "#lib/security/permissions.ts";
 	import BackOfficeSidebar, { type AccountLink, type NavGroup } from "./BackOfficeSidebar.svelte";
@@ -46,7 +47,10 @@
 		// Desktop only: the mobile bar is full and these are set up once.
 		{
 			label: "Administration",
-			items: [{ href: "/admin/settings", label: "Paramètres", icon: Settings }],
+			items: [
+				{ href: "/admin/emails", label: "Emails", icon: Mail },
+				{ href: "/admin/settings", label: "Paramètres", icon: Settings },
+			],
 		},
 	];
 

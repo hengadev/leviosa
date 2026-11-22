@@ -61,12 +61,14 @@ type BookingPartnerNoticeRequest struct {
 }
 
 // ComposedEmail is an email ready for a transport: subject, template and its
-// data, attachments.
+// data, attachments, and the Reply-To address when replies go elsewhere than
+// the sender (the contact form's visitor).
 type ComposedEmail struct {
 	Subject     string
 	Template    string
 	Data        any
 	Attachments []EmailAttachment
+	ReplyTo     string
 }
 
 // Template names of the booking emails (templates/<name>.html).

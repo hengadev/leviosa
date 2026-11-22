@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Échec du paiement — Leviosa</title>
+    <title>Échec de votre paiement — Leviosa</title>
   </head>
   <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #eaeaea;">
     <div style="max-width: 600px; margin: 0 auto;">
@@ -27,64 +27,55 @@
               <tr>
                 <td style="padding: 40px 30px;">
                   <h1 style="color: #1e1e1e; font-size: 24px; font-weight: normal; margin: 0 0 20px; text-align: center;">
-                    Échec du Paiement
+                    Échec de votre paiement
                   </h1>
 
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                    Bonjour {{ .FirstName }},
+                    Bonjour{{ if .FirstName }} {{ .FirstName }}{{ end }},
                   </p>
 
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
-                    Nous n'avons pas pu traiter votre paiement. Voici les détails de la tentative :
+                    Le paiement de votre réservation n'a pas abouti.
                   </p>
 
-                  <!-- Payment Details -->
                   <div style="background-color: #f4f4f4; border-radius: 6px; padding: 20px; margin: 30px 0;">
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse;">
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; width: 40%; vertical-align: top;">
-                          Service
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; vertical-align: top;">
-                          {{ .Product }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; width: 40%; vertical-align: top;">Prestation</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; vertical-align: top;">{{ .Product }}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Montant dû
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .Amount }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Montant</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .Amount }}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          Date de la tentative
-                        </td>
-                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">
-                          {{ .PaymentDate }}
-                        </td>
+                        <td style="padding: 10px 0; color: #555555; font-size: 14px; border-top: 1px dashed #cccccc; vertical-align: top;">Date de la tentative</td>
+                        <td style="padding: 10px 0; color: #1e1e1e; font-size: 14px; font-weight: bold; border-top: 1px dashed #cccccc; vertical-align: top;">{{ .PaymentDate }}</td>
                       </tr>
                     </table>
                   </div>
 
-                  <!-- Retry CTA -->
-                  <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; margin: 30px 0; border-radius: 0 6px 6px 0;">
-                    <p style="color: #444444; font-size: 14px; margin: 0 0 15px; line-height: 1.5;">
-                      Votre réservation n'a pas pu être confirmée car le paiement a échoué. Veuillez vérifier vos informations de paiement et réessayer.
-                    </p>
-                  </div>
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
+                    Vérifiez vos informations de paiement puis réessayez depuis vos réservations.
+                  </p>
 
                   {{ if .RetryURL }}
                   <div style="text-align: center; margin: 30px 0;">
                     <a href="{{ .RetryURL }}" style="background-color: #1e1e1e; color: #ffffff; padding: 12px 30px; border-radius: 4px; text-decoration: none; font-size: 16px; display: inline-block; font-weight: bold;">
-                      Réessayer le paiement
+                      Voir mes réservations
                     </a>
                   </div>
                   {{ end }}
 
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
+                    Si le problème persiste, n'hésitez pas à nous contacter.
+                  </p>
+
+                  <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0 0 20px;">
+                    À bientôt,
+                  </p>
                   <p style="color: #444444; font-size: 16px; line-height: 1.5; margin: 0;">
-                    Si le problème persiste, n'hésitez pas à contacter notre équipe d'assistance.
+                    L'équipe Leviosa
                   </p>
                 </td>
               </tr>

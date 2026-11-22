@@ -3,11 +3,14 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
 // TestRunWritesEveryPreview runs the command into a temp dir and checks
-// that every expected file exists and is non-empty.
+// that every catalogue entry is written in each of its locales (booking
+// client emails FR and EN, partner notices FR, the other emails in the one
+// language they are sent in), non-empty and linked from the index.
 func TestRunWritesEveryPreview(t *testing.T) {
 	outDir := t.TempDir()
 
@@ -16,9 +19,31 @@ func TestRunWritesEveryPreview(t *testing.T) {
 		t.Fatalf("Run: %v", err)
 	}
 
+	previews := allPreviews()
+	if len(previews) != 24 {
+		t.Fatalf("allPreviews returned %d files, want 24 (9 booking client emails x 2 locales + 2 partner notices + 4 other emails)", len(previews))
+	}
+	for _, name := range []string{"login_code_fr.html", "payment_failed_fr.html", "contact_form_fr.html", "payment_dispute_alert_fr.html"} {
+		found := false
+		for _, p := range previews {
+			found = found || p.File == name
+		}
+		if !found {
+			t.Errorf("allPreviews misses %s", name)
+		}
+	}
+
+	index, err := os.ReadFile(indexPath)
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+
 	var files []string
-	for _, p := range allPreviews() {
+	for _, p := range previews {
 		files = append(files, p.File)
+		if !strings.Contains(string(index), `href="`+p.File+`"`) {
+			t.Errorf("index does not link %s", p.File)
+		}
 	}
 	files = append(files, filepath.Base(indexPath))
 

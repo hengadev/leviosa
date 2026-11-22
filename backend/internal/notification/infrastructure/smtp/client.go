@@ -1,10 +1,8 @@
 package smtp
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"io"
 	"os"
 	"path/filepath"
@@ -76,24 +74,7 @@ func (c *SMTPClient) SendCheckEmail(ctx context.Context, to string) error {
 }
 
 func (c *SMTPClient) SendOTPEmail(ctx context.Context, req domain.OTPEmailRequest) error {
-	data := struct {
-		OTP     string
-		Year    int
-		LogoURL string
-	}{
-		OTP:     req.OTP,
-		Year:    time.Now().Year(),
-		LogoURL: req.LogoURL,
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Your OTP Code",
-		Template: "otp",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, req.FromEmail)
+	return c.sendComposedFrom(ctx, req.ToEmail, req.FromEmail, domain.ComposeOTPEmail(req, time.Now()))
 }
 
 func (c *SMTPClient) SendWelcomeEmail(ctx context.Context, req domain.WelcomeEmailRequest) error {
@@ -176,67 +157,11 @@ func (c *SMTPClient) SendEventNotificationEmail(ctx context.Context, req domain.
 }
 
 func (c *SMTPClient) SendPaymentNotificationEmail(ctx context.Context, req domain.PaymentNotificationRequest) error {
-	data := struct {
-		FirstName   string
-		LastName    string
-		Amount      string
-		Product     string
-		PaymentDate string
-		CompanyName string
-		Year        int
-		LogoURL     string
-	}{
-		FirstName:   req.ToFirstName,
-		LastName:    req.ToLastName,
-		Amount:      req.Amount,
-		Product:     req.Product,
-		PaymentDate: req.PaymentDate,
-		CompanyName: req.CompanyName,
-		Year:        time.Now().Year(),
-		LogoURL:     req.LogoURL,
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Payment Confirmation",
-		Template: "payment",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, req.FromEmail)
+	return c.sendComposedFrom(ctx, req.ToEmail, req.FromEmail, domain.ComposePaymentNotificationEmail(req, time.Now()))
 }
 
 func (c *SMTPClient) SendPaymentFailedEmail(ctx context.Context, req domain.PaymentNotificationRequest) error {
-	data := struct {
-		FirstName   string
-		LastName    string
-		Amount      string
-		Product     string
-		PaymentDate string
-		CompanyName string
-		Year        int
-		LogoURL     string
-		RetryURL    string
-	}{
-		FirstName:   req.ToFirstName,
-		LastName:    req.ToLastName,
-		Amount:      req.Amount,
-		Product:     req.Product,
-		PaymentDate: req.PaymentDate,
-		CompanyName: req.CompanyName,
-		Year:        time.Now().Year(),
-		LogoURL:     req.LogoURL,
-		RetryURL:    req.RetryURL,
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  "Payment Failed",
-		Template: "payment_failed",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, req.FromEmail)
+	return c.sendComposedFrom(ctx, req.ToEmail, req.FromEmail, domain.ComposePaymentFailedEmail(req, time.Now()))
 }
 
 // SendBookingConfirmationEmail sends the client confirmation of a booking,
@@ -261,13 +186,20 @@ func (c *SMTPClient) SendLatePaymentRefundEmail(ctx context.Context, req domain.
 // sendComposed sends an email composed by the domain, from the configured
 // From, as every booking email.
 func (c *SMTPClient) sendComposed(ctx context.Context, to string, email domain.ComposedEmail) error {
+	return c.sendComposedFrom(ctx, to, "", email)
+}
+
+// sendComposedFrom sends an email composed by the domain from `from`; empty
+// means the configured From.
+func (c *SMTPClient) sendComposedFrom(ctx context.Context, to, from string, email domain.ComposedEmail) error {
 	return c.sendEmail(ctx, &domain.EmailRequest{
 		To:          to,
+		ReplyTo:     email.ReplyTo,
 		Subject:     email.Subject,
 		Template:    email.Template,
 		Data:        email.Data,
 		Attachments: email.Attachments,
-	}, "")
+	}, from)
 }
 
 // SendBookingClientCancellationEmail tells a client, in the booking's
@@ -295,63 +227,14 @@ func (c *SMTPClient) SendBookingAccessUpdateEmail(ctx context.Context, req domai
 	return c.sendComposed(ctx, req.ToEmail, domain.ComposeBookingAccessUpdate(req, time.Now()))
 }
 
+// SendContactFormEmail sends a visitor's message to the practice; replies go
+// to the visitor when they left an email.
 func (c *SMTPClient) SendContactFormEmail(ctx context.Context, req domain.ContactFormRequest) error {
-	data := struct {
-		Name         string
-		ContactEmail string
-		ContactPhone string
-		Message      string
-		SubmittedAt  string
-		CompanyName  string
-		Year         int
-		LogoURL      string
-	}{
-		Name:         req.Name,
-		ContactEmail: req.ContactEmail,
-		ContactPhone: req.ContactPhone,
-		Message:      req.Message,
-		SubmittedAt:  req.SubmittedAt,
-		CompanyName:  req.CompanyName,
-		Year:         time.Now().Year(),
-		LogoURL:      req.LogoURL,
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		ReplyTo:  req.ContactEmail, // lets staff reply directly to the visitor when they left an email
-		Subject:  fmt.Sprintf("Nouveau message de contact — %s", req.Name),
-		Template: "contact_form",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, req.FromEmail)
+	return c.sendComposedFrom(ctx, req.ToEmail, req.FromEmail, domain.ComposeContactFormEmail(req, time.Now()))
 }
 
 func (c *SMTPClient) SendPaymentDisputeAlertEmail(ctx context.Context, req domain.PaymentDisputeAlertRequest) error {
-	data := struct {
-		BookingID     string
-		ClientName    string
-		ProductName   string
-		Amount        string
-		DisputeReason string
-		Year          int
-	}{
-		BookingID:     req.BookingID,
-		ClientName:    req.ClientName,
-		ProductName:   req.ProductName,
-		Amount:        req.Amount,
-		DisputeReason: req.DisputeReason,
-		Year:          time.Now().Year(),
-	}
-
-	emailReq := &domain.EmailRequest{
-		To:       req.ToEmail,
-		Subject:  fmt.Sprintf("Payment dispute opened — booking %s", req.BookingID),
-		Template: "payment_dispute_alert",
-		Data:     data,
-	}
-
-	return c.sendEmail(ctx, emailReq, req.FromEmail)
+	return c.sendComposedFrom(ctx, req.ToEmail, req.FromEmail, domain.ComposePaymentDisputeAlertEmail(req, time.Now()))
 }
 
 func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest, fromEmail string) error {
@@ -431,19 +314,7 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 }
 
 func (c *SMTPClient) renderTemplate(templateName string, data interface{}) (string, error) {
-	templatePath := fmt.Sprintf("templates/%s.html", templateName)
-
-	tmpl, err := template.ParseFS(domain.EmailTemplates, templatePath)
-	if err != nil {
-		return "", fmt.Errorf("parse email template %s: %w", templateName, err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("execute email template %s: %w", templateName, err)
-	}
-
-	return buf.String(), nil
+	return domain.RenderEmailTemplate(templateName, data)
 }
 
 func writeTempFile(data []byte, filename string) (string, error) {
