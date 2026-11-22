@@ -184,7 +184,7 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "booking_partner_notice", Label: "Praticien — nouvelle réservation", Audience: AudiencePartner, Locales: frenchOnly},
+		Entry: Entry{ID: "booking_partner_notice", Label: "Nouvelle réservation", Audience: AudiencePartner, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposeBookingPartnerNotice(domain.BookingPartnerNoticeRequest{
 				ToEmail: samplePartnerEmail, ToFirstName: samplePartnerFirst,
@@ -195,7 +195,7 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "booking_partner_cancellation", Label: "Praticien — annulation", Audience: AudiencePartner, Locales: frenchOnly},
+		Entry: Entry{ID: "booking_partner_cancellation", Label: "Annulation de réservation", Audience: AudiencePartner, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposeBookingPartnerCancellation(domain.BookingPartnerCancellationRequest{
 				ToEmail: samplePartnerEmail, ToFirstName: samplePartnerFirst,
