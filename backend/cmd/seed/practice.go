@@ -37,8 +37,12 @@ type PracticeSeed struct {
 
 type PracticePartnerSeed struct {
 	// Account fields, shared with the admin seed format
-	Email      string `json:"email"`
-	Password   string `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	// "partner" (the default) or "administrator": an administrator who is also
+	// the practitioner, as "Je suis aussi praticien" makes them in the app. Their
+	// profile is then verified the way that button verifies it.
+	Role       string `json:"role,omitempty"`
 	FirstName  string `json:"first_name"`
 	LastName   string `json:"last_name"`
 	Telephone  string `json:"telephone"`
@@ -92,13 +96,22 @@ const (
 )
 
 func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, userSchema string, practice *PracticeSeed) error {
-	// 1. The partner's user account (role: partner)
+	role := practice.Partner.Role
+	switch role {
+	case "":
+		role = "partner"
+	case "partner", "administrator":
+	default:
+		return fmt.Errorf("practice partner role %q: want partner or administrator", role)
+	}
+
+	// 1. The practitioner's user account
 	userID, err := seedUser(ctx, db, crypto, userSchema, AccountSeed{
 		Email:      practice.Partner.Email,
 		Password:   practice.Partner.Password,
 		FirstName:  practice.Partner.FirstName,
 		LastName:   practice.Partner.LastName,
-		Role:       "partner",
+		Role:       role,
 		Telephone:  practice.Partner.Telephone,
 		PostalCode: practice.Partner.PostalCode,
 		City:       practice.Partner.City,
@@ -124,7 +137,7 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 	}
 
 	// 3. The partner's public profile, linked to the product and category
-	partnerID, err := seedPartnerProfile(ctx, db, crypto, userID, categoryID, productID, practice.Partner)
+	partnerID, err := seedPartnerProfile(ctx, db, crypto, userID, categoryID, productID, practice.Partner, role == "administrator")
 	if err != nil {
 		return fmt.Errorf("seed practice partner profile: %w", err)
 	}
@@ -262,7 +275,10 @@ func seedPrice(ctx context.Context, db *pgxpool.Pool, productID uuid.UUID, produ
 	return err
 }
 
-func seedPartnerProfile(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, userID, categoryID, productID uuid.UUID, partner PracticePartnerSeed) (uuid.UUID, error) {
+// verified marks the profile the way the admin's "Je suis aussi praticien"
+// does (Stripe status active, onboarding complete), so an administrator-
+// practitioner gets their practitioner pages without a Stripe account.
+func seedPartnerProfile(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, userID, categoryID, productID uuid.UUID, partner PracticePartnerSeed, verified bool) (uuid.UUID, error) {
 	now := time.Now()
 	domainPartner := &authDomain.Partner{
 		ID:                  uuid.New(),
@@ -304,6 +320,16 @@ func seedPartnerProfile(ctx context.Context, db *pgxpool.Pool, crypto encx.Crypt
 	)
 	if err != nil {
 		return uuid.Nil, err
+	}
+
+	if verified {
+		if _, err := db.Exec(ctx, `
+			UPDATE auth.partners
+			SET stripe_account_status = $1, stripe_onboarding_complete = TRUE, updated_at = NOW()
+			WHERE user_id = $2
+		`, authDomain.StripeAccountStatusActive, userID); err != nil {
+			return uuid.Nil, fmt.Errorf("verify the practitioner profile: %w", err)
+		}
 	}
 
 	// The conflict keeps the pre-existing partner ID stable (settings already
