@@ -48,16 +48,12 @@
         return page.url.pathname.startsWith(path);
     }
 
-    const secondaryButtonText =
-        permissions.canAccessOps || permissions.canAccessApp
-            ? "Voir ton profil"
-            : "S’authentifier";
-
-    const secondaryButtonLink = permissions.canAccessOps
-        ? "/staff"
-        : permissions.canAccessApp
-          ? "/app"
-          : "/auth";
+    // Clients have no account in v1: visitors get no login button. The
+    // practice's administrator and practitioner reach the login at /auth
+    // directly, and see a link to their area once logged in.
+    const showSecondaryButton = permissions.canAccessOps;
+    const secondaryButtonText = "Voir ton profil";
+    const secondaryButtonLink = "/staff";
 
     $effect(() => {
         if (!browser) return;
@@ -124,13 +120,15 @@
                 Réserver maintenant
             </Button>
         </a>
-        <Button class="rounded-xl py-3 transition-colors duration-300 {showScrolledState
-            ? 'bg-white border border-foreground hover:bg-surface text-foreground'
-            : 'bg-transparent border border-white/60 hover:bg-white/10 text-white'}">
-            <a href={secondaryButtonLink}>
-                {secondaryButtonText}
-            </a>
-        </Button>
+        {#if showSecondaryButton}
+            <Button class="rounded-xl py-3 transition-colors duration-300 {showScrolledState
+                ? 'bg-white border border-foreground hover:bg-surface text-foreground'
+                : 'bg-transparent border border-white/60 hover:bg-white/10 text-white'}">
+                <a href={secondaryButtonLink}>
+                    {secondaryButtonText}
+                </a>
+            </Button>
+        {/if}
     </div>
 </div>
 
@@ -177,13 +175,15 @@
             <a href="/#reserver"><Button
                 class="w-full inline-flex justify-center items-center px-8 py-3.5 bg-foreground hover:bg-foreground-alt text-background text-sm sm:text-base font-medium transition-all duration-200 shadow-mini hover:shadow-card ring-offset-2 focus:ring-2 focus:ring-foreground"
                 >Réserver maintenant</Button></a>
-            <Button
-                class="w-full bg-background border border-foreground hover:bg-surface px-8 py-3.5 rounded-xl"
-            >
-                <a href={secondaryButtonLink} class="block w-full">
-                    {secondaryButtonText}
-                </a>
-            </Button>
+            {#if showSecondaryButton}
+                <Button
+                    class="w-full bg-background border border-foreground hover:bg-surface px-8 py-3.5 rounded-xl"
+                >
+                    <a href={secondaryButtonLink} class="block w-full">
+                        {secondaryButtonText}
+                    </a>
+                </Button>
+            {/if}
         </div>
     </div>
 </SideDrawer>
