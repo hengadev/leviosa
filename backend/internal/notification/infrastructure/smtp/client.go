@@ -1,10 +1,8 @@
 package smtp
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"html/template"
 	"io"
 	"os"
 	"path/filepath"
@@ -431,19 +429,7 @@ func (c *SMTPClient) sendEmail(ctx context.Context, request *domain.EmailRequest
 }
 
 func (c *SMTPClient) renderTemplate(templateName string, data interface{}) (string, error) {
-	templatePath := fmt.Sprintf("templates/%s.html", templateName)
-
-	tmpl, err := template.ParseFS(domain.EmailTemplates, templatePath)
-	if err != nil {
-		return "", fmt.Errorf("parse email template %s: %w", templateName, err)
-	}
-
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("execute email template %s: %w", templateName, err)
-	}
-
-	return buf.String(), nil
+	return domain.RenderEmailTemplate(templateName, data)
 }
 
 func writeTempFile(data []byte, filename string) (string, error) {
