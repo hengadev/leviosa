@@ -5,21 +5,35 @@ import (
 	"testing"
 )
 
-// These emails keep the subject, template and data the SMTP client built
-// inline before they were composed here.
+// The emails sent outside the booking flow: French subjects and bodies, the
+// booking emails' "LEVIOSA" header and footer, no placeholder content.
+
+// assertFinished checks a rendered email has the booking emails' header and
+// footer and none of the old placeholder content.
+func assertFinished(t *testing.T, body string) {
+	t.Helper()
+	for _, want := range []string{">LEVIOSA</h1>", "&copy; 2026 Leviosa. Tous droits réservés."} {
+		assertContains(t, body, want)
+	}
+	for _, banned := range []string{"<img", "placeholder", "Placeholder", "[Client Name]", "Instagram", "Merci de vous être inscrit"} {
+		if strings.Contains(body, banned) {
+			t.Errorf("rendered email contains %q", banned)
+		}
+	}
+}
 
 func TestComposeOTPEmail(t *testing.T) {
 	email := ComposeOTPEmail(OTPEmailRequest{
 		ToEmail: "client@example.com", OTP: "428193", FromEmail: "contact@leviosa.test", LogoURL: "https://leviosa.test/logo.png",
 	}, composeNow)
 
-	if email.Subject != "Your OTP Code" {
+	if email.Subject != "Votre code de vérification Leviosa" {
 		t.Errorf("subject = %q", email.Subject)
 	}
 	if email.Template != "otp" {
 		t.Errorf("template = %q", email.Template)
 	}
-	want := OTPEmailData{OTP: "428193", Year: 2026, LogoURL: "https://leviosa.test/logo.png"}
+	want := OTPEmailData{OTP: "428193", Year: 2026}
 	if got, ok := email.Data.(OTPEmailData); !ok || got != want {
 		t.Errorf("data = %+v, want %+v", email.Data, want)
 	}
@@ -28,20 +42,23 @@ func TestComposeOTPEmail(t *testing.T) {
 	}
 }
 
-// The template reads Address and InstagramPath: without them in the data it
-// failed to execute, so no login code email could be sent.
+// The template must execute with the data it is given: a field it reads that
+// the data lacks once made every login code email fail to render. Its wording
+// fits a password reset, an email check and a guest claim, and states no
+// expiry duration, which the email does not know.
 func TestComposeOTPEmail_Renders(t *testing.T) {
 	email := ComposeOTPEmail(OTPEmailRequest{ToEmail: "client@example.com", OTP: "428193"}, composeNow)
 	html, err := RenderEmailTemplate(email.Template, email.Data)
 	if err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	if !strings.Contains(html, "428193") {
-		t.Error("rendered email does not show the code")
+	for _, want := range []string{"428193", "Votre code de vérification", "quelques minutes"} {
+		assertContains(t, html, want)
 	}
-	if strings.Contains(html, "Instagram") {
-		t.Error("an empty Instagram link is shown")
+	if strings.Contains(html, "15 minutes") {
+		t.Error("the email states an expiry duration")
 	}
+	assertFinished(t, html)
 }
 
 func testPaymentNotificationRequest() PaymentNotificationRequest {
@@ -75,7 +92,7 @@ func TestComposePaymentNotificationEmail(t *testing.T) {
 func TestComposePaymentFailedEmail(t *testing.T) {
 	email := ComposePaymentFailedEmail(testPaymentNotificationRequest(), composeNow)
 
-	if email.Subject != "Payment Failed" {
+	if email.Subject != "Échec de votre paiement" {
 		t.Errorf("subject = %q", email.Subject)
 	}
 	if email.Template != "payment_failed" {
@@ -90,9 +107,10 @@ func TestComposePaymentFailedEmail(t *testing.T) {
 		t.Errorf("data = %+v", data)
 	}
 	body := renderComposed(t, email)
-	for _, want := range []string{"Bonjour Alice,", "Massage", "€70.00", "05 March 2026", `href="https://leviosa.test/bookings"`} {
+	for _, want := range []string{"Échec de votre paiement", "Bonjour Alice,", "Massage", "€70.00", "05 March 2026", `href="https://leviosa.test/bookings"`} {
 		assertContains(t, body, want)
 	}
+	assertFinished(t, body)
 }
 
 func TestComposeContactFormEmail(t *testing.T) {
@@ -135,7 +153,7 @@ func TestComposePaymentDisputeAlertEmail(t *testing.T) {
 		ClientName: "Alice Smith", ProductName: "Massage", Amount: "€70.00", DisputeReason: "fraudulent",
 	}, composeNow)
 
-	if email.Subject != "Payment dispute opened — booking 550e8400-e29b-41d4-a716-446655440000" {
+	if email.Subject != "Litige de paiement — réservation 550e8400-e29b-41d4-a716-446655440000" {
 		t.Errorf("subject = %q", email.Subject)
 	}
 	if email.Template != "payment_dispute_alert" {
@@ -148,5 +166,9 @@ func TestComposePaymentDisputeAlertEmail(t *testing.T) {
 	if got, ok := email.Data.(PaymentDisputeAlertEmailData); !ok || got != want {
 		t.Errorf("data = %+v, want %+v", email.Data, want)
 	}
-	renderComposed(t, email)
+	body := renderComposed(t, email)
+	for _, want := range []string{"Litige de paiement", "Alice Smith", "Massage", "€70.00", "fraudulent", "550e8400-e29b-41d4-a716-446655440000"} {
+		assertContains(t, body, want)
+	}
+	assertFinished(t, body)
 }

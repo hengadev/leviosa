@@ -48,8 +48,8 @@ const (
 	// recipient of the contact form and the dispute alert.
 	sampleCompanyName    = "Leviosa"
 	samplePracticeEmail  = "contact@leviosa.example.com"
-	sampleAmount         = "€70.00"
-	samplePaymentDate    = "05 March 2026"
+	sampleAmount         = "70,00\u00a0€"
+	samplePaymentDate    = "jeudi 5 mars 2026"
 	sampleRetryURL       = "https://leviosa.example.com/bookings"
 	sampleVisitorName    = "Marie Leroy"
 	sampleVisitorEmail   = "marie.leroy@example.com"
@@ -106,11 +106,9 @@ type catalogueEntry struct {
 
 var (
 	bothLocales = []domain.Locale{domain.LocaleFR, domain.LocaleEN}
-	frenchOnly  = []domain.Locale{domain.LocaleFR}
-	// englishOnly: the dispute alert is still written in English only. The
-	// login code, payment receipt and failed payment notice have an English
-	// subject but a French body: they are listed as French.
-	englishOnly = []domain.Locale{domain.LocaleEN}
+	// frenchOnly: the partner emails and the emails outside the booking
+	// flow (login code, failed payment, contact form, dispute alert).
+	frenchOnly = []domain.Locale{domain.LocaleFR}
 )
 
 var catalogue = []catalogueEntry{
@@ -216,12 +214,6 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "payment_receipt", Label: "Reçu de paiement", Audience: AudienceClient, Locales: frenchOnly},
-		compose: func(domain.Locale) domain.ComposedEmail {
-			return domain.ComposePaymentNotificationEmail(samplePayment(), sampleNow)
-		},
-	},
-	{
 		Entry: Entry{ID: "payment_failed", Label: "Échec du paiement", Audience: AudienceClient, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposePaymentFailedEmail(samplePayment(), sampleNow)
@@ -238,7 +230,7 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "payment_dispute_alert", Label: "Litige de paiement", Audience: AudiencePractice, Locales: englishOnly},
+		Entry: Entry{ID: "payment_dispute_alert", Label: "Litige de paiement", Audience: AudiencePractice, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposePaymentDisputeAlertEmail(domain.PaymentDisputeAlertRequest{
 				ToEmail: samplePracticeEmail, BookingID: sampleBookingID, ClientName: sampleClientName,

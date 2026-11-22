@@ -13,16 +13,15 @@ import (
 // in today; every other client email exists in French and English.
 var wantLocales = map[string][]domain.Locale{
 	"login_code":            frenchOnly,
-	"payment_receipt":       frenchOnly,
 	"payment_failed":        frenchOnly,
 	"contact_form":          frenchOnly,
-	"payment_dispute_alert": englishOnly,
+	"payment_dispute_alert": frenchOnly,
 }
 
 func TestList_ReturnsEveryEmail(t *testing.T) {
 	entries := List()
-	if len(entries) != 16 {
-		t.Fatalf("List returned %d entries, want 16", len(entries))
+	if len(entries) != 15 {
+		t.Fatalf("List returned %d entries, want 15", len(entries))
 	}
 
 	seen := map[string]bool{}
@@ -74,7 +73,6 @@ func TestList_OtherEmailsAudiencesAndLabels(t *testing.T) {
 		label    string
 		audience Audience
 	}{
-		"payment_receipt":       {"Reçu de paiement", AudienceClient},
 		"payment_failed":        {"Échec du paiement", AudienceClient},
 		"contact_form":          {"Message du formulaire de contact", AudiencePractice},
 		"payment_dispute_alert": {"Litige de paiement", AudiencePractice},
@@ -97,11 +95,10 @@ func TestRender_OtherEmailsShowTheirSampleData(t *testing.T) {
 		subject string
 		body    []string
 	}{
-		// The receipt template shows no payment detail today, only the year.
-		{"payment_receipt", domain.LocaleFR, "Payment Confirmation", []string{"&copy; 2026"}},
-		{"payment_failed", domain.LocaleFR, "Payment Failed", []string{sampleAmount, sampleRetryURL}},
+		{"login_code", domain.LocaleFR, "Votre code de vérification Leviosa", []string{sampleLoginCode}},
+		{"payment_failed", domain.LocaleFR, "Échec de votre paiement", []string{sampleAmount, samplePaymentDate, sampleRetryURL}},
 		{"contact_form", domain.LocaleFR, "Nouveau message de contact — Marie Leroy", []string{sampleVisitorName, sampleVisitorEmail, "samedi matin"}},
-		{"payment_dispute_alert", domain.LocaleEN, "Payment dispute opened — booking " + sampleBookingID, []string{sampleDisputeReason, sampleClientName}},
+		{"payment_dispute_alert", domain.LocaleFR, "Litige de paiement — réservation " + sampleBookingID, []string{sampleDisputeReason, sampleClientName, sampleAmount}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.id, func(t *testing.T) {
@@ -183,7 +180,7 @@ func TestRender_NotFound(t *testing.T) {
 		{"unknown id", "no_such_email", domain.LocaleFR},
 		{"unsupported locale", "booking_reminder", "de"},
 		{"partner email in English", "booking_partner_notice", domain.LocaleEN},
-		{"English-only email in French", "payment_dispute_alert", domain.LocaleFR},
+		{"French-only client email in English", "payment_failed", domain.LocaleEN},
 		{"French-only practice email in English", "contact_form", domain.LocaleEN},
 	}
 	for _, tc := range cases {

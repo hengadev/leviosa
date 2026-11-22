@@ -6,9 +6,9 @@ import (
 )
 
 // The emails sent outside the booking flow: the login code, the payment
-// receipt and failed payment notice, the contact form message and the
-// payment dispute alert. Their wording is unchanged from when the SMTP client
-// built them inline; the field names are what the templates read.
+// receipt (no longer sent) and failed payment notice, the contact form
+// message and the payment dispute alert. All French; the field names are what
+// the templates read.
 
 // Template names of these emails (templates/<name>.html).
 const (
@@ -21,30 +21,27 @@ const (
 
 // OTPEmailData is the data of the login code email.
 type OTPEmailData struct {
-	OTP     string
-	Year    int
-	LogoURL string
-	// Address and InstagramPath fill the template's footer, which hides
-	// them when empty. Nothing sets them yet: before they existed, the
-	// template failed to render and no login code email could be sent.
-	Address       string
-	InstagramPath string
+	OTP  string
+	Year int
 }
 
-// ComposeOTPEmail builds the login code email (English).
+// ComposeOTPEmail builds the login code email (French), sent for a password
+// reset, an email check and a guest claim: its wording fits all three. It
+// states no expiry duration, which the email does not know.
 func ComposeOTPEmail(req OTPEmailRequest, now time.Time) ComposedEmail {
 	return ComposedEmail{
-		Subject:  "Your OTP Code",
+		Subject:  "Votre code de vérification Leviosa",
 		Template: OTPTemplate,
 		Data: OTPEmailData{
-			OTP:     req.OTP,
-			Year:    now.Year(),
-			LogoURL: req.LogoURL,
+			OTP:  req.OTP,
+			Year: now.Year(),
 		},
 	}
 }
 
-// PaymentEmailData is the data of the payment receipt.
+// PaymentEmailData is the data of the payment receipt, which is no longer
+// sent (the booking confirmation tells the client their payment went
+// through).
 type PaymentEmailData struct {
 	FirstName   string
 	LastName    string
@@ -85,11 +82,11 @@ func ComposePaymentNotificationEmail(req PaymentNotificationRequest, now time.Ti
 	}
 }
 
-// ComposePaymentFailedEmail builds the failed payment notice (English), with
-// the link to try again.
+// ComposePaymentFailedEmail builds the failed payment notice (French), with
+// the link to the client's bookings.
 func ComposePaymentFailedEmail(req PaymentNotificationRequest, now time.Time) ComposedEmail {
 	return ComposedEmail{
-		Subject:  "Payment Failed",
+		Subject:  "Échec de votre paiement",
 		Template: PaymentFailedTemplate,
 		Data:     PaymentFailedEmailData{PaymentEmailData: paymentEmailData(req, now), RetryURL: req.RetryURL},
 	}
@@ -138,10 +135,10 @@ type PaymentDisputeAlertEmailData struct {
 }
 
 // ComposePaymentDisputeAlertEmail builds the payment dispute alert to the
-// practice (English).
+// practice (French).
 func ComposePaymentDisputeAlertEmail(req PaymentDisputeAlertRequest, now time.Time) ComposedEmail {
 	return ComposedEmail{
-		Subject:  fmt.Sprintf("Payment dispute opened — booking %s", req.BookingID),
+		Subject:  fmt.Sprintf("Litige de paiement — réservation %s", req.BookingID),
 		Template: PaymentDisputeAlertTemplate,
 		Data: PaymentDisputeAlertEmailData{
 			BookingID:     req.BookingID,

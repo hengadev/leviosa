@@ -561,9 +561,9 @@ func (a *BookingNotificationAdapter) sendPaymentFailedEmail(ctx context.Context,
 		ToEmail:     data.ClientEmail,
 		ToFirstName: firstName(data.ClientName),
 		ToLastName:  lastName(data.ClientName),
-		Amount:      formatAmount(data.TotalPriceCents, data.Currency),
+		Amount:      notificationDomain.FormatMoney(data.TotalPriceCents, data.Currency, notificationDomain.LocaleFR),
 		Product:     data.ProductName,
-		PaymentDate: time.Now().Format("02 January 2006"),
+		PaymentDate: notificationDomain.FormatDate(time.Now(), notificationDomain.LocaleFR),
 		RetryURL:    a.frontendOrigin + "/bookings",
 	}
 
@@ -589,7 +589,7 @@ func (a *BookingNotificationAdapter) sendPaymentDisputeAlertEmail(ctx context.Co
 
 	clientName := data.ClientName
 	if data.IsGuestBooking {
-		clientName = fmt.Sprintf("%s (guest)", clientName)
+		clientName = fmt.Sprintf("%s (invité)", clientName)
 	}
 
 	req := notificationDomain.PaymentDisputeAlertRequest{
@@ -597,7 +597,7 @@ func (a *BookingNotificationAdapter) sendPaymentDisputeAlertEmail(ctx context.Co
 		BookingID:     data.BookingID.String(),
 		ClientName:    clientName,
 		ProductName:   data.ProductName,
-		Amount:        formatAmount(data.TotalPriceCents, data.Currency),
+		Amount:        notificationDomain.FormatMoney(data.TotalPriceCents, data.Currency, notificationDomain.LocaleFR),
 		DisputeReason: data.DisputeReason,
 	}
 
