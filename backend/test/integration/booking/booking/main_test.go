@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -119,6 +120,16 @@ var (
 	// Real settings repository behind the booking policy: tests change the
 	// policy through it, as the admin settings endpoint does.
 	settingsRepo settingsPorts.SettingsRepository
+
+	// Real settings service: tests set the practice access through it, as the
+	// admin settings endpoint does. practiceAccess wraps the in-process
+	// provider the booking service reads, so a test can make its read fail.
+	settingsSvc    settingsPorts.SettingsService
+	practiceAccess *switchablePracticeAccess
+
+	// suiteClockOffset shifts the booking service's clock (nanoseconds), so a
+	// test can look at a booking after its slot has ended. Zero: time.Now.
+	suiteClockOffset atomic.Int64
 
 	// Real availability service: the partner area creates, edits and deletes
 	// availabilities through it (recurring availability tests).
@@ -281,8 +292,20 @@ func TestMain(m *testing.M) {
 	// Booking policy from the real settings service, as the app wires it.
 	settingsRepo = settingsPostgres.New(ctx, testPool)
 	realSettingsService := settingsService.New(settingsRepo, nil, crypto, settingsNoop.NewPublisher(), nil)
+	settingsSvc = realSettingsService
 	if err := settingsRepo.SetInt(ctx, &settingsDomain.Setting[int]{Key: settingsContracts.BookingMinimumNoticeHours, Value: suiteMinimumNoticeHours}); err != nil {
 		log.Fatalf("Failed to set the suite's booking policy: %v", err)
+	}
+
+	realBuildingRepo := buildingPostgres.New(ctx, testPool)
+	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
+
+	realRoomRepo := roomPostgres.New(ctx, testPool)
+	realRoomService := roomAppService.New(realRoomRepo, realBuildingRepo, crypto)
+
+	// Practice access from the real settings service, as the app wires it.
+	practiceAccess = &switchablePracticeAccess{
+		provider: bookingSettings.NewInProcessPracticeAccessProvider(realSettingsService, realRoomService, realBuildingService),
 	}
 
 	service = bookingService.New(bookingRepo, availabilityRepo, paymentService, catalogProductService, catalogPriceService, notificationSpy, crypto,
@@ -291,6 +314,8 @@ func TestMain(m *testing.M) {
 		bookingService.WithLatePaymentNotifier(notificationSpy),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
 		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)),
+		bookingService.WithPracticeAccessProvider(practiceAccess),
+		bookingService.WithClock(func() time.Time { return time.Now().Add(time.Duration(suiteClockOffset.Load())) }),
 		bookingService.WithAvailabilityExceptionRepository(exceptionRepo))
 
 	allocationRepo, err := allocationPostgres.New(ctx, testPool)
@@ -304,12 +329,6 @@ func TestMain(m *testing.M) {
 	// fetchers against the test DB) backed by SMS/email spies, so tests can
 	// assert that an SMS send is actually attempted end-to-end, not just that
 	// the notification port was invoked.
-
-	realBuildingRepo := buildingPostgres.New(ctx, testPool)
-	realBuildingService := buildingAppService.New(realBuildingRepo, crypto)
-
-	realRoomRepo := roomPostgres.New(ctx, testPool)
-	realRoomService := roomAppService.New(realRoomRepo, realBuildingRepo, crypto)
 
 	notificationSMSSpy = &IntegrationSMSSpy{}
 	notificationEmailSpy = &IntegrationEmailSpy{}

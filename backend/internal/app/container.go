@@ -529,6 +529,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithTokenSecret([]byte(c.Config.BookingTokenSecret)),
 		bookingSvc.WithAuditLogger(c.AuditLogger),
 		bookingSvc.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(c.SettingsService)),
+		bookingSvc.WithPracticeAccessProvider(bookingSettings.NewInProcessPracticeAccessProvider(c.SettingsService, c.RoomService, c.BuildingService)),
 		bookingSvc.WithAvailabilityExceptionRepository(c.ExceptionRepo),
 		bookingSvc.WithLatePaymentNotifier(notificationAdapter),
 	)
