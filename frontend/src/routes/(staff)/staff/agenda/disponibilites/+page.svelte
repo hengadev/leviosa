@@ -758,7 +758,7 @@
 		</div>
 		<button
 			onclick={() => openCreateModal()}
-			class="inline-flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+			class="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
 		>
 			<Plus size={16} />
 			Nouvelle disponibilité

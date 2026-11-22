@@ -286,7 +286,7 @@
 					</div>
 				</div>
 				<button
-					class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-tertiary text-contrast hover:bg-tertiary/90 transition-colors disabled:opacity-50 flex-shrink-0"
+					class="flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-tertiary text-contrast hover:bg-tertiary/90 transition-colors disabled:opacity-50 flex-shrink-0"
 					onclick={startStripeOnboarding}
 					disabled={stripeLoading}
 				>

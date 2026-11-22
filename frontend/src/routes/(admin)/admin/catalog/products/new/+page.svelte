@@ -314,7 +314,7 @@
 		<button
 			type="button"
 			onclick={() => selectTab(next)}
-			class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+			class="inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-medium text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 		>
 			Suivant : {tabs.find((t) => t.id === next)?.title}
 			<ArrowRight size={16} />

@@ -86,7 +86,7 @@
 
 		<select
 			bind:value={status}
-			class="px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+			class="min-h-11 px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 		>
 			<option value={defaultStatus}>Tous les statuts</option>
 			{#each Array.from(statuses).filter(s => s !== defaultStatus) as s}
@@ -96,7 +96,7 @@
 
 		<select
 			bind:value={category}
-			class="px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+			class="min-h-11 px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 		>
 			<option value={defaultCategory}>Toutes les catégories</option>
 			{#each categories.filter(c => c.id !== 'default') as c}
@@ -106,7 +106,7 @@
 
 		<select
 			bind:value={availability}
-			class="px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+			class="min-h-11 px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 		>
 			<option value={defaultAvailability}>Tous les types</option>
 			{#each Array.from(availabilities).filter(a => a !== defaultAvailability) as a}
