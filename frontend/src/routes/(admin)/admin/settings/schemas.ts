@@ -64,6 +64,9 @@ export const bookingPolicySchema = type({
 export const practiceAccessSchema = type({
     door_code: "string <= 50",
     access_instructions: "string <= 1000",
+    // Email the new door code to the clients of upcoming bookings when it
+    // changed (the dialog's checkbox, ticked by default).
+    notify_clients: "boolean",
 })
 
 // Types
@@ -116,6 +119,7 @@ export const bookingPolicyDefaults: BookingPolicy = {
 export const practiceAccessDefaults: PracticeAccess = {
     door_code: "",
     access_instructions: "",
+    notify_clients: true,
 }
 
 export const otpDurationDefaults: OtpDuration = {
