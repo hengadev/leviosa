@@ -274,7 +274,7 @@
     <div class="max-w-4xl mx-auto">
     <Tabs.Root bind:value={activeTab} onValueChange={selectTab} class="space-y-6">
         <Tabs.List
-            ref={tabListEl}
+            bind:ref={tabListEl}
             class="flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card px-1 py-1"
         >
             {#each tabs as tab (tab.value)}

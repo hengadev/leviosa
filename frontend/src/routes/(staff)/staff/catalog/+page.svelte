@@ -59,7 +59,7 @@
                 <!--     class="inline-flex gap-2 md:gap-1 bg-transparent text-sm font-semibold min-w-max border-b-1 border-border-card md:border-b-0 md:rounded-9px md:bg-dark-10 md:shadow-mini-inset dark:md:bg-background md:p-1 md:leading-[0.01em] dark:md:border dark:md:border-neutral-600/30" -->
                 <!-- > -->
                 <TabsList
-                    ref={tabListEl}
+                    bind:ref={tabListEl}
                     class="inline-flex gap-2 md:gap-1 bg-transparent text-sm font-semibold min-w-max border-b-1 border-border-card md:p-1 md:leading-[0.01em]"
                 >
                     {#each triggers as trigger}

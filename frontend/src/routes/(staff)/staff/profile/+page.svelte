@@ -360,7 +360,7 @@
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-foreground">Biographie</h3>
 					<button
-						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingBio = !editingBio)}
 						title="Modifier"
 					>
@@ -408,7 +408,7 @@
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-foreground">Expérience</h3>
 					<button
-						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingExperience = !editingExperience)}
 						title="Modifier"
 					>
@@ -459,7 +459,7 @@
 						<h3 class="font-semibold text-foreground">Profession</h3>
 					</div>
 					<button
-						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingOccupation = !editingOccupation)}
 						title="Modifier"
 					>
@@ -511,7 +511,7 @@
 						<h3 class="font-semibold text-foreground">Citation</h3>
 					</div>
 					<button
-						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingQuote = !editingQuote)}
 						title="Modifier"
 					>
@@ -563,7 +563,7 @@
 						<h3 class="font-semibold text-foreground">Tags de spécialité</h3>
 					</div>
 					<button
-						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingTags = !editingTags)}
 						title="Modifier"
 					>

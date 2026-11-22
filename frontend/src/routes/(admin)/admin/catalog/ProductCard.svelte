@@ -160,7 +160,7 @@
 				<!-- Opens the creation form filled from this product. -->
 				<a
 					href="/admin/catalog/products/new?from={card.id}"
-					class="flex items-center justify-center size-11 -m-2 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+					class="flex items-center justify-center size-11 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 					aria-label="Dupliquer"
 					title="Dupliquer"
 				>
@@ -171,7 +171,7 @@
 					<input type="hidden" name="status" value={archived ? "draft" : "archived"} />
 					<button
 						type="submit"
-						class="flex items-center justify-center size-11 -m-2 p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
+						class="flex items-center justify-center size-11 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
 						aria-label={archived ? "Restaurer en brouillon" : "Archiver"}
 						title={archived ? "Restaurer en brouillon" : "Archiver : n'est plus proposé, reste lié aux réservations"}
 					>
@@ -185,7 +185,7 @@
 				<AlertDialog
 					label="Supprimer"
 					message={`Le produit « ${name} » et toutes ses données seront supprimés.`}
-					triggerClass="flex items-center justify-center size-11 -m-2 p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer"
+					triggerClass="flex items-center justify-center size-11 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors cursor-pointer"
 				>
 					{#snippet trigger()}
 						<Trash2 size={14} />
