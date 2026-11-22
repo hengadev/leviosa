@@ -21,13 +21,19 @@ export interface Booking {
 	practitionerRefundCents: number;
 }
 
-export const load: PageServerLoad = async ({ locals, url, fetch }) => {
+export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 	if (!locals.user?.id) {
 		throw redirect(302, '/auth');
 	}
 
 	const partnerId = locals.user.id;
 	const statusFilter = url.searchParams.get('status') ?? '';
+
+	// An administrator without a practitioner profile of their own has no
+	// bookings to list: the page says the profile is not set up.
+	if (locals.user.role === 'administrator' && !(await parent()).selfPractitioner) {
+		return { bookings: [] as Booking[], statusFilter, profileMissing: true };
+	}
 
 	try {
 		const res = await fetch(`${env.API_URL}/partners/bookings/${partnerId}`);

@@ -29,12 +29,18 @@ export interface Availability {
 	updatedAt: string;
 }
 
-export const load: PageServerLoad = async ({ locals, fetch }) => {
+export const load: PageServerLoad = async ({ locals, fetch, parent }) => {
 	if (!locals.user?.id) {
 		throw redirect(302, '/auth');
 	}
 
 	const partnerId = locals.user.id;
+
+	// An administrator without a practitioner profile of their own has no
+	// availabilities: the page says the profile is not set up.
+	if (locals.user.role === 'administrator' && !(await parent()).selfPractitioner) {
+		return { series: [] as Availability[], oneOffs: [] as Availability[], roomId: null, partnerId, profileMissing: true };
+	}
 
 	try {
 		// Fetch availabilities and allocations in parallel

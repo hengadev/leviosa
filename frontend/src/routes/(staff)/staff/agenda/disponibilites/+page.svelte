@@ -15,6 +15,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { parseDate, type CalendarDate } from '@internationalized/date';
 	import Modal from '#lib/ui/Modal.svelte';
+	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
 	import { PRACTICE_TIME_ZONE } from '#lib/i18n/practice.ts';
 	import { practiceDate, practiceInstant, type AvailabilityException } from './occurrences';
 	import { dayOpenings, firstWeeklyClash, firstWeekday, overlapping, weekday, type Opening } from './calendar';
@@ -750,6 +751,13 @@
 	<title>Disponibilités | Staff</title>
 </svelte:head>
 
+<!-- An administrator without a practitioner profile: nothing to show yet -->
+{#if data.profileMissing}
+	<div class="container mx-auto px-4 py-8 lg:py-12">
+		<h1 class="text-3xl lg:text-4xl font-bold mb-8 text-foreground">Disponibilités</h1>
+		<PractitionerProfileMissing />
+	</div>
+{:else}
 <div class="container mx-auto px-4 py-8 lg:py-12">
 	<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
@@ -1034,6 +1042,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <!-- ========== CREATE MODAL ========== -->
 <Modal

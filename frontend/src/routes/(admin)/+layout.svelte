@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { LayoutProps } from "./$types";
 	import { setUserContext } from "#lib/context/user.svelte.ts";
-	import AdminSidebar from "#lib/navigation/AdminSidebar.svelte";
+	import PracticeNavigation from "#lib/navigation/PracticeNavigation.svelte";
 	import { adminDarkMode } from "#lib/stores/adminDarkMode.svelte.ts";
 	import { browser } from "$app/env";
 
@@ -33,7 +33,7 @@
 <!-- One tree for every width: the page renders once. The sidebar shows
      from lg up, the bottom bar below it. -->
 <div class="flex min-h-screen bg-muted/25">
-	<AdminSidebar user={data.user} permissions={data.permissions} unreadCount={data.unreadCount} selfPractitioner={data.selfPractitioner} />
+	<PracticeNavigation user={data.user} />
 	<!-- Room under the content for the fixed bottom bar and the home indicator -->
 	<main class="flex-1 min-w-0 bg-background pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
 		{@render children()}
