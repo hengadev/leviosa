@@ -20,7 +20,7 @@ func NextWorkingDay(availabilities []*Availability, exceptions []AvailabilityExc
 	}
 
 	first := civilDate(today.In(PracticeLocation)).AddDate(0, 0, 1)
-	last := first.AddDate(0, 0, lookAheadDays - 1)
+	last := first.AddDate(0, 0, lookAheadDays-1)
 	from := onDate(first, midnight)
 	to := onDate(last.AddDate(0, 0, 1), midnight)
 
