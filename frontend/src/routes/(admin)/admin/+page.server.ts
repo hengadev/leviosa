@@ -23,6 +23,12 @@ interface BackendEarningsTransaction {
 	amount_cents: number;
 }
 
+/** The partner next-working-day endpoint's answer (the fields used here). */
+interface BackendNextWorkingDay {
+	date: string;
+	bookings: BackendBooking[];
+}
+
 export interface TodaySession {
 	id: string;
 	startsAt: string;
@@ -47,9 +53,16 @@ export type TodayData =
 			sessionCount: number;
 			/** Confirmed sessions of today, in order; the page drops those that have ended. */
 			sessions: TodaySession[];
-			/** The day and time of the next session after today, when there is one. */
-			nextDayLabel: string | null;
+			/** The next working day and its sessions, when there is one; absent when
+			 * the fetch failed, so the page still renders. */
+			nextWorkingDay?: NextWorkingDay;
 	  };
+
+export interface NextWorkingDay {
+	/** The day in French, e.g. "Samedi 28 novembre". */
+	dayLabel: string;
+	sessions: TodaySession[];
+}
 
 // ── Helpers (Europe/Paris, whatever the server's zone) ──────────
 
@@ -133,6 +146,26 @@ function paymentLabel(booking: BackendBooking, paidOnlineCents: number | undefin
 	}
 }
 
+/** A booking as a row of the day cards (today's sessions and the next
+ * working day's alike). paidOnlineCents is what the client paid online. */
+function toSession(b: BackendBooking, paidOnlineCents: number | undefined): TodaySession {
+	const start = new Date(b.slot_start_time);
+	const end = new Date(b.slot_end_time);
+	const phoneLabel = (b.client_phone ?? '').trim();
+	return {
+		id: b.id,
+		startsAt: start.toISOString(),
+		endsAt: end.toISOString(),
+		startLabel: parisTime(start),
+		endLabel: parisTime(end),
+		clientName: b.client_name || 'Client inconnu',
+		phone: dialable(phoneLabel),
+		phoneLabel: displayPhone(phoneLabel),
+		productName: b.product_name || 'Produit inconnu',
+		paymentLabel: paymentLabel(b, paidOnlineCents)
+	};
+}
+
 // ── Load ─────────────────────────────────────────────────────────
 
 export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData> => {
@@ -145,8 +178,7 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 			state: 'ready',
 			dateLabel: dayLabel(new Date()),
 			sessionCount: 0,
-			sessions: [],
-			nextDayLabel: null
+			sessions: []
 		};
 	}
 
@@ -211,38 +243,45 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 			}
 		}
 
-		const sessions: TodaySession[] = confirmed.map((b) => {
-			const start = new Date(b.slot_start_time);
-			const end = new Date(b.slot_end_time);
-			const phoneLabel = (b.client_phone ?? '').trim();
-			return {
-				id: b.id,
-				startsAt: start.toISOString(),
-				endsAt: end.toISOString(),
-				startLabel: parisTime(start),
-				endLabel: parisTime(end),
-				clientName: b.client_name || 'Client inconnu',
-				phone: dialable(phoneLabel),
-				phoneLabel: displayPhone(phoneLabel),
-				productName: b.product_name || 'Produit inconnu',
-				paymentLabel: paymentLabel(b, paidOnline.get(b.id))
-			};
-		});
+		const sessions: TodaySession[] = confirmed.map((b) => toSession(b, paidOnline.get(b.id)));
 
-		const afterToday = bookings
-			.filter((b) => b.status === 'confirmed' && parisDay(new Date(b.slot_start_time)) > today)
-			.sort(
-				(a, b) => new Date(a.slot_start_time).getTime() - new Date(b.slot_start_time).getTime()
-			)[0];
+		// The next working day (issue 037): its fetch is optional — a failure
+		// still renders the day without the section.
+		let nextWorkingDay: NextWorkingDay | undefined;
+		try {
+			const nextRes = await fetch(`${env.API_URL}/partners/next-working-day/${partnerId}`);
+			if (nextRes.status === 401) {
+				throw redirect(302, '/auth');
+			}
+			if (nextRes.ok) {
+				const next = (await nextRes.json()) as BackendNextWorkingDay;
+				if (next.date) {
+					// Noon UTC of that date is that date in Paris, whatever the season.
+				const day = new Date(`${next.date}T12:00:00Z`);
+					const dayBookings = Array.isArray(next.bookings) ? next.bookings : [];
+					nextWorkingDay = {
+						dayLabel: dayLabel(day),
+						sessions: dayBookings
+							.sort(
+								(a, b) =>
+									new Date(a.slot_start_time).getTime() -
+									new Date(b.slot_start_time).getTime()
+							)
+							.map((b) => toSession(b, paidOnline.get(b.id)))
+					};
+				}
+			}
+		} catch (err) {
+			if (isRedirect(err)) throw err;
+			console.error('Error loading the next working day:', err);
+		}
 
 		return {
 			state: 'ready',
 			dateLabel: dayLabel(now),
 			sessionCount: todays.length,
 			sessions,
-			nextDayLabel: afterToday
-				? `${dayLabel(new Date(afterToday.slot_start_time))} à ${parisTime(new Date(afterToday.slot_start_time))}`
-				: null
+			nextWorkingDay
 		};
 	} catch (err) {
 		if (isRedirect(err)) throw err;
