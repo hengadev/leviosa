@@ -202,6 +202,11 @@ type PublicBookingLookupResponse struct {
 	CancelledBy         CancellationActor `json:"cancelled_by,omitempty"`
 	CancelledAt         *time.Time        `json:"cancelled_at,omitempty"`
 	RefundedAmountCents *int              `json:"refunded_amount_cents,omitempty"`
+
+	// Access is how to get into the practice (address, door code,
+	// instructions); set only while ShowsPracticeAccess allows it and a door
+	// code or instructions are set.
+	Access *PracticeAccessView `json:"access,omitempty"`
 }
 
 // RefundPreview is the refund a cancellation made now would give.
