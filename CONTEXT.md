@@ -57,6 +57,7 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Gap** | Unused time between bookings in a room schedule. The system detects gaps to surface upselling opportunities. |
 | **Utilization** | A metric measuring how efficiently a room's time is used (utilization % minus fragmentation penalty). Computed via a materialized view. |
 | **10-minute alignment** | All time slots are aligned to 10-minute boundaries for scheduling consistency. |
+| **Next working day** | The first Europe/Paris date after today on which the practitioner has an open availability occurrence or an appointment booking (never cancelled, awaiting-payment or expired ones), looked up at most the booking horizon or 60 days ahead, whichever is longer. Shown on Aujourd'hui with that day's sessions. |
 
 ### Messaging
 

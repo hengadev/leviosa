@@ -128,9 +128,42 @@
 							? "Plus de séance aujourd'hui"
 							: "Aucune séance aujourd'hui"}
 					</p>
-					{#if data.state === 'ready' && data.nextDayLabel}
-						<p class="mt-1 text-sm text-muted-foreground">
-							Prochaine séance : {data.nextDayLabel}
+				</section>
+			{/if}
+
+			{#if data.nextWorkingDay}
+				<section>
+					<h2 class="px-1 pb-1 text-sm font-semibold">
+						Prochain jour · {data.nextWorkingDay.dayLabel}
+					</h2>
+					{#if data.nextWorkingDay.sessions.length > 0}
+						<ul class="divide-y divide-border-card rounded-2xl border border-border-card">
+							{#each data.nextWorkingDay.sessions as session (session.id)}
+								<li class="flex items-center gap-3 px-4 py-3">
+									<div class="w-12 shrink-0 text-sm font-semibold tabular-nums">
+										{session.startLabel}
+									</div>
+									<div class="min-w-0 flex-1">
+										<p class="truncate font-medium">{session.clientName}</p>
+										{#if session.paymentLabel}
+											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
+										{/if}
+									</div>
+									{#if session.phone}
+										<a
+											href="tel:{session.phone}"
+											class="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-card hover:bg-muted"
+											aria-label="Appeler {session.clientName}"
+										>
+											<Phone size={18} />
+										</a>
+									{/if}
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="rounded-2xl border border-border-card px-4 py-3 text-sm text-muted-foreground">
+							Aucune réservation pour l'instant
 						</p>
 					{/if}
 				</section>

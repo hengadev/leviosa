@@ -75,6 +75,12 @@ type BookingService interface {
 	// names (client, product, room) for display in the partner agenda.
 	GetPartnerBookingsEnriched(ctx context.Context, partnerID uuid.UUID, filter BookingFilter) ([]domain.PartnerBookingResponse, error)
 
+	// GetPartnerNextWorkingDay returns the partner's next working day (the
+	// first Paris date after today with an open availability occurrence or an
+	// appointment booking) and that day's appointment bookings. The date is
+	// empty when no day is worked within the look-ahead.
+	GetPartnerNextWorkingDay(ctx context.Context, partnerID uuid.UUID) (*domain.PartnerNextWorkingDayResponse, error)
+
 	// GetUpcomingBookings retrieves upcoming confirmed bookings
 	GetUpcomingBookings(ctx context.Context, filter BookingFilter) ([]*domain.Booking, error)
 
