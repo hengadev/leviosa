@@ -1,12 +1,11 @@
 import type { Actions, RequestEvent } from "./$types"
-import { error, fail, redirect } from "@sveltejs/kit"
+import { fail, redirect } from "@sveltejs/kit"
 import * as env from "$app/env/private"
 
-import { message, setError, superValidate } from 'sveltekit-superforms';
+import { setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 import { type } from "arktype"
 
-import { MESSAGES, type MessageType } from "#lib/utils/redirect.ts";
 import { forwardAuthCookies } from "#lib/utils/auth-helpers.ts";
 
 function sanitizeRedirect(value: string | null): string | null {
@@ -22,81 +21,22 @@ const loginSchema = type({
 })
 const loginDefaults = { email: "", password: "" }
 
-const registerSchema = type({ registerEmail: "string.email", })
-const registerDefaults = { registerEmail: "" }
-
-
-const oauthSchema = type({
-    provider: "'google' | 'apple'", // it is either google or apple to be fair
-})
-const oauthDefaults = {
-    provider: "google",
-} as typeof oauthSchema.infer
+// Login only: client accounts are out of scope in v1, so there is no
+// registration and no Google/Apple sign-in here (unknown actions are refused
+// by SvelteKit with a 404).
 
 export const load = async ({ url }: RequestEvent) => {
-    const registerForm = await superValidate(arktype(registerSchema, { defaults: registerDefaults }))
-    const oauthForm = await superValidate(arktype(oauthSchema, { defaults: oauthDefaults }))
-
-    // that part should be handled client side to be honest
-    const redirectFrom = url.searchParams.get("redirectFrom");
-    if (redirectFrom) {
-        const queryMessage = url.searchParams.get("message") as MessageType;
-        message(registerForm, MESSAGES[queryMessage])
-    }
-
     // Store the redirect target for use after successful login
     const redirectTo = sanitizeRedirect(url.searchParams.get("redirect"));
 
-    // NOTE: on the oauth implementation
-    // provider
-    // auth state
-    // auth/{provider}/{action}
-    //
     const email = url.searchParams.get("email") // get email is from redirect (via the user.locals if hooks)
     const init = email ? { email, password: "" } : undefined
-    // TODO: remove that once the pipeline is done for the registration
-    // const registerForm = await superValidate({ registerEmail: mockUser.email }, arktype(registerSchema, { defaults: registerDefaults }))
-    // const registerForm = await superValidate(wrongUser, arktype(registerSchema, { defaults: registerDefaults }))
-    // const registerForm = await superValidate(invalidUser, arktype(registerSchema, { defaults: registerDefaults }))
 
     const loginForm = await superValidate(init, arktype(loginSchema, { defaults: loginDefaults }))
-    return { loginForm, registerForm, oauthForm, redirectTo }
+    return { loginForm, redirectTo }
 }
 
 export const actions = {
-    register: async ({ request, fetch }: RequestEvent) => {
-        const form = await superValidate(request, arktype(registerSchema, { defaults: registerDefaults }))
-
-        if (!form.valid) return setError(form, "registerEmail", "L'adresse email saisie n'est pas valide. Veuillez vérifier et réessayer.")
-
-        const res = await fetch(`${env.API_URL}/auth/email`, {
-            method: "POST",
-            headers: { 'Content-Type': "application/json" },
-            body: JSON.stringify({ email: form.data.registerEmail }),
-        })
-
-        if (!res.ok) {
-            switch (res.status) {
-                case 400:
-                    return setError(form, "registerEmail", "Format d'adresse e-mail invalide. Veuillez vérifier.");
-                case 409:
-                    return setError(form, "registerEmail", "Cette adresse e-mail est déjà enregistrée.");
-                case 415:
-                    return setError(form, "registerEmail", "Type de contenu non supporté. Veuillez réessayer.");
-                case 429:
-                    return setError(form, "registerEmail", "Trop de tentatives. Veuillez réessayer plus tard.");
-                case 500:
-                    return setError(form, "registerEmail", "Une erreur serveur est survenue. Le service semble momentanément indisponible.");
-                case 503:
-                    return setError(form, "registerEmail", "Le service est temporairement indisponible. Veuillez réessayer dans quelques instants.");
-                default:
-                    return setError(form, "registerEmail", "Une erreur inattendue est survenue. Veuillez réessayer.");
-            }
-        }
-
-        // Success - redirect to verify email page with email as query param
-        redirect(302, `/auth/verify-email?email=${encodeURIComponent(form.data.registerEmail)}`)
-    },
     login: async ({ request, cookies, url, locals }: RequestEvent) => {
         const form = await superValidate(request, arktype(loginSchema, { defaults: loginDefaults }))
 
@@ -208,18 +148,4 @@ export const actions = {
         // Success - redirect to appropriate destination
         redirect(302, finalRedirect);
     },
-    oauth: async ({ request }: RequestEvent) => {
-        const form = await superValidate(request, arktype(oauthSchema, { defaults: oauthDefaults }))
-
-        if (!form.valid) {
-            setError(form, "provider", "Le fournisseur OAuth sélectionné n'est pas valide.")
-            return fail(400, { oauthForm: form })
-        }
-
-        // Redirect to OAuth provider
-        // The backend GET endpoint will redirect to the provider's authorization screen
-        // After authorization, the provider will redirect back to /auth/oauth/{provider}/callback
-        // The backend callback handler will set cookies and redirect to the app
-        redirect(302, `${env.API_URL}/auth/oauth/${form.data.provider}`, { external: true })
-    }
 } satisfies Actions
