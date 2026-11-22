@@ -8,8 +8,9 @@ import (
 )
 
 // TestRunWritesEveryPreview runs the command into a temp dir and checks
-// that every catalogue entry is written in each of its locales (client
-// emails FR and EN, partner notices FR), non-empty and linked from the index.
+// that every catalogue entry is written in each of its locales (booking
+// client emails FR and EN, partner notices FR, the other emails in the one
+// language they are sent in), non-empty and linked from the index.
 func TestRunWritesEveryPreview(t *testing.T) {
 	outDir := t.TempDir()
 
@@ -19,8 +20,17 @@ func TestRunWritesEveryPreview(t *testing.T) {
 	}
 
 	previews := allPreviews()
-	if len(previews) != 20 {
-		t.Fatalf("allPreviews returned %d files, want 20 (9 client emails x 2 locales + 2 partner notices)", len(previews))
+	if len(previews) != 25 {
+		t.Fatalf("allPreviews returned %d files, want 25 (9 booking client emails x 2 locales + 2 partner notices + 5 other emails)", len(previews))
+	}
+	for _, name := range []string{"payment_receipt_en.html", "payment_failed_en.html", "contact_form_fr.html", "payment_dispute_alert_en.html"} {
+		found := false
+		for _, p := range previews {
+			found = found || p.File == name
+		}
+		if !found {
+			t.Errorf("allPreviews misses %s", name)
+		}
 	}
 
 	index, err := os.ReadFile(indexPath)

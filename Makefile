@@ -21,7 +21,7 @@ help:
 	@echo "  make dev              - Deps in Docker, backend + frontend natively, seeded accounts and agenda"
 	@echo "                           (http://localhost:5180; accounts in backend/cmd/seed/seed_data.example.json)"
 	@echo "  make dev-down         - Stop the make dev dependencies (wipes their data)"
-	@echo "  make email-preview    - Render every booking email to HTML files for review (offline)"
+	@echo "  make email-preview    - Render every previewable email to HTML files for review (offline)"
 	@echo "  make dev-logs         - Follow the make dev dependency logs"
 	@echo "  make local-dev        - Start frontend (native) and backend deps (Docker), hot reload"
 	@echo "  make local-start      - Start the whole app in Docker, mirroring the production stack"
