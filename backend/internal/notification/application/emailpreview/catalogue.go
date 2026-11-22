@@ -57,6 +57,7 @@ const (
 	sampleVisitorMessage = "Bonjour,\nAvez-vous des créneaux disponibles le samedi matin ?"
 	sampleSubmittedAt    = "05/03/2026 10:00"
 	sampleDisputeReason  = "fraudulent"
+	sampleLoginCode      = "428193"
 )
 
 // Fixed moments, so a preview is the same on every run.
@@ -202,6 +203,14 @@ var catalogue = []catalogueEntry{
 				BookingID: sampleBookingID, ProductName: SampleProduct, ClientName: sampleClientName,
 				StartTime: sampleStart, EndTime: sampleEnd,
 				CancelledBy: domain.CancelledByClient, RefundedAmountCents: sampleDepositCents, Currency: sampleCurrency,
+			}, sampleNow)
+		},
+	},
+	{
+		Entry: Entry{ID: "login_code", Label: "Code de connexion", Audience: AudienceClient, Locales: englishOnly},
+		compose: func(domain.Locale) domain.ComposedEmail {
+			return domain.ComposeOTPEmail(domain.OTPEmailRequest{
+				ToEmail: sampleClientEmail, OTP: sampleLoginCode, FromEmail: samplePracticeEmail,
 			}, sampleNow)
 		},
 	},

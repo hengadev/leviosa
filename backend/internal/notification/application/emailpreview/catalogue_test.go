@@ -12,6 +12,7 @@ import (
 // wantLocales is the language each email outside the booking flow is sent
 // in today; every other client email exists in French and English.
 var wantLocales = map[string][]domain.Locale{
+	"login_code":            englishOnly,
 	"payment_receipt":       englishOnly,
 	"payment_failed":        englishOnly,
 	"contact_form":          frenchOnly,
@@ -20,8 +21,8 @@ var wantLocales = map[string][]domain.Locale{
 
 func TestList_ReturnsEveryEmail(t *testing.T) {
 	entries := List()
-	if len(entries) != 15 {
-		t.Fatalf("List returned %d entries, want 15", len(entries))
+	if len(entries) != 16 {
+		t.Fatalf("List returned %d entries, want 16", len(entries))
 	}
 
 	seen := map[string]bool{}
