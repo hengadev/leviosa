@@ -20,10 +20,10 @@ func TestRunWritesEveryPreview(t *testing.T) {
 	}
 
 	previews := allPreviews()
-	if len(previews) != 25 {
-		t.Fatalf("allPreviews returned %d files, want 25 (9 booking client emails x 2 locales + 2 partner notices + 5 other emails)", len(previews))
+	if len(previews) != 24 {
+		t.Fatalf("allPreviews returned %d files, want 24 (9 booking client emails x 2 locales + 2 partner notices + 4 other emails)", len(previews))
 	}
-	for _, name := range []string{"login_code_fr.html", "payment_receipt_fr.html", "payment_failed_fr.html", "contact_form_fr.html", "payment_dispute_alert_en.html"} {
+	for _, name := range []string{"login_code_fr.html", "payment_failed_fr.html", "contact_form_fr.html", "payment_dispute_alert_fr.html"} {
 		found := false
 		for _, p := range previews {
 			found = found || p.File == name

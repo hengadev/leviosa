@@ -39,7 +39,7 @@ func TestPaymentFailedTemplateRenders(t *testing.T) {
 	assertContains(t, buf.String(), "€50.00")
 	assertContains(t, buf.String(), "Massage Therapy")
 	assertContains(t, buf.String(), "15 June 2026")
-	assertContains(t, buf.String(), "Réessayer le paiement")
+	assertContains(t, buf.String(), "Voir mes réservations")
 	assertContains(t, buf.String(), "https://app.leviosa.com/bookings")
 	assertContains(t, buf.String(), "2026")
 
@@ -50,7 +50,7 @@ func TestPaymentFailedTemplateRenders(t *testing.T) {
 	if err := tmpl.Execute(&bufNoURL, dataNoURL); err != nil {
 		t.Fatalf("failed to execute payment_failed template without RetryURL: %v", err)
 	}
-	if bytes.Contains(bufNoURL.Bytes(), []byte("Réessayer le paiement")) {
+	if bytes.Contains(bufNoURL.Bytes(), []byte("Voir mes réservations")) {
 		t.Error("retry button should not appear when RetryURL is empty")
 	}
 }

@@ -82,7 +82,7 @@ func TestEmailPreviewEndpoints(t *testing.T) {
 
 		var list []previewSummary
 		require.NoError(t, json.NewDecoder(resp.Body).Decode(&list))
-		require.Len(t, list, 16)
+		require.Len(t, list, 15)
 		for _, entry := range list {
 			assert.NotEmpty(t, entry.ID)
 			assert.NotEmpty(t, entry.Label)

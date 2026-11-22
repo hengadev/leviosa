@@ -340,7 +340,7 @@ func TestSendPaymentDisputeAlertEmail_FromRequestSender(t *testing.T) {
 	}
 
 	msg, subject, html := parseSent(t, buf)
-	if subject != "Payment dispute opened — booking b7k3xq" {
+	if subject != "Litige de paiement — réservation b7k3xq" {
 		t.Errorf("subject = %q", subject)
 	}
 	if got := msg.Header.Get("From"); got != "contact@leviosa.test" {
@@ -367,7 +367,7 @@ func TestSendPaymentFailedEmail_FallsBackToConfiguredFrom(t *testing.T) {
 		t.Fatalf("SendPaymentFailedEmail: %v", err)
 	}
 	msg, subject, html := parseSent(t, buf)
-	if subject != "Payment Failed" {
+	if subject != "Échec de votre paiement" {
 		t.Errorf("subject = %q", subject)
 	}
 	if got := msg.Header.Get("From"); got != "noreply@leviosa.test" {

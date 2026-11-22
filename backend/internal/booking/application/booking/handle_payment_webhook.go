@@ -125,7 +125,6 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 
 	// Process based on event type
 	var updated bool
-	var sendPaymentConfirmation bool
 	var sendPaymentFailed bool
 	var sendDisputeAlert bool
 
@@ -136,10 +135,11 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 			// is still its own, refund the payment otherwise (late payment).
 			return s.settleHeldPayment(ctx, booking, event)
 		}
+		// No email: the booking confirmation already told the client
+		// their payment went through.
 		if booking.PaymentStatus != domain.PaymentStatusPaid {
 			booking.MarkPaymentPaid()
 			updated = true
-			sendPaymentConfirmation = true
 		}
 
 	case ports.WebhookEventPaymentIntentPaymentFailed:
@@ -248,18 +248,6 @@ func (s *BookingService) HandlePaymentWebhook(ctx context.Context, event *ports.
 	// Send payment notifications (best effort)
 	if s.notificationService != nil {
 		notificationData := s.buildNotificationData(booking, "")
-
-		if sendPaymentConfirmation {
-			if err := s.notificationService.SendPaymentConfirmation(ctx, notificationData); err != nil {
-				// Log error but don't fail the webhook processing
-				slog.ErrorContext(ctx, "failed to send payment confirmation notification",
-					"booking_id", booking.ID,
-					"stripe_event_id", event.ID,
-					"stripe_event_type", event.Type,
-					"error", err,
-				)
-			}
-		}
 
 		if sendPaymentFailed {
 			if err := s.notificationService.SendPaymentFailed(ctx, notificationData); err != nil {
