@@ -24,6 +24,11 @@ type OTPEmailData struct {
 	OTP     string
 	Year    int
 	LogoURL string
+	// Address and InstagramPath fill the template's footer, which hides
+	// them when empty. Nothing sets them yet: before they existed, the
+	// template failed to render and no login code email could be sent.
+	Address       string
+	InstagramPath string
 }
 
 // ComposeOTPEmail builds the login code email (English).

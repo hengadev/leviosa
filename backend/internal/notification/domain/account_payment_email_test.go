@@ -1,6 +1,9 @@
 package domain
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // These emails keep the subject, template and data the SMTP client built
 // inline before they were composed here.
@@ -22,6 +25,22 @@ func TestComposeOTPEmail(t *testing.T) {
 	}
 	if email.ReplyTo != "" || len(email.Attachments) != 0 {
 		t.Errorf("unexpected reply-to %q or attachments %d", email.ReplyTo, len(email.Attachments))
+	}
+}
+
+// The template reads Address and InstagramPath: without them in the data it
+// failed to execute, so no login code email could be sent.
+func TestComposeOTPEmail_Renders(t *testing.T) {
+	email := ComposeOTPEmail(OTPEmailRequest{ToEmail: "client@example.com", OTP: "428193"}, composeNow)
+	html, err := RenderEmailTemplate(email.Template, email.Data)
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if !strings.Contains(html, "428193") {
+		t.Error("rendered email does not show the code")
+	}
+	if strings.Contains(html, "Instagram") {
+		t.Error("an empty Instagram link is shown")
 	}
 }
 

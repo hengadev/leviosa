@@ -91,8 +91,8 @@
                   style="background-color: #f4f4f4; padding: 20px; text-align: center; color: #666666; font-size: 14px;"
                 >
                                     <p style="margin: 0 0 10px;">&copy; {{ .Year }} Leviosa. Tous droits réservés.</p>
-                                    <p style="margin: 0;">{{ .Address }}</p>
-                  <div style="margin: 10px 0;">
+                                    {{ if .Address }}<p style="margin: 0;">{{ .Address }}</p>{{ end }}
+                  {{ if .InstagramPath }}<div style="margin: 10px 0;">
                     <a
                                             href="{{ .InstagramPath }}"
                       target="_blank"
@@ -135,7 +135,7 @@
                       </span>
                       Suivez-nous sur Instagram
                     </a>
-                  </div>                
+                  </div>{{ end }}
                 </td>
               </tr>
             </table>
