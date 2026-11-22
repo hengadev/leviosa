@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PageActionsMenu from "#lib/components/admin/PageActionsMenu.svelte";
 	import type { PageProps } from './$types';
 	import type { Availability } from './+page.server';
 	import {
@@ -754,14 +755,26 @@
 <!-- An administrator without a practitioner profile: nothing to show yet -->
 {#if data.profileMissing}
 	<div class="container mx-auto px-4 py-8 lg:py-12">
-		<h1 class="text-3xl lg:text-4xl font-bold mb-8 text-foreground">Disponibilités</h1>
+		<div class="mb-8 flex items-center justify-between gap-4">
+			<h1 class="text-3xl lg:text-4xl font-bold text-foreground">Disponibilités</h1>
+			<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
+			<div class="lg:hidden">
+				<PageActionsMenu />
+			</div>
+		</div>
 		<PractitionerProfileMissing />
 	</div>
 {:else}
 <div class="container mx-auto px-4 py-8 lg:py-12">
 	<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
-			<h1 class="text-3xl lg:text-4xl font-bold mb-2 text-foreground">Disponibilités</h1>
+			<div class="mb-2 flex items-center justify-between gap-4">
+				<h1 class="text-3xl lg:text-4xl font-bold text-foreground">Disponibilités</h1>
+				<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
+				<div class="lg:hidden">
+					<PageActionsMenu />
+				</div>
+			</div>
 			<p class="text-muted-foreground">Les jours et horaires où vos clients peuvent réserver</p>
 		</div>
 		<button
