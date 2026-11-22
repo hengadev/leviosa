@@ -69,7 +69,7 @@ func newTestRequest(t *testing.T, body string) *http.Request {
 
 func TestSubmitContact_Success(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice Dupont","contact_email":"alice@example.com","message":"Bonjour, une question sur vos tarifs."}`
 	req := newTestRequest(t, body)
@@ -93,7 +93,7 @@ func TestSubmitContact_Success(t *testing.T) {
 
 func TestSubmitContact_RequiresName(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"contact_email":"alice@example.com","message":"Bonjour"}`
 	req := newTestRequest(t, body)
@@ -111,7 +111,7 @@ func TestSubmitContact_RequiresName(t *testing.T) {
 
 func TestSubmitContact_RequiresMessage(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","contact_email":"alice@example.com"}`
 	req := newTestRequest(t, body)
@@ -126,7 +126,7 @@ func TestSubmitContact_RequiresMessage(t *testing.T) {
 
 func TestSubmitContact_RequiresEmailOrPhone(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","message":"Bonjour"}`
 	req := newTestRequest(t, body)
@@ -141,7 +141,7 @@ func TestSubmitContact_RequiresEmailOrPhone(t *testing.T) {
 
 func TestSubmitContact_AcceptsPhoneOnly(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","contact_phone":"0612345678","message":"Rappelez-moi svp."}`
 	req := newTestRequest(t, body)
@@ -159,7 +159,7 @@ func TestSubmitContact_AcceptsPhoneOnly(t *testing.T) {
 
 func TestSubmitContact_NormalizesPhoneWhitespace(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","contact_phone":"06 12 34 56 78","message":"Rappelez-moi svp."}`
 	req := newTestRequest(t, body)
@@ -177,7 +177,7 @@ func TestSubmitContact_NormalizesPhoneWhitespace(t *testing.T) {
 
 func TestSubmitContact_RejectsInvalidEmail(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","contact_email":"not-an-email","message":"Bonjour"}`
 	req := newTestRequest(t, body)
@@ -192,7 +192,7 @@ func TestSubmitContact_RejectsInvalidEmail(t *testing.T) {
 
 func TestSubmitContact_RejectsWrongContentType(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/contact", strings.NewReader("{}"))
 	rec := httptest.NewRecorder()
@@ -206,7 +206,7 @@ func TestSubmitContact_RejectsWrongContentType(t *testing.T) {
 
 func TestSubmitContact_PropagatesServiceError(t *testing.T) {
 	svc := &fakeNotificationService{returnErr: errors.New("smtp down")}
-	h := New(svc)
+	h := New(svc, nil)
 
 	body := `{"name":"Alice","contact_email":"alice@example.com","message":"Bonjour"}`
 	req := newTestRequest(t, body)
@@ -221,7 +221,7 @@ func TestSubmitContact_PropagatesServiceError(t *testing.T) {
 
 func TestSubmitContact_RejectsUnknownFields(t *testing.T) {
 	svc := &fakeNotificationService{}
-	h := New(svc)
+	h := New(svc, nil)
 
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(map[string]any{
