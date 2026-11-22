@@ -1002,7 +1002,7 @@
 					<div class="flex items-center gap-2">
 						<button
 							onclick={() => openExceptionModal(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
+							class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
 							title="Fermer une période (congés…)"
 							aria-label="Fermer une période"
 						>
@@ -1010,7 +1010,7 @@
 						</button>
 						<button
 							onclick={() => openEditModal(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+							class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 							title="Modifier les horaires"
 							aria-label="Modifier les horaires"
 						>
@@ -1018,7 +1018,7 @@
 						</button>
 						<button
 							onclick={() => openCancelConfirm(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+							class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
 							title="Supprimer ces horaires"
 							aria-label="Supprimer ces horaires"
 						>

@@ -360,7 +360,7 @@
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-foreground">Biographie</h3>
 					<button
-						class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingBio = !editingBio)}
 						title="Modifier"
 					>
@@ -408,7 +408,7 @@
 				<div class="flex items-center justify-between mb-4">
 					<h3 class="font-semibold text-foreground">Expérience</h3>
 					<button
-						class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingExperience = !editingExperience)}
 						title="Modifier"
 					>
@@ -459,7 +459,7 @@
 						<h3 class="font-semibold text-foreground">Profession</h3>
 					</div>
 					<button
-						class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingOccupation = !editingOccupation)}
 						title="Modifier"
 					>
@@ -511,7 +511,7 @@
 						<h3 class="font-semibold text-foreground">Citation</h3>
 					</div>
 					<button
-						class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingQuote = !editingQuote)}
 						title="Modifier"
 					>
@@ -563,7 +563,7 @@
 						<h3 class="font-semibold text-foreground">Tags de spécialité</h3>
 					</div>
 					<button
-						class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						class="flex items-center justify-center size-11 -m-2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 						onclick={() => (editingTags = !editingTags)}
 						title="Modifier"
 					>
@@ -701,7 +701,7 @@
 						</div>
 						{#if linkedProviders.google}
 							<button
-								class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-red-600 hover:border-red-300 transition-colors disabled:opacity-50"
+								class="flex items-center gap-1 min-h-11 px-2.5 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-red-600 hover:border-red-300 transition-colors disabled:opacity-50"
 								onclick={() => unlinkProvider('google')}
 								disabled={oauthLoading === 'google'}
 							>
@@ -710,7 +710,7 @@
 							</button>
 						{:else}
 							<button
-								class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+								class="flex items-center gap-1 min-h-11 px-2.5 py-1 text-xs rounded-md bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
 								onclick={() => linkProvider('google')}
 								disabled={oauthLoading === 'google'}
 							>
@@ -733,7 +733,7 @@
 						</div>
 						{#if linkedProviders.apple}
 							<button
-								class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-red-600 hover:border-red-300 transition-colors disabled:opacity-50"
+								class="flex items-center gap-1 min-h-11 px-2.5 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-red-600 hover:border-red-300 transition-colors disabled:opacity-50"
 								onclick={() => unlinkProvider('apple')}
 								disabled={oauthLoading === 'apple'}
 							>
@@ -742,7 +742,7 @@
 							</button>
 						{:else}
 							<button
-								class="flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
+								class="flex items-center gap-1 min-h-11 px-2.5 py-1 text-xs rounded-md bg-foreground text-background hover:opacity-90 transition-opacity disabled:opacity-50"
 								onclick={() => linkProvider('apple')}
 								disabled={oauthLoading === 'apple'}
 							>

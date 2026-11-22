@@ -103,7 +103,7 @@
 	<div class="mb-8">
 		<a
 			href="/admin/catalog"
-			class="inline-flex items-center gap-2 text-foreground-alt hover:text-foreground transition-colors mb-4"
+			class="inline-flex items-center gap-2 min-h-11 text-foreground-alt hover:text-foreground transition-colors mb-4"
 		>
 			<ArrowLeft size={20} />
 			<span>Retour au Catalogue</span>

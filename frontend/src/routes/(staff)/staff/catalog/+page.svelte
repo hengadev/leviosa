@@ -13,6 +13,16 @@
 
 
     let { data }: { data: PageData } = $props();
+
+    // Keep the active tab fully visible when the tab row scrolls sideways.
+    let activeTab = $state("categories");
+    let tabListEl = $state<HTMLElement | null>(null);
+    $effect(() => {
+        if (!activeTab) return;
+        tabListEl
+            ?.querySelector<HTMLElement>("[data-state='active']")
+            ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    });
     interface Trigger {
         value: string;
         name: string;
@@ -28,7 +38,7 @@
 </script>
 
 <div class="h-[100vh] flex-1 flex flex-col overflow-hidden bg-background">
-    <Tabs value="categories" class="flex flex-col h-full">
+    <Tabs value="categories" onValueChange={(v) => (activeTab = v)} class="flex flex-col h-full">
         <!-- Header -->
         <div class="border-b border-border px-6 py-6">
             <div class="mb-6">
@@ -49,12 +59,13 @@
                 <!--     class="inline-flex gap-2 md:gap-1 bg-transparent text-sm font-semibold min-w-max border-b-1 border-border-card md:border-b-0 md:rounded-9px md:bg-dark-10 md:shadow-mini-inset dark:md:bg-background md:p-1 md:leading-[0.01em] dark:md:border dark:md:border-neutral-600/30" -->
                 <!-- > -->
                 <TabsList
+                    ref={tabListEl}
                     class="inline-flex gap-2 md:gap-1 bg-transparent text-sm font-semibold min-w-max border-b-1 border-border-card md:p-1 md:leading-[0.01em]"
                 >
                     {#each triggers as trigger}
                         <TabsTrigger
                             value={trigger.value}
-                            class="px-2 py-1.75 md:px-4 md:py-2 md:h-8 rounded-none bg-transparent border-b-3 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent  data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer"
+                            class="min-h-11 px-2 py-1.75 md:px-4 md:py-2 md:h-11 rounded-none bg-transparent border-b-3 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent  data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer"
                         >
                             {trigger.name}
                         </TabsTrigger>

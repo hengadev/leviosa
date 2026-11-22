@@ -5,13 +5,15 @@
 
     interface Props {
         class?: string;
+        ref?: HTMLElement | null;
         children?: Snippet;
     }
 
-    let { class: className = "", children, ...restProps }: Props = $props();
+    let { class: className = "", ref = $bindable(null), children, ...restProps }: Props = $props();
 </script>
 
 <TabsPrimitive.List
+    bind:ref
     class={cn(
         "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
