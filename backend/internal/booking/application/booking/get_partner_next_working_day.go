@@ -92,7 +92,10 @@ func (s *BookingService) GetPartnerNextWorkingDay(ctx context.Context, partnerID
 	}
 	dayStart := civilParis(day)
 	for _, b := range dayBookings {
-		if b.Status != domain.BookingStatusCancelled && civilParis(b.SlotStartTime.In(domain.PracticeLocation)) == dayStart {
+		if !isAppointmentStatus(b.Status) {
+			continue
+		}
+		if civilParis(b.SlotStartTime.In(domain.PracticeLocation)) == dayStart {
 			result.Bookings = append(result.Bookings, b)
 		}
 	}
@@ -105,4 +108,14 @@ func (s *BookingService) GetPartnerNextWorkingDay(ctx context.Context, partnerID
 // civilParis returns the YYYY-MM-DD date of t in the practice time zone.
 func civilParis(t time.Time) string {
 	return t.Format("2006-01-02")
+}
+
+// isAppointmentStatus keeps the bookings that are real appointments: never
+// cancelled, awaiting payment or expired (ADR-0018).
+func isAppointmentStatus(status domain.BookingStatus) bool {
+	switch status {
+	case domain.BookingStatusConfirmed, domain.BookingStatusCompleted, domain.BookingStatusNoShow:
+		return true
+	}
+	return false
 }

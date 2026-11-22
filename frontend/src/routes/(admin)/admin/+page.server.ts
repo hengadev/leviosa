@@ -257,7 +257,7 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 				const next = (await nextRes.json()) as BackendNextWorkingDay;
 				if (next.date) {
 					// Noon UTC of that date is that date in Paris, whatever the season.
-				const day = new Date(`${next.date}T12:00:00Z`);
+					const day = new Date(`${next.date}T12:00:00Z`);
 					const dayBookings = Array.isArray(next.bookings) ? next.bookings : [];
 					nextWorkingDay = {
 						dayLabel: dayLabel(day),
