@@ -79,12 +79,12 @@
 		return cn(
 			"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
 			role === "administrator"
-				? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300"
+				? "bg-muted text-foreground"
 				: role === "partner"
-					? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+					? "bg-muted text-foreground"
 					: role === "premium"
-						? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
-						: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+						? "bg-muted text-foreground"
+						: "bg-muted text-muted-foreground"
 		);
 	}
 
@@ -92,8 +92,8 @@
 		return cn(
 			"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
 			status === "approved"
-				? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-				: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+				? "bg-muted text-foreground"
+				: "bg-muted text-foreground"
 		);
 	}
 
@@ -101,8 +101,8 @@
 		return cn(
 			"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
 			isVerified
-				? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
-				: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+				? "bg-muted text-foreground"
+				: "bg-muted text-foreground"
 		);
 	}
 
@@ -110,10 +110,10 @@
 		return cn(
 			"inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
 			onboardingComplete && status === "active"
-				? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+				? "bg-muted text-foreground"
 				: status === "pending"
-					? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-					: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+					? "bg-muted text-muted-foreground"
+					: "bg-muted text-foreground"
 		);
 	}
 
@@ -210,7 +210,7 @@
 	{/if}
 
 	{#if form?.success}
-		<div class="mb-6 flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+		<div class="mb-6 flex items-center gap-3 px-4 py-3 bg-muted border border-border text-foreground rounded-lg">
 			<CheckCircle size={20} />
 			<p class="text-sm font-medium">{form.success}</p>
 		</div>
@@ -218,7 +218,7 @@
 
 	{#if form && "createdPractitioner" in form && form.createdPractitioner}
 		<!-- Shown once: the password is not stored anywhere it could be shown again. -->
-		<div class="mb-6 px-4 py-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg">
+		<div class="mb-6 px-4 py-4 bg-muted border border-border text-foreground rounded-lg">
 			<p class="text-sm font-semibold mb-2">Identifiants du praticien — notez le mot de passe, il ne sera plus affiché.</p>
 			<dl class="grid gap-1 text-sm">
 				<div class="flex flex-wrap gap-2"><dt class="font-medium">E-mail :</dt><dd>{form.createdPractitioner.email}</dd></div>
@@ -228,7 +228,7 @@
 					<button
 						type="button"
 						onclick={() => copyPassword(form.createdPractitioner.password)}
-						class="inline-flex min-h-11 items-center gap-1 px-3 border border-amber-300 rounded-md hover:bg-amber-100 transition-colors text-xs font-medium"
+						class="inline-flex min-h-11 items-center gap-1 px-3 border border-border rounded-md hover:bg-muted transition-colors text-xs font-medium"
 					>
 						<Copy size={14} />
 						{passwordCopied ? "Copié" : "Copier"}
@@ -468,7 +468,7 @@
 											<div class="flex items-center justify-end gap-1">
 												<button
 													onclick={() => openApproveDialog(user)}
-													class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 rounded-md transition-colors"
+													class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-md transition-colors"
 													title="Approuver"
 												>
 													<UserCheck size={14} />
@@ -518,7 +518,7 @@
 								<div class="flex items-center gap-2">
 								<button
 									onclick={() => openApproveDialog(user)}
-									class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium text-green-700 bg-green-100 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 rounded-md transition-colors"
+									class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-md transition-colors"
 									title="Approuver"
 								>
 									<UserCheck size={14} />
@@ -595,8 +595,8 @@
 									<tr class="border-b border-border-card hover:bg-muted/30 transition-colors">
 										<td class="px-4 py-3">
 											<div class="flex items-center gap-3">
-												<div class="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-													<Building2 size={16} class="text-blue-600 dark:text-blue-400" />
+												<div class="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+													<Building2 size={16} class="text-foreground" />
 												</div>
 												<div>
 													<p class="text-sm font-medium text-foreground">
@@ -657,7 +657,7 @@
 												{#if !(partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active")}
 													<button
 														onclick={() => openVerifyPartnerDialog(partner)}
-														class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+														class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-md transition-colors"
 														title="Vérifier"
 													>
 														<BadgeCheck size={14} />
@@ -691,8 +691,8 @@
 						{@const user = getUserForPartner(partner)}
 						<li class="p-4 space-y-1">
 							<div class="flex items-start gap-3">
-								<div class="w-9 h-9 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-									<Building2 size={16} class="text-blue-600 dark:text-blue-400" />
+								<div class="w-9 h-9 shrink-0 rounded-full bg-muted flex items-center justify-center">
+									<Building2 size={16} class="text-foreground" />
 								</div>
 								<div class="min-w-0 flex-1">
 									<p class="text-sm font-medium text-foreground break-all">
@@ -740,7 +740,7 @@
 								{#if !(partner.stripeOnboardingComplete && partner.stripeAccountStatus === "active")}
 									<button
 										onclick={() => openVerifyPartnerDialog(partner)}
-										class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 rounded-md transition-colors"
+										class="inline-flex min-h-11 items-center gap-1.5 px-3 text-sm font-medium bg-foreground text-background hover:bg-foreground/90 rounded-md transition-colors"
 										title="Vérifier"
 									>
 										<BadgeCheck size={14} />
@@ -986,7 +986,7 @@
 					</button>
 					<button
 						type="submit"
-						class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+						class="px-4 py-2 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium text-sm"
 					>
 						Approuver
 					</button>
@@ -1015,7 +1015,7 @@
 					</button>
 					<button
 						type="submit"
-						class="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+						class="px-6 py-2.5 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors font-medium"
 					>
 						Approuver
 					</button>

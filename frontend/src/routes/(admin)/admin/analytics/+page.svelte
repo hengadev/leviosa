@@ -34,8 +34,8 @@
 		<!-- Total Revenue -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-					<DollarSign size={24} class="text-green-600 dark:text-green-400" />
+				<div class="p-3 bg-muted rounded-lg">
+					<DollarSign size={24} class="text-foreground" />
 				</div>
 				<span class="text-xs text-muted-foreground">Ce mois</span>
 			</div>
@@ -48,8 +48,8 @@
 		<!-- Bookings -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-					<Calendar size={24} class="text-blue-600 dark:text-blue-400" />
+				<div class="p-3 bg-muted rounded-lg">
+					<Calendar size={24} class="text-foreground" />
 				</div>
 				<span class="text-xs text-muted-foreground">Ce mois</span>
 			</div>
@@ -62,8 +62,8 @@
 		<!-- New Users -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-					<Users size={24} class="text-purple-600 dark:text-purple-400" />
+				<div class="p-3 bg-muted rounded-lg">
+					<Users size={24} class="text-foreground" />
 				</div>
 				<span class="text-xs text-muted-foreground">Ce mois</span>
 			</div>
@@ -76,8 +76,8 @@
 		<!-- Avg Booking Value -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-					<TrendingUp size={24} class="text-yellow-600 dark:text-yellow-400" />
+				<div class="p-3 bg-muted rounded-lg">
+					<TrendingUp size={24} class="text-foreground" />
 				</div>
 				<span class="text-xs text-muted-foreground">Moyenne</span>
 			</div>
@@ -115,7 +115,7 @@
 		<!-- Top Products -->
 		<div class="bg-card rounded-lg border border-border p-6">
 			<h2 class="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-				<Award size={20} class="text-yellow-500" />
+				<Award size={20} class="text-foreground" />
 				Top produits
 			</h2>
 			<div class="overflow-x-auto">

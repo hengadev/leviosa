@@ -34,15 +34,15 @@
 	function getStatusBadge(status: string) {
 		switch (status) {
 			case 'confirmed':
-				return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+				return 'bg-muted text-foreground';
 			case 'completed':
-				return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+				return 'bg-muted text-foreground';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+				return 'bg-muted text-muted-foreground';
 			case 'no_show':
-				return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
+				return 'bg-muted text-foreground';
 			default:
-				return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+				return 'bg-muted text-muted-foreground';
 		}
 	}
 

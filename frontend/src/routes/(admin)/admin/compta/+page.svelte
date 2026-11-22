@@ -35,8 +35,8 @@
 
 	function getTypeBadge(type: string) {
 		return type === 'payment'
-			? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-			: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+			? 'bg-muted text-foreground'
+			: 'bg-muted text-muted-foreground';
 	}
 
 	function getTypeLabel(type: string): string {
@@ -46,15 +46,15 @@
 	function getBookingStatusBadge(status: string) {
 		switch (status) {
 			case 'completed':
-				return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+				return 'bg-muted text-foreground';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+				return 'bg-muted text-muted-foreground';
 			case 'confirmed':
-				return 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+				return 'bg-muted text-foreground';
 			case 'no_show':
-				return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300';
+				return 'bg-muted text-foreground';
 			default:
-				return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+				return 'bg-muted text-foreground';
 		}
 	}
 
@@ -71,13 +71,13 @@
 	function getPaymentStatusBadge(status: string) {
 		switch (status) {
 			case 'paid':
-				return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+				return 'bg-muted text-foreground';
 			case 'refunded':
-				return 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300';
+				return 'bg-muted text-foreground';
 			case 'disputed':
-				return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
+				return 'border border-foreground text-foreground';
 			default:
-				return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+				return 'bg-muted text-foreground';
 		}
 	}
 
@@ -219,9 +219,9 @@
 		<!-- Gross Revenue -->
 		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
-				<div class="lg:p-3 lg:bg-blue-100 lg:dark:bg-blue-900/30 lg:rounded-lg">
-					<DollarSign size={18} class="text-blue-600 dark:text-blue-400 lg:hidden" />
-					<DollarSign size={24} class="hidden lg:block text-blue-600 dark:text-blue-400" />
+				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
+					<DollarSign size={18} class="text-foreground lg:hidden" />
+					<DollarSign size={24} class="hidden lg:block text-foreground" />
 				</div>
 			</div>
 			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
@@ -233,12 +233,12 @@
 		<!-- Refunds -->
 		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
-				<div class="lg:p-3 lg:bg-red-100 lg:dark:bg-red-900/30 lg:rounded-lg">
-					<ArrowDown size={18} class="text-red-600 dark:text-red-400 lg:hidden" />
-					<ArrowDown size={24} class="hidden lg:block text-red-600 dark:text-red-400" />
+				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
+					<ArrowDown size={18} class="text-foreground lg:hidden" />
+					<ArrowDown size={24} class="hidden lg:block text-foreground" />
 				</div>
 			</div>
-			<div class="text-base lg:text-3xl font-bold text-red-500 lg:mb-1">
+			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
 				-{formatCents(data.summary.refundsInCents)}
 			</div>
 			<p class="text-xs lg:text-sm text-muted-foreground">Remboursements</p>
@@ -247,9 +247,9 @@
 		<!-- Disputed (open Stripe chargebacks — no automatic refund/cancellation, manual response required) -->
 		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
-				<div class="lg:p-3 lg:bg-red-100 lg:dark:bg-red-900/30 lg:rounded-lg">
-					<AlertTriangle size={18} class="text-red-600 dark:text-red-400 lg:hidden" />
-					<AlertTriangle size={24} class="hidden lg:block text-red-600 dark:text-red-400" />
+				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
+					<AlertTriangle size={18} class="text-foreground lg:hidden" />
+					<AlertTriangle size={24} class="hidden lg:block text-foreground" />
 				</div>
 			</div>
 			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
@@ -259,14 +259,14 @@
 		</div>
 
 		<!-- Net Revenue -->
-		<div class="bg-card rounded-lg border-2 border-green-500/50 p-3 lg:p-6 lg:border lg:border-border lg:bg-green-50/50 lg:dark:bg-green-950/20">
+		<div class="bg-card rounded-lg border-2 border-foreground p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
-				<div class="lg:p-3 lg:bg-green-100 lg:dark:bg-green-900/30 lg:rounded-lg">
-					<TrendingUp size={18} class="text-green-600 dark:text-green-400 lg:hidden" />
-					<TrendingUp size={24} class="hidden lg:block text-green-600 dark:text-green-400" />
+				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
+					<TrendingUp size={18} class="text-foreground lg:hidden" />
+					<TrendingUp size={24} class="hidden lg:block text-foreground" />
 				</div>
 			</div>
-			<div class="text-lg lg:text-3xl font-bold text-green-600 dark:text-green-400 lg:mb-1">
+			<div class="text-lg lg:text-3xl font-bold text-foreground lg:mb-1">
 				{formatCents(data.summary.netRevenueInCents)}
 			</div>
 			<p class="text-xs lg:text-sm text-muted-foreground">Chiffre d'affaires net</p>
@@ -297,7 +297,7 @@
 								<p class="mt-0.5 text-xs text-muted-foreground">{formatDateTime(transaction.date)}</p>
 							</div>
 							<div class="shrink-0 text-right">
-								<p class="text-sm font-semibold {transaction.type === 'payment' ? 'text-green-500' : 'text-red-500'}">
+								<p class="text-sm font-semibold {transaction.type === 'payment' ? 'text-foreground' : 'text-muted-foreground'}">
 									{transaction.type === 'refund' ? '-' : ''}{formatCents(transaction.amountInCents)}
 								</p>
 								<span class="mt-1 inline-block px-3 py-1 rounded-full text-xs font-medium {getPaymentStatusBadge(transaction.paymentStatus)}">
@@ -347,8 +347,8 @@
 								</td>
 								<td class="py-4 px-6 text-right">
 									<span class="text-sm font-medium {transaction.type === 'payment'
-										? 'text-green-500'
-										: 'text-red-500'}">
+										? 'text-foreground'
+										: 'text-muted-foreground'}">
 										{transaction.type === 'refund' ? '-' : ''}{formatCents(transaction.amountInCents)}
 									</span>
 								</td>

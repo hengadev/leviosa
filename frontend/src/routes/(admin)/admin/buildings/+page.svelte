@@ -108,10 +108,10 @@
 
 	function allocationStatusColor(a: Allocation): string {
 		const label = allocationStatusLabel(a);
-		if (label === "Active") return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
-		if (label === "Planifiée") return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
-		if (label === "Expirée") return "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300";
-		return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+		if (label === "Active") return "bg-muted text-foreground";
+		if (label === "Planifiée") return "bg-muted text-foreground";
+		if (label === "Expirée") return "bg-muted text-foreground";
+		return "bg-muted text-muted-foreground";
 	}
 
 	function resetNewBuilding() {
@@ -470,7 +470,7 @@
 
 	{#if feedback}
 		<div class="mb-6 flex items-center gap-3 px-4 py-3 rounded-lg border {feedback.type === 'success'
-			? 'bg-green-50 border-green-200 text-green-800'
+			? 'bg-muted border-border text-foreground'
 			: 'bg-red-50 border-red-200 text-red-800'}">
 			{#if feedback.type === 'success'}
 				<CheckCircle size={20} />
@@ -505,8 +505,8 @@
 							{:else}
 								<ChevronRight size={20} class="text-muted-foreground" />
 							{/if}
-							<div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-								<Building2 size={20} class="text-blue-600 dark:text-blue-400" />
+							<div class="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+								<Building2 size={20} class="text-foreground" />
 							</div>
 							<div>
 								<h3 class="text-base font-semibold text-foreground">{building.name}</h3>
@@ -562,8 +562,8 @@
 													{:else}
 														<ChevronRight size={18} class="text-muted-foreground" />
 													{/if}
-													<div class="w-8 h-8 rounded-md bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-														<DoorOpen size={16} class="text-green-600 dark:text-green-400" />
+													<div class="w-8 h-8 rounded-md bg-muted flex items-center justify-center">
+														<DoorOpen size={16} class="text-foreground" />
 													</div>
 													<div>
 														<span class="text-sm font-medium text-foreground">{room.name}</span>
@@ -605,10 +605,10 @@
 																<div class="flex items-center justify-between py-2 px-3 bg-background border border-border-card rounded-md">
 																	<div class="flex items-center gap-3">
 																		{#if alloc.allocation_type === "shared"}
-																			<Link2 size={14} class="text-blue-500" />
+																			<Link2 size={14} class="text-foreground" />
 																			<span class="text-xs font-medium text-foreground">Partagée</span>
 																		{:else}
-																			<CalendarRange size={14} class="text-purple-500" />
+																			<CalendarRange size={14} class="text-foreground" />
 																			<span class="text-xs font-medium text-foreground">Dédiée</span>
 																			<span class="text-xs text-muted-foreground">
 																				{formatDate(alloc.start_date)}{alloc.end_date ? ` → ${formatDate(alloc.end_date)}` : ''}
@@ -999,7 +999,7 @@
 						{/each}
 					</select>
 					{#if verifiedPartners.length === 0}
-						<p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Aucun partenaire vérifié disponible</p>
+						<p class="mt-1 text-xs text-foreground">Aucun partenaire vérifié disponible</p>
 					{/if}
 				</div>
 				{#if newAllocationType === "dedicated"}
@@ -1052,7 +1052,7 @@
 						{/each}
 					</select>
 					{#if verifiedPartners.length === 0}
-						<p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Aucun partenaire vérifié disponible</p>
+						<p class="mt-1 text-xs text-foreground">Aucun partenaire vérifié disponible</p>
 					{/if}
 				</div>
 				{#if newAllocationType === "dedicated"}

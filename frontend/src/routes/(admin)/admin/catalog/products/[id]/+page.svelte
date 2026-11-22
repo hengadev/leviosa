@@ -187,7 +187,7 @@
 			<!-- Name -->
 			<div>
 				<label for="name" class="block text-sm font-medium text-foreground-alt mb-2">
-					Nom du Produit <span class="text-red-500">*</span>
+					Nom du Produit <span class="text-muted-foreground">*</span>
 				</label>
 				<div class="relative">
 					<Package
@@ -209,7 +209,7 @@
 			<!-- Description -->
 			<div>
 				<label for="description" class="block text-sm font-medium text-foreground-alt mb-2">
-					Description <span class="text-red-500">*</span>
+					Description <span class="text-muted-foreground">*</span>
 				</label>
 				<div class="relative">
 					<FileText
@@ -232,7 +232,7 @@
 				<!-- Category -->
 				<div>
 					<label for="categoryId" class="block text-sm font-medium text-foreground-alt mb-2">
-						Catégorie <span class="text-red-500">*</span>
+						Catégorie <span class="text-muted-foreground">*</span>
 					</label>
 					<div class="relative">
 						<Tag
@@ -257,7 +257,7 @@
 				<!-- Duration -->
 				<div>
 					<label for="duration" class="block text-sm font-medium text-foreground-alt mb-2">
-						Durée (minutes) <span class="text-red-500">*</span>
+						Durée (minutes) <span class="text-muted-foreground">*</span>
 					</label>
 					<div class="relative">
 						<Clock
@@ -285,7 +285,7 @@
 			<!-- Price -->
 			<div>
 				<label for="price" class="block text-sm font-medium text-foreground-alt mb-2">
-					Prix (€) <span class="text-red-500">*</span>
+					Prix (€) <span class="text-muted-foreground">*</span>
 				</label>
 				<div class="relative">
 					<Euro
@@ -312,7 +312,7 @@
 			<!-- Availability -->
 			<div>
 				<label for="availability" class="block text-sm font-medium text-foreground-alt mb-2">
-					Disponibilité <span class="text-red-500">*</span>
+					Disponibilité <span class="text-muted-foreground">*</span>
 				</label>
 				<div class="relative">
 					<MapPin
@@ -362,7 +362,7 @@
 				<!-- Status -->
 				<div>
 					<label for="status" class="block text-sm font-medium text-foreground-alt mb-2">
-						Statut <span class="text-red-500">*</span>
+						Statut <span class="text-muted-foreground">*</span>
 					</label>
 					<div class="relative">
 						<Tag
