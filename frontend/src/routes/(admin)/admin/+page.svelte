@@ -113,8 +113,8 @@
 										>
 											<Phone size={18} />
 										</a>
+										<SmsButton phone={session.phone} firstName={firstName(session.clientName)} />
 									{/if}
-									<SmsButton phone={session.phone} firstName={firstName(session.clientName)} />
 								</li>
 							{/each}
 						</ul>
