@@ -123,7 +123,8 @@ if [ "$(psql_dev 'SELECT COUNT(*) FROM booking.availabilities')" = 0 ]; then
 	jar=$(mktemp)
 	curl -sf -c "$jar" -o /dev/null -H 'Content-Type: application/json' \
 		-d "{\"email\":\"$partner_email\",\"password\":\"$partner_password\"}" "$API/auth/login"
-	partner_id=$(psql_dev 'SELECT user_id FROM auth.partners LIMIT 1')
+	# The practice's practitioner (the admin account in the example seed), from its settings
+	partner_id=$(psql_dev "SELECT p.user_id FROM auth.partners p JOIN settings.plain s ON s.key = 'practice_page_partner_id' AND s.value = p.id::text")
 	room_id=$(psql_dev 'SELECT id FROM booking.rooms LIMIT 1')
 	paris() { TZ=Europe/Paris date -d "$1" --iso-8601=seconds; }
 	tue=$(date -d 'next tuesday' +%F)
