@@ -138,7 +138,7 @@
 
 		<select
 			bind:value={statusFilter}
-			class="px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+			class="min-h-11 px-3 py-2 text-sm border border-border-card rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
 		>
 			<option value="all">Tous les statuts</option>
 			<option value="published">Publié</option>
@@ -204,14 +204,14 @@
 						<div class="flex gap-1">
 							<button
 								onclick={() => openEditDialog(cat)}
-								class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+								class="flex size-11 items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
 								aria-label="Modifier"
 							>
 								<Pencil size={14} />
 							</button>
 							<button
 								onclick={() => openDeleteDialog(cat)}
-								class="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+								class="flex size-11 items-center justify-center text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
 								aria-label="Supprimer"
 							>
 								<Trash2 size={14} />
