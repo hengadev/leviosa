@@ -107,8 +107,9 @@ type catalogueEntry struct {
 var (
 	bothLocales = []domain.Locale{domain.LocaleFR, domain.LocaleEN}
 	frenchOnly  = []domain.Locale{domain.LocaleFR}
-	// englishOnly: the emails outside the booking flow still written in
-	// English only.
+	// englishOnly: the dispute alert is still written in English only. The
+	// login code, payment receipt and failed payment notice have an English
+	// subject but a French body: they are listed as French.
 	englishOnly = []domain.Locale{domain.LocaleEN}
 )
 
@@ -207,7 +208,7 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "login_code", Label: "Code de connexion", Audience: AudienceClient, Locales: englishOnly},
+		Entry: Entry{ID: "login_code", Label: "Code de connexion", Audience: AudienceClient, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposeOTPEmail(domain.OTPEmailRequest{
 				ToEmail: sampleClientEmail, OTP: sampleLoginCode, FromEmail: samplePracticeEmail,
@@ -215,13 +216,13 @@ var catalogue = []catalogueEntry{
 		},
 	},
 	{
-		Entry: Entry{ID: "payment_receipt", Label: "Reçu de paiement", Audience: AudienceClient, Locales: englishOnly},
+		Entry: Entry{ID: "payment_receipt", Label: "Reçu de paiement", Audience: AudienceClient, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposePaymentNotificationEmail(samplePayment(), sampleNow)
 		},
 	},
 	{
-		Entry: Entry{ID: "payment_failed", Label: "Échec du paiement", Audience: AudienceClient, Locales: englishOnly},
+		Entry: Entry{ID: "payment_failed", Label: "Échec du paiement", Audience: AudienceClient, Locales: frenchOnly},
 		compose: func(domain.Locale) domain.ComposedEmail {
 			return domain.ComposePaymentFailedEmail(samplePayment(), sampleNow)
 		},

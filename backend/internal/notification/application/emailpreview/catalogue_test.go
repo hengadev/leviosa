@@ -12,9 +12,9 @@ import (
 // wantLocales is the language each email outside the booking flow is sent
 // in today; every other client email exists in French and English.
 var wantLocales = map[string][]domain.Locale{
-	"login_code":            englishOnly,
-	"payment_receipt":       englishOnly,
-	"payment_failed":        englishOnly,
+	"login_code":            frenchOnly,
+	"payment_receipt":       frenchOnly,
+	"payment_failed":        frenchOnly,
 	"contact_form":          frenchOnly,
 	"payment_dispute_alert": englishOnly,
 }
@@ -98,8 +98,8 @@ func TestRender_OtherEmailsShowTheirSampleData(t *testing.T) {
 		body    []string
 	}{
 		// The receipt template shows no payment detail today, only the year.
-		{"payment_receipt", domain.LocaleEN, "Payment Confirmation", []string{"&copy; 2026"}},
-		{"payment_failed", domain.LocaleEN, "Payment Failed", []string{sampleAmount, sampleRetryURL}},
+		{"payment_receipt", domain.LocaleFR, "Payment Confirmation", []string{"&copy; 2026"}},
+		{"payment_failed", domain.LocaleFR, "Payment Failed", []string{sampleAmount, sampleRetryURL}},
 		{"contact_form", domain.LocaleFR, "Nouveau message de contact — Marie Leroy", []string{sampleVisitorName, sampleVisitorEmail, "samedi matin"}},
 		{"payment_dispute_alert", domain.LocaleEN, "Payment dispute opened — booking " + sampleBookingID, []string{sampleDisputeReason, sampleClientName}},
 	}
@@ -183,7 +183,7 @@ func TestRender_NotFound(t *testing.T) {
 		{"unknown id", "no_such_email", domain.LocaleFR},
 		{"unsupported locale", "booking_reminder", "de"},
 		{"partner email in English", "booking_partner_notice", domain.LocaleEN},
-		{"English-only email in French", "payment_receipt", domain.LocaleFR},
+		{"English-only email in French", "payment_dispute_alert", domain.LocaleFR},
 		{"French-only practice email in English", "contact_form", domain.LocaleEN},
 	}
 	for _, tc := range cases {
