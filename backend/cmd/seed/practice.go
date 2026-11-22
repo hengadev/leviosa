@@ -33,6 +33,16 @@ type PracticeSeed struct {
 	Product  PracticeProductSeed  `json:"product"`
 	Building PracticeBuildingSeed `json:"building"`
 	Room     PracticeRoomSeed     `json:"room"`
+	// SampleBookings gives the practitioner made-up bookings in every status,
+	// for local development only (see seedSampleBookings).
+	SampleBookings bool `json:"sample_bookings,omitempty"`
+}
+
+// practiceIDs are the rows seedPractice created that later seeds reference.
+type practiceIDs struct {
+	UserID    uuid.UUID
+	RoomID    uuid.UUID
+	ProductID uuid.UUID
 }
 
 type PracticePartnerSeed struct {
@@ -95,14 +105,14 @@ const (
 	seedStripePriceID   = "seed-local-price"
 )
 
-func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, userSchema string, practice *PracticeSeed) error {
+func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoService, userSchema string, practice *PracticeSeed) (practiceIDs, error) {
 	role := practice.Partner.Role
 	switch role {
 	case "":
 		role = "partner"
 	case "partner", "administrator":
 	default:
-		return fmt.Errorf("practice partner role %q: want partner or administrator", role)
+		return practiceIDs{}, fmt.Errorf("practice partner role %q: want partner or administrator", role)
 	}
 
 	// 1. The practitioner's user account
@@ -119,39 +129,39 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 		Address2:   practice.Partner.Address2,
 	})
 	if err != nil {
-		return fmt.Errorf("seed practice partner user: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice partner user: %w", err)
 	}
 
 	// 2. The practice's category and product (60 min, buffer 0), published so
 	// the public endpoints return them.
 	categoryID, err := seedCategory(ctx, db, practice.Category)
 	if err != nil {
-		return fmt.Errorf("seed practice category: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice category: %w", err)
 	}
 	productID, err := seedProduct(ctx, db, categoryID, practice.Product)
 	if err != nil {
-		return fmt.Errorf("seed practice product: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice product: %w", err)
 	}
 	if err := seedPrice(ctx, db, productID, practice.Product); err != nil {
-		return fmt.Errorf("seed practice price: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice price: %w", err)
 	}
 
 	// 3. The partner's public profile, linked to the product and category
 	partnerID, err := seedPartnerProfile(ctx, db, crypto, userID, categoryID, productID, practice.Partner, role == "administrator")
 	if err != nil {
-		return fmt.Errorf("seed practice partner profile: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice partner profile: %w", err)
 	}
 
 	// 4. One building, one room, one dedicated allocation to the partner
 	roomID, err := seedBuildingAndRoom(ctx, db, crypto, practice.Building, practice.Room)
 	if err != nil {
-		return fmt.Errorf("seed practice building and room: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice building and room: %w", err)
 	}
 	if err := seedDedicatedAllocation(ctx, db, crypto, roomID, userID); err != nil {
-		return fmt.Errorf("seed practice allocation: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice allocation: %w", err)
 	}
 	if err := seedRoomOpeningHours(ctx, db, roomID); err != nil {
-		return fmt.Errorf("seed practice room opening hours: %w", err)
+		return practiceIDs{}, fmt.Errorf("seed practice room opening hours: %w", err)
 	}
 
 	// 5. The practice page settings: which partner and product the public
@@ -168,7 +178,7 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 			VALUES ($1, $2)
 			ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
 		`, key, value); err != nil {
-			return fmt.Errorf("seed practice setting %q: %w", key, err)
+			return practiceIDs{}, fmt.Errorf("seed practice setting %q: %w", key, err)
 		}
 	}
 
@@ -177,7 +187,7 @@ func seedPractice(ctx context.Context, db *pgxpool.Pool, crypto encx.CryptoServi
 		practice.Product.Name, practice.Product.DurationMinutes, practice.Product.PriceCents,
 		practice.Room.Name)
 	log.Printf("NOTE: practice values (name, bio, title, address, price, deposit) are seed placeholders — replace with the practitioner's real content before launch")
-	return nil
+	return practiceIDs{UserID: userID, RoomID: roomID, ProductID: productID}, nil
 }
 
 func seedCategory(ctx context.Context, db *pgxpool.Pool, category PracticeCategorySeed) (uuid.UUID, error) {

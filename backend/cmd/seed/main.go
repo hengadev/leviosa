@@ -252,15 +252,26 @@ func main() {
 		}
 	}
 
+	var firstClientID *uuid.UUID
 	for _, account := range admins.Clients {
-		if _, err := seedUser(ctx, db, crypto, cfg.DatabaseSchema, account); err != nil {
+		id, err := seedUser(ctx, db, crypto, cfg.DatabaseSchema, account)
+		if err != nil {
 			log.Fatalf("Failed to seed client %s: %v", account.Email, err)
+		}
+		if firstClientID == nil {
+			firstClientID = &id
 		}
 	}
 
 	if admins.Practice != nil {
-		if err := seedPractice(ctx, db, crypto, cfg.DatabaseSchema, admins.Practice); err != nil {
+		ids, err := seedPractice(ctx, db, crypto, cfg.DatabaseSchema, admins.Practice)
+		if err != nil {
 			log.Fatalf("Failed to seed the practice: %v", err)
+		}
+		if admins.Practice.SampleBookings {
+			if err := seedSampleBookings(ctx, db, crypto, ids, admins.Practice.Product, firstClientID); err != nil {
+				log.Fatalf("Failed to seed the sample bookings: %v", err)
+			}
 		}
 	}
 
