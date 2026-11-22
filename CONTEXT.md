@@ -18,7 +18,8 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Premium client** | A client role reserved for future elevated access (discounts, priority booking). Currently follows the same booking flow as a standard client. The distinction will become meaningful when service tiers or exclusive offerings are introduced. |
 | **Partner** | A wellness professional who offers services through the platform (role: `partner`). Has a public profile with bio, certifications, and specializations. |
 | **Staff** | _(removed)_ — this role was planned for internal ops users but was never fully implemented and has been retired. The `(staff)` frontend route group is the **Partner area** and is accessible to partners and administrators only. |
-| **Administrator** | Full platform access including user management, settings, and catalog (role: `administrator`). One person can be both an Administrator and a Partner; they then hold two separate User accounts, one per role. |
+| **Administrator** | Full platform access including user management, settings, and catalog (role: `administrator`). An Administrator's own account can also carry the practitioner (partner) profile, set up with "Je suis aussi praticien" on the users page's partners tab; being both no longer takes two accounts. |
+| **Cabinet** | The back-office page that gathers the rarely used management pages (Catalogue, Utilisateurs, Mon profil praticien, Emails, Paramètres) and the account, behind the last tab of an administrator's phone bar. |
 
 ### Services & Pricing
 
