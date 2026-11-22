@@ -4,12 +4,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
+	settingsContracts "github.com/Leviosa-care/leviosa/backend/internal/common/contracts/settings"
+	settingsDomain "github.com/Leviosa-care/leviosa/backend/internal/settings/domain"
 	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
 	tsetup "github.com/Leviosa-care/leviosa/backend/test/helpers/booking"
 	tavail "github.com/Leviosa-care/leviosa/backend/test/helpers/booking/availability"
@@ -247,5 +254,234 @@ func TestLookupBooking(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+}
+
+// switchablePracticeAccess is the in-process practice access provider the
+// suite's booking service reads, made to fail while fail is set.
+type switchablePracticeAccess struct {
+	provider bookingPorts.PracticeAccessProvider
+	fail     atomic.Bool
+}
+
+func (p *switchablePracticeAccess) GetPracticeAccess(ctx context.Context, roomID uuid.UUID) (domain.PracticeAccess, error) {
+	if p.fail.Load() {
+		return domain.PracticeAccess{}, errors.New("practice access unavailable")
+	}
+	return p.provider.GetPracticeAccess(ctx, roomID)
+}
+
+const (
+	testDoorCode           = "4821B"
+	testAccessInstructions = "Interphone « Cabinet Leviosa »\n2e étage, porte de gauche"
+	testCompanyAddress     = "8 avenue de l'Opéra, 75001 Paris"
+	// testBuildingAddress is the address of tb.NewTestBuilding, as the
+	// fallback formats it.
+	testBuildingAddress = "123 Rue de Rivoli, 75001 Paris"
+)
+
+// setPracticeAccess stores the door code and instructions through the real
+// settings service, as the admin settings endpoint does.
+func setPracticeAccess(t *testing.T, code, instructions string) {
+	t.Helper()
+	_, err := settingsSvc.SetPracticeAccess(context.Background(), &settingsDomain.SetPracticeAccessRequest{DoorCode: code, AccessInstructions: instructions})
+	require.NoError(t, err)
+}
+
+func setCompanyAddress(t *testing.T, address string) {
+	t.Helper()
+	_, err := settingsSvc.SetCompanyLegalAddress(context.Background(), &settingsDomain.SetCompanyLegalAddressRequest{Address: address})
+	require.NoError(t, err)
+}
+
+func clearCompanyAddress(t *testing.T) {
+	t.Helper()
+	_, err := testPool.Exec(context.Background(), "DELETE FROM settings.plain WHERE key = $1", settingsContracts.CompanyLegalAddress)
+	require.NoError(t, err)
+}
+
+// lookupBothPaths looks the guest booking up by token and by reference +
+// email, and returns both responses with their raw bodies.
+func lookupBothPaths(t *testing.T, bookingID uuid.UUID, token string) map[string]lookupResult {
+	t.Helper()
+	return map[string]lookupResult{
+		"token":       lookup(t, testServerURL+"/bookings/lookup?token="+token),
+		"ref+contact": lookup(t, fmt.Sprintf("%s/bookings/lookup?ref=%s&email=%s", testServerURL, bookingID, guestEmail)),
+	}
+}
+
+type lookupResult struct {
+	booking domain.PublicBookingLookupResponse
+	raw     string
+}
+
+func lookup(t *testing.T, url string) lookupResult {
+	t.Helper()
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Get(url)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode, string(body))
+	var result lookupResult
+	require.NoError(t, json.Unmarshal(body, &result.booking))
+	result.raw = string(body)
+	return result
+}
+
+func assertNoAccess(t *testing.T, results map[string]lookupResult) {
+	t.Helper()
+	for path, r := range results {
+		assert.Nil(t, r.booking.Access, path)
+		assert.NotContains(t, r.raw, `"access"`, path)
+	}
+}
+
+// TestLookupBooking_PracticeAccess: the booking page shows the practice
+// access only while the booking is confirmed and its slot has not ended
+// (docs/issues/024-practice-access-on-booking-page.md).
+func TestLookupBooking_PracticeAccess(t *testing.T) {
+	ctx := context.Background()
+	t.Cleanup(func() {
+		setPracticeAccess(t, "", "")
+		clearCompanyAddress(t)
+	})
+
+	t.Run("a confirmed upcoming booking carries the access through both paths", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, testDoorCode, testAccessInstructions)
+		setCompanyAddress(t, testCompanyAddress)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+
+		for path, r := range lookupBothPaths(t, bookingID, token) {
+			require.NotNil(t, r.booking.Access, path)
+			assert.Equal(t, domain.PracticeAccessView{
+				Address:      testCompanyAddress,
+				DoorCode:     testDoorCode,
+				Instructions: testAccessInstructions,
+			}, *r.booking.Access, path)
+		}
+	})
+
+	t.Run("a door code change shows on the next lookup", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, testDoorCode, testAccessInstructions)
+		setCompanyAddress(t, testCompanyAddress)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+		before := lookup(t, testServerURL+"/bookings/lookup?token="+token)
+		require.NotNil(t, before.booking.Access)
+		assert.Equal(t, testDoorCode, before.booking.Access.DoorCode)
+
+		setPracticeAccess(t, "9073", testAccessInstructions)
+
+		for path, r := range lookupBothPaths(t, bookingID, token) {
+			require.NotNil(t, r.booking.Access, path)
+			assert.Equal(t, "9073", r.booking.Access.DoorCode, path)
+		}
+	})
+
+	t.Run("the address falls back to the building's when the company address is unset", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, testDoorCode, "")
+		clearCompanyAddress(t)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+
+		for path, r := range lookupBothPaths(t, bookingID, token) {
+			require.NotNil(t, r.booking.Access, path)
+			assert.Equal(t, testBuildingAddress, r.booking.Access.Address, path)
+			assert.Equal(t, testDoorCode, r.booking.Access.DoorCode, path)
+			assert.Empty(t, r.booking.Access.Instructions, path)
+		}
+	})
+
+	t.Run("instructions alone are enough to carry the access", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, "", testAccessInstructions)
+		setCompanyAddress(t, testCompanyAddress)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+
+		for path, r := range lookupBothPaths(t, bookingID, token) {
+			require.NotNil(t, r.booking.Access, path)
+			assert.Empty(t, r.booking.Access.DoorCode, path)
+			assert.Equal(t, testAccessInstructions, r.booking.Access.Instructions, path)
+		}
+	})
+
+	t.Run("no access when neither a door code nor instructions are set", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, "", "")
+		setCompanyAddress(t, testCompanyAddress)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+
+		assertNoAccess(t, lookupBothPaths(t, bookingID, token))
+	})
+
+	for _, status := range []domain.BookingStatus{
+		domain.BookingStatusAwaitingPayment,
+		domain.BookingStatusExpired,
+		domain.BookingStatusCancelled,
+		domain.BookingStatusCompleted,
+		domain.BookingStatusNoShow,
+	} {
+		t.Run("no access for a "+string(status)+" booking", func(t *testing.T) {
+			defer tu.ClearAuthData(t, ctx, authCtx)
+			setPracticeAccess(t, testDoorCode, testAccessInstructions)
+
+			bookingID, token := setupGuestBookingForLookup(t)
+			require.NoError(t, tbooking.UpdateBookingStatus(t, ctx, testPool, bookingID, status))
+
+			results := lookupBothPaths(t, bookingID, token)
+			for path, r := range results {
+				assert.Equal(t, status, r.booking.Status, path)
+				assert.NotContains(t, r.raw, testDoorCode, path)
+			}
+			assertNoAccess(t, results)
+		})
+	}
+
+	t.Run("no access once the slot has ended", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, testDoorCode, testAccessInstructions)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+		// The slot starts in about a day: four days on, it has ended.
+		suiteClockOffset.Store(int64(4 * 24 * time.Hour))
+		defer suiteClockOffset.Store(0)
+
+		results := lookupBothPaths(t, bookingID, token)
+		for path, r := range results {
+			assert.Equal(t, domain.BookingStatusConfirmed, r.booking.Status, path)
+		}
+		assertNoAccess(t, results)
+	})
+
+	t.Run("a failing access read still returns the booking, without access, and logs no value", func(t *testing.T) {
+		defer tu.ClearAuthData(t, ctx, authCtx)
+		setPracticeAccess(t, testDoorCode, testAccessInstructions)
+		setCompanyAddress(t, testCompanyAddress)
+
+		bookingID, token := setupGuestBookingForLookup(t)
+
+		var logs bytes.Buffer
+		previous := slog.Default()
+		slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+		defer slog.SetDefault(previous)
+		practiceAccess.fail.Store(true)
+		defer practiceAccess.fail.Store(false)
+
+		results := lookupBothPaths(t, bookingID, token)
+		for path, r := range results {
+			assert.Equal(t, bookingID, r.booking.ID, path)
+		}
+		assertNoAccess(t, results)
+
+		assert.Contains(t, logs.String(), "failed to read the practice access")
+		assert.NotContains(t, logs.String(), testDoorCode)
+		assert.NotContains(t, logs.String(), "2e étage")
 	})
 }

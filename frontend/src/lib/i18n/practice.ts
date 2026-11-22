@@ -152,6 +152,11 @@ export const strings = {
             balanceDue: "Solde au cabinet",
             refunded: "Remboursé",
             reference: "Référence",
+            // practice access card (issue 024): confirmed, upcoming bookings only
+            accessHeading: "Accès au cabinet",
+            accessAddress: "Adresse",
+            accessDoorCode: "Code d'accès",
+            accessInstructions: "Indications",
             // refund preview (what a cancellation made now would give)
             previewHeading: "Si vous annulez maintenant",
             previewFull: (amount: string) => `${amount} vous sont remboursés, soit l'intégralité de votre paiement en ligne.`,
@@ -285,6 +290,10 @@ export const strings = {
             balanceDue: "Balance at the practice",
             refunded: "Refunded",
             reference: "Reference",
+            accessHeading: "Getting in",
+            accessAddress: "Address",
+            accessDoorCode: "Door code",
+            accessInstructions: "Directions",
             previewHeading: "If you cancel now",
             previewFull: (amount: string) => `${amount} is refunded to you, the whole of your online payment.`,
             previewPartial: (amount: string, percentage: number, paid: string) =>

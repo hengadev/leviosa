@@ -3,7 +3,19 @@
 	import type { PageProps } from './$types';
 	import type { PublicBooking } from './+page.server';
 	import { cap, dictionary, fmt, type Locale } from '#lib/i18n/practice.ts';
-	import { Mail, Clock, CheckCircle, XCircle, AlertCircle, Search, Phone as PhoneIcon, Loader2 } from '@lucide/svelte';
+	import {
+		Mail,
+		Clock,
+		CheckCircle,
+		XCircle,
+		AlertCircle,
+		Search,
+		Phone as PhoneIcon,
+		Loader2,
+		MapPin,
+		KeyRound,
+		Info
+	} from '@lucide/svelte';
 
 	let { data, form }: PageProps = $props();
 
@@ -44,6 +56,9 @@
 	let balance = $derived(booking ? Math.max(booking.total_price_cents - paid, 0) : 0);
 	let preview = $derived(booking?.refund_preview ?? null);
 	let refunded = $derived(booking?.refunded_amount_cents ?? null);
+	// After a cancellation the action's result is merged over the looked-up
+	// booking until the page reloads: show the access only while confirmed.
+	let access = $derived(booking?.status === 'confirmed' ? (booking.access ?? null) : null);
 
 	const price = (cents: number) => fmt.price(cents, locale);
 
@@ -159,6 +174,43 @@
 					</div>
 				</dl>
 			</div>
+
+			{#if access}
+				<!-- ═══ Practice access ═══ -->
+				<section class="mt-6 rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6" aria-labelledby="practice-access">
+					<h2 id="practice-access" class="text-lg font-semibold">{t.accessHeading}</h2>
+					<dl class="mt-4 space-y-4">
+						{#if access.address}
+							<div>
+								<dt class="flex items-center gap-1.5 text-sm text-neutral-600">
+									<MapPin size={16} class="shrink-0" aria-hidden="true" />{t.accessAddress}
+								</dt>
+								<dd class="mt-0.5 font-semibold text-pretty break-words">{access.address}</dd>
+							</div>
+						{/if}
+						{#if access.door_code}
+							<div>
+								<dt class="flex items-center gap-1.5 text-sm text-neutral-600">
+									<KeyRound size={16} class="shrink-0" aria-hidden="true" />{t.accessDoorCode}
+								</dt>
+								<dd
+									class="mt-1.5 inline-block max-w-full rounded-lg bg-neutral-100 px-3 py-1.5 font-mono text-2xl font-bold tracking-[0.15em] break-all text-neutral-950"
+								>
+									{access.door_code}
+								</dd>
+							</div>
+						{/if}
+						{#if access.instructions}
+							<div>
+								<dt class="flex items-center gap-1.5 text-sm text-neutral-600">
+									<Info size={16} class="shrink-0" aria-hidden="true" />{t.accessInstructions}
+								</dt>
+								<dd class="mt-0.5 text-pretty break-words whitespace-pre-line">{access.instructions}</dd>
+							</div>
+						{/if}
+					</dl>
+				</section>
+			{/if}
 
 			{#if justCancelled}
 				<!-- ═══ Cancellation result ═══ -->
