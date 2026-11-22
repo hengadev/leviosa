@@ -31,7 +31,9 @@ const (
 	sampleCurrency     = "EUR"
 	samplePriceCents   = 7000
 	sampleDepositCents = 2000
-	sampleManageURL    = "https://leviosa.example.com/booking/t/0123456789abcdef"
+	sampleManageURL    = "https://leviosa.example.com/bookings?token=0123456789abcdef"
+	sampleDoorCode     = "4821B"
+	sampleInstructions = "Sonnez à l'interphone « Cabinet Leviosa ».\n2e étage, porte de gauche."
 	sampleBookAgainFR  = "https://leviosa.example.com/fr"
 	sampleBookAgainEN  = "https://leviosa.example.com/en"
 )
@@ -93,20 +95,21 @@ func allPreviews() []preview {
 			BookingID: bookingID, ProductName: sampleProduct, PartnerName: samplePartnerName, Address: sampleAddress,
 			StartTime: start, EndTime: end,
 			AmountPaidOnlineCents: samplePriceCents, Currency: sampleCurrency,
-			ManageURL: sampleManageURL,
+			ManageURL: sampleManageURL, DoorCode: sampleDoorCode, AccessInstructions: sampleInstructions,
 		}, sampleNow))
 		add("booking_confirmation_deposit_"+lang+".html", domain.ComposeBookingConfirmation(domain.BookingConfirmationRequest{
 			ToEmail: sampleClientEmail, ToFirstName: "Jean", ToLastName: "Dupont", Locale: locale,
 			BookingID: bookingID, ProductName: sampleProduct, PartnerName: samplePartnerName, Address: sampleAddress,
 			StartTime: start, EndTime: end,
 			AmountPaidOnlineCents: sampleDepositCents, BalanceDueCents: samplePriceCents - sampleDepositCents, Currency: sampleCurrency,
-			ManageURL: sampleManageURL,
+			ManageURL: sampleManageURL, DoorCode: sampleDoorCode, AccessInstructions: sampleInstructions,
 		}, sampleNow))
 
 		add("booking_reminder_"+lang+".html", domain.ComposeBookingReminder(domain.BookingReminderRequest{
 			ToEmail: sampleClientEmail, ToFirstName: "Jean", ToLastName: "Dupont", Locale: locale,
 			BookingID: bookingID, ProductName: sampleProduct, PartnerName: samplePartnerName, Address: sampleAddress,
 			StartTime: start, EndTime: end, ManageURL: sampleManageURL,
+			DoorCode: sampleDoorCode, AccessInstructions: sampleInstructions,
 		}, sampleNow))
 
 		// Client cancellation: full, partial and no refund.
