@@ -311,6 +311,7 @@ func (s *Server) setupSettingsRoutes(router *http.ServeMux) {
 func (s *Server) setupNotificationRoutes(router *http.ServeMux) {
 	notificationH := notificationHandler.New(
 		s.container.NotificationService,
+		s.container.AuthMw,
 	)
 	notificationH.RegisterRoutes(router)
 }
