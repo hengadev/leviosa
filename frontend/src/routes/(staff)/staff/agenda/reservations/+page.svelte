@@ -252,18 +252,18 @@
 	</div>
 
 	<!-- Summary -->
-	<div class="grid grid-cols-3 gap-4 mb-8">
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">À venir</p>
-			<p class="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{upcomingCount}</p>
+	<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">À venir</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{upcomingCount}</p>
 		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Terminées</p>
-			<p class="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{completedCount}</p>
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">Terminées</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{completedCount}</p>
 		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Revenus</p>
-			<p class="text-2xl font-bold text-foreground tabular-nums">{formatCents(completedEarnings)}</p>
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">Revenus</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{formatCents(completedEarnings)}</p>
 		</div>
 	</div>
 
