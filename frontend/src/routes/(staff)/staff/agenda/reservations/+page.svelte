@@ -268,12 +268,18 @@
 	</div>
 
 	<!-- Tabs -->
-	<div class="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit flex-wrap">
+	<!-- One row at every width: an underlined tab bar that scrolls sideways rather than wrapping -->
+	<div
+		role="tablist"
+		class="mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-5 sm:gap-6 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+	>
 		{#each tabs as [val, label]}
 			<button
-				class="px-4 py-2 rounded-md text-sm font-medium transition-colors {activeTab === val
-					? 'bg-card shadow-mini text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
+				role="tab"
+				aria-selected={activeTab === val}
+				class="-mb-px shrink-0 whitespace-nowrap border-b-2 py-2.5 text-sm font-medium transition-colors {activeTab === val
+					? 'border-foreground text-foreground'
+					: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => switchTab(val)}
 			>
 				{label}
