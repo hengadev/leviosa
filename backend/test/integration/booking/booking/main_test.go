@@ -114,6 +114,9 @@ var (
 	realNotificationAdapter *bookingNotification.BookingNotificationAdapter
 	notificationSMSSpy      *IntegrationSMSSpy
 	notificationEmailSpy    *IntegrationEmailSpy
+	// accessNotificationAdapter is the same real adapter, also reading the
+	// practice access at send time, as the app wires it.
+	accessNotificationAdapter *bookingNotification.BookingNotificationAdapter
 
 	auditLogger *audit.PostgresLogger
 
@@ -312,6 +315,7 @@ func TestMain(m *testing.M) {
 		bookingService.WithTokenSecret(testTokenSecret),
 		bookingService.WithAuditLogger(auditLogger),
 		bookingService.WithLatePaymentNotifier(notificationSpy),
+		bookingService.WithAccessUpdateNotifier(notificationSpy),
 		bookingService.WithAuthUserClient(authuserClient.NewInProcessClient(realPartnerService, realAuthUserService)),
 		bookingService.WithBookingPolicyProvider(bookingSettings.NewInProcessBookingPolicyProvider(realSettingsService)),
 		bookingService.WithPracticeAccessProvider(practiceAccess),
@@ -341,6 +345,17 @@ func TestMain(m *testing.M) {
 		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
 		catalogProductService,
 		&stubSettingsProvider{},
+	)
+	accessNotificationAdapter = bookingNotification.NewBookingNotificationAdapter(
+		notificationEmailSpy,
+		notificationSMSSpy,
+		"https://app.leviosa.test",
+		bookingNotification.NewInProcessUserFetcher(realAuthUserService),
+		bookingNotification.NewInProcessRoomFetcher(realRoomService),
+		bookingNotification.NewInProcessBuildingFetcher(realBuildingService),
+		catalogProductService,
+		&stubSettingsProvider{},
+		bookingNotification.WithPracticeAccessProvider(practiceAccess),
 	)
 
 	// Pre-compute the hash of the test service key so the mock secret reader can

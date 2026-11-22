@@ -112,6 +112,14 @@ func allPreviews() []preview {
 			DoorCode: sampleDoorCode, AccessInstructions: sampleInstructions,
 		}, sampleNow))
 
+		// Access update: the door code changed (or the access sent again).
+		add("booking_access_update_"+lang+".html", domain.ComposeBookingAccessUpdate(domain.BookingAccessUpdateRequest{
+			ToEmail: sampleClientEmail, ToFirstName: "Jean", ToLastName: "Dupont", Locale: locale,
+			BookingID: bookingID, ProductName: sampleProduct, PartnerName: samplePartnerName, Address: sampleAddress,
+			StartTime: start, EndTime: end, ManageURL: sampleManageURL,
+			DoorCode: sampleDoorCode, AccessInstructions: sampleInstructions,
+		}, sampleNow))
+
 		// Client cancellation: full, partial and no refund.
 		cancellation := func(file string, refunded int, cancelledBy string) {
 			add(file, domain.ComposeBookingClientCancellation(domain.BookingClientCancellationRequest{

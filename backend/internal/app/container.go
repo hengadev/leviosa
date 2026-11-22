@@ -535,6 +535,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithPracticeAccessProvider(practiceAccessProvider),
 		bookingSvc.WithAvailabilityExceptionRepository(c.ExceptionRepo),
 		bookingSvc.WithLatePaymentNotifier(notificationAdapter),
+		bookingSvc.WithAccessUpdateNotifier(notificationAdapter),
 	)
 	c.ExceptionService = exceptionSvc.New(c.ExceptionRepo, c.AvailabilityRepo, c.BookingRepo, c.Crypto)
 

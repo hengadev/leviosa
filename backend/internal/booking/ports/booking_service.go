@@ -131,6 +131,17 @@ type BookingService interface {
 	// specified client. Bookings that already have an owner are skipped.
 	// Returns the number of bookings claimed.
 	ClaimBookings(ctx context.Context, clientID uuid.UUID, email string) (int, error)
+
+	// GetAccessUpdateRecipients counts the upcoming confirmed bookings
+	// (confirmed, slot not started yet), split into those with a client email
+	// and those without.
+	GetAccessUpdateRecipients(ctx context.Context) (*domain.AccessUpdateRecipients, error)
+
+	// SendAccessUpdate emails the current practice access to the client of
+	// every upcoming confirmed booking with an email (fire-and-forget per
+	// booking) and answers the number sent and the number without an email.
+	// Refused with an invalid-value error when no door code is set.
+	SendAccessUpdate(ctx context.Context) (*domain.AccessUpdateRecipients, error)
 }
 
 // AdminBookingsFilter holds query parameters for the admin bookings list endpoint.

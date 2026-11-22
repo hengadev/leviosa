@@ -20,6 +20,7 @@ type SpyNotificationService struct {
 	BookingReminders     []bookingPorts.BookingNotificationData
 	DisputeAlerts        []bookingPorts.BookingNotificationData
 	LatePaymentRefunds   []bookingPorts.BookingNotificationData
+	AccessUpdates        []bookingPorts.BookingNotificationData
 
 	// forward, when set, also hands every booking confirmation (and
 	// cancellation) to a real notification service (the
@@ -109,6 +110,20 @@ func (s *SpyNotificationService) SendLatePaymentRefund(ctx context.Context, data
 	return nil
 }
 
+// SendBookingAccessUpdate records the access update notification (the spy
+// also stands for bookingPorts.AccessUpdateNotificationService) and hands it
+// to the forward target when that one sends it too.
+func (s *SpyNotificationService) SendBookingAccessUpdate(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	s.mu.Lock()
+	s.AccessUpdates = append(s.AccessUpdates, data)
+	next := s.forward
+	s.mu.Unlock()
+	if access, ok := next.(bookingPorts.AccessUpdateNotificationService); ok {
+		return access.SendBookingAccessUpdate(ctx, data)
+	}
+	return nil
+}
+
 // CountFor counts the notifications of a kind recorded for a booking.
 func (s *SpyNotificationService) CountFor(kind func(*SpyNotificationService) []bookingPorts.BookingNotificationData, bookingID uuid.UUID) int {
 	s.mu.Lock()
@@ -160,6 +175,22 @@ type IntegrationEmailSpy struct {
 	BookingReminders     []notificationDomain.BookingReminderRequest
 	PartnerNotices       []notificationDomain.BookingPartnerNoticeRequest
 	LatePaymentRefunds   []notificationDomain.LatePaymentRefundRequest
+	AccessUpdates        []notificationDomain.BookingAccessUpdateRequest
+}
+
+// AccessUpdateSnapshot returns copies of the access update emails recorded
+// so far.
+func (s *IntegrationEmailSpy) AccessUpdateSnapshot() []notificationDomain.BookingAccessUpdateRequest {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]notificationDomain.BookingAccessUpdateRequest(nil), s.AccessUpdates...)
+}
+
+func (s *IntegrationEmailSpy) SendBookingAccessUpdateEmail(ctx context.Context, req notificationDomain.BookingAccessUpdateRequest) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.AccessUpdates = append(s.AccessUpdates, req)
+	return nil
 }
 
 // LatePaymentRefundSnapshot returns copies of the late-payment refund emails
@@ -199,6 +230,7 @@ func (s *IntegrationEmailSpy) Reset() {
 	s.BookingConfirmations, s.BookingReminders, s.PartnerNotices = nil, nil, nil
 	s.ClientCancellations, s.PartnerCancellations = nil, nil
 	s.LatePaymentRefunds = nil
+	s.AccessUpdates = nil
 }
 
 func (s *IntegrationEmailSpy) SendOTPEmail(ctx context.Context, req notificationDomain.OTPEmailRequest) error {

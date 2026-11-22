@@ -4,6 +4,7 @@
     import { Dialog, Button, Label, Separator, Tabs } from "bits-ui";
     import { X, AlertCircle, Building2, Globe, CalendarClock, ShieldCheck, KeyRound } from "@lucide/svelte";
     import { invalidateAll, replaceState } from "$app/navigation";
+    import { enhance } from "$app/forms";
     import { page } from "$app/state";
     import PracticeVideo from "./PracticeVideo.svelte";
 
@@ -169,9 +170,25 @@
     } = superForm(data.practiceAccessForm, {
         resetForm: false,
         onUpdated: ({ form }) => {
-            if (form.valid) practiceAccessDialogOpen = false;
+            if (form.valid) {
+                practiceAccessDialogOpen = false;
+                accessNotice = typeof form.message === "string" ? form.message : null;
+            }
         },
     });
+
+    // Access update: the upcoming confirmed bookings with a client email the
+    // door code can be sent to, and the result of the last save or send.
+    let accessRecipients = $derived(data.accessUpdate?.recipients ?? 0);
+    let accessNotice: string | null = $state(null);
+    let accessSending = $state(false);
+    let doorCodeChanged = $derived(
+        $practiceAccessForm.door_code.trim() !== (data.practiceAccess?.doorCode ?? ""),
+    );
+
+    function upcomingClients(n: number): string {
+        return n === 1 ? "au client" : `aux ${n} clients`;
+    }
 
     function formatWeeks(weeks: number): string {
         return weeks === 1 ? "1 semaine" : `${weeks} semaines`;
@@ -506,6 +523,7 @@
                         onclick={() => {
                             $practiceAccessForm.door_code = data.practiceAccess?.doorCode ?? "";
                             $practiceAccessForm.access_instructions = data.practiceAccess?.accessInstructions ?? "";
+                            $practiceAccessForm.notify_clients = true;
                             practiceAccessDialogOpen = true;
                         }}
                     >
@@ -556,8 +574,40 @@
                             {data.practiceAccess.accessInstructions || "Non définies"}
                         </div>
                     </div>
+                    {#if data.practiceAccess.doorCode && accessRecipients > 0}
+                        <form
+                            method="POST"
+                            action="?/sendPracticeAccess"
+                            class="pt-1"
+                            use:enhance={() => {
+                                accessSending = true;
+                                accessNotice = null;
+                                return async ({ result }) => {
+                                    accessSending = false;
+                                    if (result.type === "success" || result.type === "failure") {
+                                        const text = result.data?.accessSendMessage;
+                                        accessNotice = typeof text === "string" ? text : null;
+                                    } else {
+                                        accessNotice = "L'accès n'a pas pu être envoyé. Réessayez.";
+                                    }
+                                    await invalidateAll();
+                                };
+                            }}
+                        >
+                            <button
+                                type="submit"
+                                class="h-input rounded-input border border-border-input hover:bg-dark-04 focus-visible:ring-dark focus-visible:ring-offset-background focus-visible:outline-hidden inline-flex items-center justify-center px-4 text-sm font-medium focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.98] cursor-pointer transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                                disabled={accessSending}
+                            >
+                                {accessSending ? "Envoi..." : `Envoyer l'accès ${upcomingClients(accessRecipients)} à venir`}
+                            </button>
+                        </form>
+                    {/if}
                 {:else}
                     <p class="text-sm text-foreground-alt">Impossible de charger l'accès au cabinet.</p>
+                {/if}
+                {#if accessNotice}
+                    <p class="text-sm text-foreground-alt [overflow-wrap:anywhere]" role="status">{accessNotice}</p>
                 {/if}
             </div>
         </div>
@@ -1362,6 +1412,18 @@
                         <p class="text-sm text-destructive" role="alert">{$practiceAccessErrors.access_instructions[0]}</p>
                     {/if}
                 </div>
+
+                {#if doorCodeChanged && accessRecipients > 0}
+                    <label class="flex items-start gap-3 text-sm">
+                        <input
+                            type="checkbox"
+                            name="notify_clients"
+                            bind:checked={$practiceAccessForm.notify_clients}
+                            class="mt-0.5 size-4 cursor-pointer accent-dark"
+                        />
+                        <span>Envoyer le nouveau code {upcomingClients(accessRecipients)} ayant un rendez-vous à venir</span>
+                    </label>
+                {/if}
 
                 {#if $practiceAccessErrors._errors?.length}
                     <p class="text-sm text-destructive" role="alert">{$practiceAccessErrors._errors[0]}</p>

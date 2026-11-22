@@ -25,6 +25,7 @@ type BookingService struct {
 	practiceAccess      ports.PracticeAccessProvider
 	exceptionRepo       ports.AvailabilityExceptionRepository
 	latePaymentNotifier ports.LatePaymentNotificationService
+	accessNotifier      ports.AccessUpdateNotificationService
 	clock               func() time.Time
 }
 
@@ -91,6 +92,13 @@ func WithPracticeAccessProvider(p ports.PracticeAccessProvider) Option {
 // provided, the refund is made without an email.
 func WithLatePaymentNotifier(n ports.LatePaymentNotificationService) Option {
 	return func(s *BookingService) { s.latePaymentNotifier = n }
+}
+
+// WithAccessUpdateNotifier injects the notification that emails the current
+// practice access to the clients of upcoming bookings. If not provided,
+// SendAccessUpdate sends nothing.
+func WithAccessUpdateNotifier(n ports.AccessUpdateNotificationService) Option {
+	return func(s *BookingService) { s.accessNotifier = n }
 }
 
 // WithAuditLogger injects the audit-log port used to record sensitive

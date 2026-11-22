@@ -2,7 +2,7 @@ import type { Actions, PageServerLoad } from "./$types"
 import { fail, redirect } from "@sveltejs/kit"
 import * as env from "$app/env/private"
 
-import { setError, superValidate } from 'sveltekit-superforms';
+import { message, setError, superValidate } from 'sveltekit-superforms';
 import { arktype } from 'sveltekit-superforms/adapters';
 
 import {
@@ -73,6 +73,51 @@ type PracticeOption = { id: string; label: string }
 // Practice access: the door code and access instructions. Private: read from
 // the admin-only endpoint, server-side, and never logged.
 type PracticeAccessSettings = { doorCode: string; accessInstructions: string }
+
+// The upcoming confirmed bookings an access update reaches: with a client
+// email (after a send, the emails sent) and without one.
+type AccessUpdateCounts = { recipients: number; withoutEmail: number }
+
+type Fetch = typeof fetch
+
+// readAccessUpdateCounts reads the backend's access update counts.
+async function readAccessUpdateCounts(res: Response): Promise<AccessUpdateCounts> {
+    const body: { recipients?: number; without_email?: number } = await res.json()
+    return { recipients: body.recipients ?? 0, withoutEmail: body.without_email ?? 0 }
+}
+
+// sendAccessUpdate emails the current access to the clients of upcoming
+// bookings; null when the backend refused or could not be reached.
+async function sendAccessUpdate(fetch: Fetch, sessionCookie: string | undefined): Promise<AccessUpdateCounts | null> {
+    try {
+        const res = await fetch(`${env.API_URL}/admin/bookings/access-update`, {
+            method: "POST",
+            headers: { 'Authorization': `Bearer ${sessionCookie}` },
+        })
+        if (!res.ok) return null
+        return await readAccessUpdateCounts(res)
+    } catch {
+        return null
+    }
+}
+
+function clientCount(n: number): string {
+    return n === 1 ? "1 client" : `${n} clients`
+}
+
+// The report after a send: what was sent, then the upcoming bookings without
+// an email, so the administrator can call them.
+function withoutEmailNote(sentence: string, withoutEmail: number): string {
+    if (withoutEmail === 1) {
+        return `${sentence} 1 rendez-vous à venir n'a pas d'adresse e-mail : prévenez ce client par téléphone.`
+    }
+    if (withoutEmail > 1) {
+        return `${sentence} ${withoutEmail} rendez-vous à venir n'ont pas d'adresse e-mail : prévenez ces clients par téléphone.`
+    }
+    return sentence
+}
+
+const ACCESS_NOT_SENT = "Code enregistré, mais pas envoyé aux clients. Utilisez « Envoyer l'accès aux clients à venir » pour réessayer."
 
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
     // The admin layout already lets administrators only; this is a second check.
@@ -253,6 +298,21 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         }
     }
 
+    // Recipients of an access update (upcoming confirmed bookings). Best-effort.
+    let accessUpdate: AccessUpdateCounts | null = null
+    if (MOCK_MODE) {
+        accessUpdate = { recipients: 0, withoutEmail: 0 }
+    } else {
+        try {
+            const res = await fetch(`${env.API_URL}/admin/bookings/access-update`, {
+                headers: { 'Authorization': `Bearer ${sessionCookie}` },
+            })
+            if (res.ok) accessUpdate = await readAccessUpdateCounts(res)
+        } catch {
+            accessUpdate = null
+        }
+    }
+
     return {
         companyNameForm,
         companyEmailForm,
@@ -269,6 +329,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
         bookingPolicy,
         practiceAccessForm,
         practiceAccess,
+        accessUpdate,
         settings,
         settingsError,
         practicePage,
@@ -385,7 +446,7 @@ export const actions = {
         if (MOCK_MODE) {
             // Never log the door code or the instructions.
             console.log('[MOCK] Updating practice access')
-            return { practiceAccessForm: form }
+            return message(form, "Accès enregistré.")
         }
 
         const sessionCookie = cookies.get('session');
@@ -415,7 +476,35 @@ export const actions = {
             }
         }
 
-        return { practiceAccessForm: form }
+        // Email the new door code only when it changed and the box is ticked.
+        let codeChanged = false
+        try {
+            const body: { code_changed?: boolean } = await res.json()
+            codeChanged = body.code_changed === true
+        } catch {
+            codeChanged = false
+        }
+        if (!codeChanged || !form.data.notify_clients) {
+            return message(form, "Accès enregistré.")
+        }
+
+        const sent = await sendAccessUpdate(fetch, sessionCookie)
+        if (!sent) {
+            return message(form, ACCESS_NOT_SENT)
+        }
+        return message(form, withoutEmailNote(`Code enregistré, envoyé à ${clientCount(sent.recipients)}.`, sent.withoutEmail))
+    },
+
+    // Send the current access again to the clients of upcoming bookings.
+    sendPracticeAccess: async ({ fetch, cookies }) => {
+        if (MOCK_MODE) {
+            return { accessSendMessage: "Accès envoyé à 0 client." }
+        }
+        const sent = await sendAccessUpdate(fetch, cookies.get('session'))
+        if (!sent) {
+            return fail(502, { accessSendMessage: "L'accès n'a pas pu être envoyé. Réessayez." })
+        }
+        return { accessSendMessage: withoutEmailNote(`Accès envoyé à ${clientCount(sent.recipients)}.`, sent.withoutEmail) }
     },
 
     updateCompanyName: async ({ request, fetch, cookies }) => {
