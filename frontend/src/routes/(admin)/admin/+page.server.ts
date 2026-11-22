@@ -94,6 +94,14 @@ function dialable(phone: string): string {
 	return trimmed.startsWith('+') ? `+${digits}` : digits;
 }
 
+/** A French number reads "06 12 34 56 78"; any other number is shown as given. */
+function displayPhone(phone: string): string {
+	const digits = dialable(phone);
+	const national = digits.startsWith('+33') && digits.length === 12 ? `0${digits.slice(3)}` : digits;
+	if (/^0\d{9}$/.test(national)) return national.replace(/(\d{2})(?=\d)/g, '$1 ');
+	return phone;
+}
+
 function formatEuros(cents: number): string {
 	const euros = cents / 100;
 	return `${euros.toLocaleString('fr-FR', {
@@ -215,7 +223,7 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 				endLabel: parisTime(end),
 				clientName: b.client_name || 'Client inconnu',
 				phone: dialable(phoneLabel),
-				phoneLabel,
+				phoneLabel: displayPhone(phoneLabel),
 				productName: b.product_name || 'Produit inconnu',
 				paymentLabel: paymentLabel(b, paidOnline.get(b.id))
 			};
