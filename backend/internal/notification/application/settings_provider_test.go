@@ -176,3 +176,9 @@ func (m *mockSettingsService) GetBookingPolicy(ctx context.Context) (*settingsDo
 func (m *mockSettingsService) SetBookingPolicy(ctx context.Context, req *settingsDomain.SetBookingPolicyRequest) (*settingsDomain.SetBookingPolicyResponse, error) {
 	return nil, nil
 }
+func (m *mockSettingsService) GetPracticeAccess(ctx context.Context) (*settingsDomain.GetPracticeAccessResponse, error) {
+	return nil, nil
+}
+func (m *mockSettingsService) SetPracticeAccess(ctx context.Context, req *settingsDomain.SetPracticeAccessRequest) (*settingsDomain.SetPracticeAccessResponse, error) {
+	return nil, nil
+}
