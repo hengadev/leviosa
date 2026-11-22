@@ -37,3 +37,12 @@ type PracticeAccessView struct {
 	DoorCode     string `json:"door_code"`
 	Instructions string `json:"instructions"`
 }
+
+// AccessUpdateRecipients counts the upcoming confirmed bookings (confirmed,
+// slot not started yet) an access update goes to: Recipients have a client
+// email (after a send, the emails handed to the transport), WithoutEmail
+// have none, so the administrator can call them.
+type AccessUpdateRecipients struct {
+	Recipients   int `json:"recipients"`
+	WithoutEmail int `json:"without_email"`
+}

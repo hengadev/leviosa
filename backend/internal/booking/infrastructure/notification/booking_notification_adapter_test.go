@@ -996,3 +996,33 @@ func TestBookingEmails_NoPracticeAccessProvider(t *testing.T) {
 		t.Errorf("no practice access without a provider, got %q / %q", got.DoorCode, got.AccessInstructions)
 	}
 }
+
+func TestSendAccessUpdate_LocaleAccessAndManageLink(t *testing.T) {
+	data := practiceAccessBookingData()
+	data.Locale = "en"
+	data.Token = "abc123token"
+	access := &fakePracticeAccess{}
+	access.set("2222B", "Second floor.")
+
+	spy := &spyEmailService{}
+	adapter := newTestAdapter(spy, &spySMSService{}, nil, nil, nil, nil)
+	WithPracticeAccessProvider(access)(adapter)
+
+	if err := adapter.sendAccessUpdateEmail(context.Background(), data); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(spy.accessUpdates) != 1 {
+		t.Fatalf("expected 1 access update email, got %d", len(spy.accessUpdates))
+	}
+	req := spy.accessUpdates[0]
+	assertEqual(t, "ToEmail", data.ClientEmail, req.ToEmail)
+	assertEqual(t, "Locale", "en", string(req.Locale))
+	assertEqual(t, "DoorCode", "2222B", req.DoorCode)
+	assertEqual(t, "AccessInstructions", "Second floor.", req.AccessInstructions)
+	assertEqual(t, "Address", "Building address", req.Address)
+	assertEqual(t, "PartnerName", "Bob Jones", req.PartnerName)
+	assertEqual(t, "ManageURL", "https://app.leviosa.com/bookings?token=abc123token", req.ManageURL)
+	if len(spy.bookingReminders) != 0 || len(spy.bookingConfirmations) != 0 || len(spy.partnerNotices) != 0 {
+		t.Error("the access update sends only the access update email")
+	}
+}
