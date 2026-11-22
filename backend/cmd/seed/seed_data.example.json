@@ -2,18 +2,6 @@
   "_readme": "Every practice value below (name, bio, title, address, price, deposit, product copy) is a PLACEHOLDER invented for local development. The practitioner's real content replaces it before launch (issue 021). The practice page video setting is intentionally not seeded: the page shows its placeholder frame until a real video is configured in settings.",
   "admins": [
     {
-      "email": "admin@example.com",
-      "password": "ChangeMe123!",
-      "first_name": "Admin",
-      "last_name": "User",
-      "role": "administrator",
-      "telephone": "+33600000000",
-      "postal_code": "75001",
-      "city": "Paris",
-      "address1": "1 Rue Example",
-      "address2": ""
-    },
-    {
       "email": "superadmin@example.com",
       "password": "ChangeMe456!",
       "first_name": "Super",
@@ -42,11 +30,13 @@
   ],
   "practice": {
     "partner": {
-      "email": "camille.martin@example.com",
-      "password": "ChangeMe789!",
+      "_readme": "The practitioner is the administrator, as in the real practice: one account, role administrator, with the practitioner profile verified (what 'Je suis aussi praticien' does). Log in with it to see the five-tab back office with real practitioner pages.",
+      "email": "admin@example.com",
+      "password": "ChangeMe123!",
+      "role": "administrator",
       "first_name": "Camille",
       "last_name": "Martin",
-      "telephone": "+33600000002",
+      "telephone": "+33600000000",
       "postal_code": "75011",
       "city": "Paris",
       "address1": "12 rue des Lilas",
