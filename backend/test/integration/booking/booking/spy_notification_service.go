@@ -20,6 +20,7 @@ type SpyNotificationService struct {
 	BookingReminders     []bookingPorts.BookingNotificationData
 	DisputeAlerts        []bookingPorts.BookingNotificationData
 	LatePaymentRefunds   []bookingPorts.BookingNotificationData
+	AccessUpdates        []bookingPorts.BookingNotificationData
 
 	// forward, when set, also hands every booking confirmation (and
 	// cancellation) to a real notification service (the
@@ -105,6 +106,20 @@ func (s *SpyNotificationService) SendLatePaymentRefund(ctx context.Context, data
 	s.mu.Unlock()
 	if late, ok := next.(bookingPorts.LatePaymentNotificationService); ok {
 		return late.SendLatePaymentRefund(ctx, data)
+	}
+	return nil
+}
+
+// SendBookingAccessUpdate records the access update notification (the spy
+// also stands for bookingPorts.AccessUpdateNotificationService) and hands it
+// to the forward target when that one sends it too.
+func (s *SpyNotificationService) SendBookingAccessUpdate(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	s.mu.Lock()
+	s.AccessUpdates = append(s.AccessUpdates, data)
+	next := s.forward
+	s.mu.Unlock()
+	if access, ok := next.(bookingPorts.AccessUpdateNotificationService); ok {
+		return access.SendBookingAccessUpdate(ctx, data)
 	}
 	return nil
 }
