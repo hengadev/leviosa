@@ -42,6 +42,21 @@ const (
 	// practice address, shown in the preview command's index.
 	SampleProduct = "Séance d'ostéopathie"
 	SampleAddress = "12 rue des Lilas, 75011 Paris"
+
+	// The emails outside the booking flow: amounts and dates formatted as
+	// the booking notification adapter does, the practice inbox as
+	// recipient of the contact form and the dispute alert.
+	sampleCompanyName    = "Leviosa"
+	samplePracticeEmail  = "contact@leviosa.example.com"
+	sampleAmount         = "€70.00"
+	samplePaymentDate    = "05 March 2026"
+	sampleRetryURL       = "https://leviosa.example.com/bookings"
+	sampleVisitorName    = "Marie Leroy"
+	sampleVisitorEmail   = "marie.leroy@example.com"
+	sampleVisitorPhone   = "+33698765432"
+	sampleVisitorMessage = "Bonjour,\nAvez-vous des créneaux disponibles le samedi matin ?"
+	sampleSubmittedAt    = "05/03/2026 10:00"
+	sampleDisputeReason  = "fraudulent"
 )
 
 // Fixed moments, so a preview is the same on every run.
@@ -91,6 +106,9 @@ type catalogueEntry struct {
 var (
 	bothLocales = []domain.Locale{domain.LocaleFR, domain.LocaleEN}
 	frenchOnly  = []domain.Locale{domain.LocaleFR}
+	// englishOnly: the emails outside the booking flow still written in
+	// English only.
+	englishOnly = []domain.Locale{domain.LocaleEN}
 )
 
 var catalogue = []catalogueEntry{
@@ -187,6 +205,37 @@ var catalogue = []catalogueEntry{
 			}, sampleNow)
 		},
 	},
+	{
+		Entry: Entry{ID: "payment_receipt", Label: "Reçu de paiement", Audience: AudienceClient, Locales: englishOnly},
+		compose: func(domain.Locale) domain.ComposedEmail {
+			return domain.ComposePaymentNotificationEmail(samplePayment(), sampleNow)
+		},
+	},
+	{
+		Entry: Entry{ID: "payment_failed", Label: "Échec du paiement", Audience: AudienceClient, Locales: englishOnly},
+		compose: func(domain.Locale) domain.ComposedEmail {
+			return domain.ComposePaymentFailedEmail(samplePayment(), sampleNow)
+		},
+	},
+	{
+		Entry: Entry{ID: "contact_form", Label: "Message du formulaire de contact", Audience: AudiencePractice, Locales: frenchOnly},
+		compose: func(domain.Locale) domain.ComposedEmail {
+			return domain.ComposeContactFormEmail(domain.ContactFormRequest{
+				ToEmail: samplePracticeEmail, FromEmail: samplePracticeEmail,
+				Name: sampleVisitorName, ContactEmail: sampleVisitorEmail, ContactPhone: sampleVisitorPhone,
+				Message: sampleVisitorMessage, CompanyName: sampleCompanyName, SubmittedAt: sampleSubmittedAt,
+			}, sampleNow)
+		},
+	},
+	{
+		Entry: Entry{ID: "payment_dispute_alert", Label: "Litige de paiement", Audience: AudiencePractice, Locales: englishOnly},
+		compose: func(domain.Locale) domain.ComposedEmail {
+			return domain.ComposePaymentDisputeAlertEmail(domain.PaymentDisputeAlertRequest{
+				ToEmail: samplePracticeEmail, BookingID: sampleBookingID, ClientName: sampleClientName,
+				ProductName: SampleProduct, Amount: sampleAmount, DisputeReason: sampleDisputeReason,
+			}, sampleNow)
+		},
+	},
 }
 
 // List returns every previewable email, in a stable order.
@@ -252,6 +301,14 @@ func clientCancellation(locale domain.Locale, refundedCents int, cancelledBy str
 		AmountPaidOnlineCents: samplePriceCents, RefundedAmountCents: refundedCents, Currency: sampleCurrency,
 		BookAgainURL: bookAgainURL(locale),
 	}, sampleNow)
+}
+
+func samplePayment() domain.PaymentNotificationRequest {
+	return domain.PaymentNotificationRequest{
+		ToEmail: sampleClientEmail, ToFirstName: sampleClientFirst, ToLastName: sampleClientLast,
+		Amount: sampleAmount, Product: SampleProduct, PaymentDate: samplePaymentDate,
+		CompanyName: sampleCompanyName, RetryURL: sampleRetryURL,
+	}
 }
 
 func bookAgainURL(locale domain.Locale) string {
