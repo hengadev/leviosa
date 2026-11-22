@@ -138,10 +138,15 @@
 		outline: none;
 		pointer-events: none;
 		transform: translateY(100%);
-		transition: transform 300ms;
+		/* Hidden once the close transition is done: overscroll bounce on
+		   phones can otherwise drag the sheet back into view. */
+		visibility: hidden;
+		transition: transform 300ms, visibility 0s linear 300ms;
 	}
 	.drawer.visible {
 		pointer-events: auto;
 		transform: translateY(0);
+		visibility: visible;
+		transition: transform 300ms, visibility 0s linear 0s;
 	}
 </style>

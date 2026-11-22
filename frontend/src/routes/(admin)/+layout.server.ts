@@ -15,7 +15,7 @@ export const load = async ({ locals, parent, fetch }) => {
 
 	let unreadCount = 0;
 	// Whether the admin is also the practitioner (a verified profile of their
-	// own): the navigation then leads to their practitioner area.
+	// own), for the Cabinet page and the practitioner pages.
 	let selfPractitioner = false;
 	if (env.USE_MOCK_DATA !== 'true') {
 		const [unreadRes, ownProfileRes] = await Promise.all([
@@ -37,7 +37,7 @@ export const load = async ({ locals, parent, fetch }) => {
 					ownProfile.stripe_account_status === 'active' && ownProfile.stripe_onboarding_complete === true;
 			}
 		} catch {
-			// without it, the practitioner area link stays hidden
+			// without it, the admin is taken for not the practitioner
 		}
 	}
 

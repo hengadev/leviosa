@@ -3,15 +3,14 @@
 		Home,
 		CalendarClock,
 		CalendarCheck,
-		Package,
 		DollarSign,
 		UserRound,
 		ExternalLink,
-		Shield,
 	} from "@lucide/svelte";
 	import type { Permissions } from "#lib/security/permissions.ts";
 	import BackOfficeSidebar, { type AccountLink, type NavGroup } from "./BackOfficeSidebar.svelte";
 	import BackOfficeMobileNav from "./BackOfficeMobileNav.svelte";
+	import PracticeNavigation from "./PracticeNavigation.svelte";
 
 	interface SidebarProps {
 		user: App.User;
@@ -21,11 +20,13 @@
 
 	let { user, permissions, unreadCount = 0 }: SidebarProps = $props();
 
+	// An administrator gets the practice navigation, the same as in the admin
+	// area; the navigation below is a partner's who is not an administrator.
 	const isAdmin = $derived(user.role === "administrator");
 
 	// v1 (single-practitioner launch): messages, statistics (analytics) and
 	// reviews are hidden from the partner navigation. The routes stay in code.
-	const navigation: NavGroup[] = $derived([
+	const navigation: NavGroup[] = [
 		{
 			label: "Au quotidien",
 			items: [
@@ -41,17 +42,11 @@
 				{ href: "/staff/profile", label: "Mon profil", icon: UserRound },
 			],
 		},
-		...(isAdmin
-			? [{ label: "Administration", items: [{ href: "/staff/catalog", label: "Catalogue", icon: Package }] }]
-			: []),
-	]);
+	];
 
-	// An administrator who is also the practitioner goes back to the admin
-	// panel from the account menu, as the admin panel links here.
-	const accountLinks: AccountLink[] = $derived([
-		...(isAdmin ? [{ href: "/admin", label: "Administration", icon: Shield }] : []),
+	const accountLinks: AccountLink[] = [
 		{ href: "https://livio.leviosa.care", label: "Voir le site", icon: ExternalLink, external: true },
-	]);
+	];
 
 	// The phone bar: the daily pages; the rest is in its Menu drawer.
 	const mobileBar = [
@@ -62,7 +57,9 @@
 	];
 </script>
 
-{#if permissions.canAccessOps}
+{#if isAdmin}
+	<PracticeNavigation {user} />
+{:else if permissions.canAccessOps}
 	<BackOfficeSidebar area="Espace praticien" home="/staff" groups={navigation} {accountLinks} {user} />
 
 	<BackOfficeMobileNav home="/staff" groups={navigation} bar={mobileBar} {accountLinks} {user} />

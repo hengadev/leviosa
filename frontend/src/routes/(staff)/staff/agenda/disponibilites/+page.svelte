@@ -15,6 +15,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { parseDate, type CalendarDate } from '@internationalized/date';
 	import Modal from '#lib/ui/Modal.svelte';
+	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
 	import { PRACTICE_TIME_ZONE } from '#lib/i18n/practice.ts';
 	import { practiceDate, practiceInstant, type AvailabilityException } from './occurrences';
 	import { dayOpenings, firstWeeklyClash, firstWeekday, overlapping, weekday, type Opening } from './calendar';
@@ -750,6 +751,13 @@
 	<title>Disponibilités | Staff</title>
 </svelte:head>
 
+<!-- An administrator without a practitioner profile: nothing to show yet -->
+{#if data.profileMissing}
+	<div class="container mx-auto px-4 py-8 lg:py-12">
+		<h1 class="text-3xl lg:text-4xl font-bold mb-8 text-foreground">Disponibilités</h1>
+		<PractitionerProfileMissing />
+	</div>
+{:else}
 <div class="container mx-auto px-4 py-8 lg:py-12">
 	<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
@@ -758,7 +766,7 @@
 		</div>
 		<button
 			onclick={() => openCreateModal()}
-			class="inline-flex items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+			class="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
 		>
 			<Plus size={16} />
 			Nouvelle disponibilité
@@ -1002,7 +1010,7 @@
 					<div class="flex items-center gap-2">
 						<button
 							onclick={() => openExceptionModal(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
+							class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
 							title="Fermer une période (congés…)"
 							aria-label="Fermer une période"
 						>
@@ -1010,7 +1018,7 @@
 						</button>
 						<button
 							onclick={() => openEditModal(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+							class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 							title="Modifier les horaires"
 							aria-label="Modifier les horaires"
 						>
@@ -1018,7 +1026,7 @@
 						</button>
 						<button
 							onclick={() => openCancelConfirm(serie)}
-							class="p-1.5 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
+							class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
 							title="Supprimer ces horaires"
 							aria-label="Supprimer ces horaires"
 						>
@@ -1034,6 +1042,7 @@
 		</div>
 	</div>
 </div>
+{/if}
 
 <!-- ========== CREATE MODAL ========== -->
 <Modal

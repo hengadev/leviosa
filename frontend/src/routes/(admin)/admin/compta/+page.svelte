@@ -7,7 +7,11 @@
 		CreditCard,
 		Calendar,
 		Download,
-		AlertTriangle
+		AlertTriangle,
+		ChevronLeft,
+		ChevronRight,
+		Users,
+		Hourglass
 	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 
@@ -85,19 +89,38 @@
 		}
 	}
 
-	// Month selector: compute the selected month from the 'from' date
+	// --- Month selector (French) ---
+
+	// Selected month derived from the 'from' date, "YYYY-MM"
 	let selectedMonth: string = $derived(data.from.substring(0, 7));
 
-	function onMonthChange(e: Event) {
-		const target = e.target as HTMLInputElement;
-		const yearMonth = target.value; // "YYYY-MM"
-		if (!yearMonth) return;
+	function capitalize(s: string): string {
+		return s.charAt(0).toUpperCase() + s.slice(1);
+	}
+
+	let monthLabel: string = $derived.by(() => {
+		const [year, month] = selectedMonth.split('-').map(Number);
+		const label = new Date(year, month - 1, 1).toLocaleDateString('fr-FR', {
+			month: 'long',
+			year: 'numeric'
+		});
+		return capitalize(label);
+	});
+
+	function gotoMonth(yearMonth: string) {
 		const [year, month] = yearMonth.split('-').map(Number);
 		const from = `${yearMonth}-01`;
 		// Last day of selected month
 		const lastDay = new Date(year, month, 0).getDate();
 		const to = `${yearMonth}-${String(lastDay).padStart(2, '0')}`;
 		goto(`/admin/compta?from=${from}&to=${to}`);
+	}
+
+	function shiftMonth(delta: number) {
+		const [year, month] = selectedMonth.split('-').map(Number);
+		const d = new Date(year, month - 1 + delta, 1);
+		const yearMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+		gotoMonth(yearMonth);
 	}
 </script>
 
@@ -106,7 +129,7 @@
 </svelte:head>
 
 <div class="container mx-auto px-4 py-8 lg:py-12">
-	<div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+	<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 		<div>
 			<h1 class="text-3xl lg:text-4xl font-bold mb-1 text-foreground">
 				Comptabilité
@@ -116,87 +139,139 @@
 			</p>
 		</div>
 		<div class="flex items-center gap-3">
-			<!-- Month selector -->
-			<div class="flex items-center gap-2">
-				<Calendar size={18} class="text-muted-foreground" />
-				<input
-					type="month"
-					value={selectedMonth}
-					onchange={onMonthChange}
-					class="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-				/>
+			<!-- Month selector (French) -->
+			<div class="flex items-center gap-1" role="group" aria-label="Choisir le mois">
+				<button
+					type="button"
+					onclick={() => shiftMonth(-1)}
+					aria-label="Mois précédent"
+					class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-muted/50 transition-colors"
+				>
+					<ChevronLeft size={20} />
+				</button>
+				<span class="min-w-32 text-center text-sm font-semibold text-foreground tabular-nums">
+					{monthLabel}
+				</span>
+				<button
+					type="button"
+					onclick={() => shiftMonth(1)}
+					aria-label="Mois suivant"
+					class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-foreground hover:bg-muted/50 transition-colors"
+				>
+					<ChevronRight size={20} />
+				</button>
 			</div>
 			<!-- CSV export -->
 			<a
 				href={`/admin/compta/export?from=${data.from}&to=${data.to}`}
 				download
-				class="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+				class="flex h-11 items-center gap-2 bg-card border border-border rounded-lg px-4 text-sm text-foreground hover:bg-muted/50 transition-colors"
 			>
 				<Download size={16} />
-				Exporter CSV
+				<span><span class="hidden sm:inline">Exporter&nbsp;</span>CSV</span>
 			</a>
 		</div>
 	</div>
 
-	<!-- Summary KPIs -->
-	<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+	<!-- Last 7 days -->
+	{#if data.last7Days}
+	<h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Activité</h2>
+	<div class="mb-6 grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
+				<TrendingUp size={16} class="text-muted-foreground" />
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Revenus (7 j)</span>
+			</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{formatCents(data.last7Days.revenueThisWeek)}</div>
+		</div>
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
+				<Calendar size={16} class="text-muted-foreground" />
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Réservations (7 j)</span>
+			</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.bookingsThisWeek}</div>
+		</div>
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
+				<Users size={16} class="text-muted-foreground" />
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">À venir</span>
+			</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.upcomingBookingsCount}</div>
+		</div>
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:mb-3">
+				<Hourglass size={16} class="text-muted-foreground" />
+				<span class="text-xs font-medium text-muted-foreground uppercase tracking-wider">En attente</span>
+			</div>
+			<div class="text-base lg:text-2xl font-bold text-foreground">{data.last7Days.pendingBookingsCount}</div>
+		</div>
+	</div>
+	{/if}
+
+	<!-- Summary KPIs: compact 2×2 on a phone, net revenue most prominent -->
+	<h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{monthLabel}</h2>
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
 		<!-- Gross Revenue -->
-		<div class="bg-card rounded-lg border border-border p-6">
-			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-					<DollarSign size={24} class="text-blue-600 dark:text-blue-400" />
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
+				<div class="lg:p-3 lg:bg-blue-100 lg:dark:bg-blue-900/30 lg:rounded-lg">
+					<DollarSign size={18} class="text-blue-600 dark:text-blue-400 lg:hidden" />
+					<DollarSign size={24} class="hidden lg:block text-blue-600 dark:text-blue-400" />
 				</div>
 			</div>
-			<div class="text-3xl font-bold text-foreground mb-1">
+			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
 				{formatCents(data.summary.grossRevenueInCents)}
 			</div>
-			<p class="text-sm text-muted-foreground">Chiffre d'affaires brut</p>
+			<p class="text-xs lg:text-sm text-muted-foreground">Chiffre d'affaires brut</p>
 		</div>
 
 		<!-- Refunds -->
-		<div class="bg-card rounded-lg border border-border p-6">
-			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-					<ArrowDown size={24} class="text-red-600 dark:text-red-400" />
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
+				<div class="lg:p-3 lg:bg-red-100 lg:dark:bg-red-900/30 lg:rounded-lg">
+					<ArrowDown size={18} class="text-red-600 dark:text-red-400 lg:hidden" />
+					<ArrowDown size={24} class="hidden lg:block text-red-600 dark:text-red-400" />
 				</div>
 			</div>
-			<div class="text-3xl font-bold text-red-500 mb-1">
+			<div class="text-base lg:text-3xl font-bold text-red-500 lg:mb-1">
 				-{formatCents(data.summary.refundsInCents)}
 			</div>
-			<p class="text-sm text-muted-foreground">Remboursements</p>
+			<p class="text-xs lg:text-sm text-muted-foreground">Remboursements</p>
 		</div>
 
 		<!-- Disputed (open Stripe chargebacks — no automatic refund/cancellation, manual response required) -->
-		<div class="bg-card rounded-lg border border-border p-6">
-			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-					<AlertTriangle size={24} class="text-red-600 dark:text-red-400" />
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
+				<div class="lg:p-3 lg:bg-red-100 lg:dark:bg-red-900/30 lg:rounded-lg">
+					<AlertTriangle size={18} class="text-red-600 dark:text-red-400 lg:hidden" />
+					<AlertTriangle size={24} class="hidden lg:block text-red-600 dark:text-red-400" />
 				</div>
 			</div>
-			<div class="text-3xl font-bold text-foreground mb-1">
+			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
 				{formatCents(data.summary.disputedInCents)}
 			</div>
-			<p class="text-sm text-muted-foreground">En litige</p>
+			<p class="text-xs lg:text-sm text-muted-foreground">En litige</p>
 		</div>
 
 		<!-- Net Revenue -->
-		<div class="bg-card rounded-lg border border-border p-6">
-			<div class="flex items-center justify-between mb-4">
-				<div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-					<TrendingUp size={24} class="text-green-600 dark:text-green-400" />
+		<div class="bg-card rounded-lg border-2 border-green-500/50 p-3 lg:p-6 lg:border lg:border-border lg:bg-green-50/50 lg:dark:bg-green-950/20">
+			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
+				<div class="lg:p-3 lg:bg-green-100 lg:dark:bg-green-900/30 lg:rounded-lg">
+					<TrendingUp size={18} class="text-green-600 dark:text-green-400 lg:hidden" />
+					<TrendingUp size={24} class="hidden lg:block text-green-600 dark:text-green-400" />
 				</div>
 			</div>
-			<div class="text-3xl font-bold text-green-500 mb-1">
+			<div class="text-lg lg:text-3xl font-bold text-green-600 dark:text-green-400 lg:mb-1">
 				{formatCents(data.summary.netRevenueInCents)}
 			</div>
-			<p class="text-sm text-muted-foreground">Chiffre d'affaires net</p>
+			<p class="text-xs lg:text-sm text-muted-foreground">Chiffre d'affaires net</p>
 		</div>
 	</div>
 
-	<!-- Transactions Table -->
+	<!-- Transactions: cards on a phone, table from lg up -->
 	<div class="bg-card rounded-lg border border-border mb-8">
-		<div class="p-6 border-b border-border">
-			<h2 class="text-xl font-semibold text-foreground">Transactions</h2>
+		<div class="p-4 lg:p-6 border-b border-border">
+			<h2 class="text-lg lg:text-xl font-semibold text-foreground">Transactions</h2>
 		</div>
 		{#if data.transactions.length === 0}
 			<div class="p-12 text-center">
@@ -204,7 +279,40 @@
 				<p class="text-muted-foreground">Aucune transaction pour cette période.</p>
 			</div>
 		{:else}
-			<div class="overflow-x-auto">
+			<!-- Mobile: cards -->
+			<ul class="divide-y divide-border lg:hidden">
+				{#each data.transactions as transaction (transaction.id)}
+					<li class="p-4">
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<p class="truncate text-sm font-medium text-foreground">{transaction.description}</p>
+								<p class="mt-0.5 text-sm text-muted-foreground truncate">
+									{transaction.clientName}{transaction.partnerName ? ` · ${transaction.partnerName}` : ''}
+								</p>
+								<p class="mt-0.5 text-xs text-muted-foreground">{formatDateTime(transaction.date)}</p>
+							</div>
+							<div class="shrink-0 text-right">
+								<p class="text-sm font-semibold {transaction.type === 'payment' ? 'text-green-500' : 'text-red-500'}">
+									{transaction.type === 'refund' ? '-' : ''}{formatCents(transaction.amountInCents)}
+								</p>
+								<span class="mt-1 inline-block px-3 py-1 rounded-full text-xs font-medium {getPaymentStatusBadge(transaction.paymentStatus)}">
+									{getPaymentStatusLabel(transaction.paymentStatus)}
+								</span>
+							</div>
+						</div>
+						<div class="mt-2 flex flex-wrap gap-2">
+							<span class="px-3 py-1 rounded-full text-xs font-medium {getTypeBadge(transaction.type)}">
+								{getTypeLabel(transaction.type)}
+							</span>
+							<span class="px-3 py-1 rounded-full text-xs font-medium {getBookingStatusBadge(transaction.bookingStatus)}">
+								{getBookingStatusLabel(transaction.bookingStatus)}
+							</span>
+						</div>
+					</li>
+				{/each}
+			</ul>
+			<!-- Desktop: table -->
+			<div class="hidden lg:block overflow-x-auto">
 				<table class="w-full">
 					<thead>
 						<tr class="bg-muted/50 border-b border-border">
@@ -219,7 +327,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.transactions as transaction}
+						{#each data.transactions as transaction (transaction.id)}
 							<tr class="border-b border-border hover:bg-muted/30 transition-colors">
 								<td class="py-4 px-6 text-sm text-muted-foreground">{formatDateTime(transaction.date)}</td>
 								<td class="py-4 px-6">

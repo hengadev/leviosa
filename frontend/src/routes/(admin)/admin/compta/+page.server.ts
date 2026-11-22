@@ -29,6 +29,20 @@ interface APIFinancialSummary {
 	transactions: APITransaction[];
 }
 
+interface DashboardStatsAPI {
+	bookings_this_week: number;
+	revenue_this_week: number;
+	upcoming_bookings_count: number;
+	pending_bookings_count: number;
+}
+
+export interface Last7DaysStats {
+	revenueThisWeek: number;
+	bookingsThisWeek: number;
+	upcomingBookingsCount: number;
+	pendingBookingsCount: number;
+}
+
 // --- UI types (camelCase) ---
 
 export interface SummaryKPIs {
@@ -55,6 +69,16 @@ export interface ComptaData {
 	transactions: Transaction[];
 	from: string;
 	to: string;
+	last7Days: Last7DaysStats | null;
+}
+
+function getMockLast7Days(): Last7DaysStats {
+	return {
+		revenueThisWeek: 82400,
+		bookingsThisWeek: 12,
+		upcomingBookingsCount: 5,
+		pendingBookingsCount: 2
+	};
 }
 
 async function getMockComptaData(from: string, to: string): Promise<ComptaData> {
@@ -79,7 +103,7 @@ async function getMockComptaData(from: string, to: string): Promise<ComptaData> 
 		{ id: 'TXN-009', date: new Date(now.getTime() - 144 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Nora Girard', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentStatus: 'disputed', bookingStatus: 'completed' },
 	];
 
-	return { summary, transactions, from, to };
+	return { summary, transactions, from, to, last7Days: getMockLast7Days() };
 }
 
 export const load: PageServerLoad = async ({ fetch, url }) => {
@@ -91,15 +115,36 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 	}
 
 	try {
-		const res = await fetch(`${env.API_URL}/admin/bookings/financial-summary?from=${from}&to=${to}`);
-		if (res.status === 401 || res.status === 403) {
+		const [summaryRes, statsRes] = await Promise.all([
+			fetch(`${env.API_URL}/admin/bookings/financial-summary?from=${from}&to=${to}`),
+			fetch(`${env.API_URL}/admin/dashboard/stats`).catch(() => new Response(null, { status: 503 }))
+		]);
+		if (summaryRes.status === 401 || summaryRes.status === 403) {
 			throw redirect(302, '/auth');
 		}
-		if (!res.ok) {
-			throw new Error(`Failed to fetch financial summary: ${res.status} ${res.statusText}`);
+		if (!summaryRes.ok) {
+			throw new Error(`Failed to fetch financial summary: ${summaryRes.status} ${summaryRes.statusText}`);
 		}
 
-		const api: APIFinancialSummary = await res.json();
+		const api: APIFinancialSummary = await summaryRes.json();
+
+		// The last 7 days are a bonus: the month's figures still show without them
+		let last7Days: Last7DaysStats | null = null;
+		try {
+			if (statsRes.ok) {
+				const statsApi: DashboardStatsAPI = await statsRes.json();
+				last7Days = {
+					revenueThisWeek: statsApi.revenue_this_week,
+					bookingsThisWeek: statsApi.bookings_this_week,
+					upcomingBookingsCount: statsApi.upcoming_bookings_count,
+					pendingBookingsCount: statsApi.pending_bookings_count
+				};
+			} else {
+				console.error('Error loading dashboard stats:', statsRes.status);
+			}
+		} catch (err) {
+			console.error('Error loading dashboard stats:', err);
+		}
 
 		const summary: SummaryKPIs = {
 			grossRevenueInCents: api.summary.gross_revenue_cents,
@@ -120,7 +165,7 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 			bookingStatus: t.booking_status
 		}));
 
-		return { summary, transactions, from, to };
+		return { summary, transactions, from, to, last7Days };
 	} catch (err) {
 		if (isRedirect(err)) throw err;
 		console.error('Error loading financial summary:', err);

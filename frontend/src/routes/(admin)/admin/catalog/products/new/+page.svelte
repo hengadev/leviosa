@@ -214,6 +214,15 @@
 		replaceState(`${location.pathname}${location.search}#${id}`, {});
 	}
 
+	// Keep the active tab fully visible when the tab row scrolls sideways.
+	$effect(() => {
+		if (!activeTab) return;
+		tabEls[tabs.findIndex((t) => t.id === activeTab)]?.scrollIntoView({
+			inline: "nearest",
+			block: "nearest",
+		});
+	});
+
 	const activeIndex = $derived(tabs.findIndex((t) => t.id === activeTab));
 
 	// Arrow keys / Home / End move between tabs (WAI-ARIA tabs pattern).
@@ -305,7 +314,7 @@
 		<button
 			type="button"
 			onclick={() => selectTab(next)}
-			class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+			class="inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-medium text-foreground-alt hover:text-foreground hover:bg-muted rounded-lg transition-colors"
 		>
 			Suivant : {tabs.find((t) => t.id === next)?.title}
 			<ArrowRight size={16} />
@@ -317,7 +326,7 @@
 	<div class="mb-8">
 		<a
 			href="/admin/catalog"
-			class="inline-flex items-center gap-2 text-foreground-alt hover:text-foreground transition-colors mb-4"
+			class="inline-flex items-center gap-2 min-h-11 text-foreground-alt hover:text-foreground transition-colors mb-4"
 		>
 			<ArrowLeft size={20} />
 			<span>Retour au Catalogue</span>
@@ -351,7 +360,7 @@
 							tabindex={tab.id === activeTab ? 0 : -1}
 							onclick={() => selectTab(tab.id)}
 							onkeydown={handleTabKeydown}
-							class="inline-flex items-center whitespace-nowrap px-3 md:px-4 py-2 border-b-2 mb-[-1px] transition-colors cursor-pointer {tab.id === activeTab
+							class="inline-flex items-center whitespace-nowrap min-h-11 px-3 md:px-4 py-2 border-b-2 mb-[-1px] transition-colors cursor-pointer {tab.id === activeTab
 								? 'border-b-foreground text-foreground'
 								: 'border-transparent text-muted-foreground hover:text-foreground-alt'}"
 						>

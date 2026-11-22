@@ -60,7 +60,7 @@
 			type="button"
 			onclick={() => (month = month.subtract({ months: 1 }))}
 			disabled={!canGoBack}
-			class="p-2 rounded-md hover:bg-muted transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+			class="flex size-11 items-center justify-center rounded-md hover:bg-muted transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
 			aria-label="Mois précédent"
 		>
 			<ChevronLeft size={18} class="text-muted-foreground" />
@@ -69,7 +69,7 @@
 		<button
 			type="button"
 			onclick={() => (month = month.add({ months: 1 }))}
-			class="p-2 rounded-md hover:bg-muted transition-colors"
+			class="flex size-11 items-center justify-center rounded-md hover:bg-muted transition-colors"
 			aria-label="Mois suivant"
 		>
 			<ChevronRight size={18} class="text-muted-foreground" />

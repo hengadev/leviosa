@@ -34,6 +34,15 @@
         replaceState(url, page.state);
     }
 
+    // Keep the active tab fully visible when the row scrolls sideways.
+    let tabListEl = $state<HTMLElement | null>(null);
+    $effect(() => {
+        if (!activeTab) return;
+        tabListEl
+            ?.querySelector<HTMLElement>("[data-state='active']")
+            ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+    });
+
     let retrying = $state(false);
 
     async function retryLoad() {
@@ -265,12 +274,13 @@
     <div class="max-w-4xl mx-auto">
     <Tabs.Root bind:value={activeTab} onValueChange={selectTab} class="space-y-6">
         <Tabs.List
-            class="flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card p-1"
+            bind:ref={tabListEl}
+            class="flex items-center w-fit max-w-full overflow-x-auto bg-transparent gap-2 text-sm font-semibold border-b border-border-card px-1 py-1"
         >
             {#each tabs as tab (tab.value)}
                 <Tabs.Trigger
                     value={tab.value}
-                    class="px-4 py-2 rounded-none bg-transparent border-b-2 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
+                    class="min-h-11 px-4 py-2 rounded-none bg-transparent border-b-2 data-[state=active]:shadow-none mb-[-2px] data-[state=active]:border-b-foreground data-[state=active]:text-foreground data-[state=inactive]:border-transparent data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:bg-transparent data-[state=inactive]:hover:text-foreground-alt transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
                 >
                     <tab.icon size={16} />
                     <span>{tab.label}</span>

@@ -166,7 +166,7 @@
                     onclick={openCreateDialog}
                 >
                     <div
-                        class="flex gap-2 items-center py-2 px-4 bg-dark text-white rounded-input hover:bg-dark/95 transition-all shadow-mini"
+                        class="flex min-h-11 gap-2 items-center py-2 px-4 bg-dark text-white rounded-input hover:bg-dark/95 transition-all shadow-mini"
                     >
                         <Plus size={18} />
                         <span class="text-sm font-medium"
