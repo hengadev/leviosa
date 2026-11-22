@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
@@ -52,7 +51,8 @@ func (s *OTPService) RequestOTP(ctx context.Context, email string) error {
 	}
 
 	// Generate new OTP
-	otp, err := s.generateOTP(email)
+	ttl := s.otpDuration(ctx)
+	otp, err := s.generateOTP(email, ttl)
 	if err != nil {
 		return errs.NewNotCreatedErr(err, "OTP")
 	}
@@ -68,13 +68,11 @@ func (s *OTPService) RequestOTP(ctx context.Context, email string) error {
 		return errs.NewJSONMarshalErr(err)
 	}
 
-	ttl := time.Duration(defaultOTPDuration) * time.Minute
-
 	if err := s.repo.SaveOTP(ctx, otpEncx.EmailHash, otpData, ttl); err != nil {
 		return fmt.Errorf("save OTP: %w", err)
 	}
 
-	if err := s.notificationSvc.SendOTPEmail(ctx, otp.Email, otp.Code); err != nil {
+	if err := s.notificationSvc.SendOTPEmail(ctx, otp.Email, otp.Code, ttl); err != nil {
 		return fmt.Errorf("send OTP email: %w", err)
 	}
 

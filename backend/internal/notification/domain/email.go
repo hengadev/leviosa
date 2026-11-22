@@ -4,10 +4,12 @@ import "time"
 
 // OTP Email
 type OTPEmailRequest struct {
-	ToEmail   string `json:"to_email"`
-	OTP       string `json:"otp"`
-	FromEmail string `json:"from_email"`
-	LogoURL   string `json:"logo_url"`
+	ToEmail string `json:"to_email"`
+	OTP     string `json:"otp"`
+	// ValidForMinutes is how long the code stays valid; 0 when unknown.
+	ValidForMinutes int    `json:"valid_for_minutes"`
+	FromEmail       string `json:"from_email"`
+	LogoURL         string `json:"logo_url"`
 }
 
 // Welcome Email

@@ -20,9 +20,21 @@ type OTPService struct {
 	crypto          encx.CryptoService
 	cache           ports.OTPCache
 	notificationSvc ports.NotificationService
+	// settings reads the code duration set by an administrator; nil means
+	// defaultOTPDuration.
+	settings ports.OTPSettingsProvider
 }
 
-func New(ctx context.Context, repo ports.OTPRepository, crypto encx.CryptoService, notificationSvc ports.NotificationService) (ports.OTPService, error) {
+// Option configures the OTP service.
+type Option func(*OTPService)
+
+// WithSettingsProvider makes new codes last the duration set in the admin
+// settings instead of defaultOTPDuration.
+func WithSettingsProvider(p ports.OTPSettingsProvider) Option {
+	return func(s *OTPService) { s.settings = p }
+}
+
+func New(ctx context.Context, repo ports.OTPRepository, crypto encx.CryptoService, notificationSvc ports.NotificationService, opts ...Option) (ports.OTPService, error) {
 	// Initialize cache with hardcoded default values
 	cache := domain.NewOTPCache(
 		defaultOTPDuration,
@@ -35,6 +47,9 @@ func New(ctx context.Context, repo ports.OTPRepository, crypto encx.CryptoServic
 		crypto:          crypto,
 		cache:           cache,
 		notificationSvc: notificationSvc,
+	}
+	for _, opt := range opts {
+		opt(otpService)
 	}
 
 	return otpService, nil

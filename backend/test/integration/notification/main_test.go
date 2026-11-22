@@ -138,7 +138,7 @@ func (s *recordingNotificationService) contactNames() []string {
 	return append([]string(nil), s.contacts...)
 }
 
-func (s *recordingNotificationService) SendOTPEmail(context.Context, string, string) error {
+func (s *recordingNotificationService) SendOTPEmail(context.Context, string, string, time.Duration) error {
 	return nil
 }
 func (s *recordingNotificationService) SendWelcomeEmail(context.Context, string, string, string) error {

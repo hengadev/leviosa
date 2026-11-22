@@ -22,7 +22,9 @@ func NewMailService(emailClient ports.EmailService, settingsProvider ports.Setti
 	}
 }
 
-func (s *MailService) SendOTPEmail(ctx context.Context, email, otp string) error {
+// SendOTPEmail sends a verification code; the email states validFor in
+// minutes, rounded up.
+func (s *MailService) SendOTPEmail(ctx context.Context, email, otp string, validFor time.Duration) error {
 	companyEmail, err := s.settingsProvider.GetCompanyEmail(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get company email for OTP: %w", err)
@@ -34,10 +36,11 @@ func (s *MailService) SendOTPEmail(ctx context.Context, email, otp string) error
 	}
 
 	request := domain.OTPEmailRequest{
-		ToEmail:   email,
-		OTP:       otp,
-		FromEmail: companyEmail,
-		LogoURL:   logoURL,
+		ToEmail:         email,
+		OTP:             otp,
+		ValidForMinutes: minutesRoundedUp(validFor),
+		FromEmail:       companyEmail,
+		LogoURL:         logoURL,
 	}
 
 	if err := s.emailClient.SendOTPEmail(ctx, request); err != nil {
@@ -216,4 +219,13 @@ func (s *MailService) SendPaymentNotificationEmail(ctx context.Context, email, f
 	}
 
 	return nil
+}
+
+// minutesRoundedUp is d in whole minutes, rounded up; 0 for a zero or
+// negative d (the email then says "quelques minutes").
+func minutesRoundedUp(d time.Duration) int {
+	if d <= 0 {
+		return 0
+	}
+	return int((d + time.Minute - 1) / time.Minute)
 }

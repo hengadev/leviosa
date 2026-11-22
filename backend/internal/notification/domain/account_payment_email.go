@@ -21,20 +21,24 @@ const (
 
 // OTPEmailData is the data of the login code email.
 type OTPEmailData struct {
-	OTP  string
-	Year int
+	OTP string
+	// ValidForMinutes is stated in the email; 0 says "quelques minutes".
+	ValidForMinutes int
+	Year            int
 }
 
 // ComposeOTPEmail builds the login code email (French), sent for a password
 // reset, an email check and a guest claim: its wording fits all three. It
-// states no expiry duration, which the email does not know.
+// states how long the code stays valid (the duration set in the admin
+// settings).
 func ComposeOTPEmail(req OTPEmailRequest, now time.Time) ComposedEmail {
 	return ComposedEmail{
 		Subject:  "Votre code de vérification Leviosa",
 		Template: OTPTemplate,
 		Data: OTPEmailData{
-			OTP:  req.OTP,
-			Year: now.Year(),
+			OTP:             req.OTP,
+			ValidForMinutes: req.ValidForMinutes,
+			Year:            now.Year(),
 		},
 	}
 }

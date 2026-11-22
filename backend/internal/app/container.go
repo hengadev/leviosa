@@ -79,6 +79,7 @@ import (
 	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
 	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
 	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
+	authuserSettings "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/settings"
 	bookingSettings "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/settings"
 	bookingStripe "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/stripe"
 
@@ -469,7 +470,9 @@ func (c *Container) setupServices(ctx context.Context) error {
 	)
 
 	// OTP service — requires notification service for in-process email delivery
-	c.OTPService, err = otpSvc.New(ctx, c.OTPRepo, c.Crypto, c.NotificationService)
+	// New codes last the duration set in the admin settings, read on each code.
+	c.OTPService, err = otpSvc.New(ctx, c.OTPRepo, c.Crypto, c.NotificationService,
+		otpSvc.WithSettingsProvider(authuserSettings.NewInProcessOTPSettingsProvider(c.SettingsService)))
 	if err != nil {
 		return fmt.Errorf("create otp service: %w", err)
 	}

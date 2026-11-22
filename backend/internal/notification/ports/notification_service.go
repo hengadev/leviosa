@@ -1,11 +1,14 @@
 package ports
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // NotificationService defines the public interface for the notification module
 type NotificationService interface {
 	// Email methods with explicit parameters (no User struct dependency)
-	SendOTPEmail(ctx context.Context, email, otp string) error
+	SendOTPEmail(ctx context.Context, email, otp string, validFor time.Duration) error
 	SendWelcomeEmail(ctx context.Context, email, firstName, lastName string) error
 	SendVerifyEmailEmail(ctx context.Context, email, firstName, lastName string) error
 	SendEventNotificationEmail(ctx context.Context, email, firstName, lastName, eventName, eventDetails string) error

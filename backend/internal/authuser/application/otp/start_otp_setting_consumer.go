@@ -25,7 +25,9 @@ const (
 // StartOTPSettingConsumer starts consuming OTP settings update messages from RabbitMQ.
 //
 // IMPORTANT: This consumer is currently NOT called during service initialization (see New() in service.go).
-// OTP settings are hardcoded as constants for production reliability and simplicity.
+// The code duration is read from the settings module on each new code instead
+// (WithSettingsProvider, otp_duration.go); the code length and max attempts
+// are still the constants in service.go.
 //
 // This infrastructure is preserved for potential future migration to a microservices architecture
 // where dynamic runtime configuration updates may be needed.

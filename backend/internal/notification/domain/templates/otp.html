@@ -42,7 +42,7 @@
                   <div style="background-color: #f4f4f4; border-radius: 6px; padding: 20px; margin: 30px 0; text-align: center;">
                     <div style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: bold; color: #1e1e1e; letter-spacing: 5px;">{{ .OTP }}</div>
                     <p style="font-size: 13px; color: #888888; margin: 10px 0 0;">
-                      Ce code n'est valable que quelques minutes. Ne le communiquez à personne.
+                      {{ if eq .ValidForMinutes 1 }}Ce code est valable 1 minute.{{ else if .ValidForMinutes }}Ce code est valable {{ .ValidForMinutes }} minutes.{{ else }}Ce code n'est valable que quelques minutes.{{ end }} Ne le communiquez à personne.
                     </p>
                   </div>
 

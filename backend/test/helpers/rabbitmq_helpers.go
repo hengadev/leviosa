@@ -25,8 +25,9 @@ type MockNotificationService struct {
 
 // OTPEmailCall records a single SendOTPEmail invocation.
 type OTPEmailCall struct {
-	Email string
-	OTP   string
+	Email    string
+	OTP      string
+	ValidFor time.Duration
 }
 
 // NewMockNotificationService creates a new mock notification service.
@@ -34,10 +35,10 @@ func NewMockNotificationService() *MockNotificationService {
 	return &MockNotificationService{}
 }
 
-func (m *MockNotificationService) SendOTPEmail(_ context.Context, email, otp string) error {
+func (m *MockNotificationService) SendOTPEmail(_ context.Context, email, otp string, validFor time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.calls = append(m.calls, OTPEmailCall{Email: email, OTP: otp})
+	m.calls = append(m.calls, OTPEmailCall{Email: email, OTP: otp, ValidFor: validFor})
 	return nil
 }
 

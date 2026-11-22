@@ -117,7 +117,7 @@ func TestGenerateOTP(t *testing.T) {
 		email := "test@example.com"
 		startTime := time.Now()
 
-		otp, err := s.generateOTP(email)
+		otp, err := s.generateOTP(email, 10*time.Minute)
 		require.NoError(t, err)
 		require.NotNil(t, otp)
 
@@ -142,7 +142,7 @@ func TestGenerateOTP(t *testing.T) {
 		codes := make(map[string]bool)
 
 		for i := 0; i < 10; i++ {
-			otp, err := s.generateOTP(email)
+			otp, err := s.generateOTP(email, 10*time.Minute)
 			require.NoError(t, err)
 			codes[otp.Code] = true
 		}
@@ -158,7 +158,7 @@ func TestGenerateOTP(t *testing.T) {
 		}
 
 		for _, email := range emails {
-			otp, err := s.generateOTP(email)
+			otp, err := s.generateOTP(email, 10*time.Minute)
 			require.NoError(t, err, "Should generate OTP for email: %s", email)
 			assert.Equal(t, email, otp.Email)
 			assert.NotEmpty(t, otp.Code)
@@ -166,7 +166,7 @@ func TestGenerateOTP(t *testing.T) {
 	})
 
 	t.Run("should handle empty email", func(t *testing.T) {
-		otp, err := s.generateOTP("")
+		otp, err := s.generateOTP("", 10*time.Minute)
 		require.NoError(t, err)
 		assert.Equal(t, "", otp.Email)
 		assert.NotEmpty(t, otp.Code)
@@ -175,20 +175,20 @@ func TestGenerateOTP(t *testing.T) {
 	t.Run("should ignore the cache's OTP length and duration", func(t *testing.T) {
 		s.cache = NewMockOTPCache(8, 30, 3)
 
-		otp, err := s.generateOTP("test@example.com")
+		otp, err := s.generateOTP("test@example.com", 10*time.Minute)
 		require.NoError(t, err)
 		assert.Len(t, otp.Code, defaultOTPLength)
 		assert.Equal(t, otp.CreatedAt.Add(defaultOTPDuration*time.Minute), otp.ExpiresAt)
 	})
 
 	t.Run("should initialize attempts to zero", func(t *testing.T) {
-		otp, err := s.generateOTP("test@example.com")
+		otp, err := s.generateOTP("test@example.com", 10*time.Minute)
 		require.NoError(t, err)
 		assert.Equal(t, 0, otp.Attempts, "Attempts should be initialized to 0")
 	})
 
 	t.Run("should set CreatedAt before ExpiresAt", func(t *testing.T) {
-		otp, err := s.generateOTP("test@example.com")
+		otp, err := s.generateOTP("test@example.com", 10*time.Minute)
 		require.NoError(t, err)
 		assert.True(t, otp.CreatedAt.Before(otp.ExpiresAt), "CreatedAt should be before ExpiresAt")
 	})
@@ -202,7 +202,7 @@ func TestGenerateOTP_EdgeCases(t *testing.T) {
 	t.Run("should handle very long email addresses", func(t *testing.T) {
 		longEmail := strings.Repeat("a", 100) + "@" + strings.Repeat("example", 20) + ".com"
 
-		otp, err := s.generateOTP(longEmail)
+		otp, err := s.generateOTP(longEmail, 10*time.Minute)
 		require.NoError(t, err)
 		assert.Equal(t, longEmail, otp.Email)
 		assert.NotEmpty(t, otp.Code)
@@ -211,7 +211,7 @@ func TestGenerateOTP_EdgeCases(t *testing.T) {
 	t.Run("should handle special characters in email", func(t *testing.T) {
 		specialEmail := "test+tag@example-domain.co.uk"
 
-		otp, err := s.generateOTP(specialEmail)
+		otp, err := s.generateOTP(specialEmail, 10*time.Minute)
 		require.NoError(t, err)
 		assert.Equal(t, specialEmail, otp.Email)
 		assert.NotEmpty(t, otp.Code)

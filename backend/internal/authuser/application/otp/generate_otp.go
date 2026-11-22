@@ -9,7 +9,7 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 )
 
-func (s *OTPService) generateOTP(email string) (*domain.OTP, error) {
+func (s *OTPService) generateOTP(email string, duration time.Duration) (*domain.OTP, error) {
 	length := s.effectiveOTPLength()
 
 	code, err := s.generateSecureCode(length)
@@ -18,7 +18,6 @@ func (s *OTPService) generateOTP(email string) (*domain.OTP, error) {
 	}
 
 	now := time.Now()
-	duration := time.Duration(defaultOTPDuration) * time.Minute
 
 	return &domain.OTP{Email: email,
 		Code:      code,

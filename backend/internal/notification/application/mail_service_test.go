@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
 	"github.com/Leviosa-care/leviosa/backend/internal/notification/ports"
@@ -151,11 +152,13 @@ func (s *stubSettingsService) GetMedia(ctx context.Context, key, rangeHeader str
 type fakeEmailClient struct {
 	lastContactForm domain.ContactFormRequest
 	contactFormErr  error
+	lastOTP         domain.OTPEmailRequest
 }
 
 var _ ports.EmailService = (*fakeEmailClient)(nil)
 
 func (f *fakeEmailClient) SendOTPEmail(ctx context.Context, req domain.OTPEmailRequest) error {
+	f.lastOTP = req
 	return nil
 }
 func (f *fakeEmailClient) SendWelcomeEmail(ctx context.Context, req domain.WelcomeEmailRequest) error {
@@ -282,4 +285,30 @@ func (s *stubSettingsService) GetPracticeAccess(ctx context.Context) (*settingsD
 }
 func (s *stubSettingsService) SetPracticeAccess(ctx context.Context, req *settingsDomain.SetPracticeAccessRequest) (*settingsDomain.SetPracticeAccessResponse, error) {
 	return nil, nil
+}
+
+// The verification code email states how long the code stays valid, in whole
+// minutes rounded up (a resent code has a partial minute left).
+func TestMailService_SendOTPEmail_StatesTheDuration(t *testing.T) {
+	tests := []struct {
+		validFor time.Duration
+		want     int
+	}{
+		{10 * time.Minute, 10},
+		{4*time.Minute + time.Second, 5},
+		{30 * time.Second, 1},
+		{0, 0},
+		{-time.Second, 0},
+	}
+	for _, tt := range tests {
+		emailClient := &fakeEmailClient{}
+		mailService := NewMailService(emailClient, NewSettingsProvider(&stubSettingsService{email: "staff@leviosa.care"}))
+
+		if err := mailService.SendOTPEmail(context.Background(), "user@example.com", "428193", tt.validFor); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if got := emailClient.lastOTP.ValidForMinutes; got != tt.want {
+			t.Errorf("validFor %s: ValidForMinutes = %d, want %d", tt.validFor, got, tt.want)
+		}
+	}
 }

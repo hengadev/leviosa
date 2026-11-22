@@ -24,7 +24,7 @@ func assertFinished(t *testing.T, body string) {
 
 func TestComposeOTPEmail(t *testing.T) {
 	email := ComposeOTPEmail(OTPEmailRequest{
-		ToEmail: "client@example.com", OTP: "428193", FromEmail: "contact@leviosa.test", LogoURL: "https://leviosa.test/logo.png",
+		ToEmail: "client@example.com", OTP: "428193", ValidForMinutes: 5, FromEmail: "contact@leviosa.test", LogoURL: "https://leviosa.test/logo.png",
 	}, composeNow)
 
 	if email.Subject != "Votre code de vérification Leviosa" {
@@ -33,7 +33,7 @@ func TestComposeOTPEmail(t *testing.T) {
 	if email.Template != "otp" {
 		t.Errorf("template = %q", email.Template)
 	}
-	want := OTPEmailData{OTP: "428193", Year: 2026}
+	want := OTPEmailData{OTP: "428193", ValidForMinutes: 5, Year: 2026}
 	if got, ok := email.Data.(OTPEmailData); !ok || got != want {
 		t.Errorf("data = %+v, want %+v", email.Data, want)
 	}
@@ -44,21 +44,28 @@ func TestComposeOTPEmail(t *testing.T) {
 
 // The template must execute with the data it is given: a field it reads that
 // the data lacks once made every login code email fail to render. Its wording
-// fits a password reset, an email check and a guest claim, and states no
-// expiry duration, which the email does not know.
+// fits a password reset, an email check and a guest claim, and states how
+// long the code stays valid when it is known.
 func TestComposeOTPEmail_Renders(t *testing.T) {
-	email := ComposeOTPEmail(OTPEmailRequest{ToEmail: "client@example.com", OTP: "428193"}, composeNow)
-	html, err := RenderEmailTemplate(email.Template, email.Data)
-	if err != nil {
-		t.Fatalf("render: %v", err)
+	tests := []struct {
+		minutes int
+		want    string
+	}{
+		{10, "Ce code est valable 10 minutes."},
+		{1, "Ce code est valable 1 minute."},
+		{0, "Ce code n'est valable que quelques minutes."},
 	}
-	for _, want := range []string{"428193", "Votre code de vérification", "quelques minutes"} {
-		assertContains(t, html, want)
+	for _, tt := range tests {
+		email := ComposeOTPEmail(OTPEmailRequest{ToEmail: "client@example.com", OTP: "428193", ValidForMinutes: tt.minutes}, composeNow)
+		html, err := RenderEmailTemplate(email.Template, email.Data)
+		if err != nil {
+			t.Fatalf("render: %v", err)
+		}
+		for _, want := range []string{"428193", "Votre code de vérification", tt.want} {
+			assertContains(t, html, want)
+		}
+		assertFinished(t, html)
 	}
-	if strings.Contains(html, "15 minutes") {
-		t.Error("the email states an expiry duration")
-	}
-	assertFinished(t, html)
 }
 
 func testPaymentNotificationRequest() PaymentNotificationRequest {

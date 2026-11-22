@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 
@@ -62,7 +63,7 @@ func (s *OTPService) ResendOTP(ctx context.Context, email string) error {
 		return errs.NewRateLimitErr(errors.New("maximum attempts exceeded"), "OTP")
 	}
 
-	if err := s.notificationSvc.SendOTPEmail(ctx, email, existingOTP.Code); err != nil {
+	if err := s.notificationSvc.SendOTPEmail(ctx, email, existingOTP.Code, time.Until(existingOTP.ExpiresAt)); err != nil {
 		return fmt.Errorf("send OTP email: %w", err)
 	}
 

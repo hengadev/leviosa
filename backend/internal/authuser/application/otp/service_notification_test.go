@@ -27,12 +27,13 @@ type mockNotifier struct {
 }
 
 type notifyCall struct {
-	Email string
-	OTP   string
+	Email    string
+	OTP      string
+	ValidFor time.Duration
 }
 
-func (m *mockNotifier) SendOTPEmail(_ context.Context, email, otp string) error {
-	m.calls = append(m.calls, notifyCall{Email: email, OTP: otp})
+func (m *mockNotifier) SendOTPEmail(_ context.Context, email, otp string, validFor time.Duration) error {
+	m.calls = append(m.calls, notifyCall{Email: email, OTP: otp, ValidFor: validFor})
 	return m.err
 }
 
@@ -52,10 +53,10 @@ func newTestCrypto(t *testing.T) encx.CryptoService {
 	return &testCrypto{key: key}
 }
 
-func (c *testCrypto) GetPepper() []byte                                          { return nil }
-func (c *testCrypto) GetArgon2Params() *encx.Argon2Params                         { return nil }
-func (c *testCrypto) GetAlias() string                                            { return "test" }
-func (c *testCrypto) RotateKEK(_ context.Context) error                           { return nil }
+func (c *testCrypto) GetPepper() []byte                   { return nil }
+func (c *testCrypto) GetArgon2Params() *encx.Argon2Params { return nil }
+func (c *testCrypto) GetAlias() string                    { return "test" }
+func (c *testCrypto) RotateKEK(_ context.Context) error   { return nil }
 func (c *testCrypto) CompareSecureHashAndValue(_ context.Context, _ any, _ string) (bool, error) {
 	return false, nil
 }
@@ -233,14 +234,17 @@ func TestCreateOTP_CallsNotificationService(t *testing.T) {
 
 type inMemRepo struct {
 	data map[string][]byte
+	// lastTTL is the TTL of the last SaveOTP.
+	lastTTL time.Duration
 }
 
 func newInMemRepo() *inMemRepo {
 	return &inMemRepo{data: make(map[string][]byte)}
 }
 
-func (r *inMemRepo) SaveOTP(_ context.Context, key string, value []byte, _ time.Duration) error {
+func (r *inMemRepo) SaveOTP(_ context.Context, key string, value []byte, ttl time.Duration) error {
 	r.data[key] = value
+	r.lastTTL = ttl
 	return nil
 }
 

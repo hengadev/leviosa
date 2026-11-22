@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/notification/ports"
 )
@@ -27,8 +28,8 @@ func NewNotificationService(
 }
 
 // Email methods - delegate to MailService
-func (n *NotificationService) SendOTPEmail(ctx context.Context, email, otp string) error {
-	return n.mailService.SendOTPEmail(ctx, email, otp)
+func (n *NotificationService) SendOTPEmail(ctx context.Context, email, otp string, validFor time.Duration) error {
+	return n.mailService.SendOTPEmail(ctx, email, otp, validFor)
 }
 
 func (n *NotificationService) SendWelcomeEmail(ctx context.Context, email, firstName, lastName string) error {

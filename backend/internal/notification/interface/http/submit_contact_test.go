@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/common/ctxutil"
 )
@@ -26,7 +27,7 @@ type fakeNotificationService struct {
 	returnErr  error
 }
 
-func (f *fakeNotificationService) SendOTPEmail(ctx context.Context, email, otp string) error {
+func (f *fakeNotificationService) SendOTPEmail(ctx context.Context, email, otp string, validFor time.Duration) error {
 	return nil
 }
 func (f *fakeNotificationService) SendWelcomeEmail(ctx context.Context, email, firstName, lastName string) error {
