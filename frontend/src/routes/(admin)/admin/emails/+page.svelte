@@ -19,6 +19,20 @@
 	const selected = $derived(data.entries.find((e) => e.id === data.selectedId) ?? null);
 	const singleLocale = $derived(selected !== null && selected.locales.length < 2);
 
+	// Fits the frame to the email, so a short email leaves no blank area and
+	// a long one has no scroll of its own. Keeps the CSS height if the email
+	// can't be measured.
+	function fitToContent(event: Event) {
+		const frame = event.currentTarget as HTMLIFrameElement;
+		const doc = frame.contentDocument;
+		if (!doc) return;
+		// Measured from a zero height: otherwise the document is at least as
+		// tall as the frame and a short email never shrinks it.
+		frame.style.height = "0px";
+		const height = doc.documentElement.scrollHeight;
+		frame.style.height = height ? `${height}px` : "";
+	}
+
 	const href = (id: string, lang: EmailLocale) =>
 		`?email=${encodeURIComponent(id)}&lang=${lang}`;
 </script>
@@ -115,10 +129,13 @@
 						{/if}
 					</div>
 
+					<!-- No allow-scripts: nothing in the email can run. allow-same-origin
+					     only lets this page read the email's height to fit the frame. -->
 					<iframe
 						title="Aperçu de l'email : {data.preview.subject}"
 						srcdoc={data.preview.html}
-						sandbox="allow-popups allow-popups-to-escape-sandbox"
+						sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+						onload={fitToContent}
 						class="block w-full h-[1400px] rounded-lg border border-border bg-white"
 					></iframe>
 				{/if}
