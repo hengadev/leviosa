@@ -260,25 +260,25 @@
 			</div>
 		</div>
 	{:else if !data.profile}
-		<div class="bg-tertiary/10 border border-tertiary/30 rounded-lg p-6 mb-6">
+		<div class="bg-muted border border-border rounded-lg p-6 mb-6">
 			<div class="flex items-center gap-3">
-				<AlertCircle class="text-tertiary" size={20} />
+				<AlertCircle class="text-foreground" size={20} />
 				<div>
-					<h2 class="font-semibold text-tertiary">Profil non disponible</h2>
-					<p class="text-sm text-tertiary">Votre profil n'a pas pu être chargé. Veuillez réessayer.</p>
+					<h2 class="font-semibold text-foreground">Profil non disponible</h2>
+					<p class="text-sm text-foreground">Votre profil n'a pas pu être chargé. Veuillez réessayer.</p>
 				</div>
 			</div>
 		</div>
 	{:else}
 
 	{#if needsStripeOnboarding}
-		<div class="bg-tertiary/10 border border-tertiary/30 rounded-lg p-6 mb-6">
+		<div class="bg-muted border border-border rounded-lg p-6 mb-6">
 			<div class="flex flex-col sm:flex-row items-start gap-4">
 				<div class="flex items-center gap-3 flex-1">
-					<CreditCard class="text-tertiary flex-shrink-0" size={22} />
+					<CreditCard class="text-foreground flex-shrink-0" size={22} />
 					<div>
-						<h2 class="font-semibold text-tertiary">Configuration Stripe requise</h2>
-						<p class="text-sm text-tertiary mt-1">
+						<h2 class="font-semibold text-foreground">Configuration Stripe requise</h2>
+						<p class="text-sm text-foreground mt-1">
 							{data.stripeCallback === 'refresh'
 								? 'Le lien précédent a expiré. Veuillez générer un nouveau lien pour poursuivre la configuration de votre compte Stripe.'
 								: 'Pour recevoir vos paiements, vous devez configurer votre compte Stripe en complétant les informations bancaires et d\'identité.'}
@@ -286,7 +286,7 @@
 					</div>
 				</div>
 				<button
-					class="flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-tertiary text-contrast hover:bg-tertiary/90 transition-colors disabled:opacity-50 flex-shrink-0"
+					class="flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors disabled:opacity-50 flex-shrink-0"
 					onclick={startStripeOnboarding}
 					disabled={stripeLoading}
 				>
@@ -318,7 +318,7 @@
 					</h2>
 					{#if data.profile.isVerified}
 						<span
-							class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full"
+							class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-muted text-foreground rounded-full"
 						>
 							<BadgeCheck size={13} />
 							Vérifié
@@ -659,8 +659,8 @@
 						<span class="text-sm text-muted-foreground">Vérification</span>
 						<span
 							class="text-xs font-medium px-2 py-1 rounded-full {data.profile.isVerified
-								? 'bg-green-100 text-green-700'
-								: 'bg-yellow-100 text-yellow-700'}"
+								? 'bg-muted text-foreground'
+								: 'bg-muted text-foreground'}"
 						>
 							{data.profile.isVerified ? 'Vérifié' : 'En attente'}
 						</span>
@@ -669,8 +669,8 @@
 						<span class="text-sm text-muted-foreground">Paiements Stripe</span>
 						<span
 							class="text-xs font-medium px-2 py-1 rounded-full {data.profile.stripeOnboardingComplete
-								? 'bg-green-100 text-green-700'
-								: 'bg-yellow-100 text-yellow-700'}"
+								? 'bg-muted text-foreground'
+								: 'bg-muted text-foreground'}"
 						>
 							{data.profile.stripeOnboardingComplete ? 'Actif' : 'À configurer'}
 						</span>
@@ -696,7 +696,7 @@
 							</svg>
 							<span class="text-sm text-muted-foreground">Google</span>
 							{#if linkedProviders.google}
-								<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Lié</span>
+								<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-foreground">Lié</span>
 							{/if}
 						</div>
 						{#if linkedProviders.google}
@@ -728,7 +728,7 @@
 							</svg>
 							<span class="text-sm text-muted-foreground">Apple</span>
 							{#if linkedProviders.apple}
-								<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700">Lié</span>
+								<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-muted text-foreground">Lié</span>
 							{/if}
 						</div>
 						{#if linkedProviders.apple}

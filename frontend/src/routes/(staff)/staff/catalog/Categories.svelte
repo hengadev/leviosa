@@ -205,10 +205,10 @@
                                 <span
                                     class="px-2 py-1 text-xs font-medium rounded-md {category.status ===
                                     'published'
-                                        ? 'bg-green-100 text-green-800'
+                                        ? 'bg-muted text-foreground'
                                         : category.status === 'draft'
-                                          ? 'bg-yellow-100 text-yellow-800'
-                                          : 'bg-gray-100 text-gray-800'}"
+                                          ? 'bg-muted text-foreground'
+                                          : 'bg-muted text-muted-foreground'}"
                                 >
                                     {category.status === "published"
                                         ? "Publié"

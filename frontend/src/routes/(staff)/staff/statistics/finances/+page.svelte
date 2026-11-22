@@ -30,10 +30,10 @@
 
 	function paymentStatusBadge(status: string): string {
 		switch (status) {
-			case 'paid': return 'bg-green-100 text-green-700';
-			case 'pending': return 'bg-yellow-100 text-yellow-700';
-			case 'refunded': return 'bg-red-100 text-red-700';
-			default: return 'bg-gray-100 text-gray-700';
+			case 'paid': return 'bg-muted text-foreground';
+			case 'pending': return 'bg-muted text-foreground';
+			case 'refunded': return 'bg-muted text-muted-foreground';
+			default: return 'bg-muted text-muted-foreground';
 		}
 	}
 
@@ -48,11 +48,11 @@
 
 	function bookingStatusBadge(status: string): string {
 		switch (status) {
-			case 'completed': return 'bg-green-100 text-green-700';
-			case 'confirmed': return 'bg-blue-100 text-blue-700';
-			case 'cancelled': return 'bg-red-100 text-red-700';
-			case 'no_show': return 'bg-yellow-100 text-yellow-700';
-			default: return 'bg-gray-100 text-gray-700';
+			case 'completed': return 'bg-muted text-foreground';
+			case 'confirmed': return 'bg-muted text-foreground';
+			case 'cancelled': return 'bg-muted text-muted-foreground';
+			case 'no_show': return 'bg-muted text-foreground';
+			default: return 'bg-muted text-muted-foreground';
 		}
 	}
 
@@ -256,13 +256,13 @@
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-green-100 rounded-lg">
-						<Banknote size={22} class="text-green-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Banknote size={22} class="text-foreground" />
 					</div>
 					<span
 						class="text-xs font-medium px-2 py-1 rounded-full {growthPct >= 0
-							? 'bg-green-100 text-green-700'
-							: 'bg-red-100 text-red-700'}"
+							? 'bg-muted text-foreground'
+							: 'bg-muted text-muted-foreground'}"
 					>
 						{growthPct >= 0 ? '+' : ''}{growthPct}%
 					</span>
@@ -275,8 +275,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-blue-100 rounded-lg">
-						<TrendingUp size={22} class="text-blue-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<TrendingUp size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">Mois précédent</span>
 				</div>
@@ -288,8 +288,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-yellow-100 rounded-lg">
-						<Clock size={22} class="text-yellow-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Clock size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">En cours</span>
 				</div>
@@ -301,8 +301,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-purple-100 rounded-lg">
-						<ArrowDownToLine size={22} class="text-purple-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<ArrowDownToLine size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">
 						{formatDate(data.summary.nextPayoutDate)}
@@ -387,7 +387,7 @@
 										</td>
 										<td class="py-3 px-6 text-right">
 											<span class="text-sm font-medium {tx.paymentStatus === 'refunded'
-												? 'text-red-600'
+												? 'text-muted-foreground'
 												: 'text-foreground'}">
 												{tx.paymentStatus === 'refunded' ? '-' : ''}{formatCents(tx.amountCents)}
 											</span>
