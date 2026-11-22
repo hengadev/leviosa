@@ -154,3 +154,25 @@ func TestFoldICSLine_MultiByteBoundary(t *testing.T) {
 		t.Error("short lines are not folded")
 	}
 }
+
+func TestComposeBookingConfirmation_CalendarHasNoPracticeAccess(t *testing.T) {
+	for _, locale := range []Locale{LocaleFR, LocaleEN} {
+		req := testConfirmationRequest(locale)
+		req.DoorCode = "4821B"
+		req.AccessInstructions = "Sonnez à l'interphone.\n2e étage, porte de gauche."
+		email := ComposeBookingConfirmation(req, composeNow)
+
+		ics := unfold(string(email.Attachments[0].Data))
+		for _, private := range []string{"4821B", "interphone", "porte de gauche"} {
+			if strings.Contains(ics, private) {
+				t.Errorf("%s: the calendar file must not contain %q", locale, private)
+			}
+		}
+		if got := icsProperty(t, ics, "LOCATION"); got != `12 rue de la Paix\, 75002 Paris` {
+			t.Errorf("%s: LOCATION = %q, want the address", locale, got)
+		}
+		if got := icsProperty(t, ics, "DESCRIPTION"); !strings.HasSuffix(got, "https://leviosa.test/bookings?token=abc") {
+			t.Errorf("%s: DESCRIPTION = %q, want the manage link only", locale, got)
+		}
+	}
+}
