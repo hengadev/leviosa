@@ -27,16 +27,9 @@ const minimumNextWorkingDayLookAhead = 60
 // appointment bookings (the same shape as the partner bookings list). The
 // date is empty when no day is worked within the look-ahead.
 func (s *BookingService) GetPartnerNextWorkingDay(ctx context.Context, partnerID uuid.UUID) (*domain.PartnerNextWorkingDayResponse, error) {
-	if s.authUserClient == nil {
-		return nil, fmt.Errorf("get next working day: no authuser client configured")
-	}
-	partnerUserID, err := s.authUserClient.GetPartnerUserID(ctx, partnerID)
-	if err != nil {
-		if errors.Is(err, errs.ErrRepositoryNotFound) {
-			return nil, fmt.Errorf("partner not found: %w", errs.ErrRepositoryNotFound)
-		}
-		return nil, fmt.Errorf("resolve partner: %w", err)
-	}
+	// partnerID is the practitioner's user ID, as for the partner bookings
+	// list: bookings and availabilities are keyed by it.
+	partnerUserID := partnerID
 
 	policy, err := s.bookingPolicy(ctx)
 	if err != nil {
