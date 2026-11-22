@@ -48,8 +48,8 @@
 		{
 			label: "Administration",
 			items: [
-				{ href: "/admin/settings", label: "Paramètres", icon: Settings },
 				{ href: "/admin/emails", label: "Emails", icon: Mail },
+				{ href: "/admin/settings", label: "Paramètres", icon: Settings },
 			],
 		},
 	];

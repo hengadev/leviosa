@@ -58,7 +58,7 @@
 				{#each groups as group (group.audience)}
 					{@const items = data.entries.filter((e) => e.audience === group.audience)}
 					{#if items.length > 0}
-						<h2 class="px-2 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+						<h2 class="px-2 pt-3 pb-1.5 mb-1 border-b border-border text-sm font-bold text-foreground">
 							{group.label}
 						</h2>
 						<ul class="mb-2 space-y-0.5">
