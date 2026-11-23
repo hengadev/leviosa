@@ -1,6 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { redirect, isRedirect } from '@sveltejs/kit';
 import * as env from '$app/env/private';
+import { onSitePayment, type OnSitePayment } from '#lib/onSitePayment.ts';
 
 export interface Booking {
 	id: string;
@@ -18,6 +19,8 @@ export interface Booking {
 	/** When the booking was closed, if it was (completed or no-show). */
 	completedAt?: string;
 	noShowAt?: string;
+	/** The payment state and the on-site payment ("Reste payé · N €"). */
+	onSite: OnSitePayment;
 }
 
 export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
@@ -53,6 +56,7 @@ export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 			return { bookings: [], statusFilter };
 		}
 
+		const now = new Date();
 		const bookings: Booking[] = data.map((booking: any) => {
 			return {
 				id: booking.id,
@@ -67,7 +71,18 @@ export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 				currency: booking.currency || 'EUR',
 				practitionerRefundCents: booking.practitioner_refund_cents || 0,
 				completedAt: booking.completed_at ?? undefined,
-				noShowAt: booking.no_show_at ?? undefined
+				noShowAt: booking.no_show_at ?? undefined,
+				onSite: onSitePayment(
+					{
+						status: booking.status || 'confirmed',
+						payment_status: booking.payment_status || 'pending',
+						amount_paid_online_cents: booking.amount_paid_online_cents,
+						amount_due_on_site_cents: booking.amount_due_on_site_cents,
+						amount_paid_on_site_cents: booking.amount_paid_on_site_cents,
+						paid_on_site_at: booking.paid_on_site_at
+					},
+					now
+				)
 			};
 		});
 
