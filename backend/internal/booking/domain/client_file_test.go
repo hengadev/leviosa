@@ -108,19 +108,38 @@ func TestGroupClientBookings(t *testing.T) {
 }
 
 func TestSearchClientSummaries(t *testing.T) {
+	accountID := uuid.MustParse("11111111-1111-1111-1111-111111111111")
 	groups := []ClientGroup{
-		{Key: "client:a", Name: "Jean Dupont", Phone: "+33612345678", Email: "jean@example.com"},
+		{Key: "client:a", ClientID: &accountID, Name: "Jean Dupont", Phone: "+33612345678", Email: "jean@example.com"},
 		{Key: "client:b", Name: "Marie Martin", Phone: "+33798765432", Email: "marie@example.com"},
+		{Key: "phone:+33699887766", FirstName: "Léa", LastName: "Bernard", Name: "Léa Bernard", Phone: "+33699887766"},
 	}
 
 	t.Run("empty query returns all clients", func(t *testing.T) {
-		assert.Len(t, SearchClientSummaries(groups, ""), 2)
+		assert.Len(t, SearchClientSummaries(groups, ""), 3)
 	})
 
 	t.Run("name fragment, case-insensitive", func(t *testing.T) {
 		clients := SearchClientSummaries(groups, "marie")
 		require.Len(t, clients, 1)
 		assert.Equal(t, "Marie Martin", clients[0].Name)
+	})
+
+	t.Run("an account carries its client id and a split name", func(t *testing.T) {
+		clients := SearchClientSummaries(groups, "dupont")
+		require.Len(t, clients, 1)
+		assert.Equal(t, &accountID, clients[0].ClientID)
+		assert.Equal(t, "Jean", clients[0].FirstName)
+		assert.Equal(t, "Dupont", clients[0].LastName)
+	})
+
+	t.Run("a guest carries the bookings' guest name and no client id", func(t *testing.T) {
+		clients := SearchClientSummaries(groups, "bernard")
+		require.Len(t, clients, 1)
+		assert.Nil(t, clients[0].ClientID)
+		assert.Equal(t, "Léa", clients[0].FirstName)
+		assert.Equal(t, "Bernard", clients[0].LastName)
+		assert.Equal(t, "+33699887766", clients[0].Phone)
 	})
 
 	t.Run("phone fragment matches ignoring separators", func(t *testing.T) {
