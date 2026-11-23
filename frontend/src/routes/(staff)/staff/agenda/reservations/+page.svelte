@@ -403,7 +403,7 @@
 						<p class="hidden sm:block font-semibold text-foreground tabular-nums">{formatCents(booking.amountInCents)}</p>
 						{#if isCancellable(booking)}
 							<button
-								class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
+								class="inline-flex h-11 sm:h-8 items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium bg-red-50 text-red-700 border border-red-200 rounded-md hover:bg-red-100 transition-colors"
 								onclick={() => openCancelDialog(booking)}
 							>
 								<Ban size={13} />
@@ -413,7 +413,7 @@
 						{#if isActionable(booking)}
 							<div class="flex gap-2">
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+									class="inline-flex h-11 sm:h-8 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
 									title="Marquer comme terminé"
 									onclick={() => completeBooking(booking.id)}
 									disabled={actionLoading[booking.id + '_complete']}
@@ -422,7 +422,7 @@
 									{actionLoading[booking.id + '_complete'] ? '…' : 'Terminer'}
 								</button>
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border text-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+									class="inline-flex h-11 sm:h-8 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium border border-border text-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 									title="Marquer absent"
 									onclick={() => markNoShow(booking.id)}
 									disabled={actionLoading[booking.id + '_noshow']}
@@ -434,7 +434,7 @@
 						{/if}
 						{#if canRecordOnSite(booking)}
 							<button
-								class="inline-flex h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 text-sm font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+								class="inline-flex h-11 sm:h-8 items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
 								onclick={() => runOnSitePayment(booking.id, 'record')}
 								disabled={actionLoading[booking.id + '_onsite']}
 							>
@@ -442,7 +442,7 @@
 							</button>
 						{:else if booking.onSite.recorded && booking.onSite.undoable}
 							<button
-								class="inline-flex h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 text-sm font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+								class="inline-flex h-11 sm:h-8 items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 								aria-label="Annuler le paiement sur place"
 								title="Annuler le paiement sur place"
 								onclick={() => runOnSitePayment(booking.id, 'undo')}
@@ -454,7 +454,7 @@
 						{/if}
 						{#if isReopenable(booking)}
 							<button
-								class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+								class="inline-flex h-11 sm:h-8 items-center justify-center gap-1.5 px-4 sm:px-3 text-sm sm:text-xs font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 								title="Remettre la séance en confirmée"
 								onclick={() => reopenBooking(booking.id)}
 								disabled={actionLoading[booking.id + '_reopen']}
