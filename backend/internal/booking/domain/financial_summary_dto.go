@@ -19,7 +19,11 @@ type FinancialSummary struct {
 	GrossRevenueCents int `json:"gross_revenue_cents"`
 	RefundsCents      int `json:"refunds_cents"`
 	DisputedCents     int `json:"disputed_cents"`
-	NetRevenueCents   int `json:"net_revenue_cents"`
+	// OnSiteCents is what clients paid at the practice (recorded by the
+	// practitioner, issue 039) in the period, counted on the day each
+	// payment was recorded. It is already part of Gross/NetRevenueCents.
+	OnSiteCents     int `json:"on_site_cents"`
+	NetRevenueCents int `json:"net_revenue_cents"`
 }
 
 // FinancialTransaction is a single row in the financial transactions list.
@@ -34,9 +38,29 @@ type FinancialTransaction struct {
 	// AmountCents is what the client paid online (the deposit when there is one).
 	AmountCents int `json:"amount_cents"`
 	// RefundedCents is what was given back to the client.
-	RefundedCents int           `json:"refunded_cents"`
+	RefundedCents int `json:"refunded_cents"`
+	// PaymentMode says where the money changed hands: online (Stripe) or
+	// on_site (recorded by the practitioner at the practice).
+	PaymentMode   PaymentMode   `json:"payment_mode"`
 	PaymentStatus PaymentStatus `json:"payment_status"`
 	BookingStatus BookingStatus `json:"booking_status"`
+}
+
+// PaymentMode of a financial transaction row.
+// PaymentMode says where a payment changed hands.
+type PaymentMode string
+
+const (
+	PaymentModeOnline PaymentMode = "online"
+	PaymentModeOnSite PaymentMode = "on_site"
+)
+
+// CSVLabel is the mode's French label in the CSV export.
+func (m PaymentMode) CSVLabel() string {
+	if m == PaymentModeOnSite {
+		return "Sur place"
+	}
+	return "En ligne"
 }
 
 // FinancialSummaryResponse is the response shape for GET /admin/bookings/financial-summary.
@@ -68,6 +92,7 @@ func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
 		{"section", "summary"},
 		{"gross_revenue_cents", fmt.Sprintf("%d", r.Summary.GrossRevenueCents)},
 		{"refunds_cents", fmt.Sprintf("%d", r.Summary.RefundsCents)},
+		{"on_site_cents", fmt.Sprintf("%d", r.Summary.OnSiteCents)},
 		{"net_revenue_cents", fmt.Sprintf("%d", r.Summary.NetRevenueCents)},
 		{},
 	}
@@ -86,6 +111,7 @@ func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
 		"refunded_cents",
 		"payment_status",
 		"booking_status",
+		"mode",
 	}
 	if err := w.Write(header); err != nil {
 		return nil, fmt.Errorf("write CSV transaction header: %w", err)
@@ -103,6 +129,7 @@ func (r *FinancialSummaryResponse) ToCSV() ([]byte, error) {
 			fmt.Sprintf("%d", t.RefundedCents),
 			string(t.PaymentStatus),
 			string(t.BookingStatus),
+			t.PaymentMode.CSVLabel(),
 		}
 		if err := w.Write(row); err != nil {
 			return nil, fmt.Errorf("write CSV transaction row: %w", err)

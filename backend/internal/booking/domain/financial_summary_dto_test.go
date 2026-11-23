@@ -23,9 +23,10 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 
 		resp := &FinancialSummaryResponse{
 			Summary: FinancialSummary{
-				GrossRevenueCents: 52300,
+				GrossRevenueCents: 62300,
 				RefundsCents:      2150,
-				NetRevenueCents:   50150,
+				OnSiteCents:       10000,
+				NetRevenueCents:   60150,
 			},
 			Transactions: []FinancialTransaction{
 				{
@@ -37,6 +38,20 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 					ProductName:   "Massage Relaxant 60min",
 					AmountCents:   5000,
 					RefundedCents: 0,
+					PaymentMode:   PaymentModeOnline,
+					PaymentStatus: PaymentStatusPaid,
+					BookingStatus: BookingStatusCompleted,
+				},
+				{
+					ID:            txnID,
+					PaidAt:        slotStart,
+					SlotStartTime: slotStart,
+					ClientName:    "Marie Dupont",
+					PartnerName:   "Dr. Martin",
+					ProductName:   "Massage Relaxant 60min",
+					AmountCents:   10000,
+					RefundedCents: 0,
+					PaymentMode:   PaymentModeOnSite,
 					PaymentStatus: PaymentStatusPaid,
 					BookingStatus: BookingStatusCompleted,
 				},
@@ -57,17 +72,18 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 		// The blank separator line between the summary and transaction
 		// sections is ignored by encoding/csv's reader, so it doesn't
 		// produce its own record.
-		require.Len(t, records, 6)
+		require.Len(t, records, 8)
 
 		assert.Equal(t, []string{"section", "summary"}, records[0])
-		assert.Equal(t, []string{"gross_revenue_cents", "52300"}, records[1])
+		assert.Equal(t, []string{"gross_revenue_cents", "62300"}, records[1])
 		assert.Equal(t, []string{"refunds_cents", "2150"}, records[2])
-		assert.Equal(t, []string{"net_revenue_cents", "50150"}, records[3])
+		assert.Equal(t, []string{"on_site_cents", "10000"}, records[3])
+		assert.Equal(t, []string{"net_revenue_cents", "60150"}, records[4])
 
 		assert.Equal(t, []string{
 			"id", "paid_at", "slot_start_time", "client_name", "partner_name",
-			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status",
-		}, records[4])
+			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status", "mode",
+		}, records[5])
 
 		assert.Equal(t, []string{
 			txnID.String(),
@@ -80,7 +96,21 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 			"0",
 			"paid",
 			"completed",
-		}, records[5])
+			"En ligne",
+		}, records[6])
+		assert.Equal(t, []string{
+			txnID.String(),
+			"2026-07-01T09:30:00Z",
+			"2026-07-01T09:30:00Z",
+			"Marie Dupont",
+			"Dr. Martin",
+			"Massage Relaxant 60min",
+			"10000",
+			"0",
+			"paid",
+			"completed",
+			"Sur place",
+		}, records[7])
 	})
 
 	t.Run("handles no transactions without error", func(t *testing.T) {
@@ -96,13 +126,13 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 		records, err := reader.ReadAll()
 		require.NoError(t, err)
 
-		// Summary block (4 rows) + transaction header, no data rows (the
+		// Summary block (5 rows) + transaction header, no data rows (the
 		// blank separator line is ignored by encoding/csv's reader).
-		require.Len(t, records, 5)
+		require.Len(t, records, 6)
 		assert.Equal(t, []string{
 			"id", "paid_at", "slot_start_time", "client_name", "partner_name",
-			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status",
-		}, records[4])
+			"product_name", "amount_cents", "refunded_cents", "payment_status", "booking_status", "mode",
+		}, records[5])
 	})
 
 	t.Run("nil response produces a valid empty CSV", func(t *testing.T) {
@@ -125,6 +155,7 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 					PartnerName:   "Dr. Martin",
 					ProductName:   "Soin du Dos",
 					AmountCents:   6000,
+					PaymentMode:   PaymentModeOnline,
 					PaymentStatus: PaymentStatusPaid,
 					BookingStatus: BookingStatusCompleted,
 				},
@@ -136,6 +167,7 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 					ProductName:   "Drainage Lymphatique",
 					AmountCents:   5000,
 					RefundedCents: 5000,
+					PaymentMode:   PaymentModeOnSite,
 					PaymentStatus: PaymentStatusRefunded,
 					BookingStatus: BookingStatusCancelled,
 				},
@@ -150,11 +182,13 @@ func TestFinancialSummaryResponse_ToCSV(t *testing.T) {
 		records, err := reader.ReadAll()
 		require.NoError(t, err)
 
-		require.Len(t, records, 7)
-		assert.Equal(t, id1.String(), records[5][0])
-		assert.Equal(t, "paid", records[5][8])
-		assert.Equal(t, id2.String(), records[6][0])
-		assert.Equal(t, "5000", records[6][7], "the refunded amount")
-		assert.Equal(t, "refunded", records[6][8])
+		require.Len(t, records, 8)
+		assert.Equal(t, id1.String(), records[6][0])
+		assert.Equal(t, "paid", records[6][8])
+		assert.Equal(t, "En ligne", records[6][10])
+		assert.Equal(t, id2.String(), records[7][0])
+		assert.Equal(t, "5000", records[7][7], "the refunded amount")
+		assert.Equal(t, "refunded", records[7][8])
+		assert.Equal(t, "Sur place", records[7][10])
 	})
 }
