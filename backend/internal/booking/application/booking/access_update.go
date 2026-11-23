@@ -97,7 +97,8 @@ func (s *BookingService) SendAccessUpdate(ctx context.Context) (*domain.AccessUp
 }
 
 // accessUpdateTargets lists the upcoming confirmed bookings (confirmed, slot
-// not started yet) with their client's email. Slot times are encrypted, so
+// not started yet) with their client's email. A practitioner booking is left
+// out: the practice access is never sent to its client (ADR-0021). Slot times are encrypted, so
 // all confirmed bookings are listed and filtered after decryption, as the
 // reminder scheduler does. A guest's email is on the booking; a registered
 // client's is resolved through the auth-user client, and a client whose email
@@ -117,7 +118,7 @@ func (s *BookingService) accessUpdateTargets(ctx context.Context) ([]accessUpdat
 				"booking_id", bx.ID, "error", err)
 			continue
 		}
-		if booking.Status != domain.BookingStatusConfirmed || !booking.SlotStartTime.After(now) {
+		if booking.Status != domain.BookingStatusConfirmed || !booking.SlotStartTime.After(now) || booking.IsPractitionerBooking() {
 			continue
 		}
 		targets = append(targets, accessUpdateTarget{booking: booking, email: s.clientEmail(ctx, booking)})

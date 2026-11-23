@@ -145,6 +145,9 @@ func NewBookingNotificationAdapter(
 // practitioner's "new booking" notification (fire-and-forget, each on its
 // own so a slow one never holds the other).
 func (a *BookingNotificationAdapter) SendBookingConfirmation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if practitionerMade(data) {
+		return nil
+	}
 	go a.sendAsync(detach(ctx), "booking confirmation", data, a.sendBookingConfirmationEmail)
 	if a.push != nil && data.Origin != bookingPorts.BookingOriginPractitioner {
 		go a.sendAsync(detach(ctx), "new booking practitioner push", data, a.sendNewBookingPush)
@@ -201,6 +204,9 @@ func (a *BookingNotificationAdapter) SendPractitionerSessionReminder(ctx context
 // on its own so a slow one never holds the other). Nothing for the
 // practitioner's own cancellations.
 func (a *BookingNotificationAdapter) SendBookingCancellation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if practitionerMade(data) {
+		return nil
+	}
 	go a.sendAsync(detach(ctx), "booking cancellation", data, a.sendBookingCancellationEmail)
 	if a.push != nil && data.CancelledBy == string(bookingDomain.CancelledByClient) {
 		go a.sendAsync(detach(ctx), "cancellation practitioner push", data, a.sendCancellationPush)
@@ -261,6 +267,9 @@ func (a *BookingNotificationAdapter) sendLatePaymentRefundPush(ctx context.Conte
 
 // SendBookingReminder sends a booking reminder email (fire-and-forget).
 func (a *BookingNotificationAdapter) SendBookingReminder(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if practitionerMade(data) {
+		return nil
+	}
 	go a.sendAsync(detach(ctx), "booking reminder", data, a.sendBookingReminderEmail)
 	return nil
 }
@@ -301,8 +310,20 @@ func (a *BookingNotificationAdapter) SendLatePaymentRefund(ctx context.Context, 
 // practice access code changed, with the access read at send time
 // (fire-and-forget).
 func (a *BookingNotificationAdapter) SendBookingAccessUpdate(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if practitionerMade(data) {
+		return nil
+	}
 	go a.sendAsync(detach(ctx), "access update", data, a.sendAccessUpdateEmail)
 	return nil
+}
+
+// practitionerMade reports whether the practitioner made the booking for a
+// client who called (ADR-0021): the app sends that client nothing, so the
+// confirmation, reminder, cancellation and access-update emails are never
+// sent for it. The booking service already skips them; this keeps the rule
+// where the messages leave.
+func practitionerMade(data bookingPorts.BookingNotificationData) bool {
+	return data.Origin == bookingPorts.BookingOriginPractitioner
 }
 
 // sendAsync runs the notification dispatch in a goroutine (fire-and-forget).

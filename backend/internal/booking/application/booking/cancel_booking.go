@@ -340,9 +340,11 @@ func (s *BookingService) releaseAvailability(ctx context.Context, booking *domai
 }
 
 // sendCancellationNotice emails the client and the partner that the booking
-// was cancelled, with the refund (best effort).
+// was cancelled, with the refund (best effort). Nothing for a practitioner
+// booking: the app sends its client nothing, and the practitioner cancelled
+// it themselves (ADR-0021).
 func (s *BookingService) sendCancellationNotice(ctx context.Context, booking *domain.Booking, product *catalogDomain.ProductRes) {
-	if s.notificationService == nil {
+	if s.notificationService == nil || booking.IsPractitionerBooking() {
 		return
 	}
 	productName := ""

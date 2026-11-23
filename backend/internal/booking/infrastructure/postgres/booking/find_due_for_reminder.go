@@ -8,7 +8,9 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 )
 
-// FindBookingsDueForReminder returns all confirmed bookings where reminded_at IS NULL.
+// FindBookingsDueForReminder returns all confirmed bookings where reminded_at
+// IS NULL, except the practitioner's bookings, whose client is never
+// reminded (ADR-0021).
 // Time filtering on slot_start_time is performed at the service layer after
 // decryption because slot_start_time is stored encrypted for GDPR compliance.
 func (r *Repository) FindBookingsDueForReminder(ctx context.Context) ([]*domain.BookingEncx, error) {
@@ -26,10 +28,11 @@ func (r *Repository) FindBookingsDueForReminder(ctx context.Context) ([]*domain.
 			b.hold_expires_at,
 			b.locale,
 			b.amount_paid_on_site_cents, b.paid_on_site_at,
+			b.origin,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
-		WHERE b.status = 'confirmed' AND b.reminded_at IS NULL
+		WHERE b.status = 'confirmed' AND b.reminded_at IS NULL AND b.origin <> 'practitioner'
 	`, r.schema)
 
 	rows, err := r.pool.Query(ctx, query)
@@ -54,6 +57,7 @@ func (r *Repository) FindBookingsDueForReminder(ctx context.Context) ([]*domain.
 			&b.HoldExpiresAt,
 			&b.Locale,
 			&b.AmountPaidOnSiteCents, &b.PaidOnSiteAt,
+			&b.Origin,
 			&b.CreatedAt, &b.UpdatedAt,
 			&b.DEKEncrypted, &b.KeyVersion, &b.Metadata,
 		); err != nil {

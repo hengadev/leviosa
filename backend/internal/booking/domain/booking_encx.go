@@ -60,6 +60,8 @@ type BookingEncx struct {
 	AmountPaidOnSiteCents *int `db:"amountpaidonsitecents" json:"amountpaidonsitecents"`
 
 	PaidOnSiteAt *time.Time `db:"paidonsiteat" json:"paidonsiteat"`
+
+	Origin string `db:"origin" json:"origin"`
 	
 	Token *string `db:"token" json:"token"`
 	
@@ -149,6 +151,11 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	result.AmountPaidOnSiteCents = source.AmountPaidOnSiteCents
 
 	result.PaidOnSiteAt = source.PaidOnSiteAt
+
+	result.Origin = string(source.Origin)
+	if result.Origin == "" {
+		result.Origin = string(BookingOriginOnline)
+	}
 
 	if source.CancelledBy != "" {
 		cancelledBy := string(source.CancelledBy)
@@ -382,6 +389,11 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	result.AmountPaidOnSiteCents = source.AmountPaidOnSiteCents
 
 	result.PaidOnSiteAt = source.PaidOnSiteAt
+
+	result.Origin = BookingOrigin(source.Origin)
+	if result.Origin == "" {
+		result.Origin = BookingOriginOnline
+	}
 
 	if source.CancelledBy != nil {
 		result.CancelledBy = CancellationActor(*source.CancelledBy)

@@ -238,6 +238,7 @@ func (s *PractitionerReminderScheduler) buildNotificationData(booking *domain.Bo
 		TotalPriceCents: booking.TotalPriceCents,
 		Currency:        booking.Currency,
 		Locale:          string(booking.Locale),
+		Origin:          string(booking.Origin),
 	}
 
 	if booking.ClientID != nil {
