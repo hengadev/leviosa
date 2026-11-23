@@ -66,6 +66,15 @@
 		return (trimmed.startsWith('+') ? '+' : '') + trimmed.replace(/\D/g, '');
 	}
 
+	/** "+33612345678" → "06 12 34 56 78"; other numbers as stored. */
+	function displayPhone(phone: string): string {
+		const digits = dialable(phone);
+		if (/^\+33\d{9}$/.test(digits)) {
+			return ('0' + digits.slice(3)).replace(/(\d{2})(?=\d)/g, '$1 ');
+		}
+		return phone.trim();
+	}
+
 	function firstName(name: string): string {
 		return name.split(' ')[0] || name;
 	}
@@ -105,7 +114,7 @@
 						class="flex h-11 items-center justify-center gap-2 rounded-xl border border-border-card font-medium hover:bg-muted"
 					>
 						<Phone size={18} />
-						Appeler {data.client.phone}
+						Appeler {displayPhone(data.client.phone)}
 					</a>
 					<SmsButton phone={dialable(data.client.phone)} firstName={firstName(data.client.name)} />
 				</div>
