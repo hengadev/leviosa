@@ -72,6 +72,11 @@
       "TWILIO_EDGE": "dublin",
       "TWILIO_SENDER": "Leviosa"
     },
+    "/webpush": {
+      "VAPID_PUBLIC_KEY": "BFixtureProdVapidPublicKeyNotReal",
+      "VAPID_PRIVATE_KEY": "fixture-prod-vapid-private-key-not-real",
+      "VAPID_SUBJECT": "mailto:contact@leviosa.care"
+    },
     "/caddy": {
       "CLOUDFLARE_API_TOKEN": "fixture-cloudflare-token-not-real"
     },
@@ -157,6 +162,11 @@
       "TWILIO_REGION": "ie1",
       "TWILIO_EDGE": "dublin",
       "TWILIO_SENDER": "Leviosa"
+    },
+    "/webpush": {
+      "VAPID_PUBLIC_KEY": "BFixtureStagingVapidPublicKeyNotReal",
+      "VAPID_PRIVATE_KEY": "fixture-staging-vapid-private-key-not-real",
+      "VAPID_SUBJECT": "mailto:contact@leviosa.care"
     }
   },
   "dev": {

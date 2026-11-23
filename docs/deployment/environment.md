@@ -165,6 +165,25 @@ these keys alone choose the provider.
 | `TWILIO_REGION`, `TWILIO_EDGE` | `ie1`, `dublin` | `ie1`, `dublin` | absent | `backend.env` → backend | operator |
 | `TWILIO_SENDER` | ✓ | ✓ | absent | `backend.env` → backend: `Leviosa` (alphanumeric) or a French number | operator |
 
+### `/webpush` — practitioner notifications (whole into `backend.env`)
+
+The VAPID key pair and subject of the Web Push notifications the
+practitioner receives on their iPhone (ADR-0020). All three or none: with
+any of them missing, Web Push is off (nothing is sent; Cabinet says
+notifications are unavailable), and the backend logs a warning when only
+some are set. One pair per environment, generated once
+(`npx web-push generate-vapid-keys`, base64url): the browsers subscribe
+with the public key, so **changing the pair silences every subscribed
+device** until the practitioner switches notifications off and on again in
+Cabinet. The public key is not secret (Cabinet hands it to the browser);
+the private key is.
+
+| Key | prod | staging | dev | Rendered into → read by | Written by |
+| --- | :-: | :-: | :-: | --- | --- |
+| `VAPID_PUBLIC_KEY` | ✓ | ✓ | optional | `backend.env` → backend, which gives it to the Cabinet switch | operator |
+| `VAPID_PRIVATE_KEY` | ✓ | ✓ | optional | `backend.env` → backend: signs every push (secret) | operator |
+| `VAPID_SUBJECT` (`mailto:contact@leviosa.care`) | ✓ | ✓ | optional | `backend.env` → backend: the contact the push services (Apple's included) may reach | operator |
+
 ### `/caddy` (`caddy.env`, prod stack only)
 
 | Key | prod | staging | dev | Rendered into → read by | Written by |

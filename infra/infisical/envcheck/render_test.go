@@ -40,6 +40,7 @@ var (
 		"STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_CONNECT_WEBHOOK_SECRET",
 		"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM",
 		"TWILIO_ACCOUNT_SID", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "TWILIO_REGION", "TWILIO_EDGE", "TWILIO_SENDER",
+		"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT",
 	}
 	frontendBase = []string{
 		"NODE_ENV", "PORT", "API_URL", "PROTOCOL_HEADER", "HOST_HEADER", "USE_MOCK_DATA",
@@ -79,7 +80,7 @@ var wantKeys = map[string]map[string][]string{
 		"redis.env":    {"REDIS_PASSWORD"},
 	},
 	"dev": {
-		// No /stripe, /smtp or /twilio in the dev fixture (integrations off);
+		// No /stripe, /smtp, /twilio or /webpush in the dev fixture (integrations off);
 		// /aws holds LocalStack's values, endpoint included.
 		"backend.env":  keys(backendCore, []string{"AWS_ENDPOINT_URL"}),
 		"frontend.env": keys(frontendBase),
@@ -92,7 +93,7 @@ var wantKeys = map[string]map[string][]string{
 
 // wholeFolders: file -> folders whose keys it prints whole (per source env).
 var wholeFolders = map[string][]string{
-	"backend.env": {"/app", "/encx", "/aws", "/stripe", "/smtp", "/twilio"},
+	"backend.env": {"/app", "/encx", "/aws", "/stripe", "/smtp", "/twilio", "/webpush"},
 	"admin.env":   {"/admin"},
 	"backup.env":  {"/backup"},
 }
@@ -100,7 +101,7 @@ var wholeFolders = map[string][]string{
 // excludedFromFrontend: no key or value of these folders may reach
 // frontend.env (issue 024; /redis, /rabbitmq, /caddy, /backup and /host
 // added: the SvelteKit server needs none of them either).
-var excludedFromFrontend = []string{"/aws", "/encx", "/stripe", "/twilio", "/smtp", "/db", "/admin", "/redis", "/rabbitmq", "/caddy", "/backup", "/host"}
+var excludedFromFrontend = []string{"/aws", "/encx", "/stripe", "/twilio", "/webpush", "/smtp", "/db", "/admin", "/redis", "/rabbitmq", "/caddy", "/backup", "/host"}
 
 func sortedKeys(m map[string]string) []string {
 	out := make([]string, 0, len(m))
