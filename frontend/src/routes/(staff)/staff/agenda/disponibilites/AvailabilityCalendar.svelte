@@ -6,6 +6,7 @@
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
 	import { fly } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { swipe } from '#lib/utils/swipe.ts';
 	import { monthGrid } from './calendar';
 
 	export type DayTone = 'none' | 'open' | 'closed' | 'picked' | 'covered';
@@ -61,25 +62,6 @@
 		month = month.add({ months: 1 });
 	}
 
-	// Swipe on the days (touch screens): left for the next month, right for the
-	// previous one. Only a clearly horizontal stroke counts, so scrolling the
-	// page up or down over the calendar never changes the month; a swipe moves
-	// too far for the browser to treat it as a tap on a day.
-	let start: { x: number; y: number } | null = null;
-	function onTouchStart(event: TouchEvent) {
-		start = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
-	}
-	function onTouchEnd(event: TouchEvent) {
-		if (!start) return;
-		const touch = event.changedTouches[0];
-		const dx = touch.clientX - start.x;
-		const dy = touch.clientY - start.y;
-		start = null;
-		if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-		if (dx < 0) next();
-		else previous();
-	}
-
 	const toneClass: Record<DayTone, string> = {
 		none: 'text-foreground hover:bg-muted',
 		open: 'bg-muted text-foreground font-medium hover:bg-surface-hover',
@@ -119,11 +101,7 @@
 
 	<div
 		class="overflow-hidden touch-pan-y"
-		role="group"
-		aria-label="Jours de {title}"
-		ontouchstart={onTouchStart}
-		ontouchend={onTouchEnd}
-		ontouchcancel={() => (start = null)}
+		{@attach swipe({ onLeft: next, onRight: previous })}
 	>
 	{#key month.toString().slice(0, 7)}
 	<div
