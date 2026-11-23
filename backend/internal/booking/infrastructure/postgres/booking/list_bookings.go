@@ -102,6 +102,18 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 		argIndex++
 	}
 
+	if filter.PaidOnSiteAfter != nil {
+		whereConditions = append(whereConditions, fmt.Sprintf("b.paid_on_site_at >= $%d", argIndex))
+		args = append(args, *filter.PaidOnSiteAfter)
+		argIndex++
+	}
+
+	if filter.PaidOnSiteBefore != nil {
+		whereConditions = append(whereConditions, fmt.Sprintf("b.paid_on_site_at <= $%d", argIndex))
+		args = append(args, *filter.PaidOnSiteBefore)
+		argIndex++
+	}
+
 	// Add WHERE clause if we have conditions
 	if len(whereConditions) > 0 {
 		query += " WHERE " + strings.Join(whereConditions, " AND ")

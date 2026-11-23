@@ -173,7 +173,12 @@ type BookingFilter struct {
 	// Time-based filters
 	CreatedAfter  *time.Time
 	CreatedBefore *time.Time
-	TimeRange     *TimeRange // Filter by availability time range
+	// PaidOnSiteAfter/Before select bookings whose on-site payment was
+	// recorded in that (inclusive) window, on the plain paid_on_site_at
+	// column.
+	PaidOnSiteAfter  *time.Time
+	PaidOnSiteBefore *time.Time
+	TimeRange        *TimeRange // Filter by availability time range
 
 	// Price filters
 	MinPrice *int // In cents

@@ -8,6 +8,7 @@ interface APISummary {
 	gross_revenue_cents: number;
 	refunds_cents: number;
 	disputed_cents: number;
+	on_site_cents: number;
 	net_revenue_cents: number;
 }
 
@@ -20,6 +21,7 @@ interface APITransaction {
 	partner_name: string;
 	product_name: string;
 	amount_cents: number;
+	payment_mode: 'online' | 'on_site';
 	payment_status: 'paid' | 'refunded' | 'disputed';
 	booking_status: 'completed' | 'cancelled' | 'confirmed' | 'no_show';
 }
@@ -49,17 +51,21 @@ export interface SummaryKPIs {
 	grossRevenueInCents: number;
 	refundsInCents: number;
 	disputedInCents: number;
+	onSiteInCents: number;
 	netRevenueInCents: number;
 }
 
 export interface Transaction {
 	id: string;
+	/** Unique row key: a booking paid online and on site has two rows. */
+	key: string;
 	date: string;
 	description: string;
 	clientName: string;
 	partnerName: string;
 	amountInCents: number;
 	type: 'payment' | 'refund';
+	paymentMode: 'online' | 'on_site';
 	paymentStatus: 'paid' | 'refunded' | 'disputed';
 	bookingStatus: string;
 }
@@ -85,22 +91,25 @@ async function getMockComptaData(from: string, to: string): Promise<ComptaData> 
 	const now = new Date();
 
 	const summary: SummaryKPIs = {
-		grossRevenueInCents: 52300,
+		grossRevenueInCents: 62300,
 		refundsInCents: 2150,
 		disputedInCents: 5000,
-		netRevenueInCents: 50150
+		onSiteInCents: 15000,
+		netRevenueInCents: 60150
 	};
 
 	const transactions: Transaction[] = [
-		{ id: 'TXN-001', date: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Marie Dupont', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-002', date: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(), description: 'Soin du Dos 60min', clientName: 'Jean Durand', partnerName: 'Dr. Martin', amountInCents: 6500, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-003', date: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), description: 'Remboursement', clientName: 'Claire Bernard', partnerName: 'Dr. Dupont', amountInCents: 5000, type: 'refund', paymentStatus: 'refunded', bookingStatus: 'cancelled' },
-		{ id: 'TXN-004', date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), description: 'Drainage Lymphatique', clientName: 'Lucas Petit', partnerName: 'Dr. Dupont', amountInCents: 7000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-005', date: new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString(), description: 'Consultation Kiné 45min', clientName: 'Thomas Richard', partnerName: 'Dr. Martin', amountInCents: 3500, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-006', date: new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Camille Simon', partnerName: 'Dr. Dupont', amountInCents: 5000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-007', date: new Date(now.getTime() - 96 * 60 * 60 * 1000).toISOString(), description: 'Remboursement', clientName: 'Louis Laurent', partnerName: 'Dr. Martin', amountInCents: 6500, type: 'refund', paymentStatus: 'refunded', bookingStatus: 'cancelled' },
-		{ id: 'TXN-008', date: new Date(now.getTime() - 120 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 90min', clientName: 'Lola Bernard', partnerName: 'Dr. Dupont', amountInCents: 7000, type: 'payment', paymentStatus: 'paid', bookingStatus: 'completed' },
-		{ id: 'TXN-009', date: new Date(now.getTime() - 144 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Nora Girard', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentStatus: 'disputed', bookingStatus: 'completed' },
+		{ id: 'TXN-001', key: 'TXN-001-online', date: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Marie Dupont', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-001', key: 'TXN-001-on-site', date: new Date(now.getTime() - 1 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Marie Dupont', partnerName: 'Dr. Martin', amountInCents: 7000, type: 'payment', paymentMode: 'on_site', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-002', key: 'TXN-002-online', date: new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString(), description: 'Soin du Dos 60min', clientName: 'Jean Durand', partnerName: 'Dr. Martin', amountInCents: 6500, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-003', key: 'TXN-003-online', date: new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), description: 'Remboursement', clientName: 'Claire Bernard', partnerName: 'Dr. Dupont', amountInCents: 5000, type: 'refund', paymentMode: 'online', paymentStatus: 'refunded', bookingStatus: 'cancelled' },
+		{ id: 'TXN-004', key: 'TXN-004-online', date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(), description: 'Drainage Lymphatique', clientName: 'Lucas Petit', partnerName: 'Dr. Dupont', amountInCents: 7000, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-005', key: 'TXN-005-online', date: new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString(), description: 'Consultation Kiné 45min', clientName: 'Thomas Richard', partnerName: 'Dr. Martin', amountInCents: 3500, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-006', key: 'TXN-006-online', date: new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Camille Simon', partnerName: 'Dr. Dupont', amountInCents: 5000, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-007', key: 'TXN-007-online', date: new Date(now.getTime() - 96 * 60 * 60 * 1000).toISOString(), description: 'Remboursement', clientName: 'Louis Laurent', partnerName: 'Dr. Martin', amountInCents: 6500, type: 'refund', paymentMode: 'online', paymentStatus: 'refunded', bookingStatus: 'cancelled' },
+		{ id: 'TXN-008', key: 'TXN-008-online', date: new Date(now.getTime() - 120 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 90min', clientName: 'Lola Bernard', partnerName: 'Dr. Dupont', amountInCents: 7000, type: 'payment', paymentMode: 'online', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-008', key: 'TXN-008-on-site', date: new Date(now.getTime() - 119 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 90min', clientName: 'Lola Bernard', partnerName: 'Dr. Dupont', amountInCents: 8000, type: 'payment', paymentMode: 'on_site', paymentStatus: 'paid', bookingStatus: 'completed' },
+		{ id: 'TXN-009', key: 'TXN-009-online', date: new Date(now.getTime() - 144 * 60 * 60 * 1000).toISOString(), description: 'Massage Relaxant 60min', clientName: 'Nora Girard', partnerName: 'Dr. Martin', amountInCents: 5000, type: 'payment', paymentMode: 'online', paymentStatus: 'disputed', bookingStatus: 'completed' },
 	];
 
 	return { summary, transactions, from, to, last7Days: getMockLast7Days() };
@@ -150,17 +159,20 @@ export const load: PageServerLoad = async ({ fetch, url }) => {
 			grossRevenueInCents: api.summary.gross_revenue_cents,
 			refundsInCents: api.summary.refunds_cents,
 			disputedInCents: api.summary.disputed_cents,
+			onSiteInCents: api.summary.on_site_cents,
 			netRevenueInCents: api.summary.net_revenue_cents
 		};
 
 		const transactions: Transaction[] = (api.transactions ?? []).map((t) => ({
 			id: t.id,
+			key: `${t.id}-${t.payment_mode}`,
 			date: t.paid_at || t.slot_start_time,
 			description: t.product_name,
 			clientName: t.client_name,
 			partnerName: t.partner_name,
 			amountInCents: t.amount_cents,
 			type: t.payment_status === 'refunded' ? 'refund' as const : 'payment' as const,
+			paymentMode: t.payment_mode,
 			paymentStatus: t.payment_status,
 			bookingStatus: t.booking_status
 		}));

@@ -11,6 +11,8 @@ The admin compta page needs to display financial KPIs (gross revenue, refunds, n
 
 Financial reporting is derived exclusively from the booking table in the first pass. A new `GET /admin/bookings/financial-summary` endpoint in the booking service aggregates completed bookings by period.
 
+On-site payments recorded by the practitioner at the practice (a card terminal outside Leviosa) are part of this booking-derived reporting: each one counts on its recording day (Europe/Paris), as its own transaction row alongside the online payment, so a deposit paid online in one month and its balance paid at the practice in the next each show in their month.
+
 ## Rationale
 
 - No additional Stripe API integration layer needed at this stage.
