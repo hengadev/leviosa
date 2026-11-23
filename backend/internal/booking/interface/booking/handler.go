@@ -15,6 +15,8 @@ type Handler interface {
 	GetBooking(w http.ResponseWriter, r *http.Request)
 	GetClientBookings(w http.ResponseWriter, r *http.Request)
 	GetPartnerBookings(w http.ResponseWriter, r *http.Request)
+	GetBookingClientFile(w http.ResponseWriter, r *http.Request)
+	SearchPartnerClients(w http.ResponseWriter, r *http.Request)
 	GetPartnerEarnings(w http.ResponseWriter, r *http.Request)
 	GetDashboardStats(w http.ResponseWriter, r *http.Request)
 	GetAdminBookings(w http.ResponseWriter, r *http.Request)

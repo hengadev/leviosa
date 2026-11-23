@@ -58,6 +58,7 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Utilization** | A metric measuring how efficiently a room's time is used (utilization % minus fragmentation penalty). Computed via a materialized view. |
 | **10-minute alignment** | All time slots are aligned to 10-minute boundaries for scheduling consistency. |
 | **Next working day** | The first Europe/Paris date after today on which the practitioner has an open availability occurrence or an appointment booking (never cancelled, awaiting-payment or expired ones), looked up at most the booking horizon or 60 days ahead, whichever is longer. Shown on Aujourd'hui with that day's sessions. |
+| **Client file** | The read-only view of one client of a practitioner, computed on demand from that practitioner's bookings (nothing stored, no notes — ADR-0019): contact details (name, phone, email) plus upcoming sessions (soonest first) and past ones (latest first), cancelled sessions listed and marked. Reached by a booking's id; guests group by normalised phone (E.164) or lower-cased email, account clients by their account. |
 
 ### Messaging
 

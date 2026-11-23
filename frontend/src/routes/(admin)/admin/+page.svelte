@@ -72,7 +72,7 @@
 				<section class="rounded-2xl bg-foreground p-4 text-background sm:p-5">
 					<p class="text-xs uppercase tracking-wider opacity-70">{nextHeading(next)}</p>
 					<p class="mt-2 text-2xl font-semibold tabular-nums">{next.startLabel} – {next.endLabel}</p>
-					<p class="mt-1 break-words text-lg">{next.clientName}</p>
+					<a href="/staff/clients/{next.id}" class="mt-1 block break-words text-lg hover:underline">{next.clientName}</a>
 					<p class="break-words text-sm opacity-70">
 						{next.productName}{next.paymentLabel ? ` · ${next.paymentLabel}` : ''}
 					</p>
@@ -100,7 +100,7 @@
 										{session.startLabel}
 									</div>
 									<div class="min-w-0 flex-1">
-										<p class="truncate font-medium">{session.clientName}</p>
+										<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
 										{#if session.paymentLabel}
 											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 										{/if}
@@ -144,7 +144,7 @@
 										{session.startLabel}
 									</div>
 									<div class="min-w-0 flex-1">
-										<p class="truncate font-medium">{session.clientName}</p>
+										<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
 										{#if session.paymentLabel}
 											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 										{/if}

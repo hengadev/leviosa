@@ -297,7 +297,7 @@
 					<!-- Main Info -->
 					<div class="flex-1 min-w-0">
 						<div class="flex items-start justify-between gap-3">
-							<p class="font-semibold text-foreground truncate">{booking.clientName}</p>
+							<a href="/staff/clients/{booking.id}" class="block font-semibold text-foreground truncate hover:underline">{booking.clientName}</a>
 							<!-- On the phone the amount sits beside the name; from sm up it heads the actions column -->
 							<p class="font-semibold text-foreground tabular-nums sm:hidden">{formatCents(booking.amountInCents)}</p>
 						</div>
