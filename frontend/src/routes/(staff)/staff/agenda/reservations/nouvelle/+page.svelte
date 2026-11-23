@@ -143,7 +143,7 @@
 		slotsLoading = true;
 		slotsError = '';
 		try {
-			const query = new URLSearchParams({ product_id: product.id, from, to });
+			const query = new URLSearchParams({ partner_id: data.partnerId, product_id: product.id, from, to });
 			const res = await fetch(`/api/partners/booking-slots?${query}`);
 			if (!res.ok) {
 				slotsError = 'Impossible de charger les créneaux. Veuillez réessayer.';
