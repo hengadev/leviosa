@@ -4,6 +4,8 @@
 	// days a new availability covers. Each day's look comes from `info`.
 	import type { CalendarDate } from '@internationalized/date';
 	import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+	import { fly } from 'svelte/transition';
+	import { prefersReducedMotion } from 'svelte/motion';
 	import { monthGrid } from './calendar';
 
 	export type DayTone = 'none' | 'open' | 'closed' | 'picked' | 'covered';
@@ -45,6 +47,37 @@
 
 	const canGoBack = $derived(!min || month.set({ day: 1 }).compare(min.set({ day: 1 })) > 0);
 
+	// The way the last change went: the new month slides in from that side.
+	let direction = $state<1 | -1>(1);
+	function previous() {
+		if (!canGoBack) return;
+		direction = -1;
+		month = month.subtract({ months: 1 });
+	}
+	function next() {
+		direction = 1;
+		month = month.add({ months: 1 });
+	}
+
+	// Swipe on the days (touch screens): left for the next month, right for the
+	// previous one. Only a clearly horizontal stroke counts, so scrolling the
+	// page up or down over the calendar never changes the month; a swipe moves
+	// too far for the browser to treat it as a tap on a day.
+	let start: { x: number; y: number } | null = null;
+	function onTouchStart(event: TouchEvent) {
+		start = event.touches.length === 1 ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null;
+	}
+	function onTouchEnd(event: TouchEvent) {
+		if (!start) return;
+		const touch = event.changedTouches[0];
+		const dx = touch.clientX - start.x;
+		const dy = touch.clientY - start.y;
+		start = null;
+		if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+		if (dx < 0) next();
+		else previous();
+	}
+
 	const toneClass: Record<DayTone, string> = {
 		none: 'text-foreground hover:bg-muted',
 		open: 'bg-muted text-foreground font-medium hover:bg-surface-hover',
@@ -58,7 +91,7 @@
 	<div class="flex items-center justify-between mb-3">
 		<button
 			type="button"
-			onclick={() => (month = month.subtract({ months: 1 }))}
+			onclick={previous}
 			disabled={!canGoBack}
 			class="flex size-11 items-center justify-center rounded-md hover:bg-muted transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
 			aria-label="Mois précédent"
@@ -68,7 +101,7 @@
 		<p class="font-semibold text-foreground capitalize {compact ? 'text-sm' : ''}">{title}</p>
 		<button
 			type="button"
-			onclick={() => (month = month.add({ months: 1 }))}
+			onclick={next}
 			class="flex size-11 items-center justify-center rounded-md hover:bg-muted transition-colors"
 			aria-label="Mois suivant"
 		>
@@ -82,7 +115,19 @@
 		{/each}
 	</div>
 
-	<div class="grid grid-cols-7 gap-1">
+	<div
+		class="overflow-hidden touch-pan-y"
+		role="group"
+		aria-label="Jours de {title}"
+		ontouchstart={onTouchStart}
+		ontouchend={onTouchEnd}
+		ontouchcancel={() => (start = null)}
+	>
+	{#key month.toString().slice(0, 7)}
+	<div
+		class="grid grid-cols-7 gap-1"
+		in:fly={{ x: prefersReducedMotion.current ? 0 : direction * 24, duration: prefersReducedMotion.current ? 0 : 180 }}
+	>
 		{#each weeks as week}
 			{#each week as day (day.toString())}
 				{@const inMonth = day.month === month.month}
@@ -118,5 +163,7 @@
 				</button>
 			{/each}
 		{/each}
+	</div>
+	{/key}
 	</div>
 </div>
