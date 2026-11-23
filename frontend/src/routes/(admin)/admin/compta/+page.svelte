@@ -86,6 +86,9 @@
 			case 'paid': return 'Payé';
 			case 'refunded': return 'Remboursé';
 			case 'disputed': return 'Contesté';
+			case 'partially_refunded': return 'Remboursé en partie';
+			case 'pending': return 'À payer';
+			case 'failed': return 'Échec';
 			default: return status;
 		}
 	}
@@ -282,8 +285,8 @@
 			<p class="text-xs lg:text-sm text-muted-foreground">Sur place</p>
 		</div>
 
-		<!-- Net Revenue -->
-		<div class="bg-card rounded-lg border-2 border-foreground p-3 lg:p-6">
+		<!-- Net Revenue: first and full width on a phone, last on a computer -->
+		<div class="order-first col-span-2 bg-card rounded-lg border-2 border-foreground p-3 lg:order-none lg:col-span-1 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
 				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
 					<TrendingUp size={18} class="text-foreground lg:hidden" />
