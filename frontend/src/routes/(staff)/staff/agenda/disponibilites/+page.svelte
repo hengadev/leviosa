@@ -212,6 +212,12 @@
 		return { tone: 'open', hint };
 	}
 
+	// A past day can still be looked at when it had openings (what was open,
+	// what was closed); an empty one has nothing to show or change.
+	function pastWithoutOpenings(day: CalendarDate): boolean {
+		return day.compare(today) < 0 && dayOpenings(day, series, oneOffs).length === 0;
+	}
+
 	let dayPanel: HTMLElement | null = $state(null);
 
 	function selectDay(day: CalendarDate) {
@@ -816,6 +822,7 @@
 			<AvailabilityCalendar
 				bind:month
 				{today}
+				disabled={pastWithoutOpenings}
 				info={dayInfo}
 				onPick={selectDay}
 				selected={selectedDay.toString()}
