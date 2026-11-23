@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
 	import {
+		displayPhone,
 		guestFieldsOf,
 		validateClient,
 		type ClientErrors,
@@ -170,7 +171,7 @@
 							>
 								<span class="min-w-0 font-medium break-words">{summary.name}</span>
 								<span class="shrink-0 text-sm tabular-nums text-muted-foreground">
-									{summary.phone || summary.email || ''}
+									{summary.phone ? displayPhone(summary.phone) : summary.email || ''}
 								</span>
 							</button>
 						</li>
