@@ -48,4 +48,3 @@ func (s *BookingService) SearchPartnerClients(ctx context.Context, partnerID uui
 	}
 	return domain.SearchClientSummaries(domain.GroupClientBookings(bookings), query), nil
 }
-
