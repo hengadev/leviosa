@@ -90,6 +90,16 @@
 		}
 	}
 
+	function getPaymentModeBadge(mode: string) {
+		return mode === 'on_site'
+			? 'border border-foreground text-foreground'
+			: 'bg-muted text-foreground';
+	}
+
+	function getPaymentModeLabel(mode: string): string {
+		return mode === 'on_site' ? 'Sur place' : 'En ligne';
+	}
+
 	// --- Month selector (French) ---
 
 	// Selected month derived from the 'from' date, "YYYY-MM"
@@ -215,7 +225,7 @@
 
 	<!-- Summary KPIs: compact 2×2 on a phone, net revenue most prominent -->
 	<h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{monthLabel}</h2>
-	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
+	<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-6 mb-6 lg:mb-8">
 		<!-- Gross Revenue -->
 		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
@@ -258,6 +268,20 @@
 			<p class="text-xs lg:text-sm text-muted-foreground">En litige</p>
 		</div>
 
+		<!-- On-site (paid at the practice, recorded by the practitioner) -->
+		<div class="bg-card rounded-lg border border-border p-3 lg:p-6">
+			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
+				<div class="lg:p-3 lg:bg-muted lg:rounded-lg">
+					<CreditCard size={18} class="text-foreground lg:hidden" />
+					<CreditCard size={24} class="hidden lg:block text-foreground" />
+				</div>
+			</div>
+			<div class="text-base lg:text-3xl font-bold text-foreground lg:mb-1">
+				{formatCents(data.summary.onSiteInCents)}
+			</div>
+			<p class="text-xs lg:text-sm text-muted-foreground">Sur place</p>
+		</div>
+
 		<!-- Net Revenue -->
 		<div class="bg-card rounded-lg border-2 border-foreground p-3 lg:p-6">
 			<div class="flex items-center gap-2 mb-1 lg:items-start lg:justify-between lg:mb-4">
@@ -286,7 +310,7 @@
 		{:else}
 			<!-- Mobile: cards -->
 			<ul class="divide-y divide-border lg:hidden">
-				{#each data.transactions as transaction (transaction.id)}
+				{#each data.transactions as transaction (transaction.key)}
 					<li class="p-4">
 						<div class="flex items-start justify-between gap-3">
 							<div class="min-w-0">
@@ -309,6 +333,9 @@
 							<span class="px-3 py-1 rounded-full text-xs font-medium {getTypeBadge(transaction.type)}">
 								{getTypeLabel(transaction.type)}
 							</span>
+							<span class="px-3 py-1 rounded-full text-xs font-medium {getPaymentModeBadge(transaction.paymentMode)}">
+								{getPaymentModeLabel(transaction.paymentMode)}
+							</span>
 							<span class="px-3 py-1 rounded-full text-xs font-medium {getBookingStatusBadge(transaction.bookingStatus)}">
 								{getBookingStatusLabel(transaction.bookingStatus)}
 							</span>
@@ -326,13 +353,14 @@
 							<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Client</th>
 							<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Praticien</th>
 							<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Type</th>
+						<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Mode</th>
 							<th class="text-right py-4 px-6 text-sm font-medium text-muted-foreground">Montant</th>
 							<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Paiement</th>
 							<th class="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Réservation</th>
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.transactions as transaction (transaction.id)}
+						{#each data.transactions as transaction (transaction.key)}
 							<tr class="border-b border-border hover:bg-muted/30 transition-colors">
 								<td class="py-4 px-6 text-sm text-muted-foreground">{formatDateTime(transaction.date)}</td>
 								<td class="py-4 px-6">
@@ -343,6 +371,11 @@
 								<td class="py-4 px-6">
 									<span class="px-3 py-1 rounded-full text-xs font-medium {getTypeBadge(transaction.type)}">
 										{getTypeLabel(transaction.type)}
+									</span>
+								</td>
+								<td class="py-4 px-6">
+									<span class="px-3 py-1 rounded-full text-xs font-medium {getPaymentModeBadge(transaction.paymentMode)}">
+										{getPaymentModeLabel(transaction.paymentMode)}
 									</span>
 								</td>
 								<td class="py-4 px-6 text-right">
