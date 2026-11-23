@@ -10,6 +10,7 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/common/encryption"
 	smtpClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/smtp"
 	twilioClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/twilio"
+	webpushSender "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/webpush"
 )
 
 // Config holds all application configuration
@@ -48,6 +49,10 @@ type Config struct {
 
 	// SMTP (see SMTPConfigFromEnv)
 	SMTP smtpClient.SMTPConfig
+
+	// Web Push for practitioner notifications (see WebPushConfigFromEnv);
+	// incomplete means off
+	WebPush webpushSender.Config
 
 	// OAuth
 	GoogleClientID     string
@@ -132,6 +137,9 @@ func LoadConfig(ctx context.Context) (*Config, error) {
 
 		// SMTP
 		SMTP: SMTPConfigFromEnv(),
+
+		// Web Push (VAPID)
+		WebPush: WebPushConfigFromEnv(),
 
 		// OAuth
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),

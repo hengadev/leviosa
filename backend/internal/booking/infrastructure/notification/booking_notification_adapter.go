@@ -48,6 +48,11 @@ type BookingNotificationAdapter struct {
 	// the client confirmation and reminder, read at send time (never through
 	// the cached settingsProvider). Nil: the emails carry no access block.
 	practiceAccess bookingPorts.PracticeAccessProvider
+	// push sends practitioner notifications (Web Push, ADR-0020) to the
+	// booking's practitioner. Nil: none are sent.
+	push notificationPorts.PushNotifier
+	// now decides whether a notified booking is today (tests replace it).
+	now func() time.Time
 }
 
 // AdapterOption configures optional dependencies of the adapter.
@@ -59,6 +64,15 @@ type AdapterOption func(*BookingNotificationAdapter)
 func WithPracticeAccessProvider(provider bookingPorts.PracticeAccessProvider) AdapterOption {
 	return func(a *BookingNotificationAdapter) {
 		a.practiceAccess = provider
+	}
+}
+
+// WithPractitionerPush gives the adapter the practitioner notification
+// sender: the booking's practitioner gets a Web Push notification on a new
+// booking (and, with issues 045/046, on the next events).
+func WithPractitionerPush(notifier notificationPorts.PushNotifier) AdapterOption {
+	return func(a *BookingNotificationAdapter) {
+		a.push = notifier
 	}
 }
 
@@ -118,6 +132,7 @@ func NewBookingNotificationAdapter(
 		buildingFetcher:  buildingFetcher,
 		productFetcher:   productFetcher,
 		settingsProvider: settingsProvider,
+		now:              time.Now,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -125,10 +140,36 @@ func NewBookingNotificationAdapter(
 	return a
 }
 
-// SendBookingConfirmation sends a booking confirmation email (fire-and-forget).
+// SendBookingConfirmation sends the booking confirmation emails and the
+// practitioner's "new booking" notification (fire-and-forget, each on its
+// own so a slow one never holds the other).
 func (a *BookingNotificationAdapter) SendBookingConfirmation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "booking confirmation", data, a.sendBookingConfirmationEmail)
+	if a.push != nil && data.Origin != bookingPorts.BookingOriginPractitioner {
+		go a.sendAsync(detach(ctx), "new booking practitioner push", data, a.sendNewBookingPush)
+	}
 	return nil
+}
+
+// sendNewBookingPush notifies the booking's practitioner of a new online
+// booking. The payload holds the client's first name and initial, the
+// product and the time only (notificationDomain.BookingPushDetails): never
+// a phone, an email, an amount or the practice access.
+func (a *BookingNotificationAdapter) sendNewBookingPush(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if a.push == nil || data.Origin == bookingPorts.BookingOriginPractitioner {
+		return nil
+	}
+	a.enrichData(ctx, &data)
+	clientFirst, clientLast := clientNames(data)
+	msg := notificationDomain.NewBookingPush(notificationDomain.BookingPushDetails{
+		BookingID:       data.BookingID,
+		ClientFirstName: clientFirst,
+		ClientLastName:  clientLast,
+		ProductName:     data.ProductName,
+		Start:           data.SlotStartTime,
+		Now:             a.now(),
+	})
+	return a.push.NotifyUser(ctx, data.PartnerID, msg)
 }
 
 // SendBookingCancellation sends a booking cancellation email (fire-and-forget).

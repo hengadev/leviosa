@@ -10,7 +10,10 @@ import (
 // BookingNotificationService defines the interface for sending booking-related notifications.
 // This interface is implemented by the notification module and injected into the booking service.
 type BookingNotificationService interface {
-	// SendBookingConfirmation sends a confirmation notification to the client after a booking is created.
+	// SendBookingConfirmation is the booking-confirmed event of an online
+	// booking: the client's confirmation and the partner's notice by email,
+	// and the "new booking" practitioner notification (Web Push, ADR-0020)
+	// to the booking's practitioner. Never for a practitioner booking.
 	SendBookingConfirmation(ctx context.Context, data BookingNotificationData) error
 
 	// SendBookingCancellation sends a cancellation notification to both client and partner.
@@ -46,6 +49,12 @@ type LatePaymentNotificationService interface {
 type AccessUpdateNotificationService interface {
 	SendBookingAccessUpdate(ctx context.Context, data BookingNotificationData) error
 }
+
+// Booking origins carried by BookingNotificationData.Origin.
+const (
+	BookingOriginOnline       = "online"
+	BookingOriginPractitioner = "practitioner"
+)
 
 // BookingNotificationData contains information needed to send booking notifications.
 // Required fields (IDs) are always populated by the booking service.
@@ -96,6 +105,11 @@ type BookingNotificationData struct {
 	RoomName        string
 	BuildingName    string
 	Address         string
+
+	// Origin is how the booking was made: "online" (or empty, every booking
+	// before issue 041) or "practitioner" (booked by the practitioner, who
+	// is never notified of their own booking).
+	Origin string
 
 	// Booking token for public guest access (empty for bookings created before issue 002)
 	Token string
