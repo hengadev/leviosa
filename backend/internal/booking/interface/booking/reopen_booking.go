@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/auth/session"
+	"github.com/Leviosa-care/leviosa/backend/internal/common/contracts/identity"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/errs"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/httpx"
 	"github.com/google/uuid"
@@ -24,6 +26,27 @@ func (h *handler) ReopenBooking(w http.ResponseWriter, r *http.Request) {
 	bookingID, err := uuid.Parse(pathParts[1])
 	if err != nil {
 		httpx.RespondWithError(w, errs.NewInvalidValueErr("invalid booking ID format"), http.StatusBadRequest)
+		return
+	}
+
+	// Only the booking's practitioner, or an administrator, may reopen it;
+	// another practitioner's booking answers as unknown.
+	sessionInfo, ok := session.SessionInfoFromContext(ctx)
+	if !ok {
+		httpx.RespondWithError(w, errs.ErrUnauthorized, http.StatusUnauthorized)
+		return
+	}
+	existing, err := h.svc.GetBooking(ctx, bookingID)
+	if err != nil {
+		if errors.Is(err, errs.ErrRepositoryNotFound) {
+			httpx.RespondWithError(w, errs.ErrRepositoryNotFound, http.StatusNotFound)
+			return
+		}
+		httpx.RespondWithError(w, err, http.StatusInternalServerError)
+		return
+	}
+	if sessionInfo.UserID != existing.PartnerID && !sessionInfo.Role.IsAtLeast(identity.Administrator) {
+		httpx.RespondWithError(w, errs.ErrRepositoryNotFound, http.StatusNotFound)
 		return
 	}
 
