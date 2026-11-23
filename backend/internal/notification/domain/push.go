@@ -51,6 +51,9 @@ type PushMessage struct {
 const (
 	PractitionerTodayURL    = "/admin"
 	PractitionerBookingsURL = "/staff/agenda/reservations"
+	// PractitionerPaymentsURL is Comptabilité, where payment problems
+	// (a dispute, a late payment refunded) are handled.
+	PractitionerPaymentsURL = "/admin/compta"
 )
 
 // BookingPushDetails is what a practitioner notification about a booking
@@ -73,9 +76,58 @@ func NewBookingPush(d BookingPushDetails) PushMessage {
 	return bookingPush("Nouvelle réservation", "new-booking", d)
 }
 
-// bookingPush builds a practitioner notification about a booking; the next
-// events (cancellation, payment problem, reminder) are one call each.
+// CancellationPush is the notification for a booking cancelled by its
+// client: "Annulation" / "Marie D. · Ostéopathie · sam. 28 nov. 10:00".
+// It opens Réservations. A cancellation by the practitioner or an
+// administrator is never pushed: nothing for the practitioner's own
+// actions.
+func CancellationPush(d BookingPushDetails) PushMessage {
+	return PushMessage{
+		Title: "Annulation",
+		Body:  bookingPushBody(d),
+		URL:   PractitionerBookingsURL,
+		Tag:   "cancellation:" + d.BookingID.String(),
+	}
+}
+
+// DisputePush is the notification for a payment dispute opened:
+// "Litige de paiement" / "Marie D.". It opens Comptabilité.
+func DisputePush(d BookingPushDetails) PushMessage {
+	return paymentProblemPush("Litige de paiement", "dispute", d)
+}
+
+// LatePaymentRefundPush is the notification for a late payment refunded
+// because the slot was taken: "Paiement tardif remboursé" / "Marie D.".
+// It opens Comptabilité.
+func LatePaymentRefundPush(d BookingPushDetails) PushMessage {
+	return paymentProblemPush("Paiement tardif remboursé", "late-payment-refund", d)
+}
+
+// paymentProblemPush builds a payment-problem notification: the client's
+// short name only — no product or time, and never an amount.
+func paymentProblemPush(title, kind string, d BookingPushDetails) PushMessage {
+	return PushMessage{
+		Title: title,
+		Body:  ClientShortName(d.ClientFirstName, d.ClientLastName),
+		URL:   PractitionerPaymentsURL,
+		Tag:   kind + ":" + d.BookingID.String(),
+	}
+}
+
+// bookingPush builds a practitioner notification about a booking; other
+// events (reminder) are one call each.
 func bookingPush(title, kind string, d BookingPushDetails) PushMessage {
+	return PushMessage{
+		Title: title,
+		Body:  bookingPushBody(d),
+		URL:   PractitionerBookingURL(d.Start, d.Now),
+		Tag:   kind + ":" + d.BookingID.String(),
+	}
+}
+
+// bookingPushBody is what a booking notification shows: the client's short
+// name, the product and the time.
+func bookingPushBody(d BookingPushDetails) string {
 	parts := []string{}
 	if name := ClientShortName(d.ClientFirstName, d.ClientLastName); name != "" {
 		parts = append(parts, name)
@@ -84,12 +136,7 @@ func bookingPush(title, kind string, d BookingPushDetails) PushMessage {
 		parts = append(parts, product)
 	}
 	parts = append(parts, FormatPushTime(d.Start))
-	return PushMessage{
-		Title: title,
-		Body:  strings.Join(parts, " · "),
-		URL:   PractitionerBookingURL(d.Start, d.Now),
-		Tag:   kind + ":" + d.BookingID.String(),
-	}
+	return strings.Join(parts, " · ")
 }
 
 // ClientShortName is the client's first name and last-name initial,

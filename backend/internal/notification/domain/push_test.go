@@ -74,3 +74,59 @@ func TestFormatPushTime_SummerTime(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestCancellationPush_BodyAndRéservationsURL(t *testing.T) {
+	id := uuid.New()
+	msg := CancellationPush(BookingPushDetails{
+		BookingID:       id,
+		ClientFirstName: "Marie",
+		ClientLastName:  "Dupont",
+		ProductName:     "Ostéopathie",
+		Start:           time.Date(2026, 11, 28, 9, 0, 0, 0, time.UTC),
+		Now:             time.Date(2026, 11, 28, 8, 0, 0, 0, time.UTC),
+	})
+	if msg.Title != "Annulation" {
+		t.Errorf("title = %q", msg.Title)
+	}
+	if want := "Marie D. · Ostéopathie · sam. 28 nov. 10:00"; msg.Body != want {
+		t.Errorf("body = %q, want %q", msg.Body, want)
+	}
+	// Always Réservations, even for a booking today: the today page shows
+	// what is coming, not what was cancelled.
+	if msg.URL != PractitionerBookingsURL {
+		t.Errorf("url = %q, want %q", msg.URL, PractitionerBookingsURL)
+	}
+	if msg.Tag != "cancellation:"+id.String() {
+		t.Errorf("tag = %q", msg.Tag)
+	}
+}
+
+func TestPaymentProblemPushes_ShortNameOnlyAndComptabilitéURL(t *testing.T) {
+	d := BookingPushDetails{
+		BookingID:       uuid.New(),
+		ClientFirstName: "Marie",
+		ClientLastName:  "Dupont",
+		ProductName:     "Ostéopathie",
+		Start:           time.Date(2026, 11, 28, 9, 0, 0, 0, time.UTC),
+	}
+	for name, msg := range map[string]PushMessage{
+		"dispute":     DisputePush(d),
+		"late refund": LatePaymentRefundPush(d),
+	} {
+		if msg.Body != "Marie D." {
+			t.Errorf("%s: body = %q, want the short name only", name, msg.Body)
+		}
+		if msg.URL != PractitionerPaymentsURL {
+			t.Errorf("%s: url = %q, want %q", name, msg.URL, PractitionerPaymentsURL)
+		}
+		if strings.Contains(msg.Title+msg.Body, "Dupont") || strings.Contains(msg.Title+msg.Body, "€") {
+			t.Errorf("%s: payload leaked more than the short name: %+v", name, msg)
+		}
+	}
+	if got := DisputePush(d).Title; got != "Litige de paiement" {
+		t.Errorf("dispute title = %q", got)
+	}
+	if got := LatePaymentRefundPush(d).Title; got != "Paiement tardif remboursé" {
+		t.Errorf("late refund title = %q", got)
+	}
+}

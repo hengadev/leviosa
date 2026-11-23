@@ -187,3 +187,155 @@ func TestNoPushNotifier_NothingSent(t *testing.T) {
 		t.Fatalf("no notifier: %v", err)
 	}
 }
+
+// --- Cancellations and payment problems (issue 045) ---
+
+func TestClientCancellation_NotifiesItsPractitionerOnce(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC))
+	data.CancelledBy = "client"
+
+	if err := adapter.SendBookingCancellation(context.Background(), data); err != nil {
+		t.Fatalf("SendBookingCancellation: %v", err)
+	}
+	waitForPush(t, push)
+	time.Sleep(50 * time.Millisecond) // a second notification would show now
+
+	calls := push.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("%d notifications, want 1", len(calls))
+	}
+	if calls[0].userID != data.PartnerID {
+		t.Errorf("notified %s, want the booking's practitioner %s", calls[0].userID, data.PartnerID)
+	}
+	msg := calls[0].msg
+	if msg.Title != "Annulation" || msg.Body != "Marie D. · Ostéopathie · sam. 28 nov. 10:00" {
+		t.Errorf("message = %+v", msg)
+	}
+	if msg.URL != notificationDomain.PractitionerBookingsURL {
+		t.Errorf("url = %q, want Réservations", msg.URL)
+	}
+}
+
+func TestPractitionerCancellation_SendsNoNotification(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Now())
+	data.CancelledBy = "practitioner"
+
+	if err := adapter.SendBookingCancellation(context.Background(), data); err != nil {
+		t.Fatalf("SendBookingCancellation: %v", err)
+	}
+	if err := adapter.sendCancellationPush(context.Background(), data); err != nil {
+		t.Fatalf("sendCancellationPush: %v", err)
+	}
+	time.Sleep(100 * time.Millisecond)
+	if calls := push.snapshot(); len(calls) != 0 {
+		t.Fatalf("a practitioner cancellation sent %d notifications, want none", len(calls))
+	}
+}
+
+func TestUnattributedCancellation_SendsNoNotification(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Now())
+	data.CancelledBy = "" // cancelled before the actor was recorded
+
+	if err := adapter.sendCancellationPush(context.Background(), data); err != nil {
+		t.Fatalf("sendCancellationPush: %v", err)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if calls := push.snapshot(); len(calls) != 0 {
+		t.Fatalf("%d notifications, want none", len(calls))
+	}
+}
+
+func TestPaymentDispute_NotifiesPractitionerOnce(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Now())
+	data.DisputeReason = "product_unreceived_service"
+
+	if err := adapter.SendPaymentDisputeAlert(context.Background(), data); err != nil {
+		t.Fatalf("SendPaymentDisputeAlert: %v", err)
+	}
+	waitForPush(t, push)
+	time.Sleep(50 * time.Millisecond)
+
+	calls := push.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("%d notifications, want 1", len(calls))
+	}
+	if calls[0].userID != data.PartnerID {
+		t.Errorf("notified %s, want the practice's practitioner %s", calls[0].userID, data.PartnerID)
+	}
+	msg := calls[0].msg
+	if msg.Title != "Litige de paiement" || msg.Body != "Marie D." {
+		t.Errorf("message = %+v", msg)
+	}
+	if msg.URL != notificationDomain.PractitionerPaymentsURL {
+		t.Errorf("url = %q, want Comptabilité", msg.URL)
+	}
+}
+
+func TestLatePaymentRefund_NotifiesPractitionerOnce(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Now())
+	data.RefundedAmountCents = 6500
+
+	if err := adapter.SendLatePaymentRefund(context.Background(), data); err != nil {
+		t.Fatalf("SendLatePaymentRefund: %v", err)
+	}
+	waitForPush(t, push)
+	time.Sleep(50 * time.Millisecond)
+
+	calls := push.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("%d notifications, want 1", len(calls))
+	}
+	msg := calls[0].msg
+	if msg.Title != "Paiement tardif remboursé" || msg.Body != "Marie D." {
+		t.Errorf("message = %+v", msg)
+	}
+	if msg.URL != notificationDomain.PractitionerPaymentsURL {
+		t.Errorf("url = %q, want Comptabilité", msg.URL)
+	}
+}
+
+func TestPaymentProblemPayload_NoPhoneEmailFullNameAmountOrAccess(t *testing.T) {
+	push := newFakePushNotifier()
+	adapter, data := newPushAdapter(push, time.Now())
+	data.IsGuestBooking = true
+	data.ClientFirstName = "Marie"
+	data.ClientLastName = "Dupont"
+	data.ClientName = "Marie Dupont"
+	data.ClientEmail = "marie.dupont@example.com"
+	data.ClientPhone = "+33612345678"
+	data.TotalPriceCents = 6500
+	data.RefundedAmountCents = 6500
+	data.DisputeReason = "product_unreceived_service"
+	data.CancelledBy = "client"
+
+	for name, send := range map[string]func() error{
+		"cancellation": func() error { return adapter.sendCancellationPush(context.Background(), data) },
+		"dispute":      func() error { return adapter.sendDisputePush(context.Background(), data) },
+		"late refund":  func() error { return adapter.sendLatePaymentRefundPush(context.Background(), data) },
+	} {
+		if err := send(); err != nil {
+			t.Fatalf("%s push: %v", name, err)
+		}
+	}
+
+	calls := push.snapshot()
+	if len(calls) != 3 {
+		t.Fatalf("%d notifications, want 3", len(calls))
+	}
+	for _, call := range calls {
+		payload, _ := json.Marshal(call.msg)
+		if !strings.Contains(string(payload), "Marie D.") {
+			t.Errorf("%s: payload %s lacks the first name and initial", call.msg.Title, payload)
+		}
+		for _, secret := range []string{"Dupont", "+33612345678", "0612345678", "marie.dupont@example.com", "@", "4821B", "Sonnez", "6500", "65,00", "65 €", "€", "product_unreceived"} {
+			if strings.Contains(string(payload), secret) {
+				t.Errorf("%s: payload %s contains %q", call.msg.Title, payload, secret)
+			}
+		}
+	}
+}
