@@ -72,7 +72,7 @@ func (r *CompleteUserRequest) Valid(ctx context.Context) error {
 		errs.Set("address2", err)
 	}
 
-	if err := validateFullAddress(r.City, r.PostalCode, r.Address1, r.Address2); err != nil {
+	if err := FullAddressCheck(r.City, r.PostalCode, r.Address1, r.Address2); err != nil {
 		errs.Set("full_address", err)
 	}
 

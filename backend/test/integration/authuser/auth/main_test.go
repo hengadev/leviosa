@@ -18,6 +18,7 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/application/partner"
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/application/session"
 	"github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
+	authdomain "github.com/Leviosa-care/leviosa/backend/internal/authuser/domain"
 	partnerRepository "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/partner"
 	userRepository "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/postgres/user"
 	authRabbitMQ "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/rabbitmq"
@@ -82,6 +83,11 @@ var (
 func TestMain(m *testing.M) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	// The address check calls adresse.data.gouv.fr over the internet: a slow
+	// or reset connection there failed these tests on CI. Every test address
+	// is valid, so accept them all.
+	authdomain.FullAddressCheck = func(city, postalCode, address1, address2 string) error { return nil }
 
 	// Create and configure logger for tests
 	loggerHandler, err := logger.SetHandler("debug", "dev")

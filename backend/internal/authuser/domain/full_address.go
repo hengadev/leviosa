@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // Response structure from the adresse.data.gouv.fr API
@@ -21,12 +22,21 @@ type AdresseResult struct {
 	} `json:"features"`
 }
 
+// FullAddressCheck checks an address against the national address base
+// (adresse.data.gouv.fr). It is a variable so the integration tests can
+// replace it: they must not depend on a public API over the internet.
+var FullAddressCheck = validateFullAddress
+
+// addressHTTPClient bounds the lookup: a slow address API must not hang the
+// profile completion request.
+var addressHTTPClient = &http.Client{Timeout: 5 * time.Second}
+
 func validateFullAddress(city, postalCode, address1, address2 string) error {
 	fullAddress := fmt.Sprintf("%s %s %s", address1, address2, postalCode+" "+city)
 	query := url.QueryEscape(fullAddress)
 	apiURL := fmt.Sprintf("https://api-adresse.data.gouv.fr/search/?q=%s&limit=1", query)
 
-	resp, err := http.Get(apiURL)
+	resp, err := addressHTTPClient.Get(apiURL)
 	if err != nil {
 		return fmt.Errorf("failed to call address validation API: %w", err)
 	}
