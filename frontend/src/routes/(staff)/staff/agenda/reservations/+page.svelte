@@ -5,7 +5,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { Dialog } from 'bits-ui';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
-	import { Clock, CheckCircle, XCircle, AlertCircle, Ban } from '@lucide/svelte';
+	import { Clock, CheckCircle, XCircle, AlertCircle, Ban, RotateCcw } from '@lucide/svelte';
 
 	let { data }: PageProps = $props();
 
@@ -117,6 +117,23 @@
 		return booking.status === 'confirmed' && new Date(booking.startTime) > new Date();
 	}
 
+	/** A closed booking can be reopened only on the Paris day it was closed */
+	function isReopenable(booking: Booking): boolean {
+		const closedAt = booking.status === 'completed' ? booking.completedAt : booking.noShowAt;
+		if (!closedAt) return false;
+		if (booking.status !== 'completed' && booking.status !== 'no_show') return false;
+		return parisDay(new Date(closedAt)) === parisDay(new Date());
+	}
+
+	function parisDay(date: Date): string {
+		return new Intl.DateTimeFormat('en-CA', {
+			timeZone: 'Europe/Paris',
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit'
+		}).format(date);
+	}
+
 	// Practitioner cancellation: the booking awaiting confirmation in the dialog
 	let cancelTarget = $state<Booking | null>(null);
 	let cancelDialogOpen = $state(false);
@@ -218,6 +235,22 @@
 			actionError = 'Erreur réseau. Veuillez réessayer.';
 		} finally {
 			actionLoading = { ...actionLoading, [bookingId + '_noshow']: false };
+		}
+	}
+	async function reopenBooking(bookingId: string) {
+		actionLoading = { ...actionLoading, [bookingId + '_reopen']: true };
+		actionError = '';
+		try {
+			const res = await fetch(`/api/bookings/${bookingId}/reopen`, { method: 'POST' });
+			if (res.ok) {
+				await invalidateAll();
+			} else {
+				actionError = 'Impossible d’annuler la clôture. Veuillez réessayer.';
+			}
+		} catch {
+			actionError = 'Erreur réseau. Veuillez réessayer.';
+		} finally {
+			actionLoading = { ...actionLoading, [bookingId + '_reopen']: false };
 		}
 	}
 </script>
@@ -353,6 +386,17 @@
 									{actionLoading[booking.id + '_noshow'] ? '…' : 'Absent'}
 								</button>
 							</div>
+						{/if}
+						{#if isReopenable(booking)}
+							<button
+								class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+								title="Remettre la séance en confirmée"
+								onclick={() => reopenBooking(booking.id)}
+								disabled={actionLoading[booking.id + '_reopen']}
+							>
+								<RotateCcw size={13} />
+								{actionLoading[booking.id + '_reopen'] ? '…' : 'Annuler la clôture'}
+							</button>
 						{/if}
 					</div>
 				</div>

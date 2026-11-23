@@ -15,6 +15,8 @@ interface BackendBooking {
 	status: string;
 	payment_status: string;
 	total_price_cents: number;
+	completed_at?: string;
+	no_show_at?: string;
 }
 
 /** A transaction of the partner earnings endpoint: amount_cents is what was paid online. */
@@ -44,6 +46,20 @@ export interface TodaySession {
 	paymentLabel: string;
 }
 
+/** One of today's sessions already closed (completed or no-show). */
+export interface TodayClosedSession {
+	id: string;
+	startLabel: string;
+	endLabel: string;
+	clientName: string;
+	productName: string;
+	/** "Terminée" or "Absent". */
+	resultLabel: string;
+	/** Whether the Annuler (reopen) link applies: the close happened today
+	 * in Paris (the domain refuses a reopen after that day). */
+	canUndo: boolean;
+}
+
 export type TodayData =
 	| { state: 'not-set-up' }
 	| {
@@ -53,6 +69,11 @@ export type TodayData =
 			sessionCount: number;
 			/** Confirmed sessions of today, in order; the page drops those that have ended. */
 			sessions: TodaySession[];
+			/** Today's confirmed sessions that have ended, waiting to be closed
+			 * (Terminée / Absent), in order. */
+			toClose: TodaySession[];
+			/** Today's sessions already closed ("Terminées aujourd'hui"), in order. */
+			closed: TodayClosedSession[];
 			/** The next working day and its sessions, when there is one; absent when
 			 * the fetch failed, so the page still renders. */
 			nextWorkingDay?: NextWorkingDay;
@@ -178,7 +199,9 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 			state: 'ready',
 			dateLabel: dayLabel(new Date()),
 			sessionCount: 0,
-			sessions: []
+			sessions: [],
+			toClose: [],
+			closed: []
 		};
 	}
 
@@ -244,6 +267,27 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 		}
 
 		const sessions: TodaySession[] = confirmed.map((b) => toSession(b, paidOnline.get(b.id)));
+		const toClose: TodaySession[] = confirmed
+			.filter((b) => new Date(b.slot_end_time).getTime() <= now.getTime())
+			.map((b) => toSession(b, paidOnline.get(b.id)));
+
+		// Today's sessions already closed: "Terminée" or "Absent", undoable
+		// only when the close happened today in Paris (the reopen rule).
+		const closed: TodayClosedSession[] = todays
+			.filter((b) => b.status === 'completed' || b.status === 'no_show')
+			.map((b) => {
+				const session = toSession(b, undefined);
+				const closedAt = b.status === 'completed' ? b.completed_at : b.no_show_at;
+				return {
+					id: session.id,
+					startLabel: session.startLabel,
+					endLabel: session.endLabel,
+					clientName: session.clientName,
+					productName: session.productName,
+					resultLabel: b.status === 'completed' ? 'Terminée' : 'Absent',
+					canUndo: closedAt !== undefined && parisDay(new Date(closedAt)) === today
+				};
+			});
 
 		// The next working day (issue 037): its fetch is optional — a failure
 		// still renders the day without the section.
@@ -281,6 +325,8 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 			dateLabel: dayLabel(now),
 			sessionCount: todays.length,
 			sessions,
+			toClose,
+			closed,
 			nextWorkingDay
 		};
 	} catch (err) {

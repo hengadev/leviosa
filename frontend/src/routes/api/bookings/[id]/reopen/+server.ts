@@ -1,0 +1,13 @@
+import * as env from '$app/env/private';
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+
+// POST /api/bookings/[id]/reopen — put a completed/no-show booking back to confirmed
+export const POST: RequestHandler = async ({ params, fetch }) => {
+	const res = await fetch(`${env.API_URL}/bookings/${params.id}/reopen`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' }
+	});
+	const data = await res.json();
+	return json(data, { status: res.status });
+};
