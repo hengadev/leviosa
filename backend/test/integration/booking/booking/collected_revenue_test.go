@@ -50,9 +50,7 @@ func TestCollectedRevenue(t *testing.T) {
 		assert.WithinDuration(t, time.Now(), paidAt, time.Minute)
 
 		// The admin's accounting for this month so far.
-		now := time.Now().UTC()
-		from := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-		to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+		from, to := monthSoFar()
 		summary, err := service.GetFinancialSummary(ctx, from, to)
 		require.NoError(t, err)
 		assert.Equal(t, depositCents, summary.Summary.GrossRevenueCents)

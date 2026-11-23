@@ -23,13 +23,6 @@ import (
 func TestOnSiteFinancialSummary(t *testing.T) {
 	ctx := context.Background()
 
-	monthBounds := func() (from, to time.Time) {
-		now := time.Now().UTC()
-		from = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-		to = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
-		return from, to
-	}
-
 	t.Run("should count a recorded on-site payment next to the online deposit", func(t *testing.T) {
 		defer tu.ClearAuthData(t, ctx, authCtx)
 
@@ -41,7 +34,7 @@ func TestOnSiteFinancialSummary(t *testing.T) {
 		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		from, to := monthBounds()
+		from, to := monthSoFar()
 		summary, err := service.GetFinancialSummary(ctx, from, to)
 		require.NoError(t, err)
 		assert.Equal(t, onSiteDepositCents+due, summary.Summary.GrossRevenueCents)
@@ -97,8 +90,8 @@ func TestOnSiteFinancialSummary(t *testing.T) {
 		// The deposit was paid online last month: move the booking's
 		// creation back (a plain column) while the on-site payment stays
 		// recorded today.
-		now := time.Now().UTC()
-		firstOfThisMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+		today := practiceToday()
+		firstOfThisMonth := time.Date(today.Year(), today.Month(), 1, 0, 0, 0, 0, time.UTC)
 		lastMonth := firstOfThisMonth.AddDate(0, 0, -15)
 		_, err := testPool.Exec(ctx,
 			"UPDATE booking.bookings SET created_at = $2 WHERE id = $1",
@@ -117,7 +110,7 @@ func TestOnSiteFinancialSummary(t *testing.T) {
 		assert.Equal(t, onSiteDepositCents, prev.Transactions[0].AmountCents)
 
 		// This month: the on-site balance only.
-		from, to := monthBounds()
+		from, to := monthSoFar()
 		cur, err := service.GetFinancialSummary(ctx, from, to)
 		require.NoError(t, err)
 		assert.Equal(t, due, cur.Summary.GrossRevenueCents)
@@ -139,7 +132,7 @@ func TestOnSiteFinancialSummary(t *testing.T) {
 		defer undo.Body.Close()
 		require.Equal(t, http.StatusOK, undo.StatusCode)
 
-		from, to := monthBounds()
+		from, to := monthSoFar()
 		summary, err := service.GetFinancialSummary(ctx, from, to)
 		require.NoError(t, err)
 		assert.Equal(t, onSiteDepositCents, summary.Summary.GrossRevenueCents)
