@@ -114,8 +114,17 @@ func paymentProblemPush(title, kind string, d BookingPushDetails) PushMessage {
 	}
 }
 
-// bookingPush builds a practitioner notification about a booking; other
-// events (reminder) are one call each.
+// NewSessionReminderPush is the "Dans 15 min" practitioner notification
+// sent shortly before a session starts (issue 046). It always opens
+// Aujourd'hui: the session is imminent, so it is today's page.
+func NewSessionReminderPush(d BookingPushDetails) PushMessage {
+	msg := bookingPush("Dans 15 min", "session-reminder", d)
+	msg.URL = PractitionerTodayURL
+	return msg
+}
+
+// bookingPush builds a practitioner notification about a booking; the
+// events above are one call each.
 func bookingPush(title, kind string, d BookingPushDetails) PushMessage {
 	return PushMessage{
 		Title: title,
