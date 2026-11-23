@@ -1,6 +1,9 @@
 <script lang="ts">
     import { ChevronLeft, ChevronRight } from "@lucide/svelte";
     import { onMount, tick } from "svelte";
+    import { prefersReducedMotion } from "svelte/motion";
+    import { fly } from "svelte/transition";
+    import { swipe } from "#lib/utils/swipe.ts";
     import { invalidateAll } from "$app/navigation";
     import { cap, dictionary, fmt, type Locale } from "#lib/i18n/practice.ts";
     import type { PracticeBooking, PracticeSlot } from "./practice";
@@ -67,6 +70,19 @@
     const canPrev = $derived(compareMonths(month, firstMonth) > 0);
     const canNext = $derived(compareMonths(month, lastMonth) < 0);
     const cells = $derived(monthCells(month));
+
+    // The way the last change went: the new month slides in from that side.
+    let direction = $state<1 | -1>(1);
+    function previousMonth() {
+        if (!canPrev) return;
+        direction = -1;
+        month = addMonths(month, -1);
+    }
+    function nextMonth() {
+        if (!canNext) return;
+        direction = 1;
+        month = addMonths(month, 1);
+    }
     const daySlots = $derived(byDay.get(selectedDayKey) ?? []);
 
     function choose(candidate: Candidate) {
@@ -150,7 +166,7 @@
                         type="button"
                         aria-label={t.prevMonth}
                         disabled={!canPrev}
-                        onclick={() => (month = addMonths(month, -1))}
+                        onclick={previousMonth}
                         class="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-neutral-200 transition-colors hover:bg-neutral-100 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <ChevronLeft class="size-4" aria-hidden="true" />
@@ -159,7 +175,7 @@
                         type="button"
                         aria-label={t.nextMonth}
                         disabled={!canNext}
-                        onclick={() => (month = addMonths(month, 1))}
+                        onclick={nextMonth}
                         class="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-neutral-200 transition-colors hover:bg-neutral-100 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         <ChevronRight class="size-4" aria-hidden="true" />
@@ -170,6 +186,14 @@
                 {#each t.weekdays as weekday (weekday)}
                     <span class="pb-2 text-xs font-medium text-neutral-600 uppercase">{weekday}</span>
                 {/each}
+            </div>
+            <!-- Swipe left or right on the days to change month (touch screens). -->
+            <div class="touch-pan-y overflow-hidden" {@attach swipe({ onLeft: nextMonth, onRight: previousMonth })}>
+            {#key `${month.year}-${month.month}`}
+            <div
+                class="mt-1 grid grid-cols-7 gap-1 text-center"
+                in:fly={{ x: prefersReducedMotion.current ? 0 : direction * 24, duration: prefersReducedMotion.current ? 0 : 180 }}
+            >
                 {#each cells as cell, index (index)}
                     {#if cell}
                         {@const open = byDay.get(cell.key)?.length ?? 0}
@@ -195,6 +219,8 @@
                         <span></span>
                     {/if}
                 {/each}
+            </div>
+            {/key}
             </div>
         </div>
 
