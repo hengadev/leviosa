@@ -100,7 +100,7 @@
 										{session.startLabel}
 									</div>
 									<div class="min-w-0 flex-1">
-										<a href="/staff/clients/{session.id}" class="truncate font-medium hover:underline">{session.clientName}</a>
+										<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
 										{#if session.paymentLabel}
 											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 										{/if}
@@ -144,7 +144,7 @@
 										{session.startLabel}
 									</div>
 									<div class="min-w-0 flex-1">
-										<a href="/staff/clients/{session.id}" class="truncate font-medium hover:underline">{session.clientName}</a>
+										<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
 										{#if session.paymentLabel}
 											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 										{/if}

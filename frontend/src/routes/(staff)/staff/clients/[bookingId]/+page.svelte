@@ -9,6 +9,7 @@
 
 	function formatDateTime(iso: string): string {
 		return new Date(iso).toLocaleDateString('fr-FR', {
+			timeZone: 'Europe/Paris',
 			weekday: 'short',
 			day: 'numeric',
 			month: 'short',
@@ -18,7 +19,11 @@
 	}
 
 	function formatTime(iso: string): string {
-		return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+		return new Date(iso).toLocaleTimeString('fr-FR', {
+			timeZone: 'Europe/Paris',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 
 	function statusLabel(status: string): string {
@@ -53,6 +58,12 @@
 			default:
 				return status;
 		}
+	}
+
+	/** Digits and a leading + only, for tel: and sms: links. */
+	function dialable(phone: string): string {
+		const trimmed = phone.trim();
+		return (trimmed.startsWith('+') ? '+' : '') + trimmed.replace(/\D/g, '');
 	}
 
 	function firstName(name: string): string {
@@ -90,13 +101,13 @@
 			{#if data.client.phone}
 				<div class="grid grid-cols-[1fr_2.75rem] gap-2">
 					<a
-						href="tel:{data.client.phone}"
+						href="tel:{dialable(data.client.phone)}"
 						class="flex h-11 items-center justify-center gap-2 rounded-xl border border-border-card font-medium hover:bg-muted"
 					>
 						<Phone size={18} />
 						Appeler {data.client.phone}
 					</a>
-					<SmsButton phone={data.client.phone} firstName={firstName(data.client.name)} />
+					<SmsButton phone={dialable(data.client.phone)} firstName={firstName(data.client.name)} />
 				</div>
 			{/if}
 			{#if data.client.email}
