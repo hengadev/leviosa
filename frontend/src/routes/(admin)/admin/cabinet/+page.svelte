@@ -3,6 +3,7 @@
 	// bar's last tab, and the account (the public site, logout).
 	import { ChevronRight, LogOut } from "@lucide/svelte";
 	import PageActionsMenu from "#lib/components/admin/PageActionsMenu.svelte";
+	import PushNotificationsRow from "#lib/components/admin/PushNotificationsRow.svelte";
 	import { accountInitial, accountName } from "#lib/navigation/BackOfficeSidebar.svelte";
 	import { accountLinks, cabinetGroups } from "#lib/navigation/practiceNav.ts";
 	import type { PageProps } from "./$types";
@@ -35,6 +36,14 @@
 				<p class="text-xs text-muted-foreground">{role}</p>
 			</div>
 		</div>
+
+		<!-- Practitioner notifications on this device (Web Push, ADR-0020) -->
+		<section>
+			<h2 class="px-1 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cet appareil</h2>
+			<div class="overflow-hidden rounded-2xl border border-border-card">
+				<PushNotificationsRow />
+			</div>
+		</section>
 
 		{#each cabinetGroups as group (group.label)}
 			<section>
