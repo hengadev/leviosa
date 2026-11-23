@@ -1,5 +1,5 @@
 """Generate the favicons and PWA icons into static/: a rounded "L" on a
-rounded square, drawn like germinal's "G" (same stroke, same colours).
+rounded square, drawn like another project's "G" (same stroke, same colours).
 
     python3 scripts/generate-icons.py   (from frontend/, needs Pillow)
 """

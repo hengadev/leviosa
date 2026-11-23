@@ -9,7 +9,7 @@
 
 ADR-0003 put the encx KEK (a Vault transit key) and the pepper in a self-hosted HashiCorp Vault container on the application server. In practice that Vault was the most fragile part of the deployment: it had to be unsealed after every restart, its unseal keys and root token lived only in a file on the server, its storage was never backed up, and the app authenticated with the root token. Losing the server meant losing every key — and with them every encrypted field and every password hash.
 
-The deployment is being rebuilt on the Germinal model (Infisical as the only source of configuration, Compose stacks, Terraform + Ansible from any operator computer). The old server is gone and there is no data to carry over, so the key store can be chosen freely.
+The deployment is being rebuilt on the another project model (Infisical as the only source of configuration, Compose stacks, Terraform + Ansible from any operator computer). The old server is gone and there is no data to carry over, so the key store can be chosen freely.
 
 ## Decision
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The phone navigation of the back office, like germinal's: a bottom bar
+	// The phone navigation of the back office, like another project's: a bottom bar
 	// with the pages reached most often and a Menu button, whose drawer holds
 	// the rest of the navigation, under the sidebar's headings, and the
 	// account (other areas, the public site, logout).
