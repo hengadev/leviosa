@@ -19,13 +19,15 @@
 		onPick: (day: CalendarDate) => void;
 		/** The day outlined (the one whose details are shown). */
 		selected?: string | null;
-		/** Days before it cannot be picked. */
+		/** Days before it cannot be picked, nor months before its own. */
 		min?: CalendarDate;
+		/** Other days that cannot be picked. */
+		disabled?: (day: CalendarDate) => boolean;
 		/** Smaller cells, without hints (inside a form). */
 		compact?: boolean;
 	}
 
-	let { month = $bindable(), today, info, onPick, selected = null, min, compact = false }: Props = $props();
+	let { month = $bindable(), today, info, onPick, selected = null, min, disabled, compact = false }: Props = $props();
 
 	const weeks = $derived(monthGrid(month));
 	const title = $derived(
@@ -131,12 +133,12 @@
 		{#each weeks as week}
 			{#each week as day (day.toString())}
 				{@const inMonth = day.month === month.month}
-				{@const past = min ? day.compare(min) < 0 : false}
+				{@const blocked = (min ? day.compare(min) < 0 : false) || (disabled?.(day) ?? false)}
 				{@const look = info(day)}
 				<button
 					type="button"
 					onclick={() => onPick(day)}
-					disabled={past}
+					disabled={blocked}
 					aria-pressed={selected === day.toString()}
 					aria-label="{dayName(day)}{look.hint ? ` : ${look.hint}` : ''}{look.marked ? ' : déjà ouvert' : ''}"
 					class="relative flex flex-col items-center justify-start rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-35
