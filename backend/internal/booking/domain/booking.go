@@ -120,6 +120,9 @@ type Booking struct {
 
 	// Reminder tracking
 	RemindedAt *time.Time `json:"reminded_at,omitempty"`
+	// PractitionerRemindedAt is when the practitioner's "Dans 15 min"
+	// session notification was sent (issue 046).
+	PractitionerRemindedAt *time.Time `json:"practitioner_reminded_at,omitempty"`
 
 	// Payment hold (ADR-0018): while awaiting payment, the booking keeps its
 	// slot until HoldExpiresAt.

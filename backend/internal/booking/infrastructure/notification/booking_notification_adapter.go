@@ -172,6 +172,29 @@ func (a *BookingNotificationAdapter) sendNewBookingPush(ctx context.Context, dat
 	return a.push.NotifyUser(ctx, data.PartnerID, msg)
 }
 
+// SendPractitionerSessionReminder notifies the booking's practitioner that
+// a session starts in a few minutes (issue 046). Unlike the fire-and-forget
+// event notifications, it is called by a scheduler that wants to know the
+// outcome, so it runs synchronously and returns the push result. The payload
+// holds the client's first name and initial, the product and the time only
+// (notificationDomain.BookingPushDetails).
+func (a *BookingNotificationAdapter) SendPractitionerSessionReminder(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if a.push == nil {
+		return nil
+	}
+	a.enrichData(ctx, &data)
+	clientFirst, clientLast := clientNames(data)
+	msg := notificationDomain.NewSessionReminderPush(notificationDomain.BookingPushDetails{
+		BookingID:       data.BookingID,
+		ClientFirstName: clientFirst,
+		ClientLastName:  clientLast,
+		ProductName:     data.ProductName,
+		Start:           data.SlotStartTime,
+		Now:             a.now(),
+	})
+	return a.push.NotifyUser(ctx, data.PartnerID, msg)
+}
+
 // SendBookingCancellation sends a booking cancellation email (fire-and-forget).
 func (a *BookingNotificationAdapter) SendBookingCancellation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "booking cancellation", data, a.sendBookingCancellationEmail)

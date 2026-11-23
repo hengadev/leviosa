@@ -39,6 +39,35 @@ func TestNewBookingPush_FirstNameInitialProductAndParisTime(t *testing.T) {
 	}
 }
 
+func TestNewSessionReminderPush_TodayURL(t *testing.T) {
+	// 09:00 UTC on Saturday 28 November 2026 is 10:00 in Paris.
+	start := time.Date(2026, 11, 28, 9, 0, 0, 0, time.UTC)
+	id := uuid.New()
+
+	msg := NewSessionReminderPush(BookingPushDetails{
+		BookingID:       id,
+		ClientFirstName: "Marie",
+		ClientLastName:  "Dupont",
+		ProductName:     "Séance ostéopathie",
+		Start:           start,
+		Now:             time.Date(2026, 11, 28, 8, 45, 0, 0, time.UTC),
+	})
+
+	if msg.Title != "Dans 15 min" {
+		t.Errorf("title = %q", msg.Title)
+	}
+	if want := "Marie D. · Séance ostéopathie · sam. 28 nov. 10:00"; msg.Body != want {
+		t.Errorf("body = %q, want %q", msg.Body, want)
+	}
+	// The session is imminent: always Aujourd'hui, even across midnight in Paris.
+	if msg.URL != PractitionerTodayURL {
+		t.Errorf("url = %q, want %q", msg.URL, PractitionerTodayURL)
+	}
+	if msg.Tag != "session-reminder:"+id.String() {
+		t.Errorf("tag = %q", msg.Tag)
+	}
+}
+
 func TestPractitionerBookingURL_TodayInParis(t *testing.T) {
 	// 23:30 UTC on 27 November is already 28 November in Paris.
 	now := time.Date(2026, 11, 27, 23, 30, 0, 0, time.UTC)

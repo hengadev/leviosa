@@ -134,6 +134,18 @@ type BookingRepository interface {
 	// The reminder is sent only after a successful claim, so each booking is
 	// reminded once even with several scheduler ticks or instances.
 	ClaimReminder(ctx context.Context, bookingID uuid.UUID) (bool, error)
+
+	// FindBookingsDueForPractitionerReminder returns all confirmed bookings
+	// where practitioner_reminded_at IS NULL (issue 046).
+	FindBookingsDueForPractitionerReminder(ctx context.Context) ([]*domain.BookingEncx, error)
+
+	// MarkPractitionerReminderSent sets practitioner_reminded_at to now() for
+	// a given booking.
+	MarkPractitionerReminderSent(ctx context.Context, bookingID uuid.UUID) error
+
+	// ClaimPractitionerReminder sets practitioner_reminded_at to now() only
+	// when the booking is still confirmed and not yet practitioner-reminded.
+	ClaimPractitionerReminder(ctx context.Context, bookingID uuid.UUID) (bool, error)
 }
 
 // ExpiredHold is a booking the expiry job moved to expired, with the

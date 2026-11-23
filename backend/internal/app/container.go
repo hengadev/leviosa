@@ -195,9 +195,12 @@ type Container struct {
 	MetricsService      bookingPorts.MetricsService
 	PaymentService      bookingPorts.PaymentService
 	ReminderScheduler   *bookingSvc.ReminderScheduler
-	HoldExpiryJob       *bookingSvc.HoldExpiryJob
-	ReviewService       bookingPorts.ReviewService
-	WaitlistService     bookingPorts.WaitlistService
+	// PractitionerReminderScheduler is nil when Web Push is off (no VAPID
+	// keys): no session notification is sent or scheduled.
+	PractitionerReminderScheduler *bookingSvc.PractitionerReminderScheduler
+	HoldExpiryJob                 *bookingSvc.HoldExpiryJob
+	ReviewService                 bookingPorts.ReviewService
+	WaitlistService               bookingPorts.WaitlistService
 
 	// Messaging Repositories
 	MessageRepo messagingPorts.MessageRepository
@@ -587,6 +590,16 @@ func (c *Container) setupServices(ctx context.Context) error {
 		bookingSvc.WithInterval(time.Duration(c.Config.ReminderIntervalMinutes)*time.Minute),
 		bookingSvc.WithReminderWindow(time.Duration(c.Config.ReminderWindowHours)*time.Hour),
 	)
+
+	// Practitioner session-reminder scheduler (issue 046): only with Web
+	// Push configured, else nothing is sent and nothing is scheduled.
+	if c.Config.WebPush.Complete() {
+		c.PractitionerReminderScheduler = bookingSvc.NewPractitionerReminderScheduler(
+			c.BookingRepo,
+			notificationAdapter,
+			c.Crypto,
+		)
+	}
 
 	// Wire BookingClient into AuthAggregator (now that BookingService is created)
 	c.BookingClient = bookingClientAdapter.NewInProcessClient(c.BookingService, c.PracticeRoomService)

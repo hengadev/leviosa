@@ -50,6 +50,14 @@ type AccessUpdateNotificationService interface {
 	SendBookingAccessUpdate(ctx context.Context, data BookingNotificationData) error
 }
 
+// PractitionerSessionReminderService sends the practitioner the "Dans 15
+// min" session notification (Web Push, issue 046) for an upcoming booking —
+// online or practitioner-made. Implemented by the notification module next
+// to BookingNotificationService; the payload follows ADR-0020.
+type PractitionerSessionReminderService interface {
+	SendPractitionerSessionReminder(ctx context.Context, data BookingNotificationData) error
+}
+
 // Booking origins carried by BookingNotificationData.Origin.
 const (
 	BookingOriginOnline       = "online"

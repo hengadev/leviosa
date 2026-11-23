@@ -56,6 +56,9 @@ func serve(ctx context.Context, args []string) error {
 	// Start background workers
 	reminderCtx, reminderCancel := context.WithCancel(context.Background())
 	go container.ReminderScheduler.Start(reminderCtx)
+	if container.PractitionerReminderScheduler != nil {
+		go container.PractitionerReminderScheduler.Start(reminderCtx)
+	}
 	go container.HoldExpiryJob.Start(reminderCtx)
 
 	// Setup graceful shutdown
@@ -78,6 +81,9 @@ func serve(ctx context.Context, args []string) error {
 		// Stop background workers
 		reminderCancel()
 		container.ReminderScheduler.Stop()
+		if container.PractitionerReminderScheduler != nil {
+			container.PractitionerReminderScheduler.Stop()
+		}
 		container.HoldExpiryJob.Stop()
 
 		// Give server 30 seconds to shutdown gracefully
@@ -95,6 +101,9 @@ func serve(ctx context.Context, args []string) error {
 		// Stop background workers on server error
 		reminderCancel()
 		container.ReminderScheduler.Stop()
+		if container.PractitionerReminderScheduler != nil {
+			container.PractitionerReminderScheduler.Stop()
+		}
 		container.HoldExpiryJob.Stop()
 		return fmt.Errorf("server error: %w", err)
 	}
