@@ -36,7 +36,7 @@
 <div class="flex min-h-screen bg-muted/25">
 	<PracticeNavigation user={data.user} />
 	<!-- Room under the content for the fixed bottom bar and the home indicator -->
-	<main class="flex-1 min-w-0 bg-background pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+	<main class="flex-1 min-w-0 bg-background pb-[4rem] [@media(display-mode:standalone)]:pb-[5.25rem] lg:pb-0">
 		<CabinetBackLink />
 		{@render children()}
 	</main>
