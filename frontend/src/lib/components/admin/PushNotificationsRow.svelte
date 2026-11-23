@@ -53,8 +53,22 @@
 		return bytes;
 	}
 
+	// Nothing else in the app registers the service worker (the PWA plugin's
+	// registration script is never injected), so this row does it: without
+	// it there is no registration and the switch stays disabled.
 	async function registration(): Promise<ServiceWorkerRegistration | undefined> {
-		return navigator.serviceWorker.getRegistration();
+		const existing = await navigator.serviceWorker.getRegistration();
+		if (existing) return existing;
+		try {
+			await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+			// pushManager.subscribe needs an active worker.
+			return await Promise.race([
+				navigator.serviceWorker.ready,
+				new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 10000)),
+			]);
+		} catch {
+			return undefined;
+		}
 	}
 
 	async function store(subscription: PushSubscription): Promise<boolean> {
