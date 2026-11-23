@@ -21,7 +21,7 @@
 
 <DropdownMenu.Root>
 	<DropdownMenu.Trigger
-		class="p-2 rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-surface-hover"
+		class="inline-flex size-11 items-center justify-center rounded-lg transition-colors text-muted-foreground hover:text-foreground hover:bg-surface-hover"
 		aria-label="Plus d'actions"
 	>
 		<EllipsisVertical size={20} />
