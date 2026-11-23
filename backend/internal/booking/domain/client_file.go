@@ -51,11 +51,14 @@ func ClientGroupKey(b PartnerBookingResponse) string {
 // ClientGroup is one client of the practitioner: their contact details and
 // all their bookings with this practitioner.
 type ClientGroup struct {
-	Key      string
-	Name     string
-	Phone    string
-	Email    string
-	Bookings []PartnerBookingResponse
+	Key       string
+	ClientID  *uuid.UUID
+	Name      string
+	FirstName string
+	LastName  string
+	Phone     string
+	Email     string
+	Bookings  []PartnerBookingResponse
 }
 
 // GroupClientBookings groups the practitioner's bookings by client. Bookings
@@ -74,6 +77,15 @@ func GroupClientBookings(bookings []PartnerBookingResponse) []ClientGroup {
 			g = &ClientGroup{Key: key}
 			byKey[key] = g
 			order = append(order, key)
+		}
+		if g.ClientID == nil {
+			g.ClientID = b.ClientID
+		}
+		if g.FirstName == "" {
+			g.FirstName = b.GuestFirstName
+		}
+		if g.LastName == "" {
+			g.LastName = b.GuestLastName
 		}
 		if g.Name == "" {
 			g.Name = b.ClientName
@@ -159,11 +171,17 @@ func sortClientBookings(bs []ClientFileBooking, ascending bool) {
 }
 
 // ClientSummary is one distinct client of the practitioner, for the client
-// search (issue 043 wires it into the booking form).
+// search (issue 043 wires it into the booking form). ClientID is set when the
+// group is a client account (the form then books by id); FirstName/LastName
+// come from the bookings' guest fields, or are split from the name for
+// accounts, so a guest can be pre-filled.
 type ClientSummary struct {
-	Name  string `json:"name"`
-	Phone string `json:"phone,omitempty"`
-	Email string `json:"email,omitempty"`
+	ClientID  *uuid.UUID `json:"client_id,omitempty"`
+	Name      string     `json:"name"`
+	FirstName string     `json:"first_name,omitempty"`
+	LastName  string     `json:"last_name,omitempty"`
+	Phone     string     `json:"phone,omitempty"`
+	Email     string     `json:"email,omitempty"`
 }
 
 // SearchClientSummaries returns the distinct clients whose name or phone
@@ -182,7 +200,31 @@ func SearchClientSummaries(groups []ClientGroup, query string) []ClientSummary {
 				continue
 			}
 		}
-		clients = append(clients, ClientSummary{Name: g.Name, Phone: g.Phone, Email: g.Email})
+		firstName, lastName := g.FirstName, g.LastName
+		if firstName == "" && lastName == "" {
+			// An account group has no guest fields: split its display name
+			// (first word as first name, the rest as last name).
+			firstName, lastName = splitName(g.Name)
+		}
+		clients = append(clients, ClientSummary{
+			ClientID:  g.ClientID,
+			Name:      g.Name,
+			FirstName: firstName,
+			LastName:  lastName,
+			Phone:     g.Phone,
+			Email:     g.Email,
+		})
 	}
 	return clients
+}
+
+func splitName(name string) (string, string) {
+	parts := strings.Fields(name)
+	if len(parts) == 0 {
+		return "", ""
+	}
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], strings.Join(parts[1:], " ")
 }

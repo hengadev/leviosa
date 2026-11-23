@@ -36,6 +36,9 @@
 	let product = $state<BookableProduct | null>(onlyProduct);
 	let slot = $state<FreeSlot | null>(null);
 	let client = $state<GuestClient>(emptyGuestClient());
+	// The account id of the client picked in the search (issue 043): the
+	// booking then carries client_id instead of the guest fields.
+	let pickedClientId = $state<string | null>(null);
 
 	// The free slots, fetched by windows of days from today.
 	const WINDOW_DAYS = 21;
@@ -205,6 +208,12 @@
 		submitError = '';
 		try {
 			const email = client.email.trim();
+			const guest = {
+				guest_first_name: client.firstName.trim(),
+				guest_last_name: client.lastName.trim(),
+				guest_phone: normalizePhone(client.phone),
+				...(email ? { guest_email: email } : {})
+			};
 			const res = await fetch('/api/partners/bookings', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -212,10 +221,9 @@
 					availability_id: slot.availability_id,
 					product_id: product.id,
 					slot_start_time: slot.start,
-					guest_first_name: client.firstName.trim(),
-					guest_last_name: client.lastName.trim(),
-					guest_phone: normalizePhone(client.phone),
-					...(email ? { guest_email: email } : {})
+					// A picked account books under its id; anything else (a picked
+					// guest or manual entry) carries the guest fields.
+					...(pickedClientId ? { client_id: pickedClientId } : guest)
 				})
 			});
 			if (res.status === 201) {
@@ -434,7 +442,13 @@
 			{product.name} · {longDayLabel(dayOf(slot.start))} à {timeOf(slot.start)}
 		</p>
 		<h2 class="mb-3 text-lg font-semibold">Pour qui ?</h2>
-		<ClientStep bind:client onNext={() => goTo('confirm')} onBack={back} />
+		<ClientStep
+			bind:client
+			bind:pickedClientId
+			partnerId={data.partnerId}
+			onNext={() => goTo('confirm')}
+			onBack={back}
+		/>
 	{:else if step === 'confirm' && product && slot}
 		<!-- 4. Confirm -->
 		<h2 class="mb-3 text-lg font-semibold">Vérifiez et réservez</h2>
@@ -453,8 +467,9 @@
 			<div class="flex items-start justify-between gap-4 px-4 py-3">
 				<dt class="text-sm text-muted-foreground">Client</dt>
 				<dd class="min-w-0 text-right text-sm">
-					<span class="font-medium break-words">{client.firstName.trim()} {client.lastName.trim()}</span><br />
-					<span class="tabular-nums">{displayPhone(client.phone)}</span>
+					<span class="font-medium break-words">{client.firstName.trim()} {client.lastName.trim()}</span>
+					{#if pickedClientId}<br /><span class="text-muted-foreground">Compte client</span>{/if}
+					<br /><span class="tabular-nums">{displayPhone(client.phone)}</span>
 					{#if client.email.trim()}
 						<br /><span class="break-all text-muted-foreground">{client.email.trim()}</span>
 					{/if}

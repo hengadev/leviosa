@@ -46,6 +46,8 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 		// stores no health data (ADR-0019).
 		if b.IsGuestBooking() {
 			resp.ClientName = b.GuestDisplayName()
+			resp.GuestFirstName = b.GuestFirstName
+			resp.GuestLastName = b.GuestLastName
 			resp.ClientEmail = b.GuestEmail
 			resp.ClientPhone = b.GuestPhone
 		} else if s.authUserClient != nil {

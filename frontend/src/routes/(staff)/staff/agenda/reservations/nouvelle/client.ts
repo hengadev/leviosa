@@ -13,6 +13,30 @@ export function emptyGuestClient(): GuestClient {
 	return { firstName: '', lastName: '', phone: '', email: '' };
 }
 
+/** One result of the client search (GET /api/partners/clients): a guest
+ * client or one with an account, whose client_id books for that account. */
+export interface ClientSummary {
+	client_id?: string;
+	name: string;
+	first_name?: string;
+	last_name?: string;
+	phone?: string;
+	email?: string;
+}
+
+/** A picked search result as form fields: the guest parts when the backend
+ * sent them, else the display name split (first word / the rest). */
+export function guestFieldsOf(summary: ClientSummary): GuestClient {
+	let firstName = (summary.first_name ?? '').trim();
+	let lastName = (summary.last_name ?? '').trim();
+	if (!firstName && !lastName) {
+		const parts = summary.name.trim().split(/\s+/);
+		firstName = parts[0] ?? '';
+		lastName = parts.slice(1).join(' ');
+	}
+	return { firstName, lastName, phone: summary.phone ?? '', email: summary.email ?? '' };
+}
+
 /** "06 12 34 56 78", "06.12.34.56.78" or "+33 6 12 34 56 78" become
  * "0612345678", the form the backend accepts. */
 export function normalizePhone(phone: string): string {

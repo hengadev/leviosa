@@ -7,20 +7,20 @@ import (
 )
 
 type BookingResponse struct {
-	ID                 uuid.UUID             `json:"id"`
-	AvailabilityID     uuid.UUID             `json:"availability_id"`
-	ClientID           *uuid.UUID            `json:"client_id,omitempty"`
-	PartnerID          uuid.UUID             `json:"partner_id"`
-	RoomID             uuid.UUID             `json:"room_id"`
-	ProductID          uuid.UUID             `json:"product_id"`
-	SlotStartTime      time.Time             `json:"slot_start_time"`
-	SlotEndTime        time.Time             `json:"slot_end_time"`
-	Status             BookingStatus         `json:"status"`
-	TotalPriceCents    int                   `json:"total_price_cents"`
-	Currency           string                `json:"currency"`
-	PaymentStatus      PaymentStatus         `json:"payment_status"`
-	PaymentIntentID    *string               `json:"payment_intent_id,omitempty"`
-	ReceiptURL         string                `json:"receipt_url,omitempty"`
+	ID              uuid.UUID     `json:"id"`
+	AvailabilityID  uuid.UUID     `json:"availability_id"`
+	ClientID        *uuid.UUID    `json:"client_id,omitempty"`
+	PartnerID       uuid.UUID     `json:"partner_id"`
+	RoomID          uuid.UUID     `json:"room_id"`
+	ProductID       uuid.UUID     `json:"product_id"`
+	SlotStartTime   time.Time     `json:"slot_start_time"`
+	SlotEndTime     time.Time     `json:"slot_end_time"`
+	Status          BookingStatus `json:"status"`
+	TotalPriceCents int           `json:"total_price_cents"`
+	Currency        string        `json:"currency"`
+	PaymentStatus   PaymentStatus `json:"payment_status"`
+	PaymentIntentID *string       `json:"payment_intent_id,omitempty"`
+	ReceiptURL      string        `json:"receipt_url,omitempty"`
 	// Notes (client_notes/partner_notes) are deliberately absent from every
 	// response: Leviosa stores no health data (ADR-0019). The DB columns stay.
 	CancellationReason *string               `json:"cancellation_reason,omitempty"`
@@ -81,10 +81,10 @@ type BookingFinancialStatus struct {
 
 // Booking DTOs
 type CreateBookingRequest struct {
-	AvailabilityID uuid.UUID `json:"availability_id" validate:"required"`
+	AvailabilityID uuid.UUID  `json:"availability_id" validate:"required"`
 	ClientID       *uuid.UUID `json:"client_id,omitempty"`
-	ProductID      uuid.UUID `json:"product_id" validate:"required"`
-	SlotStartTime  time.Time `json:"slot_start_time" validate:"required"`
+	ProductID      uuid.UUID  `json:"product_id" validate:"required"`
+	SlotStartTime  time.Time  `json:"slot_start_time" validate:"required"`
 	// No client_notes: Leviosa stores no health data (ADR-0019). The unknown-
 	// fields decoder rejects the key if a client sends it anyway.
 
@@ -119,15 +119,15 @@ type CancelBookingRequest struct {
 }
 
 type Transaction struct {
-	ID              uuid.UUID     `json:"id"`
-	SlotStartTime   string        `json:"slot_start_time"`
-	PaidAt          string        `json:"paid_at"` // the day the payment counts on (the booking's creation)
-	ProductID       uuid.UUID     `json:"product_id"`
-	ProductName     string        `json:"product_name"`
-	AmountCents     int           `json:"amount_cents"` // paid online (the deposit), or the price due when unpaid
-	NetCents        int           `json:"net_cents"`    // paid minus refunded; 0 when unpaid or disputed
-	PaymentStatus   PaymentStatus `json:"payment_status"`
-	BookingStatus   BookingStatus `json:"booking_status"`
+	ID            uuid.UUID     `json:"id"`
+	SlotStartTime string        `json:"slot_start_time"`
+	PaidAt        string        `json:"paid_at"` // the day the payment counts on (the booking's creation)
+	ProductID     uuid.UUID     `json:"product_id"`
+	ProductName   string        `json:"product_name"`
+	AmountCents   int           `json:"amount_cents"` // paid online (the deposit), or the price due when unpaid
+	NetCents      int           `json:"net_cents"`    // paid minus refunded; 0 when unpaid or disputed
+	PaymentStatus PaymentStatus `json:"payment_status"`
+	BookingStatus BookingStatus `json:"booking_status"`
 	// AmountDueOnSiteCents is what is due at the practice (price minus what
 	// was paid online); AmountPaidOnSiteCents what was recorded as paid
 	// there, nil until recorded.
@@ -136,20 +136,24 @@ type Transaction struct {
 }
 
 type EarningsSummary struct {
-	CurrentMonthCents int    `json:"current_month_cents"`
-	LastMonthCents    int    `json:"last_month_cents"`
-	PendingCents      int    `json:"pending_cents"`
-	NextPayoutDate    string `json:"next_payout_date"`
-	NextPayoutCents   int    `json:"next_payout_cents"`
+	CurrentMonthCents int           `json:"current_month_cents"`
+	LastMonthCents    int           `json:"last_month_cents"`
+	PendingCents      int           `json:"pending_cents"`
+	NextPayoutDate    string        `json:"next_payout_date"`
+	NextPayoutCents   int           `json:"next_payout_cents"`
 	Transactions      []Transaction `json:"transactions"`
 }
 
 // PartnerBookingResponse is the enriched booking DTO returned by the partner bookings endpoint.
 // It includes resolved names for display in the partner agenda UI.
 type PartnerBookingResponse struct {
-	ID              uuid.UUID     `json:"id"`
-	ClientID        *uuid.UUID    `json:"client_id,omitempty"`
-	ClientName      string        `json:"client_name"`
+	ID         uuid.UUID  `json:"id"`
+	ClientID   *uuid.UUID `json:"client_id,omitempty"`
+	ClientName string     `json:"client_name"`
+	// Guest name parts, set for guest bookings: the client search (issue
+	// 043) uses them to pre-fill the booking form's guest fields.
+	GuestFirstName  string        `json:"guest_first_name,omitempty"`
+	GuestLastName   string        `json:"guest_last_name,omitempty"`
 	ClientEmail     string        `json:"client_email,omitempty"`
 	ClientPhone     string        `json:"client_phone,omitempty"`
 	ProductName     string        `json:"product_name"`

@@ -33,7 +33,7 @@ import (
 // clientFileFixture clears the tables, then sets up a partner with two paid
 // guest bookings of the same client: one past, one upcoming. It returns the
 // partner's token and id and the two booking ids.
-func clientFileFixture(t *testing.T, ctx context.Context, email string, guestPhone string) (partnerToken string, partnerID, upcomingID, cancelledID uuid.UUID) {
+func clientFileFixture(t *testing.T, ctx context.Context, email string, guestPhone string) (partnerToken string, partnerID, upcomingID, cancelledID, clientID uuid.UUID) {
 	t.Helper()
 
 	tbooking.ClearBookingsTable(t, ctx, testPool)
@@ -95,7 +95,37 @@ func clientFileFixture(t *testing.T, ctx context.Context, email string, guestPho
 	upcomingID = book(24 * time.Hour)
 	cancelledID = book(48 * time.Hour)
 	cancelAsPractitioner(t, client, cancelledID, partnerToken)
-	return partnerToken, partnerID, upcomingID, cancelledID
+
+	// A client with an account: one more booking, booked under client_id,
+	// so the search can also return an account-backed client.
+	var clientToken string
+	clientToken, clientID = tsetup.SetupStandardUser(t, ctx, "client-account-"+uuid.NewString()+"@test.com", room.ID, testPool, authCtx.Redis, crypto)
+	start := now.Add(72 * time.Hour).Truncate(time.Hour)
+	availability := tavail.NewTestAvailability(t, partnerID, room.ID, start, start.Add(2*time.Hour), 5000)
+	availabilityEncx, err := domain.ProcessAvailabilityEncx(ctx, crypto, availability)
+	require.NoError(t, err)
+	tavail.InsertAvailabilityEncx(t, ctx, availabilityEncx, testPool)
+	requestBody := map[string]interface{}{
+		"availability_id": availability.ID.String(),
+		"client_id":       clientID.String(),
+		"product_id":      products[0].ID.String(),
+		"slot_start_time": start.Format(time.RFC3339),
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	require.NoError(t, err)
+	req, err := http.NewRequest("POST", testServerURL+"/bookings", bytes.NewReader(bodyBytes))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: clientToken})
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	var created domain.BookingResponse
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&created))
+	confirmBookingPayment(t, ctx, created.ID)
+
+	return partnerToken, partnerID, upcomingID, cancelledID, clientID
 }
 
 // otherPractitioner sets up a second practitioner with their own room.
@@ -124,7 +154,7 @@ func TestClientFile(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	t.Run("shows the contact and both session lists", func(t *testing.T) {
-		partnerToken, _, upcomingID, pastID := clientFileFixture(t, ctx, "cffile1@test.com", "0612345678")
+		partnerToken, _, upcomingID, pastID, _ := clientFileFixture(t, ctx, "cffile1@test.com", "0612345678")
 
 		req, err := http.NewRequest("GET", testServerURL+"/partners/bookings/"+upcomingID.String()+"/client", nil)
 		require.NoError(t, err)
@@ -167,7 +197,7 @@ func TestClientFile(t *testing.T) {
 	})
 
 	t.Run("another practitioner's client is not reachable", func(t *testing.T) {
-		partnerToken, _, upcomingID, _ := clientFileFixture(t, ctx, "cffile2@test.com", "0687654321")
+		partnerToken, _, upcomingID, _, _ := clientFileFixture(t, ctx, "cffile2@test.com", "0687654321")
 		otherToken, _ := otherPractitioner(t, ctx, "other-cffile-"+uuid.New().String()+"@test.com")
 
 		req, err := http.NewRequest("GET", testServerURL+"/partners/bookings/"+upcomingID.String()+"/client", nil)
@@ -194,7 +224,7 @@ func TestSearchPartnerClients(t *testing.T) {
 	client := &http.Client{Timeout: 10 * time.Second}
 
 	t.Run("matches a name or phone fragment", func(t *testing.T) {
-		partnerToken, partnerID, _, _ := clientFileFixture(t, ctx, "cffile3@test.com", "0611223344")
+		partnerToken, partnerID, _, _, _ := clientFileFixture(t, ctx, "cffile3@test.com", "0611223344")
 
 		for _, q := range []string{"dupont", "6112"} {
 			req, err := http.NewRequest("GET", fmt.Sprintf("%s/partners/clients/%s?q=%s", testServerURL, partnerID, q), nil)
@@ -210,6 +240,9 @@ func TestSearchPartnerClients(t *testing.T) {
 			require.NoError(t, json.Unmarshal(body, &clients))
 			require.Len(t, clients, 1)
 			assert.Equal(t, "Jean Dupont", clients[0].Name)
+			assert.Equal(t, "Jean", clients[0].FirstName)
+			assert.Equal(t, "Dupont", clients[0].LastName)
+			assert.Nil(t, clients[0].ClientID, "a guest has no account")
 			assert.Equal(t, "0611223344", clients[0].Phone)
 			assert.Equal(t, "jean.dupont@example.com", clients[0].Email)
 		}
@@ -227,8 +260,27 @@ func TestSearchPartnerClients(t *testing.T) {
 		assert.Empty(t, clients)
 	})
 
+	t.Run("an account client carries its client id and a split name", func(t *testing.T) {
+		partnerToken, partnerID, _, _, clientID := clientFileFixture(t, ctx, "cffile5@test.com", "0655443322")
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("%s/partners/clients/%s?q=standard", testServerURL, partnerID), nil)
+		require.NoError(t, err)
+		req.AddCookie(&http.Cookie{Name: "leviosa_access_token", Value: partnerToken})
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var clients []domain.ClientSummary
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&clients))
+		require.Len(t, clients, 1)
+		assert.Equal(t, &clientID, clients[0].ClientID)
+		assert.NotEmpty(t, clients[0].FirstName)
+		assert.NotEmpty(t, clients[0].LastName)
+	})
+
 	t.Run("another practitioner's clients are not searchable", func(t *testing.T) {
-		_, _, _, _ = clientFileFixture(t, ctx, "cffile4@test.com", "0699887766")
+		_, _, _, _, _ = clientFileFixture(t, ctx, "cffile4@test.com", "0699887766")
 		otherToken, otherID := otherPractitioner(t, ctx, "other-cffile-"+uuid.New().String()+"@test.com")
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/partners/clients/%s?q=dupont", testServerURL, otherID), nil)
