@@ -509,8 +509,8 @@
                                 <td class="px-4 py-3 border-b border-r border-border-card">
                                     <span
                                         class="px-2 py-1 text-xs font-medium rounded-md {isCouponCurrentlyValid(coupon)
-                                            ? 'bg-green-100 text-green-800'
-                                            : 'bg-gray-100 text-gray-800'}"
+                                            ? 'bg-muted text-foreground'
+                                            : 'bg-muted text-muted-foreground'}"
                                     >
                                         {isCouponCurrentlyValid(coupon) ? "Valide" : "Expiré"}
                                     </span>

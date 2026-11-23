@@ -18,10 +18,10 @@
 </script>
 
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-    {@render card(TrendingUp, "Revenus", kpi.revenueGrowthPct, `${revenueValue} €`, "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400", "7 derniers jours")}
-    {@render card(CalendarCheck, "Réservations", kpi.bookingsGrowthPct, String(kpi.bookingsCount), "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400", "7 derniers jours")}
-    {@render card(Clock, "Occupation", "—", kpi.occupationPct, "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400", "Cette semaine")}
-    {@render card(BarChart3, "Satisfaction", "—", "—", "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400", "Sur 0 avis")}
+    {@render card(TrendingUp, "Revenus", kpi.revenueGrowthPct, `${revenueValue} €`, "bg-muted text-foreground", "7 derniers jours")}
+    {@render card(CalendarCheck, "Réservations", kpi.bookingsGrowthPct, String(kpi.bookingsCount), "bg-muted text-foreground", "7 derniers jours")}
+    {@render card(Clock, "Occupation", "—", kpi.occupationPct, "bg-muted text-foreground", "Cette semaine")}
+    {@render card(BarChart3, "Satisfaction", "—", "—", "bg-muted text-foreground", "Sur 0 avis")}
 </div>
 
 {#snippet card(Icon: typeof import('@lucide/svelte').TrendingUp, title: string, trend: string, value: string, iconColor: string, subtitle: string)}

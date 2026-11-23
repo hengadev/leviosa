@@ -47,8 +47,8 @@
 
 	const toneClass: Record<DayTone, string> = {
 		none: 'text-foreground hover:bg-muted',
-		open: 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-100 dark:hover:bg-emerald-950/60',
-		closed: 'bg-muted/60 text-muted-foreground line-through hover:bg-muted',
+		open: 'bg-muted text-foreground font-medium hover:bg-surface-hover',
+		closed: 'border border-dashed border-border-input text-muted-foreground line-through hover:bg-muted',
 		picked: 'bg-foreground text-background hover:bg-foreground/90',
 		covered: 'bg-foreground/10 text-foreground hover:bg-foreground/15'
 	};
@@ -104,7 +104,7 @@
 						{day.day}
 					</span>
 					{#if compact && look.marked}
-						<span class="mt-0.5 h-1 w-1 rounded-full bg-emerald-600" aria-hidden="true"></span>
+						<span class="mt-0.5 h-1 w-1 rounded-full bg-foreground" aria-hidden="true"></span>
 					{/if}
 					{#if !compact && look.hint}
 						<span class="hidden sm:block mt-1 px-1 text-[11px] leading-tight no-underline truncate max-w-full">

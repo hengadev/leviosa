@@ -149,8 +149,8 @@
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-green-100 rounded-lg">
-						<Target size={22} class="text-green-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Target size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">Taux</span>
 				</div>
@@ -162,8 +162,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-blue-100 rounded-lg">
-						<Activity size={22} class="text-blue-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Activity size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">Total</span>
 				</div>
@@ -173,8 +173,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-yellow-100 rounded-lg">
-						<Activity size={22} class="text-yellow-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Activity size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">Score</span>
 				</div>
@@ -184,8 +184,8 @@
 
 			<div class="bg-card rounded-2xl border border-border-card p-6 group/card hover:shadow-card hover:shadow-foreground/[0.03] hover:-translate-y-0.5 transition-all duration-500">
 				<div class="flex items-center justify-between mb-4">
-					<div class="p-3 bg-orange-100 rounded-lg">
-						<Clock size={22} class="text-orange-600" />
+					<div class="p-3 bg-muted rounded-lg">
+						<Clock size={22} class="text-foreground" />
 					</div>
 					<span class="text-xs text-muted-foreground">Total</span>
 				</div>

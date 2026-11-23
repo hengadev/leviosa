@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The product creation form, in tabs like another project's event editor: every
+	// The product creation form, in tabs: every
 	// panel stays mounted (only hidden) so what is typed survives switching,
 	// the open tab lives in the address hash, and a tab still missing a
 	// required value is marked. What is typed is kept as a draft in this
@@ -382,7 +382,7 @@
 			<!-- Général -->
 			<div role="tabpanel" id="panel-general" aria-labelledby="tab-general" hidden={activeTab !== "general"} class="p-6 lg:p-8 space-y-6">
 				<div>
-					<label for="name" class={labelClass}>Nom du Produit <span class="text-red-500">*</span></label>
+					<label for="name" class={labelClass}>Nom du Produit <span class="text-muted-foreground">*</span></label>
 					<div class="relative">
 						<Package size={18} class={iconClass} />
 						<input id="name" name="name" type="text" bind:value={name} required placeholder="Séance d'ostéopathie" class={inputClass} />
@@ -390,7 +390,7 @@
 				</div>
 
 				<div>
-					<label for="description" class={labelClass}>Description <span class="text-red-500">*</span></label>
+					<label for="description" class={labelClass}>Description <span class="text-muted-foreground">*</span></label>
 					<div class="relative">
 						<FileText size={18} class="absolute left-3 top-3 text-muted-foreground" />
 						<textarea
@@ -407,7 +407,7 @@
 
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div>
-						<label for="categoryId" class={labelClass}>Catégorie <span class="text-red-500">*</span></label>
+						<label for="categoryId" class={labelClass}>Catégorie <span class="text-muted-foreground">*</span></label>
 						<div class="relative">
 							<Tag size={18} class={iconClass} />
 							<select id="categoryId" name="categoryId" bind:value={categoryId} required class={selectClass}>
@@ -425,7 +425,7 @@
 					</div>
 
 					<div>
-						<label for="duration" class={labelClass}>Durée (minutes) <span class="text-red-500">*</span></label>
+						<label for="duration" class={labelClass}>Durée (minutes) <span class="text-muted-foreground">*</span></label>
 						<div class="relative">
 							<Clock size={18} class={iconClass} />
 							<input id="duration" name="duration" type="number" bind:value={duration} required min="20" step="10" placeholder="60" class={inputClass} />
@@ -437,7 +437,7 @@
 				</div>
 
 				<div class="md:w-1/2 md:pr-3">
-					<label for="availability" class={labelClass}>Disponibilité <span class="text-red-500">*</span></label>
+					<label for="availability" class={labelClass}>Disponibilité <span class="text-muted-foreground">*</span></label>
 					<div class="relative">
 						<MapPin size={18} class={iconClass} />
 						<select id="availability" name="availability" bind:value={availability} required class={selectClass}>
@@ -454,7 +454,7 @@
 			<!-- Tarif & acompte -->
 			<div role="tabpanel" id="panel-tarif" aria-labelledby="tab-tarif" hidden={activeTab !== "tarif"} class="p-6 lg:p-8 space-y-6">
 				<div class="md:w-1/2 md:pr-3">
-					<label for="price" class={labelClass}>Prix (€) <span class="text-red-500">*</span></label>
+					<label for="price" class={labelClass}>Prix (€) <span class="text-muted-foreground">*</span></label>
 					<div class="relative">
 						<Euro size={18} class={iconClass} />
 						<input id="price" name="price" type="number" bind:value={price} required min="0" step="0.01" placeholder="70.00" class={inputClass} />
@@ -592,7 +592,7 @@
 				</div>
 
 				<div class="md:w-1/2 md:pr-3">
-					<label for="status" class={labelClass}>Statut <span class="text-red-500">*</span></label>
+					<label for="status" class={labelClass}>Statut <span class="text-muted-foreground">*</span></label>
 					<div class="relative">
 						<Tag size={18} class={iconClass} />
 						<select id="status" name="status" bind:value={status} required class={selectClass}>

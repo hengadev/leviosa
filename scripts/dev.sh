@@ -117,7 +117,8 @@ curl -sf "$API/health" >/dev/null || { echo "The backend did not start."; exit 1
 
 # --- Availabilities (only on an empty agenda), created as the partner through the API --
 psql_dev() { compose exec -T postgres psql -U user -d leviosa_dev -Atc "$1"; }
-if [ "$(psql_dev 'SELECT COUNT(*) FROM booking.availabilities')" = 0 ]; then
+# The seed's sample bookings bring their own availabilities: those don't count.
+if [ "$(psql_dev 'SELECT COUNT(*) FROM booking.availabilities a WHERE NOT EXISTS (SELECT 1 FROM booking.bookings b WHERE b.availability_id = a.id)')" = 0 ]; then
 	partner_email=$(sed -n '/"partner"/,/}/s/.*"email": *"\([^"]*\)".*/\1/p' "$SEED_DATA_PATH" | head -1)
 	partner_password=$(sed -n '/"partner"/,/}/s/.*"password": *"\([^"]*\)".*/\1/p' "$SEED_DATA_PATH" | head -1)
 	jar=$(mktemp)

@@ -29,6 +29,8 @@
     }
   ],
   "practice": {
+    "_sample_bookings_readme": "Local development only: gives the practitioner nine made-up bookings (upcoming, to complete, completed, no-show, cancelled, refunded, partly refunded, disputed, failed) so the Réservations page can be checked without Stripe. Seeded once, when the practitioner has no booking yet.",
+    "sample_bookings": true,
     "partner": {
       "_readme": "The practitioner is the administrator, as in the real practice: one account, role administrator, with the practitioner profile verified (what 'Je suis aussi praticien' does). Log in with it to see the five-tab back office with real practitioner pages.",
       "email": "admin@example.com",

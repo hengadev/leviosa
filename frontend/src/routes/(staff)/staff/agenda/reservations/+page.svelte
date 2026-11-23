@@ -34,18 +34,15 @@
 		);
 	}
 
+	/** Black and white only: a booking still to come stands out, a settled one recedes. */
 	function statusBadge(status: string): string {
 		switch (status) {
 			case 'confirmed':
-				return 'bg-blue-100 text-blue-700';
-			case 'completed':
-				return 'bg-green-100 text-green-700';
-			case 'no_show':
-				return 'bg-orange-100 text-orange-700';
+				return 'bg-foreground text-background';
 			case 'cancelled':
-				return 'bg-red-100 text-red-700';
+				return 'bg-muted text-muted-foreground';
 			default:
-				return 'bg-gray-100 text-gray-700';
+				return 'bg-muted text-foreground';
 		}
 	}
 
@@ -64,22 +61,11 @@
 		}
 	}
 
+	/** Only shown when the payment needs attention, so one outlined style is enough. */
 	function paymentStatusBadge(status: string): string {
-		switch (status) {
-			case 'paid':
-				return 'bg-green-50 text-green-600 border-green-200';
-			case 'pending':
-				return 'bg-yellow-50 text-yellow-600 border-yellow-200';
-			case 'failed':
-				return 'bg-red-50 text-red-600 border-red-200';
-			case 'refunded':
-			case 'partially_refunded':
-				return 'bg-purple-50 text-purple-600 border-purple-200';
-			case 'disputed':
-				return 'bg-red-50 text-red-600 border-red-200';
-			default:
-				return 'bg-gray-50 text-gray-600 border-gray-200';
-		}
+		return status === 'disputed' || status === 'failed'
+			? 'border-foreground text-foreground'
+			: 'border-border text-muted-foreground';
 	}
 
 	function paymentStatusLabel(status: string): string {
@@ -252,28 +238,34 @@
 	</div>
 
 	<!-- Summary -->
-	<div class="grid grid-cols-3 gap-4 mb-8">
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">À venir</p>
-			<p class="text-2xl font-bold text-blue-600 dark:text-blue-400 tabular-nums">{upcomingCount}</p>
+	<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">À venir</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{upcomingCount}</p>
 		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Terminées</p>
-			<p class="text-2xl font-bold text-green-600 dark:text-green-400 tabular-nums">{completedCount}</p>
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">Terminées</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{completedCount}</p>
 		</div>
-		<div class="bg-background rounded-2xl border border-border p-5">
-			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Revenus</p>
-			<p class="text-2xl font-bold text-foreground tabular-nums">{formatCents(completedEarnings)}</p>
+		<div class="bg-background min-w-0 rounded-2xl border border-border p-3 sm:p-5">
+			<p class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 truncate">Revenus</p>
+			<p class="text-lg sm:text-2xl font-bold text-foreground tabular-nums whitespace-nowrap">{formatCents(completedEarnings)}</p>
 		</div>
 	</div>
 
 	<!-- Tabs -->
-	<div class="flex gap-1 mb-6 bg-muted p-1 rounded-lg w-fit flex-wrap">
+	<!-- One row at every width: an underlined tab bar that scrolls sideways rather than wrapping -->
+	<div
+		role="tablist"
+		class="mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-5 sm:gap-6 overflow-x-auto border-b border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+	>
 		{#each tabs as [val, label]}
 			<button
-				class="px-4 py-2 rounded-md text-sm font-medium transition-colors {activeTab === val
-					? 'bg-card shadow-mini text-foreground'
-					: 'text-muted-foreground hover:text-foreground'}"
+				role="tab"
+				aria-selected={activeTab === val}
+				class="-mb-px shrink-0 whitespace-nowrap border-b-2 py-2.5 text-sm font-medium transition-colors {activeTab === val
+					? 'border-foreground text-foreground'
+					: 'border-transparent text-muted-foreground hover:text-foreground'}"
 				onclick={() => switchTab(val)}
 			>
 				{label}
@@ -335,7 +327,7 @@
 						{#if isActionable(booking)}
 							<div class="flex gap-2">
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
 									title="Marquer comme terminé"
 									onclick={() => completeBooking(booking.id)}
 									disabled={actionLoading[booking.id + '_complete']}
@@ -344,7 +336,7 @@
 									{actionLoading[booking.id + '_complete'] ? '…' : 'Terminer'}
 								</button>
 								<button
-									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors disabled:opacity-50"
+									class="inline-flex flex-1 sm:flex-none items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border text-foreground rounded-md hover:bg-muted transition-colors disabled:opacity-50"
 									title="Marquer absent"
 									onclick={() => markNoShow(booking.id)}
 									disabled={actionLoading[booking.id + '_noshow']}

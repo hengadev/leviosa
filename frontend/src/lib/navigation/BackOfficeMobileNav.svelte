@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The phone navigation of the back office, like another project's: a bottom bar
+	// The phone navigation of the back office: a bottom bar
 	// with the pages reached most often and a Menu button, whose drawer holds
 	// the rest of the navigation, under the sidebar's headings, and the
 	// account (other areas, the public site, logout).
@@ -54,18 +54,18 @@
 </script>
 
 <nav
-	class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border-card pb-[env(safe-area-inset-bottom)]"
+	class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-foreground dark:bg-black dark:border-t dark:border-border-card pb-1 [@media(display-mode:standalone)]:pb-6"
 	aria-label="Bottom navigation"
 >
-	<ul class="flex items-center justify-around px-1 py-1">
+	<ul class="flex items-stretch">
 		{#each barItems as item (item.href)}
 			{@const active = isActive(item.href)}
-			<li class="flex-1">
+			<li class="flex-1 flex">
 				<a
 					href={item.href}
-					class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg transition-all duration-200 {active
-						? 'text-foreground'
-						: 'text-muted-foreground'}"
+					class="flex-1 flex flex-col items-center justify-center gap-1 min-h-14 px-2 transition-colors {active
+						? 'text-background dark:text-foreground'
+						: 'text-zinc-500 hover:text-zinc-300'}"
 					aria-current={active ? "page" : undefined}
 				>
 					<item.icon size={20} strokeWidth={active ? 2 : 1.5} />
@@ -73,13 +73,13 @@
 				</a>
 			</li>
 		{/each}
-		<li class="flex-1">
+		<li class="flex-1 flex">
 			<button
 				type="button"
 				onclick={() => (menuOpen = true)}
-				class="w-full flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg transition-all duration-200 cursor-pointer {menuActive || menuOpen
-					? 'text-foreground'
-					: 'text-muted-foreground'}"
+				class="w-full flex flex-col items-center justify-center gap-1 min-h-14 px-2 transition-colors cursor-pointer {menuActive || menuOpen
+					? 'text-background dark:text-foreground'
+					: 'text-zinc-500 hover:text-zinc-300'}"
 				aria-haspopup="dialog"
 				aria-expanded={menuOpen}
 			>

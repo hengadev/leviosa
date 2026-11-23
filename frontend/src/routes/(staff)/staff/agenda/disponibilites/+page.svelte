@@ -787,7 +787,7 @@
 	</div>
 
 	{#if !data.roomId}
-		<div class="mb-6 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm flex items-start gap-2">
+		<div class="mb-6 p-4 rounded-xl border border-border bg-muted text-foreground text-sm flex items-start gap-2">
 			<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 			<span>Aucune salle ne vous est attribuée : vous ne pouvez pas encore ajouter de disponibilités.</span>
 		</div>
@@ -795,14 +795,14 @@
 
 	{#if exceptionNotice}
 		<div
-			class="mb-6 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm flex items-start gap-2"
+			class="mb-6 px-4 py-3 rounded-xl border border-border bg-muted text-foreground text-sm flex items-start gap-2"
 			role="status"
 		>
 			<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 			<span class="flex-1">{exceptionNotice}</span>
 			<button
 				onclick={() => (exceptionNotice = null)}
-				class="p-0.5 rounded hover:bg-amber-100"
+				class="p-0.5 rounded hover:bg-muted"
 				aria-label="Fermer le message"
 			>
 				<X size={14} />
@@ -822,10 +822,10 @@
 			/>
 			<div class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
 				<span class="inline-flex items-center gap-1.5">
-					<span class="h-3 w-3 rounded bg-emerald-100 dark:bg-emerald-950/60"></span>Ouvert
+					<span class="h-3 w-3 rounded bg-muted"></span>Ouvert
 				</span>
 				<span class="inline-flex items-center gap-1.5">
-					<span class="h-3 w-3 rounded bg-muted"></span>Fermé exceptionnellement
+					<span class="h-3 w-3 rounded border border-dashed border-border-input"></span>Fermé exceptionnellement
 				</span>
 			</div>
 		</div>
@@ -1023,7 +1023,7 @@
 					<div class="flex items-center gap-2">
 						<button
 							onclick={() => openExceptionModal(serie)}
-							class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-amber-700 hover:bg-amber-50 transition-colors"
+							class="flex items-center justify-center size-11 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
 							title="Fermer une période (congés…)"
 							aria-label="Fermer une période"
 						>
@@ -1068,7 +1068,7 @@
 			<div class="p-3 rounded-md bg-red-50 text-red-700 text-sm">{formError}</div>
 		{/if}
 		{#if conflictWarning}
-			<div class="p-3 rounded-md bg-amber-50 text-amber-700 text-sm flex items-start gap-2">
+			<div class="p-3 rounded-md bg-muted text-foreground text-sm flex items-start gap-2">
 				<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 				<span>{conflictWarning}</span>
 			</div>
@@ -1254,7 +1254,7 @@
 		{/if}
 		{#if conflictWarning}
 			<div
-				class="p-3 rounded-md bg-amber-50 text-amber-700 text-sm flex items-start gap-2"
+				class="p-3 rounded-md bg-muted text-foreground text-sm flex items-start gap-2"
 			>
 				<AlertTriangle size={16} class="mt-0.5 shrink-0" />
 				<span>{conflictWarning}</span>

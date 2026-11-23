@@ -58,7 +58,7 @@ for 30 days). `make check` proves this offline (see [Checks](#checks)).
   policy is [`terraform-user-policy.json`](terraform-user-policy.json): the
   state bucket and `leviosa-care-*` buckets, IAM users named `leviosa-*`, and
   KMS keys tagged `Project = leviosa` (the provider's default tag) with their
-  `alias/leviosa-*` aliases. It cannot touch another project's resources, modify
+  `alias/leviosa-*` aliases. It cannot touch that project's resources, modify
   itself, or schedule a key's deletion or disable a key. If you change
   `bucket_prefix` or `project_name`, update the policy first; an
   `AccessDenied` on plan or apply names the missing action.
