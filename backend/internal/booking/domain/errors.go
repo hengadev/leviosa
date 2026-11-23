@@ -54,6 +54,8 @@ var (
 	ErrBookingAlreadyCompleted         = errors.New("booking is already completed")
 	ErrCannotMarkCancelledAsNoShow     = errors.New("cannot mark cancelled booking as no-show")
 	ErrCannotMarkCompletedAsNoShow     = errors.New("cannot mark completed booking as no-show")
+	ErrBookingNotReopenable            = errors.New("only a completed or no-show booking can be reopened")
+	ErrReopenSameDayOnly               = errors.New("a booking can only be reopened on the same day it was closed")
 	ErrCannotDisputeUnpaidBooking      = errors.New("cannot dispute a booking that is not paid")
 	ErrCannotResolveNonDisputedBooking = errors.New("cannot resolve dispute for a booking that is not disputed")
 	ErrBookingNotAwaitingPayment       = errors.New("booking is not awaiting payment")

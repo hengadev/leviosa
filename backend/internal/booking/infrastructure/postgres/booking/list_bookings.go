@@ -17,7 +17,7 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			b.product_id_encrypted, b.slot_start_time_encrypted, b.slot_end_time_encrypted,
 			b.client_notes_encrypted, b.partner_notes_encrypted,
 			b.total_price_cents, b.currency, b.payment_status, b.payment_intent_id,
-			b.status, b.cancelled_at, b.cancellation_reason_encrypted, b.completed_at,
+			b.status, b.cancelled_at, b.cancellation_reason_encrypted, b.completed_at, b.no_show_at,
 			b.guest_first_name_encrypted, b.guest_last_name_encrypted,
 			b.guest_email_encrypted, b.guest_phone_encrypted,
 			b.token,
@@ -162,6 +162,7 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 			&bookingEncx.CancelledAt,
 			&bookingEncx.CancellationReasonEncrypted,
 			&bookingEncx.CompletedAt,
+			&bookingEncx.NoShowAt,
 			&bookingEncx.GuestFirstNameEncrypted,
 			&bookingEncx.GuestLastNameEncrypted,
 			&bookingEncx.GuestEmailEncrypted,
@@ -192,4 +193,3 @@ func (r *Repository) List(ctx context.Context, filter ports.BookingFilter) ([]*d
 
 	return bookingsEncx, nil
 }
-

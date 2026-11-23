@@ -26,6 +26,7 @@ type BookingResponse struct {
 	CancellationReason *string               `json:"cancellation_reason,omitempty"`
 	CancelledAt        *time.Time            `json:"cancelled_at,omitempty"`
 	CompletedAt        *time.Time            `json:"completed_at,omitempty"`
+	NoShowAt           *time.Time            `json:"no_show_at,omitempty"`
 	Availability       *AvailabilityResponse `json:"availability,omitempty"`
 
 	// Who cancelled and what the cancellation refunded (ADR-0014).
@@ -149,6 +150,7 @@ type PartnerBookingResponse struct {
 	TotalPriceCents int           `json:"total_price_cents"`
 	Currency        string        `json:"currency"`
 	CompletedAt     *time.Time    `json:"completed_at,omitempty"`
+	NoShowAt        *time.Time    `json:"no_show_at,omitempty"`
 	// PractitionerRefundCents is what cancelling this confirmed booking from
 	// the agenda would refund the client: everything they paid online
 	// (practitioner cancellation). Zero for any other booking.

@@ -21,7 +21,7 @@ func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domai
 			product_id_encrypted, slot_start_time_encrypted, slot_end_time_encrypted,
 			client_notes_encrypted, partner_notes_encrypted,
 			total_price_cents, currency, payment_status, payment_intent_id,
-			status, cancelled_at, cancellation_reason_encrypted, completed_at,
+			status, cancelled_at, cancellation_reason_encrypted, completed_at, no_show_at,
 			guest_first_name_encrypted, guest_last_name_encrypted,
 			guest_email_encrypted, guest_phone_encrypted,
 			token,
@@ -35,7 +35,7 @@ func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domai
 			$23,
 			$24,
 			$25, $26, $27, $28, $29,
-			$30, $31, $32
+			$30, $31, $32, $33
 		)
 	`, r.schema)
 
@@ -58,6 +58,7 @@ func (r *Repository) insert(ctx context.Context, exec execer, bookingEncx *domai
 		bookingEncx.CancelledAt,
 		bookingEncx.CancellationReasonEncrypted,
 		bookingEncx.CompletedAt,
+		bookingEncx.NoShowAt,
 		bookingEncx.GuestFirstNameEncrypted,
 		bookingEncx.GuestLastNameEncrypted,
 		bookingEncx.GuestEmailEncrypted,
