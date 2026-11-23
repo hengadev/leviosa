@@ -103,6 +103,9 @@ func (s *BookingService) GetPartnerEarnings(ctx context.Context, partnerID uuid.
 			NetCents:      net,
 			PaymentStatus: booking.PaymentStatus,
 			BookingStatus: booking.Status,
+
+			AmountDueOnSiteCents:  booking.AmountDueOnSiteCents(),
+			AmountPaidOnSiteCents: booking.AmountPaidOnSiteCents,
 		})
 	}
 

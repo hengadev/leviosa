@@ -59,6 +59,14 @@ type BookingService interface {
 	// only on the same Europe/Paris day the status was set.
 	ReopenBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
+	// RecordOnSitePayment records that the client paid the amount due at the
+	// practice (on a started confirmed/completed booking with money due).
+	RecordOnSitePayment(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
+
+	// UndoOnSitePayment removes a recorded on-site payment, only on the
+	// same Europe/Paris day it was recorded.
+	UndoOnSitePayment(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
+
 	// ProcessPayment handles payment processing
 	ProcessPayment(ctx context.Context, id uuid.UUID, paymentIntentID string) (*domain.Booking, error)
 

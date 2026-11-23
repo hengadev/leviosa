@@ -33,6 +33,11 @@ func (s *BookingService) GetPartnerBookingsEnriched(ctx context.Context, partner
 			Currency:        b.Currency,
 			CompletedAt:     b.CompletedAt,
 			NoShowAt:        b.NoShowAt,
+
+			AmountPaidOnlineCents: b.PaidOnlineCents(),
+			AmountDueOnSiteCents:  b.AmountDueOnSiteCents(),
+			AmountPaidOnSiteCents: b.AmountPaidOnSiteCents,
+			PaidOnSiteAt:          b.PaidOnSiteAt,
 		}
 
 		// Contact details (name, email, phone) only — never notes: Leviosa
