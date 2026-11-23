@@ -55,6 +55,7 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST /bookings/{id}/cancel", RequireStandard(mw.EnableCORS(h.CancelBooking)))
 	router.HandleFunc("POST /bookings/{id}/complete", RequirePartner(mw.EnableCORS(h.CompleteBooking)))
 	router.HandleFunc("POST /bookings/{id}/no-show", RequirePartner(mw.EnableCORS(h.MarkNoShow)))
+	router.HandleFunc("POST /bookings/{id}/reopen", RequirePartner(mw.EnableCORS(h.ReopenBooking)))
 	router.HandleFunc("POST /bookings/{id}/payment", RequireStandard(mw.EnableCORS(h.ProcessPayment)))
 	router.HandleFunc("POST /bookings/{id}/refund", RequireAdmin(mw.EnableCORS(h.RefundBooking)))
 

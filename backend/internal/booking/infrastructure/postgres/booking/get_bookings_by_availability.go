@@ -47,6 +47,7 @@ func (r *Repository) selectBookings(ctx context.Context, q querier, operation, w
 			status,
 			cancelled_at,
 			completed_at,
+			no_show_at,
 			created_at,
 			updated_at,
 			-- Encrypted fields
@@ -99,6 +100,7 @@ func (r *Repository) selectBookings(ctx context.Context, q querier, operation, w
 			&bookingEncx.Status,
 			&bookingEncx.CancelledAt,
 			&bookingEncx.CompletedAt,
+			&bookingEncx.NoShowAt,
 			&bookingEncx.CreatedAt,
 			&bookingEncx.UpdatedAt,
 			// Encrypted fields

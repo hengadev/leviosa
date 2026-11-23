@@ -72,7 +72,7 @@ const (
 	// PaymentStatusPartiallyRefunded: a cancellation tier refunded part of
 	// the amount paid online (ADR-0014).
 	PaymentStatusPartiallyRefunded PaymentStatus = "partially_refunded"
-	PaymentStatusDisputed PaymentStatus = "disputed"
+	PaymentStatusDisputed          PaymentStatus = "disputed"
 )
 
 // Booking represents a client reservation of partner availability
@@ -113,6 +113,7 @@ type Booking struct {
 	CancelledAt        *time.Time    `json:"cancelled_at,omitempty"`
 	CancellationReason string        `json:"cancellation_reason,omitempty" encx:"encrypt"`
 	CompletedAt        *time.Time    `json:"completed_at,omitempty"`
+	NoShowAt           *time.Time    `json:"no_show_at,omitempty"`
 
 	// Booking token for public guest access
 	Token string `json:"token,omitempty"`
@@ -378,8 +379,39 @@ func (b *Booking) MarkNoShow() error {
 		return ErrCannotMarkCompletedAsNoShow
 	}
 
+	now := time.Now()
 	b.Status = BookingStatusNoShow
-	b.UpdatedAt = time.Now()
+	b.NoShowAt = &now
+	b.UpdatedAt = now
+	return nil
+}
+
+// Reopen puts a completed or no-show booking back to confirmed, undoing a
+// wrong close. Allowed only on the same Europe/Paris day (ADR-0006) the
+// status was set: after that, the day's records are final.
+func (b *Booking) Reopen(now time.Time) error {
+	var closedAt *time.Time
+	switch b.Status {
+	case BookingStatusCompleted:
+		closedAt = b.CompletedAt
+	case BookingStatusNoShow:
+		closedAt = b.NoShowAt
+	default:
+		return ErrBookingNotReopenable
+	}
+
+	if closedAt == nil ||
+		civilDate(closedAt.In(PracticeLocation)) != civilDate(now.In(PracticeLocation)) {
+		return ErrReopenSameDayOnly
+	}
+
+	if b.Status == BookingStatusCompleted {
+		b.CompletedAt = nil
+	} else {
+		b.NoShowAt = nil
+	}
+	b.Status = BookingStatusConfirmed
+	b.UpdatedAt = now
 	return nil
 }
 

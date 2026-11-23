@@ -15,6 +15,9 @@ export interface Booking {
 	currency: string;
 	/** What cancelling from the agenda refunds the client: all they paid online. */
 	practitionerRefundCents: number;
+	/** When the booking was closed, if it was (completed or no-show). */
+	completedAt?: string;
+	noShowAt?: string;
 }
 
 export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
@@ -62,7 +65,9 @@ export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 				paymentStatus: booking.payment_status || 'pending',
 				amountInCents: booking.total_price_cents || 0,
 				currency: booking.currency || 'EUR',
-				practitionerRefundCents: booking.practitioner_refund_cents || 0
+				practitionerRefundCents: booking.practitioner_refund_cents || 0,
+				completedAt: booking.completed_at ?? undefined,
+				noShowAt: booking.no_show_at ?? undefined
 			};
 		});
 

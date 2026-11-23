@@ -28,6 +28,7 @@ func (r *Repository) Update(ctx context.Context, booking *domain.BookingEncx) er
 			cancelled_at = $16,
 			cancellation_reason_encrypted = $17,
 			completed_at = $18,
+			no_show_at = $31,
 			guest_first_name_encrypted = $19,
 			guest_last_name_encrypted = $20,
 			guest_email_encrypted = $21,
@@ -74,6 +75,7 @@ func (r *Repository) Update(ctx context.Context, booking *domain.BookingEncx) er
 		booking.Metadata,
 		booking.HoldExpiresAt,
 		booking.Locale,
+		booking.NoShowAt,
 	)
 	if err != nil {
 		return errs.ClassifyPgError("update booking", err)

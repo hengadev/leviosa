@@ -26,8 +26,10 @@ The following constraints are enforced in `internal/booking/domain/` and `intern
 confirmed → completed
 confirmed → cancelled
 confirmed → no_show
+completed → confirmed   (reopen, same Paris day only)
+no_show → confirmed     (reopen, same Paris day only)
 ```
-Transitions are methods on the `Booking` struct. Invalid transitions (e.g., `completed → cancelled`) return a domain error without hitting the database.
+Transitions are methods on the `Booking` struct. Invalid transitions (e.g., `completed → cancelled`) return a domain error without hitting the database. The two reopen transitions undo a wrong close from Aujourd'hui: allowed only while `now` is on the same Europe/Paris day as the recorded `completed_at`/`no_show_at`; afterwards the day's records are final and reopening returns a domain error.
 
 **Room allocation types**:
 - `dedicated`: a room is assigned to one partner for a fixed time period; only that partner can book it during that period

@@ -55,6 +55,10 @@ type BookingService interface {
 	// MarkNoShow marks a booking as no-show
 	MarkNoShow(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 
+	// ReopenBooking puts a completed or no-show booking back to confirmed,
+	// only on the same Europe/Paris day the status was set.
+	ReopenBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
+
 	// ProcessPayment handles payment processing
 	ProcessPayment(ctx context.Context, id uuid.UUID, paymentIntentID string) (*domain.Booking, error)
 
