@@ -1,5 +1,4 @@
-// Shared facts of the legal pages (issue 001). Interim content on another project's
-// model: only the company's name, its contact email and the host are given
+// Shared facts of the legal pages (issue 001). Interim content: only the company's name, its contact email and the host are given
 // until the business details (SIRET, address, publication director, ADELI or
 // RPPS number) arrive and the text has been reviewed.
 

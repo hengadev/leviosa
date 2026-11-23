@@ -7,7 +7,7 @@
 
 ## Context
 
-The previous deployment ran one Hetzner server per environment, configured and released by Ansible from a single operator computer. An earlier plan (local issues 008–025) proposed moving to Docker Swarm with stack files, overlay networks and secrets fetched inside the containers. The old servers are gone and there is no data to keep, so the deployment is rebuilt on the model already proven on another project.
+The previous deployment ran one Hetzner server per environment, configured and released by Ansible from a single operator computer. An earlier plan (local issues 008–025) proposed moving to Docker Swarm with stack files, overlay networks and secrets fetched inside the containers. The old servers are gone and there is no data to keep, so the deployment is rebuilt on a model already proven on another project.
 
 ## Decision
 
