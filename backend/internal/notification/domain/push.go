@@ -35,7 +35,7 @@ var ErrPushSubscriptionGone = errors.New("push subscription is gone")
 var ErrPushUnavailable = errors.New("push notifications are not available")
 
 // PushMessage is the payload of a practitioner notification, read by the
-// service worker (frontend/static/push-sw.js). It never carries the client's
+// service worker (frontend/pwa/push.js). It never carries the client's
 // full name, phone, email, an amount or the practice access (the door code):
 // it shows on a lock screen.
 type PushMessage struct {
