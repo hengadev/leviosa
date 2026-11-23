@@ -129,7 +129,7 @@
 						{#each data.toClose as session (session.id)}
 							<li class="rounded-2xl border border-border-card p-4">
 								<p class="text-sm font-semibold tabular-nums">{session.startLabel} – {session.endLabel}</p>
-								<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
+								<a href="/staff/clients/{session.id}" class="-my-2.5 block truncate py-2.5 font-medium hover:underline">{session.clientName}</a>
 								<p class="truncate text-xs text-muted-foreground">{session.productName}</p>
 								<p class="mt-2 text-sm text-muted-foreground">Séance terminée ?</p>
 								<div class="mt-2 grid grid-cols-2 gap-2">
@@ -166,7 +166,7 @@
 									{session.startLabel}
 								</div>
 								<div class="min-w-0 flex-1">
-									<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
+									<a href="/staff/clients/{session.id}" class="-my-2.5 block truncate py-2.5 font-medium hover:underline">{session.clientName}</a>
 									{#if session.paymentLabel}
 										<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 									{/if}
@@ -197,7 +197,7 @@
 									{session.startLabel}
 								</div>
 								<div class="min-w-0 flex-1">
-									<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
+									<a href="/staff/clients/{session.id}" class="-my-2.5 block truncate py-2.5 font-medium hover:underline">{session.clientName}</a>
 									<p class="truncate text-xs text-muted-foreground">{session.resultLabel}</p>
 								</div>
 								{#if session.canUndo}
@@ -229,7 +229,7 @@
 										{session.startLabel}
 									</div>
 									<div class="min-w-0 flex-1">
-										<a href="/staff/clients/{session.id}" class="block truncate font-medium hover:underline">{session.clientName}</a>
+										<a href="/staff/clients/{session.id}" class="-my-2.5 block truncate py-2.5 font-medium hover:underline">{session.clientName}</a>
 										{#if session.paymentLabel}
 											<p class="truncate text-xs text-muted-foreground">{session.paymentLabel}</p>
 										{/if}
