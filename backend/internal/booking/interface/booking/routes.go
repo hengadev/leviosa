@@ -47,6 +47,10 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	// refund; the booking's partner or an admin only (checked by the service).
 	router.HandleFunc("POST /partners/bookings/{id}/cancel", RequirePartner(mw.EnableCORS(h.CancelBookingByPractitioner)))
 	router.HandleFunc("GET /partners/earnings/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPartnerEarnings)))
+	// The client file (issue 042): the file of a booking's client, and the
+	// distinct-client search. Same authorization as the partner bookings list.
+	router.HandleFunc("GET /partners/bookings/{id}/client", RequirePartner(mw.EnableCORS(h.GetBookingClientFile)))
+	router.HandleFunc("GET /partners/clients/{partnerId}", RequirePartner(mw.EnableCORS(h.SearchPartnerClients)))
 	router.HandleFunc("GET /bookings", RequirePartner(mw.EnableCORS(h.GetUpcomingBookings)))
 	router.HandleFunc("POST /bookings/{id}/cancel", RequireStandard(mw.EnableCORS(h.CancelBooking)))
 	router.HandleFunc("POST /bookings/{id}/complete", RequirePartner(mw.EnableCORS(h.CompleteBooking)))

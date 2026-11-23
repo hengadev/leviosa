@@ -1,5 +1,5 @@
 <script lang="ts">
-	// The product creation form, in tabs like another project's event editor: every
+	// The product creation form, in tabs like germinal's event editor: every
 	// panel stays mounted (only hidden) so what is typed survives switching,
 	// the open tab lives in the address hash, and a tab still missing a
 	// required value is marked. What is typed is kept as a draft in this

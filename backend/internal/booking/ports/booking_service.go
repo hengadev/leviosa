@@ -75,6 +75,15 @@ type BookingService interface {
 	// names (client, product, room) for display in the partner agenda.
 	GetPartnerBookingsEnriched(ctx context.Context, partnerID uuid.UUID, filter BookingFilter) ([]domain.PartnerBookingResponse, error)
 
+	// GetClientFile returns the client file of the given booking's client, as
+	// computed from that booking's partner's bookings (issue 042). No notes,
+	// ever (ADR-0019).
+	GetClientFile(ctx context.Context, partnerID, bookingID uuid.UUID) (*domain.ClientFileResponse, error)
+
+	// SearchPartnerClients returns the partner's distinct clients matching a
+	// name or phone fragment, with their contact details (issue 043).
+	SearchPartnerClients(ctx context.Context, partnerID uuid.UUID, query string) ([]domain.ClientSummary, error)
+
 	// GetPartnerNextWorkingDay returns the partner's next working day (the
 	// first Paris date after today with an open availability occurrence or an
 	// appointment booking) and that day's appointment bookings. The date is
