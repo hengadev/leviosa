@@ -8,43 +8,44 @@ import (
 	"context"
 	"time"
 
-	"github.com/hengadev/encx"
 	"github.com/hengadev/errsx"
-
+	"github.com/hengadev/encx"
+	
 	"github.com/google/uuid"
+	
 )
 
 // BookingEncx represents the encrypted version of Booking
 type BookingEncx struct {
+	
 	ID uuid.UUID `db:"id" json:"id"`
-
+	
 	AvailabilityID uuid.UUID `db:"availabilityid" json:"availabilityid"`
-
+	
 	ClientID *uuid.UUID `db:"clientid" json:"clientid"`
-
+	
 	PartnerID uuid.UUID `db:"partnerid" json:"partnerid"`
-
+	
 	RoomID uuid.UUID `db:"roomid" json:"roomid"`
-
+	
 	TotalPriceCents int `db:"totalpricecents" json:"totalpricecents"`
-
+	
 	Currency string `db:"currency" json:"currency"`
-
+	
 	PaymentStatus PaymentStatus `db:"paymentstatus" json:"paymentstatus"`
-
+	
 	PaymentIntentID *string `db:"paymentintentid" json:"paymentintentid"`
-
+	
 	Status BookingStatus `db:"status" json:"status"`
-
+	
 	CancelledAt *time.Time `db:"cancelledat" json:"cancelledat"`
-
+	
 	CompletedAt *time.Time `db:"completedat" json:"completedat"`
-
+	
 	NoShowAt *time.Time `db:"noshowat" json:"noshowat"`
-
-	RemindedAt *time.Time `db:"remindedat" json:"remindedat"`
-
 	PractitionerRemindedAt *time.Time `db:"practitionerremindedat" json:"practitionerremindedat"`
+	
+	RemindedAt *time.Time `db:"remindedat" json:"remindedat"`
 
 	HoldExpiresAt *time.Time `db:"holdexpiresat" json:"holdexpiresat"`
 
@@ -55,39 +56,40 @@ type BookingEncx struct {
 	CancelledBy *string `db:"cancelledby" json:"cancelledby"`
 
 	RefundedAmountCents *int `db:"refundedamountcents" json:"refundedamountcents"`
-
+	
 	Token *string `db:"token" json:"token"`
-
+	
 	CreatedAt time.Time `db:"createdat" json:"createdat"`
-
+	
 	UpdatedAt time.Time `db:"updatedat" json:"updatedat"`
-
+	
+	
 	ProductIDEncrypted []byte `db:"productid_encrypted" json:"productid_encrypted"`
-
+	
 	SlotStartTimeEncrypted []byte `db:"slotstarttime_encrypted" json:"slotstarttime_encrypted"`
-
+	
 	SlotEndTimeEncrypted []byte `db:"slotendtime_encrypted" json:"slotendtime_encrypted"`
-
+	
 	ClientNotesEncrypted []byte `db:"clientnotes_encrypted" json:"clientnotes_encrypted"`
-
+	
 	PartnerNotesEncrypted []byte `db:"partnernotes_encrypted" json:"partnernotes_encrypted"`
-
+	
 	CancellationReasonEncrypted []byte `db:"cancellationreason_encrypted" json:"cancellationreason_encrypted"`
-
+	
 	GuestFirstNameEncrypted []byte `db:"guestfirstname_encrypted" json:"guestfirstname_encrypted"`
-
+	
 	GuestLastNameEncrypted []byte `db:"guestlastname_encrypted" json:"guestlastname_encrypted"`
-
+	
 	GuestEmailEncrypted []byte `db:"guestemail_encrypted" json:"guestemail_encrypted"`
-
+	
 	GuestPhoneEncrypted []byte `db:"guestphone_encrypted" json:"guestphone_encrypted"`
 
 	// Essential encryption fields
-	DEKEncrypted []byte `db:"dek_encrypted" json:"dek_encrypted"`
-	KeyVersion   int    `db:"key_version" json:"key_version"`
+	DEKEncrypted  []byte `db:"dek_encrypted" json:"dek_encrypted"`
+	KeyVersion    int    `db:"key_version" json:"key_version"`
 
 	// Metadata
-	Metadata encx.EncryptionMetadata `db:"metadata" json:"metadata"`
+	Metadata      encx.EncryptionMetadata `db:"metadata" json:"metadata"`
 }
 
 // ProcessBookingEncx encrypts and hashes fields based on encx tags
@@ -104,33 +106,32 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	}
 
 	// Copy plain fields (non-encx fields)
-
+	
 	result.ID = source.ID
-
+	
 	result.AvailabilityID = source.AvailabilityID
-
+	
 	result.ClientID = source.ClientID
-
+	
 	result.PartnerID = source.PartnerID
-
+	
 	result.RoomID = source.RoomID
-
+	
 	result.TotalPriceCents = source.TotalPriceCents
-
+	
 	result.Currency = source.Currency
-
+	
 	result.PaymentStatus = source.PaymentStatus
-
+	
 	result.PaymentIntentID = source.PaymentIntentID
-
+	
 	result.Status = source.Status
-
+	
 	if source.Token != "" {
 		result.Token = &source.Token
 	}
-
+	
 	result.RemindedAt = source.RemindedAt
-	result.PractitionerRemindedAt = source.PractitionerRemindedAt
 
 	result.HoldExpiresAt = source.HoldExpiresAt
 
@@ -147,16 +148,18 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	}
 
 	result.RefundedAmountCents = source.RefundedAmountCents
-
+	
 	result.CancelledAt = source.CancelledAt
-
+	
 	result.CompletedAt = source.CompletedAt
-
+	
 	result.NoShowAt = source.NoShowAt
-
+	result.PractitionerRemindedAt = source.PractitionerRemindedAt
+	
 	result.CreatedAt = source.CreatedAt
-
+	
 	result.UpdatedAt = source.UpdatedAt
+	
 
 	// Generate DEK
 	dek, err := crypto.GenerateDEK()
@@ -165,45 +168,53 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 		return result, errs.AsError()
 	}
 
+	
+	
 	// Process ProductID (encrypt)
 	if source.ProductID != uuid.Nil {
-		ProductIDBytes, err := encx.SerializeValue(source.ProductID)
+	ProductIDBytes, err := encx.SerializeValue(source.ProductID)
+	if err != nil {
+		errs.Set("ProductID serialization", err)
+	} else {
+		result.ProductIDEncrypted, err = crypto.EncryptData(ctx, ProductIDBytes, dek)
 		if err != nil {
-			errs.Set("ProductID serialization", err)
-		} else {
-			result.ProductIDEncrypted, err = crypto.EncryptData(ctx, ProductIDBytes, dek)
-			if err != nil {
-				errs.Set("ProductID encryption", err)
-			}
+			errs.Set("ProductID encryption", err)
 		}
 	}
-
+	}
+	
+	
+	
 	// Process SlotStartTime (encrypt)
 	if !source.SlotStartTime.IsZero() {
-		SlotStartTimeBytes, err := encx.SerializeValue(source.SlotStartTime)
+	SlotStartTimeBytes, err := encx.SerializeValue(source.SlotStartTime)
+	if err != nil {
+		errs.Set("SlotStartTime serialization", err)
+	} else {
+		result.SlotStartTimeEncrypted, err = crypto.EncryptData(ctx, SlotStartTimeBytes, dek)
 		if err != nil {
-			errs.Set("SlotStartTime serialization", err)
-		} else {
-			result.SlotStartTimeEncrypted, err = crypto.EncryptData(ctx, SlotStartTimeBytes, dek)
-			if err != nil {
-				errs.Set("SlotStartTime encryption", err)
-			}
+			errs.Set("SlotStartTime encryption", err)
 		}
 	}
-
+	}
+	
+	
+	
 	// Process SlotEndTime (encrypt)
 	if !source.SlotEndTime.IsZero() {
-		SlotEndTimeBytes, err := encx.SerializeValue(source.SlotEndTime)
+	SlotEndTimeBytes, err := encx.SerializeValue(source.SlotEndTime)
+	if err != nil {
+		errs.Set("SlotEndTime serialization", err)
+	} else {
+		result.SlotEndTimeEncrypted, err = crypto.EncryptData(ctx, SlotEndTimeBytes, dek)
 		if err != nil {
-			errs.Set("SlotEndTime serialization", err)
-		} else {
-			result.SlotEndTimeEncrypted, err = crypto.EncryptData(ctx, SlotEndTimeBytes, dek)
-			if err != nil {
-				errs.Set("SlotEndTime encryption", err)
-			}
+			errs.Set("SlotEndTime encryption", err)
 		}
 	}
-
+	}
+	
+	
+	
 	// Process ClientNotes (encrypt)
 	ClientNotesBytes, err := encx.SerializeValue(source.ClientNotes)
 	if err != nil {
@@ -214,7 +225,9 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			errs.Set("ClientNotes encryption", err)
 		}
 	}
-
+	
+	
+	
 	// Process PartnerNotes (encrypt)
 	PartnerNotesBytes, err := encx.SerializeValue(source.PartnerNotes)
 	if err != nil {
@@ -225,7 +238,9 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			errs.Set("PartnerNotes encryption", err)
 		}
 	}
-
+	
+	
+	
 	// Process CancellationReason (encrypt)
 	CancellationReasonBytes, err := encx.SerializeValue(source.CancellationReason)
 	if err != nil {
@@ -236,58 +251,67 @@ func ProcessBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			errs.Set("CancellationReason encryption", err)
 		}
 	}
-
+	
+	
+	
 	// Process GuestFirstName (encrypt)
 	if source.GuestFirstName != "" {
-		GuestFirstNameBytes, err := encx.SerializeValue(source.GuestFirstName)
+	GuestFirstNameBytes, err := encx.SerializeValue(source.GuestFirstName)
+	if err != nil {
+		errs.Set("GuestFirstName serialization", err)
+	} else {
+		result.GuestFirstNameEncrypted, err = crypto.EncryptData(ctx, GuestFirstNameBytes, dek)
 		if err != nil {
-			errs.Set("GuestFirstName serialization", err)
-		} else {
-			result.GuestFirstNameEncrypted, err = crypto.EncryptData(ctx, GuestFirstNameBytes, dek)
-			if err != nil {
-				errs.Set("GuestFirstName encryption", err)
-			}
+			errs.Set("GuestFirstName encryption", err)
 		}
 	}
+	}
+
+
 
 	// Process GuestLastName (encrypt)
 	if source.GuestLastName != "" {
-		GuestLastNameBytes, err := encx.SerializeValue(source.GuestLastName)
+	GuestLastNameBytes, err := encx.SerializeValue(source.GuestLastName)
+	if err != nil {
+		errs.Set("GuestLastName serialization", err)
+	} else {
+		result.GuestLastNameEncrypted, err = crypto.EncryptData(ctx, GuestLastNameBytes, dek)
 		if err != nil {
-			errs.Set("GuestLastName serialization", err)
-		} else {
-			result.GuestLastNameEncrypted, err = crypto.EncryptData(ctx, GuestLastNameBytes, dek)
-			if err != nil {
-				errs.Set("GuestLastName encryption", err)
-			}
+			errs.Set("GuestLastName encryption", err)
 		}
 	}
+	}
+
+
 
 	// Process GuestEmail (encrypt)
 	if source.GuestEmail != "" {
-		GuestEmailBytes, err := encx.SerializeValue(source.GuestEmail)
+	GuestEmailBytes, err := encx.SerializeValue(source.GuestEmail)
+	if err != nil {
+		errs.Set("GuestEmail serialization", err)
+	} else {
+		result.GuestEmailEncrypted, err = crypto.EncryptData(ctx, GuestEmailBytes, dek)
 		if err != nil {
-			errs.Set("GuestEmail serialization", err)
-		} else {
-			result.GuestEmailEncrypted, err = crypto.EncryptData(ctx, GuestEmailBytes, dek)
-			if err != nil {
-				errs.Set("GuestEmail encryption", err)
-			}
+			errs.Set("GuestEmail encryption", err)
 		}
 	}
+	}
+
+
 
 	// Process GuestPhone (encrypt)
 	if source.GuestPhone != "" {
-		GuestPhoneBytes, err := encx.SerializeValue(source.GuestPhone)
+	GuestPhoneBytes, err := encx.SerializeValue(source.GuestPhone)
+	if err != nil {
+		errs.Set("GuestPhone serialization", err)
+	} else {
+		result.GuestPhoneEncrypted, err = crypto.EncryptData(ctx, GuestPhoneBytes, dek)
 		if err != nil {
-			errs.Set("GuestPhone serialization", err)
-		} else {
-			result.GuestPhoneEncrypted, err = crypto.EncryptData(ctx, GuestPhoneBytes, dek)
-			if err != nil {
-				errs.Set("GuestPhone encryption", err)
-			}
+			errs.Set("GuestPhone encryption", err)
 		}
 	}
+	}
+	
 
 	// Encrypt and store DEK
 	result.DEKEncrypted, err = crypto.EncryptDEK(ctx, dek)
@@ -312,33 +336,32 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	result := &Booking{}
 
 	// Copy plain fields (non-encx fields)
-
+	
 	result.ID = source.ID
-
+	
 	result.AvailabilityID = source.AvailabilityID
-
+	
 	result.ClientID = source.ClientID
-
+	
 	result.PartnerID = source.PartnerID
-
+	
 	result.RoomID = source.RoomID
-
+	
 	result.TotalPriceCents = source.TotalPriceCents
-
+	
 	result.Currency = source.Currency
-
+	
 	result.PaymentStatus = source.PaymentStatus
-
+	
 	result.PaymentIntentID = source.PaymentIntentID
-
+	
 	result.Status = source.Status
-
+	
 	if source.Token != nil {
 		result.Token = *source.Token
 	}
-
+	
 	result.RemindedAt = source.RemindedAt
-	result.PractitionerRemindedAt = source.PractitionerRemindedAt
 
 	result.HoldExpiresAt = source.HoldExpiresAt
 
@@ -353,16 +376,18 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 	}
 
 	result.RefundedAmountCents = source.RefundedAmountCents
-
+	
 	result.CancelledAt = source.CancelledAt
-
+	
 	result.CompletedAt = source.CompletedAt
-
+	
 	result.NoShowAt = source.NoShowAt
-
+	result.PractitionerRemindedAt = source.PractitionerRemindedAt
+	
 	result.CreatedAt = source.CreatedAt
-
+	
 	result.UpdatedAt = source.UpdatedAt
+	
 
 	// Decrypt DEK
 	dek, err := crypto.DecryptDEKWithVersion(ctx, source.DEKEncrypted, source.KeyVersion)
@@ -371,6 +396,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 		return result, errs.AsError()
 	}
 
+	
+	
 	// Decrypt ProductID
 	if len(source.ProductIDEncrypted) > 0 {
 		ProductIDBytes, err := crypto.DecryptData(ctx, source.ProductIDEncrypted, dek)
@@ -383,7 +410,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt SlotStartTime
 	if len(source.SlotStartTimeEncrypted) > 0 {
 		SlotStartTimeBytes, err := crypto.DecryptData(ctx, source.SlotStartTimeEncrypted, dek)
@@ -396,7 +424,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt SlotEndTime
 	if len(source.SlotEndTimeEncrypted) > 0 {
 		SlotEndTimeBytes, err := crypto.DecryptData(ctx, source.SlotEndTimeEncrypted, dek)
@@ -409,7 +438,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt ClientNotes
 	if len(source.ClientNotesEncrypted) > 0 {
 		ClientNotesBytes, err := crypto.DecryptData(ctx, source.ClientNotesEncrypted, dek)
@@ -422,7 +452,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt PartnerNotes
 	if len(source.PartnerNotesEncrypted) > 0 {
 		PartnerNotesBytes, err := crypto.DecryptData(ctx, source.PartnerNotesEncrypted, dek)
@@ -435,7 +466,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt CancellationReason
 	if len(source.CancellationReasonEncrypted) > 0 {
 		CancellationReasonBytes, err := crypto.DecryptData(ctx, source.CancellationReasonEncrypted, dek)
@@ -448,7 +480,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt GuestFirstName
 	if len(source.GuestFirstNameEncrypted) > 0 {
 		GuestFirstNameBytes, err := crypto.DecryptData(ctx, source.GuestFirstNameEncrypted, dek)
@@ -461,7 +494,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt GuestLastName
 	if len(source.GuestLastNameEncrypted) > 0 {
 		GuestLastNameBytes, err := crypto.DecryptData(ctx, source.GuestLastNameEncrypted, dek)
@@ -474,7 +508,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt GuestEmail
 	if len(source.GuestEmailEncrypted) > 0 {
 		GuestEmailBytes, err := crypto.DecryptData(ctx, source.GuestEmailEncrypted, dek)
@@ -487,7 +522,8 @@ func DecryptBookingEncx(ctx context.Context, crypto encx.CryptoService, source *
 			}
 		}
 	}
-
+	
+	
 	// Decrypt GuestPhone
 	if len(source.GuestPhoneEncrypted) > 0 {
 		GuestPhoneBytes, err := crypto.DecryptData(ctx, source.GuestPhoneEncrypted, dek)
