@@ -219,6 +219,7 @@ no command to run.
 | Terraform's inputs (Hetzner, Cloudflare, AWS admin) | Infisical `leviosa-infra` | new token or key in the provider's console → update `leviosa-infra` → revoke the old one | read by the next `tf.sh` run |
 | Stripe secret key and webhook secrets (`/stripe`) | Infisical | roll in the Stripe dashboard (a webhook secret is rolled on its endpoint) | automatic: the backend is recreated |
 | Twilio API key (`/twilio`) | Infisical | new API key **in the IE1 region** → update `/twilio` → `check-sms` → delete the old key in Twilio | automatic: the backend is recreated |
+| VAPID key pair (`/webpush`) | Infisical | only if the private key may have leaked: new pair → update `/webpush` → the practitioner switches notifications off and on in Cabinet on each device (the old subscriptions are bound to the old public key) | automatic: the backend is recreated |
 | SMTP key (`/smtp`, Brevo) | Infisical | new SMTP key in Brevo (SMTP & API) → update `/smtp` → `check-email` → delete the old key | automatic: the backend is recreated |
 | Cloudflare DNS token for Caddy (`prod/caddy`; separate from Terraform's) | Infisical | new token (DNS edit on the zone) → update `prod/caddy` → revoke the old one | automatic: Caddy is recreated |
 | Postgres: production's role (`prod/db`) | Infisical | `ALTER ROLE … PASSWORD …` in the database **first**, then update `prod/db` (`POSTGRES_PASSWORD` applies only at first initialisation) | the backend gets the new `DATABASE_URL` automatically; the ALTER is manual |

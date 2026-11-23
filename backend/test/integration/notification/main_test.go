@@ -20,6 +20,9 @@ import (
 	"github.com/Leviosa-care/leviosa/backend/internal/common/middleware/auth"
 	"github.com/Leviosa-care/leviosa/backend/internal/common/migrations"
 	tu "github.com/Leviosa-care/leviosa/backend/internal/common/testutils"
+	notificationApp "github.com/Leviosa-care/leviosa/backend/internal/notification/application"
+	notificationDomain "github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
+	notificationPostgres "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/postgres"
 	notificationHandler "github.com/Leviosa-care/leviosa/backend/internal/notification/interface/http"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
@@ -27,11 +30,14 @@ import (
 
 // The notification HTTP handler behind the real session auth middleware:
 // Postgres (users) and Redis (sessions) in testcontainers, encx with a KEK
-// in LocalStack KMS. The notification service is a recording fake, so
-// nothing is ever sent.
+// in LocalStack KMS. The notification service and the Web Push sender are
+// recording fakes, so nothing is ever sent; push subscriptions are stored
+// for real.
 var (
 	authCtx       *tu.AuthTestContext
 	notifications *recordingNotificationService
+	pushSender    *recordingPushSender
+	pushService   *notificationApp.PushService
 	testServerURL string
 )
 
@@ -98,6 +104,15 @@ func run(m *testing.M) int {
 	router := http.NewServeMux()
 	notificationHandler.New(notifications, authmw).RegisterRoutes(router)
 
+	pushSender = &recordingPushSender{gone: map[string]bool{}}
+	pushService = notificationApp.NewPushService(
+		notificationPostgres.NewPushSubscriptionRepository(pool),
+		pushSender,
+		cryptoSetup.Crypto,
+		testVAPIDPublicKey,
+	)
+	notificationHandler.NewPushHandler(pushService, authmw).RegisterRoutes(router)
+
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatalf("Failed to listen for test server: %v", err)
@@ -160,3 +175,40 @@ func (s *recordingNotificationService) SendGenericSMS(context.Context, string, s
 	return nil
 }
 func (s *recordingNotificationService) InvalidateSettingsCache() {}
+
+// testVAPIDPublicKey is a placeholder: the recording sender never uses it.
+const testVAPIDPublicKey = "BTestVapidPublicKey"
+
+// recordingPushSender records the endpoints it is asked to push to, and
+// answers "gone" for the endpoints in gone, as a push service does.
+type recordingPushSender struct {
+	mu        sync.Mutex
+	endpoints []string
+	gone      map[string]bool
+}
+
+func (s *recordingPushSender) Send(_ context.Context, sub notificationDomain.PushSubscription, _ []byte) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.gone[sub.Endpoint] {
+		return notificationDomain.ErrPushSubscriptionGone
+	}
+	s.endpoints = append(s.endpoints, sub.Endpoint)
+	return nil
+}
+
+func (s *recordingPushSender) reset(gone ...string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.endpoints = nil
+	s.gone = map[string]bool{}
+	for _, endpoint := range gone {
+		s.gone[endpoint] = true
+	}
+}
+
+func (s *recordingPushSender) sentTo() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.endpoints...)
+}

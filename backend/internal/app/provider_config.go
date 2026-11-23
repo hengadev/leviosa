@@ -3,6 +3,7 @@ package app
 import (
 	smtpClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/smtp"
 	twilioClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/twilio"
+	webpushSender "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/webpush"
 )
 
 // TwilioConfigFromEnv reads the Twilio settings. The client authenticates with
@@ -55,6 +56,18 @@ func MissingSMTPEnv(cfg smtpClient.SMTPConfig) []string {
 		"SMTP_USERNAME", cfg.Username,
 		"SMTP_PASSWORD", cfg.Password,
 	)
+}
+
+// WebPushConfigFromEnv reads the VAPID key pair and subject of practitioner
+// notifications (ADR-0020): VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY (base64url,
+// as webpush-go and the web-push CLI generate them) and VAPID_SUBJECT
+// ("mailto:contact@leviosa.care"). Any of them empty: Web Push is off.
+func WebPushConfigFromEnv() webpushSender.Config {
+	return webpushSender.Config{
+		PublicKey:  getEnv("VAPID_PUBLIC_KEY", ""),
+		PrivateKey: getEnv("VAPID_PRIVATE_KEY", ""),
+		Subject:    getEnv("VAPID_SUBJECT", ""),
+	}
 }
 
 // missing takes name/value pairs and returns the names whose value is empty.

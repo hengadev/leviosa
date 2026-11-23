@@ -10,3 +10,12 @@ const (
 	// (administrator); ?locale=fr|en, French by default.
 	AdminEmailPreviewEndpoint = "/admin/emails/previews/{id}"
 )
+
+const (
+	// PushStatusEndpoint says whether practitioner notifications (Web Push)
+	// are available, with the VAPID public key (partner or administrator).
+	PushStatusEndpoint = "/notifications/push"
+	// PushSubscriptionEndpoint subscribes (PUT) or unsubscribes (DELETE) the
+	// current device (partner or administrator).
+	PushSubscriptionEndpoint = "/notifications/push/subscription"
+)

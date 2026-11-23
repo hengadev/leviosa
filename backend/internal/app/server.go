@@ -314,6 +314,9 @@ func (s *Server) setupNotificationRoutes(router *http.ServeMux) {
 		s.container.AuthMw,
 	)
 	notificationH.RegisterRoutes(router)
+
+	// Practitioner notifications: the Cabinet switch (ADR-0020)
+	notificationHandler.NewPushHandler(s.container.PushService, s.container.AuthMw).RegisterRoutes(router)
 }
 
 func (s *Server) applyMiddleware(handler http.Handler) http.Handler {

@@ -9,11 +9,11 @@ import (
 
 	// Authuser
 	authuserAgg "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/aggregator"
-	bookingClientAdapter "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/booking"
 	otpSvc "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/otp"
 	partnerSvc "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/partner"
 	sessionSvc "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/session"
 	userSvc "github.com/Leviosa-care/leviosa/backend/internal/authuser/application/user"
+	bookingClientAdapter "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/booking"
 
 	authuserPorts "github.com/Leviosa-care/leviosa/backend/internal/authuser/ports"
 
@@ -46,27 +46,31 @@ import (
 	productPayment "github.com/Leviosa-care/leviosa/backend/internal/catalog/infrastructure/stripe/product"
 
 	// Messaging
-	messagingSvc         "github.com/Leviosa-care/leviosa/backend/internal/messaging/application"
-	messagingBooking     "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/booking"
-	messagingAuthuser    "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/authuser"
-	messagingRepo        "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/postgres"
-	messagingSSE         "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/sse"
-	messagingPorts       "github.com/Leviosa-care/leviosa/backend/internal/messaging/ports"
+	messagingSvc "github.com/Leviosa-care/leviosa/backend/internal/messaging/application"
+	messagingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/authuser"
+	messagingBooking "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/booking"
+	messagingRepo "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/postgres"
+	messagingSSE "github.com/Leviosa-care/leviosa/backend/internal/messaging/infrastructure/sse"
+	messagingPorts "github.com/Leviosa-care/leviosa/backend/internal/messaging/ports"
 
 	// Booking
 	allocationSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/allocation"
-	practiceSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/practice"
 	availabilitySvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/availability"
 	bookingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/booking"
 	buildingSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/building"
 	exceptionSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/exception"
 	metricsSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/metrics"
+	practiceSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/practice"
 	reviewSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/review"
 	roomSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/room"
 	waitlistSvc "github.com/Leviosa-care/leviosa/backend/internal/booking/application/waitlist"
 
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 
+	authuserSettings "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/settings"
+	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
+	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
+	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
 	allocationRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/allocation"
 	availabilityRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/availability"
 	bookingRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/booking"
@@ -76,25 +80,23 @@ import (
 	reviewRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/review"
 	roomRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/room"
 	waitlistRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/postgres/waitlist"
-	roomScheduleRepo "github.com/Leviosa-care/leviosa/backend/internal/booking/adapters/postgres"
-	bookingAuthuser "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/authuser"
-	bookingNotification "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/notification"
-	authuserSettings "github.com/Leviosa-care/leviosa/backend/internal/authuser/infrastructure/settings"
 	bookingSettings "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/settings"
 	bookingStripe "github.com/Leviosa-care/leviosa/backend/internal/booking/infrastructure/stripe"
 
 	// Notification
 	notificationApp "github.com/Leviosa-care/leviosa/backend/internal/notification/application"
+	notificationPostgres "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/postgres"
 	smtpClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/smtp"
 	twilioClient "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/twilio"
+	webpushSender "github.com/Leviosa-care/leviosa/backend/internal/notification/infrastructure/webpush"
 	notificationPorts "github.com/Leviosa-care/leviosa/backend/internal/notification/ports"
 
 	// Settings
 	settingsApp "github.com/Leviosa-care/leviosa/backend/internal/settings/application"
-	settingsMedia "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/s3"
 	noopPublisher "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/noop"
 	settingsRepo "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/postgres"
 	settingsRabbitMQ "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/rabbitmq"
+	settingsMedia "github.com/Leviosa-care/leviosa/backend/internal/settings/infrastructure/s3"
 	settingsPorts "github.com/Leviosa-care/leviosa/backend/internal/settings/ports"
 
 	// Common
@@ -165,12 +167,12 @@ type Container struct {
 	WaitlistRepo       bookingPorts.WaitlistRepository
 
 	// Authuser Services
-	UserService     authuserPorts.UserService
-	PartnerService  authuserPorts.PartnerService
-	OTPService      authuserPorts.OTPService
-	SessionService  authuserPorts.SessionService
-	AuthAggregator  authuserPorts.AuthAggregatorService
-	BookingClient   authuserPorts.BookingClient
+	UserService    authuserPorts.UserService
+	PartnerService authuserPorts.PartnerService
+	OTPService     authuserPorts.OTPService
+	SessionService authuserPorts.SessionService
+	AuthAggregator authuserPorts.AuthAggregatorService
+	BookingClient  authuserPorts.BookingClient
 
 	// Catalog Services
 	CategoryService      catalogPorts.CategoryService
@@ -208,12 +210,15 @@ type Container struct {
 
 	// Notification
 	BookingNotificationService bookingPorts.BookingNotificationService
-	NotificationService       notificationPorts.NotificationService
+	NotificationService        notificationPorts.NotificationService
+	// PushService: the practitioner's devices and their notifications
+	// (ADR-0020); off, but present, without VAPID keys.
+	PushService *notificationApp.PushService
 
 	// Settings
-	SettingsService       settingsPorts.SettingsService
-	SettingsRepo          settingsPorts.SettingsRepository
-	SettingsMedia         settingsPorts.SettingsMedia
+	SettingsService settingsPorts.SettingsService
+	SettingsRepo    settingsPorts.SettingsRepository
+	SettingsMedia   settingsPorts.SettingsMedia
 }
 
 // NewContainer creates and wires all dependencies
@@ -469,6 +474,26 @@ func (c *Container) setupServices(ctx context.Context) error {
 		notificationSettingsProvider,
 	)
 
+	// Practitioner notifications (Web Push, ADR-0020): on only with the three
+	// VAPID values; otherwise nothing is sent and the API says unavailable.
+	var pushSender notificationPorts.PushSender
+	switch {
+	case c.Config.WebPush.Complete():
+		sender, err := webpushSender.NewSender(c.Config.WebPush)
+		if err != nil {
+			return fmt.Errorf("create web push sender: %w", err)
+		}
+		pushSender = sender
+	case c.Config.WebPush.Partial():
+		slog.WarnContext(ctx, "web push is off: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT must all be set")
+	}
+	c.PushService = notificationApp.NewPushService(
+		notificationPostgres.NewPushSubscriptionRepository(c.DB),
+		pushSender,
+		c.Crypto,
+		c.Config.WebPush.PublicKey,
+	)
+
 	// OTP service — requires notification service for in-process email delivery
 	// New codes last the duration set in the admin settings, read on each code.
 	c.OTPService, err = otpSvc.New(ctx, c.OTPRepo, c.Crypto, c.NotificationService,
@@ -519,6 +544,7 @@ func (c *Container) setupServices(ctx context.Context) error {
 		c.ProductService,
 		notificationSettingsProvider,
 		bookingNotification.WithPracticeAccessProvider(practiceAccessProvider),
+		bookingNotification.WithPractitionerPush(c.PushService),
 	)
 	c.BookingNotificationService = notificationAdapter
 

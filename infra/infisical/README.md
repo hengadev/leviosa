@@ -27,7 +27,7 @@ infra/infisical/
 
 | Template | Reads | Consumer | Rendered for | Agent on change |
 | --- | --- | --- | --- | --- |
-| `backend.env` | one recursive call on `/`: `/app`, `/encx`, `/aws`, `/stripe`, `/smtp`, `/twilio` whole; `/db` → `DATABASE_URL`; `/rabbitmq` → `RABBITMQ_URL`; `/redis` → `REDIS_ADDR`, rest whole | backend + its `migrate` and `admin` one-offs | prod, staging, dev | recreate that stack's backend |
+| `backend.env` | one recursive call on `/`: `/app`, `/encx`, `/aws`, `/stripe`, `/smtp`, `/twilio`, `/webpush` whole; `/db` → `DATABASE_URL`; `/rabbitmq` → `RABBITMQ_URL`; `/redis` → `REDIS_ADDR`, rest whole | backend + its `migrate` and `admin` one-offs | prod, staging, dev | recreate that stack's backend |
 | `frontend.env` | `/app`, through an allowlist | frontend | prod, staging, dev | recreate that stack's frontend |
 | `admin.env` | `/admin` | the `admin` one-off only | prod, staging, dev | rewrite only |
 | `redis.env` | `/redis` (`REDIS_PASSWORD`) | Redis | prod, staging | recreate that stack's Redis |
@@ -171,7 +171,7 @@ reads, found by grepping `frontend/src` for `$env/dynamic/*`: `COMING_SOON`,
 yet), the optional `PUBLIC_PLAUSIBLE_DOMAIN` and `PUBLIC_PLAUSIBLE_SRC`, and
 `PUBLIC_STRIPE_PUBLISHABLE_KEY` (the publishable key, public by design; the
 secret key stays in `/stripe`).
-Nothing from `/aws`, `/encx`, `/stripe`, `/twilio`, `/smtp`, `/db`, `/admin`,
+Nothing from `/aws`, `/encx`, `/stripe`, `/twilio`, `/webpush`, `/smtp`, `/db`, `/admin`,
 `/redis`, `/rabbitmq`, `/caddy`, `/backup` or `/host` reaches it. A new
 frontend key needs a template line and an entry in `envcheck.FrontendKeys`.
 That is a deliberate review point.
@@ -203,6 +203,7 @@ more keys: they reach their consumer with no template change.
 | `/stripe` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET` | |
 | `/smtp` | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, the sender address | the sender has no consumer yet |
 | `/twilio` | `TWILIO_ACCOUNT_SID`, `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_REGION`, `TWILIO_EDGE`, `TWILIO_SENDER` | |
+| `/webpush` | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | practitioner notifications (ADR-0020); all three or none (off) |
 | `/caddy` | prod only: `CLOUDFLARE_API_TOKEN` | |
 | `/backup` | `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY`, `BACKUP_S3_BUCKET`, `BACKUP_AWS_REGION` | Terraform, prod only |
 | `/host` | the notification email | Ansible only; no template reads it |
@@ -234,7 +235,7 @@ stack: `/db` `user` / `password` / `leviosa_dev` / `localhost` / `25432`,
 `/redis` `secret` / `localhost` / `26379`, `/rabbitmq` `guest` / `guest` /
 `/` / `localhost` / `25672` (the local stacks publish their dependencies on
 these 2xxxx ports so they never collide with another project's stack on the
-defaults). `/stripe`, `/smtp` and `/twilio` may be absent (integrations
+defaults). `/stripe`, `/smtp`, `/twilio` and `/webpush` may be absent (integrations
 off). `dev` must never hold anything that spends money or reaches real data
 (ADR-0017).
 

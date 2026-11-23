@@ -31,58 +31,16 @@ export default defineConfig({
 				registerType: 'autoUpdate',
 				includeManifestIcons: false,
 				manifest: false,
-				generateSW: {
+				// A built worker rather than a generated one: pwa/sw.js does what
+				// the generated Workbox worker did, plus the practitioner
+				// notifications (push and notificationclick, ADR-0020).
+				strategies: 'buildSW',
+				buildSW: {
+					swSrc: 'pwa/sw.js',
 					// The plugin also globs prerendered/**, and the app prerenders
 					// nothing: an empty pattern must not fail the build.
 					globStrict: false,
-					globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff,woff2,html}'],
-					navigateFallback: '/offline.html',
-					navigateFallbackDenylist: [/^\/api\//, /\/oauth\//],
-					runtimeCaching: [
-						{
-							// Always fetch HTML pages from the network so server-side redirects
-							// (e.g. maintenance mode) are never bypassed by the service worker cache.
-							urlPattern: ({ request }) => request.mode === 'navigate',
-							handler: 'NetworkOnly'
-						},
-						{
-							urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com/i,
-							handler: 'CacheFirst',
-							options: {
-								cacheName: 'google-fonts-cache',
-								expiration: {
-									maxEntries: 50,
-									maxAgeSeconds: 60 * 60 * 24 * 365
-								},
-								cacheableResponse: {
-									statuses: [0, 200]
-								}
-							}
-						},
-						{
-							urlPattern: /^https:\/\/api\./i,
-							handler: 'NetworkFirst',
-							options: {
-								cacheName: 'api-cache',
-								expiration: {
-									maxEntries: 100,
-									maxAgeSeconds: 60 * 60 * 24
-								},
-								networkTimeoutSeconds: 10
-							}
-						},
-						{
-							urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
-							handler: 'CacheFirst',
-							options: {
-								cacheName: 'image-cache',
-								expiration: {
-									maxEntries: 200,
-									maxAgeSeconds: 60 * 60 * 24 * 30
-								}
-							}
-						}
-					]
+					globPatterns: ['**/*.{js,css,ico,png,svg,webp,woff,woff2,html}']
 				},
 				devOptions: {
 					enabled: false
