@@ -49,4 +49,7 @@ type PartnerInfo struct {
 	ID         uuid.UUID `json:"id"`
 	UserID     uuid.UUID `json:"user_id"`
 	IsVerified bool      `json:"is_verified"`
+	// ProductIDs are the catalog products the partner offers (their
+	// profile), the products the practitioner may book (ADR-0021).
+	ProductIDs []uuid.UUID `json:"product_ids,omitempty"`
 }

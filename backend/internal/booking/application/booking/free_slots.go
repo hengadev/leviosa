@@ -56,8 +56,21 @@ func (s *BookingService) GetFreeSlots(ctx context.Context, partnerID, productID 
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now()
+	return s.freeSlots(ctx, partnerUserID, product, policy, time.Now(), from, to)
+}
 
+// freeSlots computes the free slots of the partner's availabilities (by the
+// partner's user ID) for the product under the policy, starting in
+// [from, to): the public slot endpoint with the booking policy, the
+// practitioner's form with BookingPolicy.ForPractitioner.
+func (s *BookingService) freeSlots(
+	ctx context.Context,
+	partnerUserID uuid.UUID,
+	product *catalogDomain.ProductRes,
+	policy domain.BookingPolicy,
+	now time.Time,
+	from, to time.Time,
+) (*domain.FreeSlots, error) {
 	// Nothing can be offered outside the policy window: narrow the range so
 	// the repository never scans beyond it.
 	earliest := now.Add(policy.MinimumNotice)

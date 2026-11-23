@@ -100,26 +100,9 @@ func (s *BookingService) CreateBooking(
 	if err != nil {
 		return nil, err
 	}
-	// The windows are the availability's occurrences containing the start:
-	// for a recurring availability, any occurrence of its series not closed
-	// by an availability exception.
-	exceptions, err := s.exceptionsOf(ctx, availability)
+	query, err := s.checkSlot(ctx, availability, product, policy, now, slotStartTime)
 	if err != nil {
 		return nil, err
-	}
-	windows := availability.OccurrencesExcept(slotStartTime, slotStartTime.Add(time.Nanosecond), exceptions)
-	query, err := s.slotQuery(ctx, availability.UserID, windows, product, policy, now)
-	if err != nil {
-		return nil, err
-	}
-	occupancies := query.Occupancies
-	query.Occupancies = nil
-	if !domain.OffersSlot(query, slotStartTime) {
-		return nil, errs.NewInvalidValueErr("slot_start_time: not a slot offered for this availability and product")
-	}
-	query.Occupancies = occupancies
-	if !domain.OffersSlot(query, slotStartTime) {
-		return nil, errs.NewConflictErr(errSlotTaken)
 	}
 
 	// 5. Get product price from pricing service
@@ -201,18 +184,7 @@ func (s *BookingService) CreateBooking(
 		return nil, fmt.Errorf("encrypt booking: %w", err)
 	}
 
-	err = s.bookingRepo.CreateGuarded(ctx, bookingEncx, func(existing []*domain.BookingEncx) error {
-		buffers := map[uuid.UUID]time.Duration{product.ID: query.BufferTime}
-		occupancies, err := s.occupancies(ctx, existing, buffers, query.BufferTime, now)
-		if err != nil {
-			return err
-		}
-		query.Occupancies = occupancies
-		if !domain.OffersSlot(query, slotStartTime) {
-			return errs.NewConflictErr(errSlotTaken)
-		}
-		return nil
-	})
+	err = s.bookingRepo.CreateGuarded(ctx, bookingEncx, s.slotStillFree(ctx, product, query, slotStartTime, now))
 	if err != nil {
 		if booking.PaymentIntentID != nil {
 			// Nobody will pay this intent: cancel it (best effort).
@@ -234,6 +206,67 @@ func (s *BookingService) CreateBooking(
 	}
 
 	return booking, nil
+}
+
+// checkSlot validates a start with the slot engine for the availability and
+// the product under policy, as the slot endpoints compute slots, and returns
+// the engine's query for the guarded insert (slotStillFree). The windows are
+// the availability's occurrences containing the start: for a recurring
+// availability, any occurrence of its series not closed by an availability
+// exception. The engine runs twice so a start that is on the grid but
+// already taken answers a conflict rather than an invalid value.
+func (s *BookingService) checkSlot(
+	ctx context.Context,
+	availability *domain.Availability,
+	product *catalogDomain.ProductRes,
+	policy domain.BookingPolicy,
+	now time.Time,
+	start time.Time,
+) (domain.SlotEngineQuery, error) {
+	exceptions, err := s.exceptionsOf(ctx, availability)
+	if err != nil {
+		return domain.SlotEngineQuery{}, err
+	}
+	windows := availability.OccurrencesExcept(start, start.Add(time.Nanosecond), exceptions)
+	query, err := s.slotQuery(ctx, availability.UserID, windows, product, policy, now)
+	if err != nil {
+		return domain.SlotEngineQuery{}, err
+	}
+	occupancies := query.Occupancies
+	query.Occupancies = nil
+	if !domain.OffersSlot(query, start) {
+		return domain.SlotEngineQuery{}, errs.NewInvalidValueErr("slot_start_time: not a slot offered for this availability and product")
+	}
+	query.Occupancies = occupancies
+	if !domain.OffersSlot(query, start) {
+		return domain.SlotEngineQuery{}, errs.NewConflictErr(errSlotTaken)
+	}
+	return query, nil
+}
+
+// slotStillFree is the guarded insert's check (BookingRepository.
+// CreateGuarded): under the partner's agenda lock, the start must still be
+// free against the partner's bookings committed meanwhile, in any of their
+// availabilities.
+func (s *BookingService) slotStillFree(
+	ctx context.Context,
+	product *catalogDomain.ProductRes,
+	query domain.SlotEngineQuery,
+	start time.Time,
+	now time.Time,
+) func(existing []*domain.BookingEncx) error {
+	return func(existing []*domain.BookingEncx) error {
+		buffers := map[uuid.UUID]time.Duration{product.ID: query.BufferTime}
+		occupancies, err := s.occupancies(ctx, existing, buffers, query.BufferTime, now)
+		if err != nil {
+			return err
+		}
+		query.Occupancies = occupancies
+		if !domain.OffersSlot(query, start) {
+			return errs.NewConflictErr(errSlotTaken)
+		}
+		return nil
+	}
 }
 
 // errAvailabilityClosed is the conflict a booking gets on an availability
