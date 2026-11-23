@@ -178,6 +178,12 @@ func (s *ReminderScheduler) tick(ctx context.Context) {
 			continue
 		}
 
+		// A practitioner booking's client gets no reminder (ADR-0021): the
+		// query leaves them out, and this skips any that comes through.
+		if booking.IsPractitionerBooking() {
+			continue
+		}
+
 		// Past bookings: mark as reminded without sending so they don't
 		// reappear on every tick (slot_start_time is encrypted so the DB
 		// cannot filter them out; we do it here after decryption).
@@ -242,6 +248,7 @@ func (s *ReminderScheduler) buildNotificationData(booking *domain.Booking) ports
 		TotalPriceCents: booking.TotalPriceCents,
 		Currency:        booking.Currency,
 		Locale:          string(booking.Locale),
+		Origin:          string(booking.Origin),
 	}
 
 	if booking.ClientID != nil {

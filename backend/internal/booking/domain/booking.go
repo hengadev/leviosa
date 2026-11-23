@@ -61,6 +61,25 @@ func ParseBookingLocale(value string) (BookingLocale, error) {
 	}
 }
 
+// BookingOrigin is how a booking was made (ADR-0021).
+type BookingOrigin string
+
+const (
+	// BookingOriginOnline is a booking the client made on the practice page
+	// (every booking made before the origin was recorded).
+	BookingOriginOnline BookingOrigin = "online"
+	// BookingOriginPractitioner is a booking the practitioner made for a
+	// client who called: confirmed at once, paid at the practice, and the
+	// app sends its client nothing.
+	BookingOriginPractitioner BookingOrigin = "practitioner"
+)
+
+// IsPractitionerBooking reports whether the practitioner made the booking:
+// no client message is ever sent for it (ADR-0021).
+func (b *Booking) IsPractitionerBooking() bool {
+	return b.Origin == BookingOriginPractitioner
+}
+
 // PaymentStatus defines the payment state of a booking
 type PaymentStatus string
 
@@ -162,6 +181,11 @@ type Booking struct {
 	// PaidOnSiteAt is when the on-site payment was recorded; nil until then.
 	PaidOnSiteAt *time.Time `json:"paid_on_site_at,omitempty"`
 
+	// Origin is how the booking was made: online (the practice page) or by
+	// the practitioner for a client who called (ADR-0021). Empty reads as
+	// online.
+	Origin BookingOrigin `json:"origin,omitempty"`
+
 	// Administrative fields
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -215,6 +239,7 @@ func NewBooking(availabilityID uuid.UUID, clientID *uuid.UUID, partnerID, roomID
 		GuestLastName:   guestLastName,
 		GuestEmail:      guestEmail,
 		GuestPhone:      guestPhone,
+		Origin:          BookingOriginOnline,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
 	}, nil

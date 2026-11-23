@@ -35,6 +35,10 @@ func (s *BookingService) buildNotificationData(booking *domain.Booking, productN
 		CancellationReason: booking.CancellationReason,
 		CancelledAt:        booking.CancelledAt,
 		CancelledBy:        string(booking.CancelledBy),
+
+		// How the booking was made: no client message for a practitioner
+		// booking, and no "new booking" push for the practitioner's own.
+		Origin: string(booking.Origin),
 	}
 
 	if booking.ClientID != nil {

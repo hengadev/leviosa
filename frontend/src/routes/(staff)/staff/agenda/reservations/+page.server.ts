@@ -21,6 +21,9 @@ export interface Booking {
 	noShowAt?: string;
 	/** The payment state and the on-site payment ("Reste payé · N €"). */
 	onSite: OnSitePayment;
+	/** How the booking was made: online, or by the practitioner for a client
+	 * who called (whose client the app never writes to). */
+	origin: 'online' | 'practitioner';
 }
 
 export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
@@ -72,6 +75,7 @@ export const load: PageServerLoad = async ({ locals, url, fetch, parent }) => {
 				practitionerRefundCents: booking.practitioner_refund_cents || 0,
 				completedAt: booking.completed_at ?? undefined,
 				noShowAt: booking.no_show_at ?? undefined,
+				origin: booking.origin === 'practitioner' ? 'practitioner' : 'online',
 				onSite: onSitePayment(
 					{
 						status: booking.status || 'confirmed',

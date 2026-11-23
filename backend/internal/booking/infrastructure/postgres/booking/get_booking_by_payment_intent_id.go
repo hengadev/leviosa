@@ -24,6 +24,7 @@ func (r *Repository) GetByPaymentIntentID(ctx context.Context, paymentIntentID s
 			locale,
 			amount_paid_online_cents, cancelled_by, refunded_amount_cents,
 			amount_paid_on_site_cents, paid_on_site_at,
+			origin,
 			created_at, updated_at,
 			dek_encrypted, key_version, metadata
 		FROM %s.bookings
@@ -64,6 +65,7 @@ func (r *Repository) GetByPaymentIntentID(ctx context.Context, paymentIntentID s
 		&bookingEncx.RefundedAmountCents,
 		&bookingEncx.AmountPaidOnSiteCents,
 		&bookingEncx.PaidOnSiteAt,
+		&bookingEncx.Origin,
 		&bookingEncx.CreatedAt,
 		&bookingEncx.UpdatedAt,
 		&bookingEncx.DEKEncrypted,

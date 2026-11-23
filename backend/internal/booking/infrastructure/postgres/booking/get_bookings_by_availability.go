@@ -70,6 +70,7 @@ func (r *Repository) selectBookings(ctx context.Context, q querier, operation, w
 			refunded_amount_cents,
 			amount_paid_on_site_cents,
 			paid_on_site_at,
+			origin,
 			-- Encryption metadata
 			dek_encrypted,
 			key_version,
@@ -125,6 +126,7 @@ func (r *Repository) selectBookings(ctx context.Context, q querier, operation, w
 			&bookingEncx.RefundedAmountCents,
 			&bookingEncx.AmountPaidOnSiteCents,
 			&bookingEncx.PaidOnSiteAt,
+			&bookingEncx.Origin,
 			// Encryption metadata
 			&bookingEncx.DEKEncrypted,
 			&bookingEncx.KeyVersion,

@@ -22,6 +22,20 @@ const (
 	DefaultPaymentHold = 15 * time.Minute
 )
 
+// PractitionerBookingHorizon stands for "no horizon" on the practitioner's
+// bookings (ADR-0021): far enough that no agenda reaches it.
+const PractitionerBookingHorizon = 10 * 365 * 24 * time.Hour
+
+// ForPractitioner is the policy the practitioner books under for a client
+// who called (ADR-0021): neither the minimum notice nor the booking horizon
+// applies, only the availabilities and the bookings do. A slot that has
+// already started is still not offered.
+func (p BookingPolicy) ForPractitioner() BookingPolicy {
+	p.MinimumNotice = 0
+	p.Horizon = PractitionerBookingHorizon
+	return p
+}
+
 // DefaultBookingPolicy is the policy used when none is configured.
 func DefaultBookingPolicy() BookingPolicy {
 	return BookingPolicy{MinimumNotice: DefaultMinimumNotice, Horizon: DefaultBookingHorizon, PaymentHold: DefaultPaymentHold}

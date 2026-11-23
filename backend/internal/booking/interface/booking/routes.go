@@ -46,6 +46,14 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	// Practitioner cancellation from the partner agenda (issue 018): full
 	// refund; the booking's partner or an admin only (checked by the service).
 	router.HandleFunc("POST /partners/bookings/{id}/cancel", RequirePartner(mw.EnableCORS(h.CancelBookingByPractitioner)))
+	// Practitioner booking (issue 041, ADR-0021): the practitioner books a
+	// client who called. The products and free slots of the form (partnerId
+	// is the partner's user ID; the partner or an admin only, checked by the
+	// handler), and the booking (the availability's partner or an admin,
+	// checked by the service).
+	router.HandleFunc("GET /partners/booking-products/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPractitionerProducts)))
+	router.HandleFunc("GET /partners/booking-slots/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPractitionerFreeSlots)))
+	router.HandleFunc("POST /partners/bookings", RequirePartner(mw.EnableCORS(h.CreatePractitionerBooking)))
 	router.HandleFunc("GET /partners/earnings/{partnerId}", RequirePartner(mw.EnableCORS(h.GetPartnerEarnings)))
 	// The client file (issue 042): the file of a booking's client, and the
 	// distinct-client search. Same authorization as the partner bookings list.

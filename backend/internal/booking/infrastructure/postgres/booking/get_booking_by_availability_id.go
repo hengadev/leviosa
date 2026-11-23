@@ -24,6 +24,7 @@ func (r *Repository) GetByAvailabilityID(ctx context.Context, availabilityID uui
 			hold_expires_at,
 			locale,
 			amount_paid_on_site_cents, paid_on_site_at,
+			origin,
 			created_at, updated_at,
 			dek_encrypted, key_version, metadata
 		FROM %s.bookings
@@ -63,6 +64,7 @@ func (r *Repository) GetByAvailabilityID(ctx context.Context, availabilityID uui
 		&bookingEncx.Locale,
 		&bookingEncx.AmountPaidOnSiteCents,
 		&bookingEncx.PaidOnSiteAt,
+		&bookingEncx.Origin,
 		&bookingEncx.CreatedAt,
 		&bookingEncx.UpdatedAt,
 		&bookingEncx.DEKEncrypted,

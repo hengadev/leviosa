@@ -28,6 +28,23 @@ type BookingService interface {
 	// a start this would return.
 	GetFreeSlots(ctx context.Context, partnerID, productID uuid.UUID, from, to time.Time) (*domain.FreeSlots, error)
 
+	// CreatePractitionerBooking books a slot of a practitioner's agenda for a
+	// client who called (ADR-0021): confirmed at once with nothing paid
+	// online, origin practitioner, and no message to the client. The slot
+	// rules are the slot engine's without the minimum notice and the
+	// booking horizon. Only the availability's partner (callerID) or an
+	// administrator may do it; anyone else gets errs.ErrForbidden.
+	CreatePractitionerBooking(ctx context.Context, input domain.PractitionerBookingInput, callerID uuid.UUID, callerIsAdmin bool) (*domain.Booking, error)
+
+	// GetPractitionerFreeSlots returns the free slots the practitioner's
+	// booking form offers (partner by user ID): GetFreeSlots without the
+	// minimum notice and the booking horizon.
+	GetPractitionerFreeSlots(ctx context.Context, partnerUserID, productID uuid.UUID, from, to time.Time) (*domain.FreeSlots, error)
+
+	// GetPractitionerProducts lists the products the practitioner can book
+	// for a client who called: their published products with a price.
+	GetPractitionerProducts(ctx context.Context, partnerUserID uuid.UUID) ([]domain.PractitionerProduct, error)
+
 	// GetBooking retrieves a booking by ID
 	GetBooking(ctx context.Context, id uuid.UUID) (*domain.Booking, error)
 

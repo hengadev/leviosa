@@ -69,7 +69,8 @@ type BookingRepository interface {
 	// Update modifies an existing booking. It leaves the amount paid online,
 	// who cancelled and the refunded amount alone: those are written only by
 	// ConfirmGuarded, Create and the cancellation methods below, so a booking
-	// read without them never erases them.
+	// read without them never erases them. The origin is written only by
+	// Create and CreateGuarded: it never changes.
 	Update(ctx context.Context, booking *domain.BookingEncx) error
 
 	// ClaimCancellation cancels a confirmed booking (status cancelled,

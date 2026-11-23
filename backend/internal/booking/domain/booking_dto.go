@@ -173,6 +173,9 @@ type PartnerBookingResponse struct {
 	// the agenda would refund the client: everything they paid online
 	// (practitioner cancellation). Zero for any other booking.
 	PractitionerRefundCents int `json:"practitioner_refund_cents"`
+	// Origin is how the booking was made: online, or by the practitioner
+	// for a client who called (ADR-0021), whose client is never emailed.
+	Origin BookingOrigin `json:"origin"`
 }
 
 // AdminBookingResponse is the enriched booking DTO returned by the admin list endpoint.

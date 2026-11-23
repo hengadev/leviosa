@@ -63,6 +63,7 @@ func (c *InProcessClient) GetPartnerByUserID(ctx context.Context, userID uuid.UU
 		ID:         partnerResponse.ID,
 		UserID:     partnerResponse.UserID,
 		IsVerified: isVerified,
+		ProductIDs: partnerResponse.ProductIDs,
 	}, nil
 }
 

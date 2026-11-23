@@ -25,6 +25,7 @@ func (r *Repository) GetGuestBookings(ctx context.Context) ([]*domain.BookingEnc
 			b.hold_expires_at,
 			b.locale,
 			b.amount_paid_on_site_cents, b.paid_on_site_at,
+			b.origin,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
@@ -53,6 +54,7 @@ func (r *Repository) GetGuestBookings(ctx context.Context) ([]*domain.BookingEnc
 			&b.HoldExpiresAt,
 			&b.Locale,
 			&b.AmountPaidOnSiteCents, &b.PaidOnSiteAt,
+			&b.Origin,
 			&b.CreatedAt, &b.UpdatedAt,
 			&b.DEKEncrypted, &b.KeyVersion, &b.Metadata,
 		); err != nil {

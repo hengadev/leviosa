@@ -26,6 +26,7 @@ func (r *Repository) FindBookingsDueForPractitionerReminder(ctx context.Context)
 			b.reminded_at, b.practitioner_reminded_at,
 			b.hold_expires_at,
 			b.locale,
+			b.origin,
 			b.created_at, b.updated_at,
 			b.dek_encrypted, b.key_version, b.metadata
 		FROM %s.bookings b
@@ -53,6 +54,7 @@ func (r *Repository) FindBookingsDueForPractitionerReminder(ctx context.Context)
 			&b.RemindedAt, &b.PractitionerRemindedAt,
 			&b.HoldExpiresAt,
 			&b.Locale,
+			&b.Origin,
 			&b.CreatedAt, &b.UpdatedAt,
 			&b.DEKEncrypted, &b.KeyVersion, &b.Metadata,
 		); err != nil {

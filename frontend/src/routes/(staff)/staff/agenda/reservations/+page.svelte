@@ -1,11 +1,14 @@
 <script lang="ts">
 	import PageActionsMenu from "#lib/components/admin/PageActionsMenu.svelte";
+	import PageActionsItem from '#lib/components/admin/PageActionsItem.svelte';
 	import type { PageProps } from './$types';
 	import type { Booking } from './+page.server';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
+	import { onMount, tick } from 'svelte';
 	import { Dialog } from 'bits-ui';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
-	import { Clock, CheckCircle, XCircle, AlertCircle, Ban, RotateCcw } from '@lucide/svelte';
+	import { Clock, CheckCircle, XCircle, AlertCircle, Ban, RotateCcw, CalendarPlus } from '@lucide/svelte';
 	import { changeOnSitePayment } from '#lib/onSitePayment.ts';
 
 	let { data }: PageProps = $props();
@@ -156,13 +159,13 @@
 		}
 	}
 
-	const filtered = $derived(
-		activeTab === 'all'
-			? data.bookings
-			: activeTab === 'upcoming'
-				? data.bookings.filter((b) => b.status === 'confirmed')
-				: data.bookings.filter((b) => b.status === activeTab),
-	);
+	function matchesTab(booking: Booking, tab: Tab): boolean {
+		if (tab === 'all') return true;
+		if (tab === 'upcoming') return booking.status === 'confirmed';
+		return booking.status === tab;
+	}
+
+	const filtered = $derived(data.bookings.filter((b) => matchesTab(b, activeTab)));
 
 	const upcomingCount = $derived(data.bookings.filter((b) => b.status === 'confirmed').length);
 	const completedCount = $derived(data.bookings.filter((b) => b.status === 'completed').length);
@@ -243,6 +246,17 @@
 		}
 	}
 
+	// Back from "Nouvelle réservation" (issue 041): the booking just made is
+	// shown, marked, and scrolled to.
+	const bookedId = $derived(page.url.searchParams.get('booked'));
+	onMount(async () => {
+		if (!bookedId) return;
+		const booked = data.bookings.find((b) => b.id === bookedId);
+		if (booked && activeTab !== 'all' && !matchesTab(booked, activeTab)) activeTab = 'all';
+		await tick();
+		document.getElementById(`booking-${bookedId}`)?.scrollIntoView({ block: 'center' });
+	});
+
 	async function reopenBooking(bookingId: string) {
 		actionLoading = { ...actionLoading, [bookingId + '_reopen']: true };
 		actionError = '';
@@ -282,13 +296,24 @@
 	<div class="mb-8">
 		<div class="mb-2 flex items-center justify-between gap-4">
 			<h1 class="text-3xl lg:text-4xl font-bold text-foreground">Réservations</h1>
-			<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
-			<div class="lg:hidden">
-				<PageActionsMenu />
-			</div>
+			<!-- At every width: it holds "Nouvelle réservation" -->
+			<PageActionsMenu>
+				<PageActionsItem
+					icon={CalendarPlus}
+					onSelect={() => goto('/staff/agenda/reservations/nouvelle?from=/staff/agenda/reservations')}
+				>
+					Nouvelle réservation
+				</PageActionsItem>
+			</PageActionsMenu>
 		</div>
 		<p class="text-muted-foreground">Suivi de vos séances et clients</p>
 	</div>
+
+	{#if bookedId}
+		<p role="status" class="mb-6 rounded-2xl border border-foreground px-4 py-3 text-sm font-medium">
+			Réservation enregistrée.
+		</p>
+	{/if}
 
 	<!-- Summary -->
 	<div class="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
@@ -337,7 +362,12 @@
 	<!-- Bookings List -->
 	<div class="space-y-3">
 		{#each filtered as booking (booking.id)}
-			<div class="bg-background rounded-xl border border-border p-4 sm:p-5 hover:shadow-mini transition-shadow">
+			<div
+				id="booking-{booking.id}"
+				class="bg-background rounded-xl border p-4 sm:p-5 hover:shadow-mini transition-shadow {booking.id === bookedId
+					? 'border-foreground ring-1 ring-foreground'
+					: 'border-border'}"
+			>
 				<div class="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
 					<!-- Main Info -->
 					<div class="flex-1 min-w-0">
@@ -459,7 +489,10 @@
 					{cancelTarget.clientName}, {cancelTarget.productName}, {formatDateTime(cancelTarget.startTime)}.
 				</Dialog.Description>
 				<p class="mt-4 text-sm text-foreground">
-					{#if cancelTarget.practitionerRefundCents > 0}
+					{#if cancelTarget.origin === 'practitioner'}
+						Rien à rembourser, et le client n’est pas prévenu par l’application : c’est vous
+						qui l’avez réservé.
+					{:else if cancelTarget.practitionerRefundCents > 0}
 						Le client sera intégralement remboursé ({formatCents(cancelTarget.practitionerRefundCents)})
 						et prévenu par email.
 					{:else}

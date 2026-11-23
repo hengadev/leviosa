@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { Ban, CalendarX, Check, Phone } from '@lucide/svelte';
+	import { Ban, CalendarPlus, CalendarX, Check, Phone } from '@lucide/svelte';
 	import PageActionsMenu from '#lib/components/admin/PageActionsMenu.svelte';
+	import PageActionsItem from '#lib/components/admin/PageActionsItem.svelte';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
 	import SmsButton from '#lib/components/practice/SmsButton.svelte';
 	import { changeOnSitePayment, type OnSitePayment } from '#lib/onSitePayment.ts';
@@ -88,6 +90,15 @@
 	function hasStarted(startsAt: string): boolean {
 		return new Date(startsAt).getTime() <= now;
 	}
+
+	// Back from "Nouvelle réservation" (issue 041): the booking just made,
+	// and whether this page shows it (today or the next working day).
+	const bookedId = $derived(page.url.searchParams.get('booked'));
+	const bookedShownHere = $derived(
+		data.state === 'ready' &&
+			bookedId !== null &&
+			[...data.sessions, ...(data.nextWorkingDay?.sessions ?? [])].some((s) => s.id === bookedId)
+	);
 </script>
 
 <!-- "Reste payé · N €" on a started session with money due; once recorded,
@@ -138,10 +149,22 @@
 	<div class="mb-6">
 		<div class="mb-1 flex items-center justify-between gap-4">
 			<h1 class="text-3xl font-bold lg:text-4xl">Aujourd'hui</h1>
-			<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
-			<div class="lg:hidden">
-				<PageActionsMenu />
-			</div>
+			{#if data.state === 'ready'}
+				<!-- At every width: it holds "Nouvelle réservation" -->
+				<PageActionsMenu>
+					<PageActionsItem
+						icon={CalendarPlus}
+						onSelect={() => goto('/staff/agenda/reservations/nouvelle?from=/admin')}
+					>
+						Nouvelle réservation
+					</PageActionsItem>
+				</PageActionsMenu>
+			{:else}
+				<!-- The sidebar, which holds the theme toggle, shows only from lg up -->
+				<div class="lg:hidden">
+					<PageActionsMenu />
+				</div>
+			{/if}
 		</div>
 		{#if data.state === 'ready'}
 			<p class="text-muted-foreground">{data.dateLabel} · {countLabel(data.sessionCount)}</p>
@@ -151,6 +174,20 @@
 	{#if data.state === 'not-set-up'}
 		<PractitionerProfileMissing />
 	{:else}
+		{#if bookedId}
+			<p role="status" class="mb-6 rounded-2xl border border-foreground px-4 py-3 text-sm">
+				<span class="font-medium">Réservation enregistrée.</span>
+				{#if !bookedShownHere}
+					Elle n’est ni aujourd’hui ni le prochain jour travaillé :
+					<a
+						href="/staff/agenda/reservations?booked={encodeURIComponent(bookedId)}"
+						class="inline-flex min-h-11 items-center font-medium underline underline-offset-4"
+					>
+						voir dans Réservations
+					</a>
+				{/if}
+			</p>
+		{/if}
 		<div class="space-y-6">
 			{#if next}
 				<section class="rounded-2xl bg-foreground p-4 text-background sm:p-5">
