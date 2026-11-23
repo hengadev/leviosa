@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	bookingDomain "github.com/Leviosa-care/leviosa/backend/internal/booking/domain"
 	bookingPorts "github.com/Leviosa-care/leviosa/backend/internal/booking/ports"
 	catalogPorts "github.com/Leviosa-care/leviosa/backend/internal/catalog/ports"
 	notificationDomain "github.com/Leviosa-care/leviosa/backend/internal/notification/domain"
@@ -172,10 +173,67 @@ func (a *BookingNotificationAdapter) sendNewBookingPush(ctx context.Context, dat
 	return a.push.NotifyUser(ctx, data.PartnerID, msg)
 }
 
-// SendBookingCancellation sends a booking cancellation email (fire-and-forget).
+// SendBookingCancellation sends a booking cancellation email and, when the
+// client cancelled, the practitioner's notification (fire-and-forget, each
+// on its own so a slow one never holds the other). Nothing for the
+// practitioner's own cancellations.
 func (a *BookingNotificationAdapter) SendBookingCancellation(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "booking cancellation", data, a.sendBookingCancellationEmail)
+	if a.push != nil && data.CancelledBy == string(bookingDomain.CancelledByClient) {
+		go a.sendAsync(detach(ctx), "cancellation practitioner push", data, a.sendCancellationPush)
+	}
 	return nil
+}
+
+// sendCancellationPush notifies the booking's practitioner of a cancellation
+// by its client, with the same payload rules as the new-booking push.
+func (a *BookingNotificationAdapter) sendCancellationPush(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if a.push == nil || data.CancelledBy != string(bookingDomain.CancelledByClient) {
+		return nil
+	}
+	a.enrichData(ctx, &data)
+	clientFirst, clientLast := clientNames(data)
+	msg := notificationDomain.CancellationPush(notificationDomain.BookingPushDetails{
+		BookingID:       data.BookingID,
+		ClientFirstName: clientFirst,
+		ClientLastName:  clientLast,
+		ProductName:     data.ProductName,
+		Start:           data.SlotStartTime,
+		Now:             a.now(),
+	})
+	return a.push.NotifyUser(ctx, data.PartnerID, msg)
+}
+
+// sendDisputePush notifies the practice's practitioner of a payment dispute
+// with the client's short name only: never an amount.
+func (a *BookingNotificationAdapter) sendDisputePush(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if a.push == nil {
+		return nil
+	}
+	a.enrichData(ctx, &data)
+	clientFirst, clientLast := clientNames(data)
+	msg := notificationDomain.DisputePush(notificationDomain.BookingPushDetails{
+		BookingID:       data.BookingID,
+		ClientFirstName: clientFirst,
+		ClientLastName:  clientLast,
+	})
+	return a.push.NotifyUser(ctx, data.PartnerID, msg)
+}
+
+// sendLatePaymentRefundPush notifies the practice's practitioner that a late
+// payment was refunded, with the client's short name only.
+func (a *BookingNotificationAdapter) sendLatePaymentRefundPush(ctx context.Context, data bookingPorts.BookingNotificationData) error {
+	if a.push == nil {
+		return nil
+	}
+	a.enrichData(ctx, &data)
+	clientFirst, clientLast := clientNames(data)
+	msg := notificationDomain.LatePaymentRefundPush(notificationDomain.BookingPushDetails{
+		BookingID:       data.BookingID,
+		ClientFirstName: clientFirst,
+		ClientLastName:  clientLast,
+	})
+	return a.push.NotifyUser(ctx, data.PartnerID, msg)
 }
 
 // SendBookingReminder sends a booking reminder email (fire-and-forget).
@@ -196,16 +254,23 @@ func (a *BookingNotificationAdapter) SendPaymentFailed(ctx context.Context, data
 	return nil
 }
 
-// SendPaymentDisputeAlert notifies admin/staff of a Stripe dispute (fire-and-forget).
+// SendPaymentDisputeAlert notifies admin/staff of a Stripe dispute by email
+// and the practice's practitioner by push (fire-and-forget).
 func (a *BookingNotificationAdapter) SendPaymentDisputeAlert(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "payment dispute alert", data, a.sendPaymentDisputeAlertEmail)
+	if a.push != nil {
+		go a.sendAsync(detach(ctx), "dispute practitioner push", data, a.sendDisputePush)
+	}
 	return nil
 }
 
 // SendLatePaymentRefund tells the client their late payment was refunded
-// (fire-and-forget).
+// (fire-and-forget) and notifies the practice's practitioner by push.
 func (a *BookingNotificationAdapter) SendLatePaymentRefund(ctx context.Context, data bookingPorts.BookingNotificationData) error {
 	go a.sendAsync(detach(ctx), "late payment refund", data, a.sendLatePaymentRefundEmail)
+	if a.push != nil {
+		go a.sendAsync(detach(ctx), "late payment refund practitioner push", data, a.sendLatePaymentRefundPush)
+	}
 	return nil
 }
 
