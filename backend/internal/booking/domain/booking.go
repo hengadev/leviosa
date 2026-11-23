@@ -154,6 +154,14 @@ type Booking struct {
 	// refunds nothing); nil when the booking was not cancelled that way.
 	RefundedAmountCents *int `json:"refunded_amount_cents,omitempty"`
 
+	// AmountPaidOnSiteCents is what the client paid at the practice, on the
+	// card terminal (not connected to Leviosa), as the practitioner recorded
+	// it: the amount due at the practice then. Nil until recorded.
+	AmountPaidOnSiteCents *int `json:"amount_paid_on_site_cents,omitempty"`
+
+	// PaidOnSiteAt is when the on-site payment was recorded; nil until then.
+	PaidOnSiteAt *time.Time `json:"paid_on_site_at,omitempty"`
+
 	// Administrative fields
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

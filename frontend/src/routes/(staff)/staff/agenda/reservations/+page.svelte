@@ -6,6 +6,7 @@
 	import { Dialog } from 'bits-ui';
 	import PractitionerProfileMissing from '#lib/components/admin/PractitionerProfileMissing.svelte';
 	import { Clock, CheckCircle, XCircle, AlertCircle, Ban, RotateCcw } from '@lucide/svelte';
+	import { changeOnSitePayment } from '#lib/onSitePayment.ts';
 
 	let { data }: PageProps = $props();
 
@@ -223,6 +224,25 @@
 			actionLoading = { ...actionLoading, [bookingId + '_noshow']: false };
 		}
 	}
+	/** "Reste payé · N €": a started session with money due at the practice */
+	function canRecordOnSite(booking: Booking): boolean {
+		return booking.onSite.recordable && new Date(booking.startTime) <= new Date();
+	}
+
+	/** Records ("Reste payé") or undoes the on-site payment */
+	async function runOnSitePayment(bookingId: string, action: 'record' | 'undo') {
+		const key = bookingId + '_onsite';
+		actionLoading = { ...actionLoading, [key]: true };
+		actionError = '';
+		try {
+			const message = await changeOnSitePayment(bookingId, action);
+			if (message) actionError = message;
+			await invalidateAll();
+		} finally {
+			actionLoading = { ...actionLoading, [key]: false };
+		}
+	}
+
 	async function reopenBooking(bookingId: string) {
 		actionLoading = { ...actionLoading, [bookingId + '_reopen']: true };
 		actionError = '';
@@ -341,6 +361,9 @@
 								<span class="px-2 py-0.5 rounded-full text-xs font-medium border {paymentStatusBadge(booking.paymentStatus)}">
 									{paymentStatusLabel(booking.paymentStatus)}
 								</span>
+							{:else if booking.status !== 'cancelled' && booking.onSite.label}
+								<!-- What was paid, and what is left to pay at the practice -->
+								<span class="text-xs">{booking.onSite.label}</span>
 							{/if}
 						</div>
 					</div>
@@ -378,6 +401,26 @@
 									{actionLoading[booking.id + '_noshow'] ? '…' : 'Absent'}
 								</button>
 							</div>
+						{/if}
+						{#if canRecordOnSite(booking)}
+							<button
+								class="inline-flex h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 text-sm font-medium bg-foreground text-background rounded-md hover:bg-foreground/90 transition-colors disabled:opacity-50"
+								onclick={() => runOnSitePayment(booking.id, 'record')}
+								disabled={actionLoading[booking.id + '_onsite']}
+							>
+								{actionLoading[booking.id + '_onsite'] ? '…' : `Reste payé · ${booking.onSite.dueLabel}`}
+							</button>
+						{:else if booking.onSite.recorded && booking.onSite.undoable}
+							<button
+								class="inline-flex h-11 flex-1 sm:flex-none items-center justify-center gap-1.5 px-4 text-sm font-medium text-muted-foreground bg-background border border-border rounded-md hover:bg-muted transition-colors disabled:opacity-50"
+								aria-label="Annuler le paiement sur place"
+								title="Annuler le paiement sur place"
+								onclick={() => runOnSitePayment(booking.id, 'undo')}
+								disabled={actionLoading[booking.id + '_onsite']}
+							>
+								<RotateCcw size={13} />
+								{actionLoading[booking.id + '_onsite'] ? '…' : 'Annuler'}
+							</button>
 						{/if}
 						{#if isReopenable(booking)}
 							<button

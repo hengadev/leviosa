@@ -23,6 +23,7 @@ func (r *Repository) GetByAvailabilityID(ctx context.Context, availabilityID uui
 			reminded_at, practitioner_reminded_at,
 			hold_expires_at,
 			locale,
+			amount_paid_on_site_cents, paid_on_site_at,
 			created_at, updated_at,
 			dek_encrypted, key_version, metadata
 		FROM %s.bookings
@@ -60,6 +61,8 @@ func (r *Repository) GetByAvailabilityID(ctx context.Context, availabilityID uui
 		&bookingEncx.RemindedAt, &bookingEncx.PractitionerRemindedAt,
 		&bookingEncx.HoldExpiresAt,
 		&bookingEncx.Locale,
+		&bookingEncx.AmountPaidOnSiteCents,
+		&bookingEncx.PaidOnSiteAt,
 		&bookingEncx.CreatedAt,
 		&bookingEncx.UpdatedAt,
 		&bookingEncx.DEKEncrypted,

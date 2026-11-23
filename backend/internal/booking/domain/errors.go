@@ -61,6 +61,12 @@ var (
 	ErrBookingNotAwaitingPayment       = errors.New("booking is not awaiting payment")
 	ErrBookingNotConfirmed             = errors.New("booking is not confirmed: it is awaiting payment or expired")
 	ErrInvalidBookingLocale            = errors.New("booking locale must be 'fr' or 'en'")
+	ErrOnSitePaymentNotAllowed         = errors.New("an on-site payment can only be recorded on a confirmed or completed booking")
+	ErrOnSitePaymentBeforeStart        = errors.New("an on-site payment can only be recorded once the session has started")
+	ErrNothingDueOnSite                = errors.New("nothing is due at the practice for this booking")
+	ErrOnSitePaymentAlreadyRecorded    = errors.New("the on-site payment is already recorded")
+	ErrOnSitePaymentNotRecorded        = errors.New("no on-site payment is recorded for this booking")
+	ErrOnSitePaymentUndoSameDayOnly    = errors.New("an on-site payment can only be undone on the same day it was recorded")
 )
 
 // Booking token errors

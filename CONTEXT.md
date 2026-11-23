@@ -29,7 +29,7 @@ These are the canonical terms used in code, documentation, and conversation. Use
 | **Product** | A specific wellness service offered by a partner. Has a duration, buffer time, cancellation window, and images. Duration is always a multiple of 10 minutes, between 20 and 240 minutes. |
 | **Buffer time** | Mandatory rest/preparation time after a session ends before the next booking can start. Defined on the product. Never shown to clients: a client only sees their booking's start time. A product may set it to zero when its duration already includes the preparation time. |
 | **Cancellation window** | Number of hours before a session within which cancellation is no longer permitted. Defined on the product. |
-| **Deposit** | The part of a product's price paid online when booking (French: *acompte*, never *arrhes*). Defined per product as either a fixed amount or a percentage of the price. When a product has a deposit, only the deposit goes through Leviosa and the balance is paid at the practice; without one, the full price is paid online. Cancellation fee tiers apply to the amount paid online. |
+| **Deposit** | The part of a product's price paid online when booking (French: *acompte*, never *arrhes*). Defined per product as either a fixed amount or a percentage of the price. When a product has a deposit, only the deposit goes through Leviosa and the balance is paid at the practice, on its card terminal; the practitioner can record it in Leviosa (*Reste payé*, undoable the same Paris day). Without one, the full price is paid online. Cancellation fee tiers apply to the amount paid online. |
 | **Price** | A Stripe-backed pricing record attached to a product. Can be one-time or recurring (monthly/yearly intervals). |
 
 ### Scheduling & Rooms

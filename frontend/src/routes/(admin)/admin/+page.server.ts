@@ -1,28 +1,21 @@
 import type { PageServerLoad } from './$types';
 import * as env from '$app/env/private';
 import { error, redirect, isRedirect } from '@sveltejs/kit';
+import { onSitePayment, type BookingMoney, type OnSitePayment } from '#lib/onSitePayment.ts';
 
 const TIME_ZONE = 'Europe/Paris';
 
 /** A booking as the partner bookings endpoint returns it (the fields used here). */
-interface BackendBooking {
+interface BackendBooking extends BookingMoney {
 	id: string;
 	client_name: string;
 	client_phone?: string;
 	product_name: string;
 	slot_start_time: string;
 	slot_end_time: string;
-	status: string;
-	payment_status: string;
 	total_price_cents: number;
 	completed_at?: string;
 	no_show_at?: string;
-}
-
-/** A transaction of the partner earnings endpoint: amount_cents is what was paid online. */
-interface BackendEarningsTransaction {
-	id: string;
-	amount_cents: number;
 }
 
 /** The partner next-working-day endpoint's answer (the fields used here). */
@@ -44,17 +37,24 @@ export interface TodaySession {
 	phoneLabel: string;
 	productName: string;
 	paymentLabel: string;
+	/** The on-site payment ("Reste payé · N €", its same-day undo). */
+	onSite: OnSitePayment;
 }
 
 /** One of today's sessions already closed (completed or no-show). */
 export interface TodayClosedSession {
 	id: string;
+	startsAt: string;
 	startLabel: string;
 	endLabel: string;
 	clientName: string;
 	productName: string;
 	/** "Terminée" or "Absent". */
 	resultLabel: string;
+	/** The payment state, e.g. "Reste payé"; empty when there is nothing to say. */
+	paymentLabel: string;
+	/** The on-site payment ("Reste payé · N €", its same-day undo). */
+	onSite: OnSitePayment;
 	/** Whether the Annuler (reopen) link applies: the close happened today
 	 * in Paris (the domain refuses a reopen after that day). */
 	canUndo: boolean;
@@ -136,43 +136,14 @@ function displayPhone(phone: string): string {
 	return phone;
 }
 
-function formatEuros(cents: number): string {
-	const euros = cents / 100;
-	return `${euros.toLocaleString('fr-FR', {
-		minimumFractionDigits: Number.isInteger(euros) ? 0 : 2,
-		maximumFractionDigits: 2
-	})} €`;
-}
-
-/** The payment state shown on the day's cards. */
-function paymentLabel(booking: BackendBooking, paidOnlineCents: number | undefined): string {
-	switch (booking.payment_status) {
-		case 'paid': {
-			if (paidOnlineCents === undefined) return 'Paiement reçu';
-			const left = booking.total_price_cents - paidOnlineCents;
-			return left > 0 ? `Acompte payé, reste ${formatEuros(left)}` : 'Payé';
-		}
-		case 'pending':
-			return 'Paiement en attente';
-		case 'failed':
-			return 'Paiement échoué';
-		case 'refunded':
-			return 'Remboursé';
-		case 'partially_refunded':
-			return 'Remboursé en partie';
-		case 'disputed':
-			return 'Paiement contesté';
-		default:
-			return '';
-	}
-}
-
 /** A booking as a row of the day cards (today's sessions and the next
- * working day's alike). paidOnlineCents is what the client paid online. */
-function toSession(b: BackendBooking, paidOnlineCents: number | undefined): TodaySession {
+ * working day's alike). */
+function toSession(b: BackendBooking, now: Date): TodaySession {
 	const start = new Date(b.slot_start_time);
 	const end = new Date(b.slot_end_time);
 	const phoneLabel = (b.client_phone ?? '').trim();
+	// The payment state comes from the booking itself (issue 039).
+	const onSite = onSitePayment(b, now);
 	return {
 		id: b.id,
 		startsAt: start.toISOString(),
@@ -183,7 +154,8 @@ function toSession(b: BackendBooking, paidOnlineCents: number | undefined): Toda
 		phone: dialable(phoneLabel),
 		phoneLabel: displayPhone(phoneLabel),
 		productName: b.product_name || 'Produit inconnu',
-		paymentLabel: paymentLabel(b, paidOnlineCents)
+		paymentLabel: onSite.label,
+		onSite
 	};
 }
 
@@ -249,42 +221,28 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 			);
 		const confirmed = todays.filter((b) => b.status === 'confirmed');
 
-		// What the client paid online (the deposit, or the whole price): only the
-		// earnings endpoint says it, so ask for it only when there is a session.
-		const paidOnline = new Map<string, number>();
-		if (confirmed.length > 0) {
-			try {
-				const earningsRes = await fetch(`${env.API_URL}/partners/earnings/${partnerId}`);
-				if (earningsRes.ok) {
-					const earnings = await earningsRes.json();
-					for (const t of (earnings?.transactions ?? []) as BackendEarningsTransaction[]) {
-						paidOnline.set(t.id, t.amount_cents);
-					}
-				}
-			} catch (err) {
-				console.error('Error loading earnings:', err);
-			}
-		}
-
-		const sessions: TodaySession[] = confirmed.map((b) => toSession(b, paidOnline.get(b.id)));
+		const sessions: TodaySession[] = confirmed.map((b) => toSession(b, now));
 		const toClose: TodaySession[] = confirmed
 			.filter((b) => new Date(b.slot_end_time).getTime() <= now.getTime())
-			.map((b) => toSession(b, paidOnline.get(b.id)));
+			.map((b) => toSession(b, now));
 
 		// Today's sessions already closed: "Terminée" or "Absent", undoable
 		// only when the close happened today in Paris (the reopen rule).
 		const closed: TodayClosedSession[] = todays
 			.filter((b) => b.status === 'completed' || b.status === 'no_show')
 			.map((b) => {
-				const session = toSession(b, undefined);
+				const session = toSession(b, now);
 				const closedAt = b.status === 'completed' ? b.completed_at : b.no_show_at;
 				return {
 					id: session.id,
+					startsAt: session.startsAt,
 					startLabel: session.startLabel,
 					endLabel: session.endLabel,
 					clientName: session.clientName,
 					productName: session.productName,
 					resultLabel: b.status === 'completed' ? 'Terminée' : 'Absent',
+					paymentLabel: session.paymentLabel,
+					onSite: session.onSite,
 					canUndo: closedAt !== undefined && parisDay(new Date(closedAt)) === today
 				};
 			});
@@ -311,7 +269,7 @@ export const load: PageServerLoad = async ({ locals, fetch }): Promise<TodayData
 									new Date(a.slot_start_time).getTime() -
 									new Date(b.slot_start_time).getTime()
 							)
-							.map((b) => toSession(b, paidOnline.get(b.id)))
+							.map((b) => toSession(b, now))
 					};
 				}
 			}

@@ -56,6 +56,10 @@ func (h *handler) RegisterRoutes(router *http.ServeMux) {
 	router.HandleFunc("POST /bookings/{id}/complete", RequirePartner(mw.EnableCORS(h.CompleteBooking)))
 	router.HandleFunc("POST /bookings/{id}/no-show", RequirePartner(mw.EnableCORS(h.MarkNoShow)))
 	router.HandleFunc("POST /bookings/{id}/reopen", RequirePartner(mw.EnableCORS(h.ReopenBooking)))
+	// The on-site payment (issue 039): record it, or undo it the same day.
+	// The booking's partner or an administrator only (checked by the handler).
+	router.HandleFunc("POST /bookings/{id}/on-site-payment", RequirePartner(mw.EnableCORS(h.RecordOnSitePayment)))
+	router.HandleFunc("DELETE /bookings/{id}/on-site-payment", RequirePartner(mw.EnableCORS(h.UndoOnSitePayment)))
 	router.HandleFunc("POST /bookings/{id}/payment", RequireStandard(mw.EnableCORS(h.ProcessPayment)))
 	router.HandleFunc("POST /bookings/{id}/refund", RequireAdmin(mw.EnableCORS(h.RefundBooking)))
 

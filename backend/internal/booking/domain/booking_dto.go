@@ -33,6 +33,12 @@ type BookingResponse struct {
 	CancelledBy         CancellationActor `json:"cancelled_by,omitempty"`
 	RefundedAmountCents *int              `json:"refunded_amount_cents,omitempty"`
 
+	// The on-site payment: what is due at the practice (price minus what
+	// was paid online), and what was recorded as paid there, and when.
+	AmountDueOnSiteCents  int        `json:"amount_due_on_site_cents"`
+	AmountPaidOnSiteCents *int       `json:"amount_paid_on_site_cents,omitempty"`
+	PaidOnSiteAt          *time.Time `json:"paid_on_site_at,omitempty"`
+
 	// Booking token for public guest access
 	Token string `json:"token,omitempty"`
 
@@ -122,6 +128,11 @@ type Transaction struct {
 	NetCents        int           `json:"net_cents"`    // paid minus refunded; 0 when unpaid or disputed
 	PaymentStatus   PaymentStatus `json:"payment_status"`
 	BookingStatus   BookingStatus `json:"booking_status"`
+	// AmountDueOnSiteCents is what is due at the practice (price minus what
+	// was paid online); AmountPaidOnSiteCents what was recorded as paid
+	// there, nil until recorded.
+	AmountDueOnSiteCents  int  `json:"amount_due_on_site_cents"`
+	AmountPaidOnSiteCents *int `json:"amount_paid_on_site_cents,omitempty"`
 }
 
 type EarningsSummary struct {
@@ -151,6 +162,13 @@ type PartnerBookingResponse struct {
 	Currency        string        `json:"currency"`
 	CompletedAt     *time.Time    `json:"completed_at,omitempty"`
 	NoShowAt        *time.Time    `json:"no_show_at,omitempty"`
+	// The money of the booking: what the client paid online (the deposit,
+	// or the full price), what is due at the practice (price minus that),
+	// and what was recorded as paid there, and when (nil until recorded).
+	AmountPaidOnlineCents int        `json:"amount_paid_online_cents"`
+	AmountDueOnSiteCents  int        `json:"amount_due_on_site_cents"`
+	AmountPaidOnSiteCents *int       `json:"amount_paid_on_site_cents,omitempty"`
+	PaidOnSiteAt          *time.Time `json:"paid_on_site_at,omitempty"`
 	// PractitionerRefundCents is what cancelling this confirmed booking from
 	// the agenda would refund the client: everything they paid online
 	// (practitioner cancellation). Zero for any other booking.
