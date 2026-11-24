@@ -1,6 +1,6 @@
 import * as env from '$app/env/private';
 import { json } from '@sveltejs/kit';
-import { FRENCH_PHONE, normalizePhone } from '#lib/phone.ts';
+import { toStoredPhone } from '#lib/phone.ts';
 import type { RequestHandler } from './$types';
 
 // POST /api/bookings — the practice page's guest booking (issue 014,
@@ -38,7 +38,9 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
     const firstName = text(body.firstName, 100);
     const lastName = text(body.lastName, 100);
     const email = text(body.email, 254);
-    const phone = normalizePhone(text(body.phone, 30));
+    // The card sends the stored form (0612345678 or +447400123456); a
+    // domestic form is French.
+    const phone = toStoredPhone(text(body.phone, 30), 'FR');
     const locale = body.locale === 'en' ? 'en' : 'fr';
 
     if (
@@ -48,7 +50,7 @@ export const POST: RequestHandler = async ({ request, fetch }) => {
         !firstName ||
         !lastName ||
         !EMAIL.test(email) ||
-        !FRENCH_PHONE.test(phone) ||
+        !phone ||
         body.acceptTerms !== true
     ) {
         return json({ error: 'invalid' }, { status: 400 });

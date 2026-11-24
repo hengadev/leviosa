@@ -1,10 +1,18 @@
 <script lang="ts">
-    import { ChevronLeft, LoaderCircle, CircleCheck } from "@lucide/svelte";
+    import { ChevronDown, ChevronLeft, LoaderCircle, CircleCheck } from "@lucide/svelte";
     import { onDestroy, onMount, tick } from "svelte";
     import * as env from "$app/env/public";
     import type { Stripe, StripeElements } from "@stripe/stripe-js";
     import { cap, dictionary, fmt, type Locale } from "#lib/i18n/practice.ts";
-    import { isFrenchPhone, normalizePhone } from "#lib/phone.ts";
+    import {
+        DEFAULT_PHONE_COUNTRY,
+        countryOfInternational,
+        examplePhone,
+        phoneCountries,
+        storedToE164,
+        toStoredPhone,
+        type CountryCode,
+    } from "#lib/phone.ts";
 
     // The booking card's details step and payment (issue 014, ADR-0018).
     // The client gives their details and accepts the terms of sale; the
@@ -48,6 +56,7 @@
     let lastName = $state("");
     let email = $state("");
     let phone = $state("");
+    let phoneCountry = $state<CountryCode>(DEFAULT_PHONE_COUNTRY);
     let acceptTerms = $state(false);
     let submitted = $state(false);
     let busy = $state(false);
@@ -116,11 +125,22 @@
         }, delay + 500);
     }
 
+    const countries = $derived(phoneCountries(locale));
+    const callingCode = $derived(countries.find((country) => country.code === phoneCountry)?.callingCode ?? "");
+    /** What the booking stores: 0612345678 for France, E.164 elsewhere; null while invalid. */
+    const storedPhone = $derived(toStoredPhone(phone, phoneCountry));
+
+    /** A number typed in international form (+44…) selects its country. */
+    function detectCountry() {
+        const country = countryOfInternational(phone);
+        if (country) phoneCountry = country;
+    }
+
     const errors = $derived({
         firstName: firstName.trim() ? "" : t.requiredField,
         lastName: lastName.trim() ? "" : t.requiredField,
         email: !email.trim() ? t.requiredField : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ? "" : t.invalidEmail,
-        phone: !phone.trim() ? t.requiredField : isFrenchPhone(phone) ? "" : t.invalidPhone,
+        phone: !phone.trim() ? t.requiredField : storedPhone ? "" : t.invalidPhone,
         terms: acceptTerms ? "" : t.termsRequired,
     });
     const valid = $derived(Object.values(errors).every((message) => !message));
@@ -161,7 +181,7 @@
                     firstName: firstName.trim(),
                     lastName: lastName.trim(),
                     email: email.trim(),
-                    phone,
+                    phone: storedPhone,
                     acceptTerms,
                     locale,
                 }),
@@ -232,7 +252,7 @@
                         billingDetails: {
                             name: `${firstName.trim()} ${lastName.trim()}`,
                             email: email.trim(),
-                            phone: "+33" + normalizePhone(phone).slice(1),
+                            phone: storedToE164(storedPhone ?? ""),
                         },
                     },
                 })
@@ -342,7 +362,7 @@
     });
 
     const inputClass =
-        "mt-1.5 block h-12 w-full min-w-0 rounded-lg border bg-white px-3 text-base text-neutral-950 transition-colors placeholder:text-neutral-500 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none";
+        "block h-12 w-full min-w-0 rounded-lg border bg-white px-3 text-base text-neutral-950 transition-colors placeholder:text-neutral-500 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none";
     const borderFor = (message: string) =>
         submitted && message ? "border-rose-600 focus-visible:ring-rose-600/25" : "border-neutral-300 focus-visible:border-neutral-950";
 </script>
@@ -391,7 +411,7 @@
                         bind:value={firstName}
                         aria-invalid={submitted && !!errors.firstName}
                         aria-describedby={submitted && errors.firstName ? "checkout-first-name-error" : undefined}
-                        class="{inputClass} {borderFor(errors.firstName)}"
+                        class="mt-1.5 {inputClass} {borderFor(errors.firstName)}"
                     />
                     {#if submitted && errors.firstName}
                         <p id="checkout-first-name-error" class="mt-1 text-sm text-rose-700">{errors.firstName}</p>
@@ -407,7 +427,7 @@
                         bind:value={lastName}
                         aria-invalid={submitted && !!errors.lastName}
                         aria-describedby={submitted && errors.lastName ? "checkout-last-name-error" : undefined}
-                        class="{inputClass} {borderFor(errors.lastName)}"
+                        class="mt-1.5 {inputClass} {borderFor(errors.lastName)}"
                     />
                     {#if submitted && errors.lastName}
                         <p id="checkout-last-name-error" class="mt-1 text-sm text-rose-700">{errors.lastName}</p>
@@ -426,7 +446,7 @@
                     bind:value={email}
                     aria-invalid={submitted && !!errors.email}
                     aria-describedby={submitted && errors.email ? "checkout-email-error" : undefined}
-                    class="{inputClass} {borderFor(errors.email)}"
+                    class="mt-1.5 {inputClass} {borderFor(errors.email)}"
                 />
                 {#if submitted && errors.email}
                     <p id="checkout-email-error" class="mt-1 text-sm text-rose-700">{errors.email}</p>
@@ -434,19 +454,42 @@
             </div>
             <div>
                 <label for="checkout-phone" class="text-sm font-medium">{t.phone}</label>
-                <input
-                    id="checkout-phone"
-                    name="tel"
-                    type="tel"
-                    autocomplete="tel"
-                    inputmode="tel"
-                    required
-                    bind:value={phone}
-                    aria-invalid={submitted && !!errors.phone}
-                    aria-describedby="checkout-phone-hint{submitted && errors.phone ? ' checkout-phone-error' : ''}"
-                    class="{inputClass} {borderFor(errors.phone)}"
-                />
-                <p id="checkout-phone-hint" class="mt-1 text-sm text-neutral-600">{t.phoneHint}</p>
+                <div class="mt-1.5 flex gap-2">
+                    <!-- The native select (country names, type-ahead, the phone's own picker)
+                         lies transparent over a compact "FR +33" face. -->
+                    <div
+                        class="relative flex h-12 shrink-0 items-center gap-1.5 rounded-lg border border-neutral-300 bg-white pr-2.5 pl-3 text-base text-neutral-950 transition-colors focus-within:border-neutral-950 focus-within:ring-3 focus-within:ring-neutral-950/20"
+                    >
+                        <span aria-hidden="true" class="tabular-nums"
+                            ><span class="text-sm text-neutral-600">{phoneCountry}</span> +{callingCode}</span
+                        >
+                        <ChevronDown class="size-4 text-neutral-600" aria-hidden="true" />
+                        <select
+                            id="checkout-phone-country"
+                            aria-label={t.phoneCountry}
+                            bind:value={phoneCountry}
+                            class="absolute inset-0 cursor-pointer appearance-none opacity-0"
+                        >
+                            {#each countries as country (country.code)}
+                                <option value={country.code}>{country.name} (+{country.callingCode})</option>
+                            {/each}
+                        </select>
+                    </div>
+                    <input
+                        id="checkout-phone"
+                        name="tel"
+                        type="tel"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        required
+                        placeholder={examplePhone(phoneCountry)}
+                        bind:value={phone}
+                        oninput={detectCountry}
+                        aria-invalid={submitted && !!errors.phone}
+                        aria-describedby={submitted && errors.phone ? "checkout-phone-error" : undefined}
+                        class="{inputClass} {borderFor(errors.phone)}"
+                    />
+                </div>
                 {#if submitted && errors.phone}
                     <p id="checkout-phone-error" class="mt-1 text-sm text-rose-700">{errors.phone}</p>
                 {/if}

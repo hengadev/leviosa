@@ -42,7 +42,8 @@
 		"@internationalized/date": "^3.12.4",
 		"@lucide/svelte": "^0.484.0",
 		"@stripe/stripe-js": "10.2.1",
-		"bits-ui": "^2.20.6"
+		"bits-ui": "^2.20.6",
+		"libphonenumber-js": "^1.13.17"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",

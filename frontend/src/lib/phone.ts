@@ -1,16 +1,53 @@
-// Phone numbers on the practice page's booking form (issue 014). The backend
-// accepts French numbers only (10 digits starting 01–07, no spaces), so the
-// form normalises what people actually type before checking it.
+// Phone numbers on the practice page's booking form (issue 014). Clients pick
+// their country's calling code and type the number as they usually write it;
+// libphonenumber-js checks it against that country.
+//
+// Stored form, which the backend accepts (validation.ValidateGuestPhone): a
+// French number stays in the compact domestic form the practice has always
+// stored (0612345678), any other country is E.164 (+447400123456).
 
-/** The backend's format: 0 then 1–7, then 8 digits. */
-export const FRENCH_PHONE = /^0[1-7]\d{8}$/;
+import { getCountries, getCountryCallingCode, getExampleNumber, parsePhoneNumberFromString, type CountryCode } from 'libphonenumber-js';
+import examples from 'libphonenumber-js/mobile/examples';
 
-/** Accepts spaces, dots, dashes, brackets and a +33 / 0033 prefix; answers 0XXXXXXXXX. */
-export function normalizePhone(raw: string): string {
-    let phone = raw.replace(/[\s.\-()]/g, '');
-    if (phone.startsWith('+33')) phone = '0' + phone.slice(3);
-    else if (phone.startsWith('0033')) phone = '0' + phone.slice(4);
-    return phone;
+export type { CountryCode };
+
+export const DEFAULT_PHONE_COUNTRY: CountryCode = 'FR';
+
+export type PhoneCountry = { code: CountryCode; name: string; callingCode: string };
+
+/** Every country with its calling code, sorted by its name in the page's language. */
+export function phoneCountries(locale: string): PhoneCountry[] {
+    let names: Intl.DisplayNames | null = null;
+    try {
+        names = new Intl.DisplayNames([locale], { type: 'region' });
+    } catch {
+        // no region names in this runtime: the codes stand in
+    }
+    return getCountries()
+        .map((code) => ({ code, name: names?.of(code) ?? code, callingCode: getCountryCallingCode(code) }))
+        .sort((a, b) => a.name.localeCompare(b.name, locale));
 }
 
-export const isFrenchPhone = (raw: string) => FRENCH_PHONE.test(normalizePhone(raw));
+/** A mobile number of that country in its national format, for the placeholder. */
+export const examplePhone = (country: CountryCode) => getExampleNumber(country, examples)?.formatNational() ?? '';
+
+/** The country of a number typed in international form (+44…, 0044…), if recognised. */
+export function countryOfInternational(raw: string): CountryCode | undefined {
+    const compact = raw.replace(/[\s.\-()]/g, '');
+    if (!compact.startsWith('+') && !compact.startsWith('00')) return undefined;
+    return parsePhoneNumberFromString(compact.replace(/^00/, '+'))?.country;
+}
+
+/**
+ * The stored form of a valid number, or null. A number typed in
+ * international form wins over the chosen country.
+ */
+export function toStoredPhone(raw: string, country: CountryCode = DEFAULT_PHONE_COUNTRY): string | null {
+    const compact = raw.trim().replace(/^00/, '+');
+    const parsed = parsePhoneNumberFromString(compact, country);
+    if (!parsed?.isValid()) return null;
+    return parsed.countryCallingCode === '33' ? '0' + parsed.nationalNumber : parsed.number;
+}
+
+/** E.164 of a stored number (0612345678 → +33612345678), as Stripe Link wants it. */
+export const storedToE164 = (stored: string) => (stored.startsWith('0') ? '+33' + stored.slice(1) : stored);
