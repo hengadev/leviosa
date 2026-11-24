@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ArrowDown, Clock, CreditCard, MapPin } from "@lucide/svelte";
+    import { ArrowDown } from "@lucide/svelte";
     import { dictionary, fmt, infoBlocks, type Locale } from "#lib/i18n/practice.ts";
     import Header from "./_header.svelte";
     import Video from "./_video.svelte";
@@ -45,6 +45,20 @@
         { term: t.price, value: payment?.deposit ? t.priceWithDeposit(price, payment.deposit) : price },
         { term: t.address, value: dash(data.address) },
         { term: t.payment, value: payment?.deposit ? t.paymentDeposit : t.paymentValue },
+    ]);
+
+    // The booking card's session summary, labelled like the hero's facts.
+    const summaryFacts = $derived([
+        { term: t.booking.service, value: data.product ? `${data.product.name} · ${t.minutes(data.product.durationMin)}` : "—" },
+        { term: t.price, value: payment?.deposit ? t.priceWithDeposit(price, payment.deposit) : price },
+        { term: t.address, value: dash(data.address) },
+        { term: t.payment, value: payment?.deposit ? t.paymentDeposit : t.paymentValue },
+        {
+            term: t.cancellation,
+            value: t.cancellationValue(data.product?.fullRefundHours ?? null, !!payment?.deposit),
+            // No refund delay set: the terms of sale state the conditions, so link them.
+            termsLink: data.product?.fullRefundHours == null,
+        },
     ]);
 </script>
 
@@ -114,32 +128,30 @@
             <aside class="space-y-5 border-b border-neutral-200 p-6 sm:p-8 lg:border-r lg:border-b-0">
                 <h2 class="text-2xl font-bold tracking-tight">{t.bookSession}</h2>
                 <p class="text-pretty text-neutral-600">
-                    {t.intro(data.product?.fullRefundHours ?? null, payment?.deposit ?? null)}
+                    {t.intro(!!payment?.deposit)}
                 </p>
-                <ul class="space-y-2.5 border-t border-neutral-200 pt-5 text-sm text-neutral-700">
-                    <li class="flex items-center gap-2.5">
-                        <Clock class="size-4 shrink-0 text-neutral-500" aria-hidden="true" />
-                        {#if data.product}
-                            {data.product.name} · {t.minutes(data.product.durationMin)} · {price}
+                <!-- Labelled facts, as in the hero band. -->
+                <dl class="space-y-4 border-t border-neutral-200 pt-5">
+                    {#each summaryFacts as fact (fact.term)}
+                        <div>
+                            <dt class="text-sm font-extrabold tracking-wider text-neutral-950 uppercase">{fact.term}</dt>
+                            <dd class="mt-1 text-sm text-pretty text-neutral-600">
+                        {#if "termsLink" in fact && fact.termsLink}
+                            {t.cancellationTermsPrefix}
+                            <a
+                                href="/legal/terms"
+                                target="_blank"
+                                rel="noopener"
+                                class="font-medium text-neutral-950 underline underline-offset-2 hover:text-neutral-700 focus-visible:ring-3 focus-visible:ring-neutral-950/20 focus-visible:outline-none"
+                                >{t.termsLink}</a
+                            >
                         {:else}
-                            —
+                            {fact.value}
                         {/if}
-                    </li>
-                    <li class="flex items-center gap-2.5">
-                        <MapPin class="size-4 shrink-0 text-neutral-500" aria-hidden="true" />
-                        {dash(data.address)}
-                    </li>
-                    <li class="flex items-center gap-2.5">
-                        <CreditCard class="size-4 shrink-0 text-neutral-500" aria-hidden="true" />
-                        {#if payment?.deposit && payment.balance}
-                            {t.paymentSummaryDeposit(payment.deposit, payment.balance)}
-                        {:else if payment}
-                            {t.paymentSummaryFull(price)}
-                        {:else}
-                            {t.paymentValue}
-                        {/if}
-                    </li>
-                </ul>
+                    </dd>
+                        </div>
+                    {/each}
+                </dl>
             </aside>
             <div class="p-6 sm:p-8">
                 <Booking {locale} booking={data.booking} priceCents={data.product?.priceCents ?? null} />

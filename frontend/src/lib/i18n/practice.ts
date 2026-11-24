@@ -65,19 +65,18 @@ export const strings = {
         payDeposit: (deposit: string) => `Payer l'acompte de ${deposit}`,
         payFull: (price: string) => `Payer ${price}`,
         // booking card
-        /**
-         * fullRefundHours: notice from which the cancellation tiers refund in
-         * full (null: the terms of sale state the conditions).
-         */
-        intro: (fullRefundHours: number | null, deposit: string | null) =>
-            (deposit
-                ? `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez l'acompte de ${deposit} en ligne ; le solde se règle au cabinet, par carte.`
-                : `Choisissez un créneau parmi les disponibilités du cabinet, puis réglez la séance en ligne.`) +
-            (fullRefundHours === null
-                ? " Les conditions d'annulation figurent dans les conditions générales de vente."
-                : deposit
-                  ? ` Acompte intégralement remboursé en cas d'annulation jusqu'à ${fullRefundHours} h avant.`
-                  : ` Séance intégralement remboursée en cas d'annulation jusqu'à ${fullRefundHours} h avant.`),
+        intro: (hasDeposit: boolean): string =>
+            hasDeposit
+                ? "Choisissez un créneau, puis réglez l'acompte en ligne."
+                : "Choisissez un créneau, puis réglez la séance en ligne.",
+        cancellation: "Annulation",
+        /** Before the terms link (termsLink) when the terms of sale state the conditions. */
+        cancellationTermsPrefix: "Selon les",
+        /** fullRefundHours: notice from which a cancellation is refunded in full (null: see the terms of sale). */
+        cancellationValue: (fullRefundHours: number | null, hasDeposit: boolean) =>
+            fullRefundHours === null
+                ? "Selon les conditions générales de vente"
+                : `${hasDeposit ? "Acompte remboursé" : "Remboursement intégral"} jusqu'à ${fullRefundHours} h avant la séance`,
         pickDay: "Choisissez un jour pour voir les horaires.",
         noSlots: "Aucun créneau ce jour-là.",
         slotsLeft: (n: number) => (n === 1 ? "1 créneau" : `${n} créneaux`),
@@ -215,15 +214,14 @@ export const strings = {
             `${deposit} deposit online by card, ${balance} balance by card at the practice`,
         payDeposit: (deposit: string) => `Pay the ${deposit} deposit`,
         payFull: (price: string) => `Pay ${price}`,
-        intro: (fullRefundHours: number | null, deposit: string | null) =>
-            (deposit
-                ? `Pick one of the practice's open slots, then pay the ${deposit} deposit online; the balance is paid by card at the practice.`
-                : `Pick one of the practice's open slots, then pay for the session online.`) +
-            (fullRefundHours === null
-                ? " The cancellation terms are set out in the terms of sale."
-                : deposit
-                  ? ` The deposit is refunded in full if you cancel up to ${fullRefundHours} h before.`
-                  : ` The session is refunded in full if you cancel up to ${fullRefundHours} h before.`),
+        intro: (hasDeposit: boolean) =>
+            hasDeposit ? "Pick a slot, then pay the deposit online." : "Pick a slot, then pay for the session online.",
+        cancellation: "Cancellation",
+        cancellationTermsPrefix: "As set out in the",
+        cancellationValue: (fullRefundHours: number | null, hasDeposit: boolean) =>
+            fullRefundHours === null
+                ? "As set out in the terms of sale"
+                : `${hasDeposit ? "Deposit refunded" : "Full refund"} up to ${fullRefundHours} h before the session`,
         pickDay: "Pick a day to see the times.",
         noSlots: "No slots that day.",
         slotsLeft: (n: number) => (n === 1 ? "1 slot" : `${n} slots`),
