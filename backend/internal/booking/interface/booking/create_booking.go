@@ -44,7 +44,7 @@ func (h *handler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if request.GuestPhone != "" {
-		if err := validation.ValidatePhone(request.GuestPhone); err != nil {
+		if err := validation.ValidateGuestPhone(request.GuestPhone); err != nil {
 			httpx.RespondWithError(w, errs.NewInvalidValueErr(fmt.Sprintf("guest_phone: %v", err)), http.StatusBadRequest)
 			return
 		}

@@ -158,3 +158,45 @@ func TestValidatePhone(t *testing.T) {
 		})
 	})
 }
+
+func TestValidateGuestPhone(t *testing.T) {
+	valid := []string{
+		"0612345678",    // French mobile, domestic form
+		"0123456789",    // French fixed line
+		"0912345678",    // French VoIP
+		" 0712345678 ",  // surrounding whitespace
+		"+447400123456", // United Kingdom
+		"+32470123456",  // Belgium
+		"+262692123456", // Réunion
+		"+12025550123",  // United States
+		"+33612345678",  // French number in E.164
+	}
+	for _, phone := range valid {
+		t.Run("valid "+phone, func(t *testing.T) {
+			assert.NoError(t, ValidateGuestPhone(phone))
+		})
+	}
+
+	invalid := []string{
+		"",
+		"0012345678",        // 00 is no French prefix
+		"061234567",         // 9 digits
+		"06123456789",       // 11 digits
+		"06 12 34 56 78",    // separators are stripped before sending
+		"447400123456",      // international without +
+		"+0447400123456",    // country codes never start with 0
+		"+4474",             // too short
+		"+1234567890123456", // more than 15 digits
+		"+44 7400 123456",   // separators
+		"phone",
+	}
+	for _, phone := range invalid {
+		t.Run("invalid "+phone, func(t *testing.T) {
+			err := ValidateGuestPhone(phone)
+			assert.Error(t, err)
+			var errMap errsx.Map
+			assert.True(t, errsx.As(err, &errMap))
+			assert.Equal(t, PhoneFormatMsg, errMap[PhoneFormatKey].Error())
+		})
+	}
+}

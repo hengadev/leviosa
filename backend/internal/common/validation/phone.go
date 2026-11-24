@@ -51,3 +51,25 @@ func ValidatePhone(phone string) error {
 
 	return errs.AsError()
 }
+
+// Guest phone numbers on the public booking form: a French number in the
+// compact domestic form (0 then 9 digits; 08 and 09 are valid French numbers
+// too), or any other country in E.164 (+ then the country code and number,
+// 8 to 15 digits in all). The frontend checks the number against its country;
+// this only checks the shape it is stored in.
+var (
+	frenchPhoneDomestic = regexp.MustCompile(`^0[1-9]\d{8}$`)
+	e164Phone           = regexp.MustCompile(`^\+[1-9]\d{7,14}$`)
+)
+
+// ValidateGuestPhone accepts what ValidatePhone accepts plus international
+// numbers in E.164, for clients who book without a French number.
+func ValidateGuestPhone(phone string) error {
+	trimmed := strings.TrimSpace(phone)
+	if frenchPhoneDomestic.MatchString(trimmed) || e164Phone.MatchString(trimmed) {
+		return nil
+	}
+	var errs errsx.Map
+	errs.Set(PhoneFormatKey, PhoneFormatMsg)
+	return errs.AsError()
+}
