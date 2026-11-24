@@ -28,8 +28,16 @@ export function phoneCountries(locale: string): PhoneCountry[] {
         .sort((a, b) => a.name.localeCompare(b.name, locale));
 }
 
-/** A mobile number of that country in its national format, for the placeholder. */
-export const examplePhone = (country: CountryCode) => getExampleNumber(country, examples)?.formatNational() ?? '';
+/**
+ * A mobile number of that country for the placeholder, written as it follows
+ * the calling code: no national prefix (+33 then 6 12 34 56 78, not 06…).
+ * A number typed with its national prefix is still accepted.
+ */
+export function examplePhone(country: CountryCode): string {
+    const example = getExampleNumber(country, examples);
+    if (!example) return '';
+    return example.formatInternational().replace(`+${example.countryCallingCode}`, '').trim();
+}
 
 /** The country of a number typed in international form (+44…, 0044…), if recognised. */
 export function countryOfInternational(raw: string): CountryCode | undefined {
