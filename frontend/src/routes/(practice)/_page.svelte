@@ -153,7 +153,8 @@
                     {/each}
                 </dl>
             </aside>
-            <div class="p-6 sm:p-8">
+            <!-- A flex column, so the picker (and the line between calendar and times) fills the card's height. -->
+            <div class="flex flex-col p-6 sm:p-8">
                 <Booking {locale} booking={data.booking} priceCents={data.product?.priceCents ?? null} />
             </div>
         </div>

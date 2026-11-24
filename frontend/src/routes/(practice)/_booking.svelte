@@ -157,7 +157,7 @@
     {#if slotTaken}
         <p role="alert" class="mb-6 text-sm text-pretty text-rose-700">{t.slotTaken}</p>
     {/if}
-    <div class="grid gap-8 md:grid-cols-[minmax(0,1fr)_11rem]">
+    <div class="grid flex-1 gap-6 md:grid-cols-[minmax(0,1fr)_13rem] md:gap-8">
         <div>
             <div class="mb-4 flex items-center justify-between">
                 <p bind:this={calendarHeading} tabindex="-1" class="font-semibold focus:outline-none">{cap(fmt.month(monthDate(month), locale))}</p>
@@ -224,7 +224,9 @@
             </div>
         </div>
 
-        <div>
+        <!-- A line separates the times from the calendar: above them on a phone; from md up, beside them and
+             through the card's padding (sm:p-8 in _page.svelte), so it meets the card's edges like the summary's. -->
+        <div class="border-t border-neutral-200 pt-6 md:-my-8 md:border-t-0 md:border-l md:py-8 md:pl-8">
             {#if byDay.size === 0}
                 <p class="text-sm text-pretty text-neutral-600">{t.noSlotsYet}</p>
             {:else if selectedDayKey}
