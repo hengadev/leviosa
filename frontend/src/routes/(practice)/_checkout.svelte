@@ -408,6 +408,7 @@
                         name="given-name"
                         autocomplete="given-name"
                         required
+                        placeholder={t.firstNamePlaceholder}
                         bind:value={firstName}
                         aria-invalid={submitted && !!errors.firstName}
                         aria-describedby={submitted && errors.firstName ? "checkout-first-name-error" : undefined}
@@ -424,6 +425,7 @@
                         name="family-name"
                         autocomplete="family-name"
                         required
+                        placeholder={t.lastNamePlaceholder}
                         bind:value={lastName}
                         aria-invalid={submitted && !!errors.lastName}
                         aria-describedby={submitted && errors.lastName ? "checkout-last-name-error" : undefined}
@@ -443,6 +445,7 @@
                     autocomplete="email"
                     inputmode="email"
                     required
+                    placeholder={t.emailPlaceholder}
                     bind:value={email}
                     aria-invalid={submitted && !!errors.email}
                     aria-describedby={submitted && errors.email ? "checkout-email-error" : undefined}
@@ -482,7 +485,7 @@
                         autocomplete="tel"
                         inputmode="tel"
                         required
-                        placeholder={examplePhone(phoneCountry)}
+                        placeholder={t.example(examplePhone(phoneCountry))}
                         bind:value={phone}
                         oninput={detectCountry}
                         aria-invalid={submitted && !!errors.phone}
