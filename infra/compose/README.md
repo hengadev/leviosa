@@ -27,11 +27,13 @@ rollback rolls them back too, and CI uploads nothing.
 │   ├── postgres.env              POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
 │   ├── rabbitmq.env              RABBITMQ_DEFAULT_USER / _PASS / _VHOST
 │   ├── redis.env                 REDIS_PASSWORD
-│   └── caddy.env                 CLOUDFLARE_API_TOKEN
+│   ├── caddy.env                 CLOUDFLARE_API_TOKEN
+│   └── observability.env         INGEST_URL / INGEST_TOKEN for the alloy agent
 ├── data/postgres/                Postgres data dir      (survives `down`)
 ├── data/rabbitmq/                RabbitMQ node data     (survives `down`)
 ├── data/redis/                   Redis AOF + RDB        (survives `down`)
-└── caddy/{etc,data,config,logs}/ caddy/Caddyfile (Ansible), certificates, autosave, logs
+├── caddy/{etc,data,config,logs}/ caddy/Caddyfile (Ansible), certificates, autosave, logs
+└── alloy/{config.alloy,data/}    monitoring agent config + WAL (roles/observability)
 ```
 
 All paths in the compose file are relative to the stack root, so the same file

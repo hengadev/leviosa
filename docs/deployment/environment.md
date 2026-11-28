@@ -39,6 +39,7 @@ the Agent templates and Ansible read it there) and `infra_project_id` in
 | `rabbitmq.env` | RabbitMQ (shared) | prod | rewrite only: applied at first initialisation |
 | `caddy.env` | Caddy (serves both stacks) | prod | recreate Caddy (prod `/caddy` changes only) |
 | `backup.env` | the backup timers (`leviosa-backup`, `leviosa-snapshot`) | prod | rewrite only: read fresh by each run |
+| `observability.env` | the Alloy monitoring agent (`infra/ansible/roles/observability`) | prod | recreate alloy |
 
 On the server: `/opt/leviosa/env/<file>` and `/opt/leviosa-staging/env/<file>`,
 root-owned `0600`.
@@ -199,6 +200,16 @@ the private key is.
 | `BACKUP_AWS_REGION` | `eu-central-1` | `backup.env` | **Terraform** |
 
 `backup.env` also gets `POSTGRES_USER` and `POSTGRES_DB` from `prod/db`.
+
+### `/observability` (`observability.env`, prod stack only)
+
+The Alloy agent pushes metrics (no logs) to the homelab with these; it scrapes
+staging's backend too, so staging needs nothing here.
+
+| Key | prod | Rendered into → read by | Written by |
+| --- | :-: | --- | --- |
+| `INGEST_URL` | `https://ingest.henga.dev` | `observability.env` → alloy | operator |
+| `INGEST_TOKEN` | ✓ | `observability.env` → alloy: the bearer token the homelab's Caddy checks (the homelab's `INGEST_TOKEN`, hex) | operator |
 
 ### `/host` (prod only, not rendered)
 

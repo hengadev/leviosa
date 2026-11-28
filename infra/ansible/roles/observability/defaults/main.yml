@@ -1,0 +1,12 @@
+---
+# observability role defaults — the Alloy monitoring agent (prod stack)
+
+# Production stack root; the alloy service lives in its compose file
+# (infra/compose/docker-compose.prod.yml).
+observability_root: "{{ app_prod_root | default('/opt/leviosa') }}"
+observability_alloy_dir: "{{ observability_root }}/alloy"
+
+# Textfile collector directory: the backup job drops its heartbeat here
+# (roles/backup, backup_textfile_dir). Mounted read-only into Alloy at
+# /host/textfile — keep in sync with the compose file.
+observability_textfile_dir: "{{ backup_textfile_dir | default('/var/lib/leviosa-metrics') }}"

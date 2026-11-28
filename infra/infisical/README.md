@@ -35,6 +35,7 @@ infra/infisical/
 | `rabbitmq.env` | `/rabbitmq` → `RABBITMQ_DEFAULT_*` | RabbitMQ | prod | rewrite only |
 | `caddy.env` | `prod` `/caddy` (`CLOUDFLARE_API_TOKEN`) | Caddy (serves both stacks) | prod | recreate Caddy |
 | `backup.env` | one recursive call on `/`: `/backup` whole + `POSTGRES_USER`, `POSTGRES_DB` | backup job (issue 028) | prod | rewrite only |
+| `observability.env` | `prod` `/observability` (`INGEST_URL`, `INGEST_TOKEN`) | the Alloy monitoring agent (`roles/observability`) | prod | recreate alloy |
 
 Server paths: `/opt/leviosa/env/<file>` (prod) and
 `/opt/leviosa-staging/env/<file>` (staging), root-owned, `0600`.
@@ -172,7 +173,7 @@ yet), the optional `PUBLIC_PLAUSIBLE_DOMAIN` and `PUBLIC_PLAUSIBLE_SRC`, and
 `PUBLIC_STRIPE_PUBLISHABLE_KEY` (the publishable key, public by design; the
 secret key stays in `/stripe`).
 Nothing from `/aws`, `/encx`, `/stripe`, `/twilio`, `/webpush`, `/smtp`, `/db`, `/admin`,
-`/redis`, `/rabbitmq`, `/caddy`, `/backup` or `/host` reaches it. A new
+`/redis`, `/rabbitmq`, `/caddy`, `/backup`, `/host` or `/observability` reaches it. A new
 frontend key needs a template line and an entry in `envcheck.FrontendKeys`.
 That is a deliberate review point.
 
@@ -207,6 +208,7 @@ more keys: they reach their consumer with no template change.
 | `/caddy` | prod only: `CLOUDFLARE_API_TOKEN` | |
 | `/backup` | `BACKUP_AWS_ACCESS_KEY_ID`, `BACKUP_AWS_SECRET_ACCESS_KEY`, `BACKUP_S3_BUCKET`, `BACKUP_AWS_REGION` | Terraform, prod only |
 | `/host` | the notification email | Ansible only; no template reads it |
+| `/observability` | prod only: `INGEST_URL`, `INGEST_TOKEN` | the homelab's push endpoint and token |
 
 **Never put these in Infisical.** The templates set them, and a copy in a
 folder would appear twice (`envcheck` reports duplicates):

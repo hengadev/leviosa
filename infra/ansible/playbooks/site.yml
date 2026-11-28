@@ -212,6 +212,14 @@
     - role: backup
       tags: ['backup', 'setup']
 
+    # Alloy monitoring agent: pushes metrics (no logs) to the homelab
+    # (grafana.henga.dev). After backup, whose heartbeat directory it reads.
+    # Starts the agent only once env/observability.env (Infisical prod
+    # /observability) and a deployed compose file with the alloy service
+    # exist; says which is missing otherwise (roles/observability/README.md).
+    - role: observability
+      tags: ['observability']
+
   post_tasks:
     - name: Display setup completion message
       ansible.builtin.debug:

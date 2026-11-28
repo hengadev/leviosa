@@ -28,10 +28,10 @@ var Environments = []string{"dev", "staging", "prod"}
 // `make env` writes (backend + admin -> backend/development.env, frontend ->
 // frontend/.env) plus the three infrastructure files, rendered only so the
 // check proves those templates against real folders before the server does.
-// caddy.env and backup.env exist for prod only: Caddy belongs to production's
-// stack and /backup is prod-only.
+// caddy.env, backup.env and observability.env exist for prod only: Caddy and
+// the Alloy agent belong to production's stack and /backup is prod-only.
 var files = map[string][]string{
-	"prod":    {"backend.env", "frontend.env", "admin.env", "redis.env", "postgres.env", "rabbitmq.env", "caddy.env", "backup.env"},
+	"prod":    {"backend.env", "frontend.env", "admin.env", "redis.env", "postgres.env", "rabbitmq.env", "caddy.env", "backup.env", "observability.env"},
 	"staging": {"backend.env", "frontend.env", "admin.env", "redis.env"},
 	"dev":     {"backend.env", "frontend.env", "admin.env", "redis.env", "postgres.env", "rabbitmq.env"},
 }
@@ -201,6 +201,10 @@ var rules = map[string]rule{
 	},
 	"caddy.env": {
 		required: []string{"CLOUDFLARE_API_TOKEN"},
+	},
+	"observability.env": {
+		required: []string{"INGEST_URL", "INGEST_TOKEN"},
+		only:     []string{"INGEST_URL", "INGEST_TOKEN"},
 	},
 	"backup.env": {
 		required: []string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"},

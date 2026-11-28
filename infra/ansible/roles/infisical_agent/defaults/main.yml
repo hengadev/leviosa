@@ -104,6 +104,9 @@ infisical_agent_templates:
   - { env: prod, name: rabbitmq, service: rabbitmq, recreate: false }
   - { env: prod, name: backup, service: backup, recreate: false }
   - { env: prod, name: admin, service: admin, recreate: false }
+  # The Alloy monitoring agent (roles/observability) reads
+  # INGEST_URL/INGEST_TOKEN at start.
+  - { env: prod, name: observability, service: alloy, recreate: true }
   # Staging brings its backend, frontend, admin and its own Redis; Postgres,
   # RabbitMQ and Caddy are production's (ADR-0016).
   - { env: staging, name: backend, service: staging_backend, recreate: true }

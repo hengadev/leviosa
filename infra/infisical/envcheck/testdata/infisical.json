@@ -88,6 +88,10 @@
     },
     "/host": {
       "NOTIFY_EMAIL": "ops@fixture.leviosa.test"
+    },
+    "/observability": {
+      "INGEST_URL": "https://ingest.fixture.leviosa.test",
+      "INGEST_TOKEN": "fixture-ingest-token-not-real"
     }
   },
   "staging": {

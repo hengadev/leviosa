@@ -1,0 +1,64 @@
+// Grafana Alloy on the Leviosa VPS — managed by Ansible (roles/observability).
+//
+// Pushes METRICS ONLY to the homelab (INGEST_URL, ingest.henga.dev) with a
+// bearer token (INGEST_TOKEN), both from the Agent-rendered
+// env/observability.env.
+//
+// No logs, no error events: no client data may leave the hosting for the
+// homelab. What leaves the server is counts, durations, route patterns, host
+// gauges and a backup timestamp: never a path, a query string, an IP or
+// anything a client typed. A log or trace pipeline here would be a new data
+// flow out of the hosting (README.md).
+
+// ── The backend, prod and staging ───────────────────────────────────────────
+
+// Its own listener (:9090, internal/app/metrics.go), reachable only over
+// leviosa_network: Caddy routes nothing to it.
+prometheus.scrape "backend" {
+  job_name        = "leviosa_backend"
+  scrape_interval = "30s"
+  targets = [
+    {"__address__" = "backend:9090", "env" = "prod"},
+    {"__address__" = "staging_backend:9090", "env" = "staging"},
+  ]
+  forward_to = [prometheus.remote_write.homelab.receiver]
+}
+
+// ── The host ────────────────────────────────────────────────────────────────
+
+// CPU, memory, disk, network, plus the textfile heartbeats the backup job
+// writes (leviosa_backup_last_success_timestamp_seconds).
+prometheus.exporter.unix "host" {
+  procfs_path = "/host/proc"
+  sysfs_path  = "/host/sys"
+  rootfs_path = "/host/root"
+
+  textfile {
+    directory = "/host/textfile"
+  }
+
+  filesystem {
+    mount_points_exclude = "^/(dev|proc|run|sys|var/lib/docker/.+)($|/)"
+  }
+}
+
+prometheus.scrape "host" {
+  job_name        = "node"
+  scrape_interval = "30s"
+  targets         = prometheus.exporter.unix.host.targets
+  forward_to      = [prometheus.remote_write.homelab.receiver]
+}
+
+// ── Push ────────────────────────────────────────────────────────────────────
+
+prometheus.remote_write "homelab" {
+  endpoint {
+    url          = sys.env("INGEST_URL") + "/api/v1/write"
+    bearer_token = sys.env("INGEST_TOKEN")
+  }
+
+  external_labels = {
+    app  = "leviosa",
+    host = "leviosa-vps",
+  }
+}

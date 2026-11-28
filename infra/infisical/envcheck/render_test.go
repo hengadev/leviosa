@@ -64,14 +64,15 @@ func keys(groups ...[]string) []string {
 // wantKeys: environment -> file -> its exact key set for the fixture folders.
 var wantKeys = map[string]map[string][]string{
 	"prod": {
-		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
-		"frontend.env": keys(frontendBase),
-		"admin.env":    keys(adminKeys),
-		"redis.env":    {"REDIS_PASSWORD"},
-		"postgres.env": keys([]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"}),
-		"rabbitmq.env": keys([]string{"RABBITMQ_DEFAULT_USER", "RABBITMQ_DEFAULT_PASS", "RABBITMQ_DEFAULT_VHOST"}),
-		"caddy.env":    keys([]string{"CLOUDFLARE_API_TOKEN"}),
-		"backup.env":   keys([]string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"}),
+		"backend.env":       keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
+		"frontend.env":      keys(frontendBase),
+		"admin.env":         keys(adminKeys),
+		"redis.env":         {"REDIS_PASSWORD"},
+		"postgres.env":      keys([]string{"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"}),
+		"rabbitmq.env":      keys([]string{"RABBITMQ_DEFAULT_USER", "RABBITMQ_DEFAULT_PASS", "RABBITMQ_DEFAULT_VHOST"}),
+		"caddy.env":         keys([]string{"CLOUDFLARE_API_TOKEN"}),
+		"observability.env": keys([]string{"INGEST_URL", "INGEST_TOKEN"}),
+		"backup.env":        keys([]string{"BACKUP_AWS_ACCESS_KEY_ID", "BACKUP_AWS_SECRET_ACCESS_KEY", "BACKUP_S3_BUCKET", "BACKUP_AWS_REGION", "POSTGRES_USER", "POSTGRES_DB"}),
 	},
 	"staging": {
 		"backend.env":  keys(backendCore, providers, []string{"ENCX_KMS_KEY_ARN", "PUBLIC_PLAUSIBLE_DOMAIN", "ENCX_DEK_CACHE_MAX_ENTRIES", "ENCX_DEK_CACHE_TTL"}),
@@ -99,9 +100,9 @@ var wholeFolders = map[string][]string{
 }
 
 // excludedFromFrontend: no key or value of these folders may reach
-// frontend.env (issue 024; /redis, /rabbitmq, /caddy, /backup and /host
+// frontend.env (issue 024; /redis, /rabbitmq, /caddy, /backup, /host and /observability
 // added: the SvelteKit server needs none of them either).
-var excludedFromFrontend = []string{"/aws", "/encx", "/stripe", "/twilio", "/webpush", "/smtp", "/db", "/admin", "/redis", "/rabbitmq", "/caddy", "/backup", "/host"}
+var excludedFromFrontend = []string{"/aws", "/encx", "/stripe", "/twilio", "/webpush", "/smtp", "/db", "/admin", "/redis", "/rabbitmq", "/caddy", "/backup", "/host", "/observability"}
 
 func sortedKeys(m map[string]string) []string {
 	out := make([]string, 0, len(m))
@@ -302,14 +303,15 @@ func TestSecretCallsPerTemplate(t *testing.T) {
 	data := loadFixtures(t)
 	type call = secretCall
 	want := map[string][]call{
-		"backend.env":  {{Fn: "listSecrets", Path: "/", Recursive: true}},
-		"frontend.env": {{Fn: "listSecrets", Path: "/app"}},
-		"admin.env":    {{Fn: "listSecrets", Path: "/admin"}},
-		"redis.env":    {{Fn: "listSecrets", Path: "/redis"}},
-		"postgres.env": {{Fn: "listSecrets", Path: "/db"}},
-		"rabbitmq.env": {{Fn: "listSecrets", Path: "/rabbitmq"}},
-		"backup.env":   {{Fn: "listSecrets", Path: "/", Recursive: true}},
-		"caddy.env":    {{Fn: "listSecrets", Env: "prod", Path: "/caddy"}},
+		"backend.env":       {{Fn: "listSecrets", Path: "/", Recursive: true}},
+		"frontend.env":      {{Fn: "listSecrets", Path: "/app"}},
+		"admin.env":         {{Fn: "listSecrets", Path: "/admin"}},
+		"redis.env":         {{Fn: "listSecrets", Path: "/redis"}},
+		"postgres.env":      {{Fn: "listSecrets", Path: "/db"}},
+		"rabbitmq.env":      {{Fn: "listSecrets", Path: "/rabbitmq"}},
+		"backup.env":        {{Fn: "listSecrets", Path: "/", Recursive: true}},
+		"caddy.env":         {{Fn: "listSecrets", Env: "prod", Path: "/caddy"}},
+		"observability.env": {{Fn: "listSecrets", Env: "prod", Path: "/observability"}},
 	}
 	seen := map[string]bool{}
 	for _, env := range Environments {

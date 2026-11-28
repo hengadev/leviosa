@@ -42,6 +42,7 @@ services:
     mem_limit: 512m
     expose:
       - "3500"
+      - "9090" # /metrics, for the alloy agent only
     env_file:
       - env/backend.env
     depends_on:
@@ -229,6 +230,43 @@ services:
       - ./caddy/data:/data
       - ./caddy/config:/config
       - ./caddy/logs:/var/log/caddy
+    networks:
+      - leviosa_network
+    logging: *logging
+
+  # Monitoring agent (Grafana Alloy): scrapes both stacks' backend metrics
+  # (:9090, never routed by Caddy), the host and the backup heartbeat, and
+  # pushes them to the homelab (ingest.henga.dev). Metrics only: no logs,
+  # no client data (infra/ansible/roles/observability/README.md).
+  # INGEST_URL/INGEST_TOKEN come from env/observability.env (Infisical prod
+  # /observability); the config is installed by roles/observability.
+  # Every capability dropped, read-only root, host mounts read-only. Its
+  # storage is /alloy-data, not the image's /var/lib/alloy (alloy:alloy 0770,
+  # which root cannot enter without CAP_DAC_OVERRIDE).
+  alloy:
+    image: grafana/alloy:v1.21.2
+    restart: unless-stopped
+    mem_limit: 256m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 100
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    command: ["run", "/etc/alloy/config.alloy", "--storage.path=/alloy-data", "--disable-reporting"]
+    # Not required: deploys must keep working before /observability exists
+    # in Infisical (roles/observability only starts alloy once it does).
+    # `deploy` never starts or recreates it: roles/observability does.
+    env_file:
+      - path: env/observability.env
+        required: false
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./alloy/data:/alloy-data
+      - /var/lib/leviosa-metrics:/host/textfile:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro,rslave
     networks:
       - leviosa_network
     logging: *logging
