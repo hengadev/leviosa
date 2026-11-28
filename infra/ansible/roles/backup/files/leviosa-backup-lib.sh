@@ -74,6 +74,22 @@ backup_init() {
 	date_prefix=$(date -u -d "${timestamp:0:8}" +%Y/%m/%d)
 }
 
+# heartbeat <job>: record a successful run for the homelab's "backup
+# missing" alert, as leviosa_<job>_last_success_timestamp_seconds in
+# <backup_textfile_dir>/leviosa_<job>.prom (read by the Alloy agent,
+# roles/observability). Written atomically: the agent never reads half a file.
+# A timestamp only, nothing else leaves the server. Skipped when the
+# directory is not configured.
+heartbeat() {
+	[ -n "${backup_textfile_dir:-}" ] || return 0
+	local file=$backup_textfile_dir/leviosa_$1.prom
+	install -d -m 0755 "$backup_textfile_dir"
+	printf '# HELP leviosa_%s_last_success_timestamp_seconds Unix time of the last successful %s run.\n# TYPE leviosa_%s_last_success_timestamp_seconds gauge\nleviosa_%s_last_success_timestamp_seconds %s\n' \
+		"$1" "$1" "$1" "$1" "$(date +%s)" >"$file.tmp"
+	chmod 0644 "$file.tmp"
+	mv -f "$file.tmp" "$file"
+}
+
 # aws <args…>: the AWS CLI from its pinned image. The credentials reach the
 # container by name (-e VAR), so they never appear in a command line. No host
 # directory is mounted: uploads read stdin (`aws --stdin s3 cp - <url>`),

@@ -69,6 +69,8 @@
     - { path: "{{ backup_conf_file | dirname }}", mode: "0755" }
     # Per-run temporary files and latest.dump: root only.
     - { path: "{{ backup_work_dir }}", mode: "0700" }
+    # The heartbeat the Alloy agent reads (roles/observability).
+    - { path: "{{ backup_textfile_dir }}", mode: "0755" }
   loop_control:
     label: "{{ item.path }}"
 

@@ -29,6 +29,12 @@ backup_backend_env_file: "{{ app_prod_root }}/env/backend.env"
 # Root-only working directory: per-run temporary files (removed at the end of
 # each run) and latest.dump, the newest dump (root 0600).
 backup_work_dir: /var/backups/leviosa
+# Textfile collector directory: after a successful daily backup,
+# leviosa-backup writes leviosa_backup.prom here
+# (leviosa_backup_last_success_timestamp_seconds). The Alloy agent
+# (roles/observability) reads it, mounted read-only — keep in sync with
+# observability_textfile_dir and docker-compose.prod.yml. Empty: no heartbeat.
+backup_textfile_dir: /var/lib/leviosa-metrics
 
 # Production's compose project and its Postgres service (infra/compose/
 # docker-compose.prod.yml: `name: leviosa`, service `postgres`). The dump

@@ -21,7 +21,8 @@
 #             migrate, bootstrap-admin (an encrypted auth.users record), serve
 #             (the pepper canary). Then the scripts the role installed, with a
 #             test configuration pointing them at LocalStack:
-#     B1  leviosa-backup uploads db/<date>/…dump and config/<date>/…tar.gz
+#     B1  leviosa-backup uploads db/<date>/…dump and config/<date>/…tar.gz,
+#         and writes its heartbeat (leviosa_backup.prom)
 #     B2  the configuration archive holds the allowlist and no secret
 #     B3  an env directory or a secret value in the allowlist is refused
 #     S1  leviosa-snapshot uploads infisical/<date>/…json.age (stub CLI):
@@ -175,6 +176,7 @@ cat >"$T/play.yml" <<YAML
     backup_lib_dir: $T/lib
     backup_conf_file: $T/etc/leviosa/backup.conf
     backup_work_dir: $T/work
+    backup_textfile_dir: $T/metrics
     backup_systemd_dir: $T/systemd
     backup_compose_project: $PROJECT
     backup_manifest_projects: [$PROJECT, $NAME-staging]
@@ -350,6 +352,9 @@ EOF
 	check "B1 the archive is at config/$today/leviosa_config_<UTC>.tar.gz ($config_key)" \
 		bash -c '[[ $1 =~ ^config/$2/leviosa_config_[0-9]{8}T[0-9]{6}Z\.tar\.gz$ ]]' _ "$config_key" "$today"
 	check "B1 latest.dump kept locally, mode 0600" bash -c '[ "$(stat -c %a "$1")" = 600 ]' _ "$T/work/latest.dump"
+	check "B1 the heartbeat holds the run's time and nothing else" bash -c \
+		'set -- $(grep -v "^#" "$1") "$(stat -c %Y "$1")"; [ "$#" = 3 ] && [ "$1" = leviosa_backup_last_success_timestamp_seconds ] && [ $(($3 - $2)) -ge 0 ] && [ $(($3 - $2)) -le 5 ]' \
+		_ "$T/metrics/leviosa_backup.prom"
 
 	# ── B2 ──
 	awsl s3 cp "s3://$BUCKET/$config_key" - >"$T/config.tar.gz"

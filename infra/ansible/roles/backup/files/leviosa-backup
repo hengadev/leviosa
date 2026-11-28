@@ -96,4 +96,5 @@ fi
 rm -rf "$work/check"
 upload "$config" "config/$date_prefix/$(basename "$config")"
 
+heartbeat backup
 log "OK: daily backup done"
