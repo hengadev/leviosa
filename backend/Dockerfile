@@ -48,6 +48,6 @@ RUN chown -R appuser:appuser /app
 
 USER appuser
 
-EXPOSE 3500 3501
+EXPOSE 3500 3501 9090
 
 CMD ["./leviosa"]

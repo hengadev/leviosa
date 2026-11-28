@@ -49,9 +49,10 @@ import (
 
 // Server represents the HTTP server
 type Server struct {
-	container  *Container
-	httpServer *http.Server
-	logger     *slog.Logger
+	container     *Container
+	httpServer    *http.Server
+	metricsServer *http.Server
+	logger        *slog.Logger
 }
 
 // NewServer creates a new HTTP server with all routes.
@@ -73,13 +74,18 @@ func (s *Server) Start(ctx context.Context) error {
 	// Setup routes
 	s.setupRoutes(mux)
 
+	// Prometheus metrics on their own listener (metrics.go)
+	registry, httpMetrics := newMetricsRegistry()
+	s.metricsServer = newMetricsServer(registry)
+	go runMetricsServer(ctx, s.metricsServer, s.logger)
+
 	// Create HTTP server
 	// WriteTimeout is 0 (disabled) because SSE connections stay open
 	// indefinitely. Individual handlers are protected by context cancellation
 	// and the server's graceful shutdown.
 	s.httpServer = &http.Server{
 		Addr:         fmt.Sprintf(":%d", s.container.Config.ServerPort),
-		Handler:      s.applyMiddleware(mux),
+		Handler:      httpMetrics.middleware(mux, s.applyMiddleware(mux)),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 0, // disabled for SSE
 		IdleTimeout:  120 * time.Second,
@@ -101,6 +107,12 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	// Shutdown HTTP server
 	if err := s.httpServer.Shutdown(ctx); err != nil {
 		return fmt.Errorf("shutdown http server: %w", err)
+	}
+
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(ctx); err != nil {
+			return fmt.Errorf("shutdown metrics server: %w", err)
+		}
 	}
 
 	// Close container resources

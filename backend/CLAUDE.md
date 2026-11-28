@@ -94,7 +94,7 @@ Each domain package follows the ports & adapters pattern:
 - **Configuration**: environment variables (from Infisical in deployed environments)
 
 ### Run Modes
-`cmd/app` dispatches on its first argument (`main.go`, one file per mode): `serve` (default), `migrate`, `bootstrap-admin`, `verify`, `check-sms`, `check-email`. Deploys run `migrate` and `bootstrap-admin` as one-offs before recreating the `serve` container (`infra/compose/README.md`); `leviosa-restore-test` runs `verify` against a restored dump. The release SHA is baked in at build time (`COMMIT_SHA`) and reported by `/health`.
+`cmd/app` dispatches on its first argument (`main.go`, one file per mode): `serve` (default), `migrate`, `bootstrap-admin`, `verify`, `check-sms`, `check-email`. Deploys run `migrate` and `bootstrap-admin` as one-offs before recreating the `serve` container (`infra/compose/README.md`); `leviosa-restore-test` runs `verify` against a restored dump. The release SHA is baked in at build time (`COMMIT_SHA`) and reported by `/health`. `serve` also exposes Prometheus metrics on a separate listener, `:9090/metrics` (`internal/app/metrics.go`), labelled by route pattern, never by URL; only the Alloy agent reads them, over `leviosa_network` (`infra/ansible/roles/observability`).
 
 ### Environment Configuration
 - Development uses the `development.env` file: a copy of the committed `example.env` (no secrets, integrations off), or rendered from Infisical `dev` by `make env` at the repo root
